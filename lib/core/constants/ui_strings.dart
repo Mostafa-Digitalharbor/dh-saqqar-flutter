@@ -1,0 +1,32 @@
+/// Technical constants only.
+///
+/// User-facing UI copy belongs in `core/i18n/app_strings.dart`.
+class UiStrings {
+  UiStrings._();
+
+  static const routeNewConversation = 'new';
+  static const newConversationId = 'new';
+  static const fallbackCredential = 'gac-staging';
+  static const none = 'none';
+  static const monospaceFontFamily = 'monospace';
+
+  static const demoUsername = 'test';
+  static const demoUserInitial = 'T';
+  static const demoAttachmentName = 'screenshot.png';
+  static const demoAttachmentKind = 'Image';
+  static const demoAttachmentSize = '242 KB';
+  static const demoAutoApprovedTool = 'auto_approved_plan';
+
+  static const localeEnglishCode = 'en';
+  static const localeArabicCode = 'ar';
+  static const localeSystemCode = 'system';
+  static const themePreferenceKey = 'saqqar.theme';
+  static const localePreferenceKey = 'saqqar.locale';
+
+  static const artifactExcel = 'Excel';
+  static const artifactCsv = 'CSV';
+  static const artifactLog = 'Log';
+  static const artifactImage = 'Image';
+  static const artifactJson = 'JSON';
+  static const artifactMarkdown = 'Markdown';
+}

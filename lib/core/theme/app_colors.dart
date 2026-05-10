@@ -1,0 +1,52 @@
+import 'package:flutter/material.dart';
+
+class AppColors {
+  AppColors._();
+
+  // Dark theme
+  static const darkBg = Color(0xFF030712);
+  static const darkSurface = Color(0xFF111827);
+  static const darkSurface2 = Color(0xFF1E293B);
+  static const darkSurface3 = Color(0xFF0F172A);
+  static const darkText = Color(0xFFF8FAFC);
+  static const darkMuted = Color(0xFF94A3B8);
+  static const darkBorder = Color(0xFF1E293B);
+  static const darkCardBg = Color(0xB3111827);
+  static const darkCardBorder = Color(0xCC1E293B);
+  static const darkHoverBg = Color(0x141E293B);
+
+  // Light theme
+  static const lightBg = Color(0xFFF8FAFC);
+  static const lightSurface = Color(0xFFFFFFFF);
+  static const lightSurface2 = Color(0xFFF1F5F9);
+  static const lightSurface3 = Color(0xFFE2E8F0);
+  static const lightText = Color(0xFF0F172A);
+  static const lightMuted = Color(0xFF64748B);
+  static const lightBorder = Color(0xFFE2E8F0);
+  static const lightCardBg = Color(0xD9FFFFFF);
+  static const lightCardBorder = Color(0xF2E2E8F0);
+  static const lightHoverBg = Color(0x14E2E8F0);
+
+  // Brand (theme-agnostic)
+  static const brandCyan = Color(0xFF06B6D4);
+  static const brandCyanStrong = Color(0xFF22D3EE); // saqqaar.com app.css
+  static const brandPurple = Color(0xFF8B5CF6);
+  static const brandNavy = Color(0xFF1F3C88);
+
+  // Status (theme-agnostic)
+  static const success = Color(0xFF10B981);
+  static const warning = Color(0xFFF59E0B);
+  static const danger = Color(0xFFEF4444);
+
+  // Soft tints used by mini-chip, cyan plates, etc.
+  static final Color brandCyanSoftDark = brandCyan.withValues(alpha: 0.18);
+  static final Color brandCyanSoftLight = brandCyan.withValues(alpha: 0.14);
+  static final Color brandCyanBorder = brandCyan.withValues(alpha: 0.30);
+
+  // Overlay (modal/sheet backdrop) — saqqaar.com app.css uses rgba(2,6,23,0.72).
+  static const overlayDark = Color(0xB8020617);
+  static const overlayLight = Color(0x66020617);
+
+  // Cyan pop shadow (CTA + active rows) — 0 10px 30px rgba(6,182,212,0.18).
+  static final Color popShadowCyan = brandCyan.withValues(alpha: 0.18);
+}
