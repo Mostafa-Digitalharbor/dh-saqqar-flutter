@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_gradients.dart';
 import '../../core/theme/app_radius.dart';
+import '../animations/typing_dots.dart';
 import '../extensions/context_extensions.dart';
 
 /// Spec §5.2 primary button — navy→cyan gradient, white text.
@@ -48,17 +49,17 @@ class PrimaryButton extends StatelessWidget {
               mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
               children: [
                 if (loading)
+                  // Three-dot pulse matches the chat typing indicator —
+                  // feels native to Saqqar rather than the default
+                  // Material spinner.
                   const SizedBox(
-                    width: 18,
+                    width: 28,
                     height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
+                    child: Center(child: TypingDots(color: Colors.white)),
                   )
                 else if (icon != null)
                   Icon(icon, color: Colors.white, size: 18),
-                if ((loading || icon != null)) const SizedBox(width: 10),
+                if (loading || icon != null) const SizedBox(width: 10),
                 if (constraints.hasBoundedWidth)
                   Flexible(child: labelWidget)
                 else
@@ -70,20 +71,25 @@ class PrimaryButton extends StatelessWidget {
       ),
     );
 
-    return Opacity(
-      opacity: disabled ? 0.5 : 1,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppRadius.buttonR,
-        child: InkWell(
-          onTap: disabled ? null : onPressed,
+    return Semantics(
+      button: true,
+      enabled: !disabled,
+      label: label,
+      child: Opacity(
+        opacity: disabled ? 0.5 : 1,
+        child: Material(
+          color: Colors.transparent,
           borderRadius: AppRadius.buttonR,
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: AppGradients.primaryCta,
-              borderRadius: AppRadius.buttonR,
+          child: InkWell(
+            onTap: disabled ? null : onPressed,
+            borderRadius: AppRadius.buttonR,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                gradient: AppGradients.primaryCta,
+                borderRadius: AppRadius.buttonR,
+              ),
+              child: ExcludeSemantics(child: child),
             ),
-            child: child,
           ),
         ),
       ),

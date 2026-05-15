@@ -1,124 +1,123 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_icon_button.dart';
-import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/credential_card.dart';
+import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/fade_slide_in.dart';
-import '../../../shared/widgets/feature_intro_card.dart';
-import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/page_scaffold.dart';
-import '../../../shared/widgets/pagination_bar.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/search_and_filters_bar.dart';
-import '../../../shared/widgets/status_pill.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../state/vault_controller.dart';
+import '../widgets/widgets.dart';
 
-class VaultScreen extends StatefulWidget {
+/// Vault tab — Projects → Environments → Credentials hierarchy.
+///
+/// Now backed by a search bar that filters projects + their envs by name,
+/// a proper [ProjectCardSkeleton] loading state, and an empty state with
+/// a "Create your first project" CTA.
+class VaultScreen extends ConsumerStatefulWidget {
   const VaultScreen({super.key});
 
   @override
-  State<VaultScreen> createState() => _VaultScreenState();
+  ConsumerState<VaultScreen> createState() => _VaultScreenState();
 }
 
-class _VaultScreenState extends State<VaultScreen> {
-  static const _pageSize = 30;
+class _VaultScreenState extends ConsumerState<VaultScreen> {
+  static const _initialLoadDelay = Duration(milliseconds: 650);
 
-  final _scrollController = ScrollController();
+  bool _loading = true;
+  Timer? _loadingTimer;
   final _searchController = TextEditingController();
-  late final List<DemoCredential> _credentials = List.of(demoCredentials);
-
   String _query = '';
-  DemoCredentialKind? _filter;
-  int _pageIndex = 0;
-
-  List<DemoCredential> get _filtered {
-    final q = _query.trim().toLowerCase();
-    return _credentials.where((item) {
-      final kindMatches = _filter == null || item.kind == _filter;
-      final queryMatches =
-          q.isEmpty ||
-          item.name.toLowerCase().contains(q) ||
-          item.label.toLowerCase().contains(q) ||
-          item.source.toLowerCase().contains(q);
-      return kindMatches && queryMatches;
-    }).toList();
-  }
-
-  List<DemoCredential> get _paged {
-    final start = _pageIndex * _pageSize;
-    return _filtered.skip(start).take(_pageSize).toList();
-  }
-
-  int get _pageCount {
-    final total = _filtered.length;
-    if (total == 0) return 1;
-    return ((total - 1) ~/ _pageSize) + 1;
-  }
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _loadingTimer = Timer(_initialLoadDelay, () {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    });
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    _loadingTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (!_scrollController.hasClients || _filtered.length <= _pageSize) {
-      return;
-    }
-    if (_scrollController.position.extentAfter <= 120 &&
-        _pageIndex < _pageCount - 1) {
-      _goToPage(_pageIndex + 1);
-    }
+  void _toast(String text) {
+    AppToast.show(context, message: text);
   }
 
-  void _resetPagination() {
-    _pageIndex = 0;
+  void _openAddProject() {
+    ProjectDetailSheet.show(context);
   }
 
-  void _goToPage(int pageIndex) {
-    final next = pageIndex.clamp(0, _pageCount - 1);
-    if (next == _pageIndex) return;
+  void _openProjectDetail(String projectId) {
+    ProjectDetailSheet.show(context, existingProjectId: projectId);
+  }
 
-    setState(() => _pageIndex = next);
-    if (!_scrollController.hasClients) return;
-    _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
+  Future<void> _confirmDeleteProject(DemoProject project) async {
+    final ok = await ConfirmDialog.show(
+      context,
+      title: context.tr.deleteProjectTitle,
+      body: context.tr.deleteProjectBody(project.name),
+      confirmLabel: context.tr.delete,
+      destructive: true,
+      icon: AppIcons.trash,
     );
+    if (!ok || !mounted) return;
+    ref.read(vaultControllerProvider.notifier).deleteProject(project.id);
+    if (!mounted) return;
+    _toast(context.tr.projectDeletedToast);
+  }
+
+  /// Filters the project list by [_query]. A project matches when its name
+  /// contains the query OR any of its envs match — so the user can search
+  /// for "production" and still find the project that hosts it.
+  bool _matchesQuery(VaultState state, DemoProject project) {
+    if (_query.isEmpty) return true;
+    final q = _query.toLowerCase();
+    if (project.name.toLowerCase().contains(q)) return true;
+    for (final env in state.environmentsForProject(project.id)) {
+      if (env.name.toLowerCase().contains(q)) return true;
+    }
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    final allCredentials = _filtered;
-    final visible = _paged;
+    final state = ref.watch(vaultControllerProvider);
+    final allProjects = state.projects;
+    final visible =
+        allProjects.where((p) => _matchesQuery(state, p)).toList();
 
     return PageScaffold(
       title: context.tr.tabVault,
-      controller: _scrollController,
       onRefresh: () async {
+        setState(() => _loading = true);
         final message = context.tr.credentialsRefreshed;
-        await Future<void>.delayed(const Duration(milliseconds: 700));
+        await Future<void>.delayed(const Duration(milliseconds: 750));
+        if (!mounted) return;
+        setState(() => _loading = false);
         if (!context.mounted) return;
         AppToast.show(context, message: message);
       },
       actions: [
+        AppIconButton(
+          icon: AppIcons.plus,
+          tooltip: context.tr.addProject,
+          bordered: false,
+          onPressed: _openAddProject,
+        ),
         AppIconButton(
           icon: AppIcons.refresh,
           tooltip: context.tr.refreshCredentials,
@@ -128,366 +127,120 @@ class _VaultScreenState extends State<VaultScreen> {
         const SizedBox(width: 6),
       ],
       children: [
-        FeatureIntroCard(
-          title: context.tr.credentialVault,
-          body: context.tr.vaultSummaryBody,
-          pills: [
-            StatusPill(label: context.tr.perUserEncryptedVault, pulsing: true),
-          ],
-          action: PrimaryButton(
-            label: context.tr.addCredential,
-            icon: AppIcons.plus,
-            expand: true,
-            onPressed: _openAddCredential,
+        if (allProjects.length > 3 || _query.isNotEmpty) ...[
+          SearchAndFiltersBar<bool>(
+            controller: _searchController,
+            hintText: context.tr.search,
+            query: _query,
+            onQueryChanged: (value) => setState(() => _query = value),
           ),
-        ),
-        const SizedBox(height: 14),
-        SearchAndFiltersBar<DemoCredentialKind?>(
-          controller: _searchController,
-          hintText: context.tr.search,
-          query: _query,
-          onQueryChanged: (value) => setState(() {
-            _query = value;
-            _resetPagination();
-          }),
-          selectedFilter: _filter,
-          filters: [
-            SearchFilterOption(value: null, label: context.tr.all),
-            for (final schema in demoCredentialSchemas)
-              SearchFilterOption(value: schema.kind, label: schema.label),
-          ],
-          onFilterSelected: (kind) => setState(() {
-            _filter = kind;
-            _resetPagination();
-          }),
-        ),
-        const SizedBox(height: 10),
-        if (allCredentials.length > _pageSize) ...[
-          PaginationBar(
-            page: _pageIndex + 1,
-            pageCount: _pageCount,
-            visibleCount: visible.length,
-            totalCount: allCredentials.length,
-            itemLabel: context.tr.credentials,
-            onPrevious: _pageIndex == 0
-                ? null
-                : () => _goToPage(_pageIndex - 1),
-            onNext: _pageIndex >= _pageCount - 1
-                ? null
-                : () => _goToPage(_pageIndex + 1),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
         ],
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
-          child: allCredentials.isEmpty
-              ? EmptyState(
-                  key: const ValueKey('empty-credentials'),
-                  icon: AppIcons.key,
-                  title: context.tr.noCredentials,
-                  body: context.tr.noCredentialsHint,
-                )
-              : Column(
-                  key: ValueKey('credentials-list-$_filter-${visible.length}'),
+          child: _loading
+              ? const Column(
+                  key: ValueKey('vault-skeleton'),
                   children: [
-                    for (final entry in visible.asMap().entries) ...[
-                      FadeSlideIn(
-                        key: ValueKey(entry.value.name),
-                        index: entry.key,
-                        child: _CredentialCard(
-                          credential: entry.value,
-                          onEdit: () => _openEditCredential(entry.value),
-                          onDelete: () => setState(() {
-                            _credentials.remove(entry.value);
-                            _resetPagination();
-                          }),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
+                    ProjectCardSkeleton(),
+                    SizedBox(height: 12),
+                    ProjectCardSkeleton(envRows: 1),
+                    SizedBox(height: 12),
+                    ProjectCardSkeleton(),
                   ],
-                ),
+                )
+              : allProjects.isEmpty
+                  ? EmptyState(
+                      key: const ValueKey('empty-projects'),
+                      icon: AppIcons.projects,
+                      title: context.tr.noStoredCredentialsTitle,
+                      body: context.tr.noStoredCredentialsBody,
+                      action: PrimaryButton(
+                        label: context.tr.addProject,
+                        icon: AppIcons.plus,
+                        onPressed: _openAddProject,
+                      ),
+                    )
+                  : visible.isEmpty
+                      ? EmptyState(
+                          key: const ValueKey('empty-search'),
+                          icon: AppIcons.search,
+                          title: context.tr.clearSearch,
+                          body: _query,
+                        )
+                      : Column(
+                          key: ValueKey('projects-list-${visible.length}'),
+                          children: [
+                            for (final entry in visible.asMap().entries) ...[
+                              FadeSlideIn(
+                                key: ValueKey('project-${entry.value.id}'),
+                                index: entry.key,
+                                child: ProjectCard(
+                                  project: entry.value,
+                                  environments: state
+                                      .environmentsForProject(entry.value.id),
+                                  onTap: () =>
+                                      _openProjectDetail(entry.value.id),
+                                  onEdit: () =>
+                                      _openProjectDetail(entry.value.id),
+                                  onDelete: () =>
+                                      _confirmDeleteProject(entry.value),
+                                  onLongPress: () =>
+                                      _showQuickActions(entry.value),
+                                  onEnvTap: (env) =>
+                                      EnvironmentDetailSheet.show(
+                                    context,
+                                    environmentId: env.id,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ],
+                        ),
         ),
       ],
     );
   }
 
-  void _openAddCredential() {
-    final savedMessage = context.tr.credentialSavedApproval;
-    showModalBottomSheet<DemoCredential>(
+  /// Long-press on a project card opens this quick-action sheet — gives
+  /// the user a touch-friendly path to rename / delete without aiming
+  /// for the small inline icons.
+  void _showQuickActions(DemoProject project) {
+    showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => const _CredentialSheet(),
-    ).then((value) {
-      if (value == null) return;
-      setState(() {
-        _credentials.insert(0, value);
-        _resetPagination();
-      });
-      _toast(savedMessage);
-    });
-  }
-
-  void _openEditCredential(DemoCredential credential) {
-    final updatedMessage = context.tr.credentialUpdated;
-    showModalBottomSheet<DemoCredential>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _CredentialSheet(existing: credential),
-    ).then((value) {
-      if (value == null) return;
-      setState(() {
-        final index = _credentials.indexOf(credential);
-        if (index != -1) _credentials[index] = value;
-      });
-      _toast(updatedMessage);
-    });
-  }
-
-  void _toast(String text) {
-    AppToast.show(context, message: text);
-  }
-}
-
-enum _CredentialAction { edit, delete }
-
-Color _kindAccent(BuildContext context, DemoCredentialKind kind) {
-  final s = context.saqqar;
-  return switch (kind) {
-    DemoCredentialKind.xmlrpc => s.brandCyan,
-    DemoCredentialKind.postgres => s.brandPurple,
-    DemoCredentialKind.serverShell => s.warning,
-    DemoCredentialKind.github => s.success,
-  };
-}
-
-class _CredentialCard extends StatelessWidget {
-  const _CredentialCard({
-    required this.credential,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final DemoCredential credential;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final kindLabel = demoCredentialKindLabel(credential.kind);
-
-    return CredentialCard(
-      title: credential.label,
-      subtitle: context.tr.credentialSubtitle(credential.name, kindLabel),
-      icon: demoCredentialKindIcon(credential.kind),
-      accent: _kindAccent(context, credential.kind),
-      chips: [
-        MiniChip(
-          credential.isMemorized ? context.tr.memorized : context.tr.session,
-          color: credential.isMemorized
-              ? context.saqqar.success
-              : context.saqqar.muted,
-        ),
-        MiniChip(
-          credential.lastVerified == null
-              ? context.tr.notVerified
-              : context.tr.verified(credential.lastVerified!),
-          color: credential.lastVerified == null
-              ? context.saqqar.muted
-              : context.saqqar.brandCyan,
-        ),
-      ],
-      trailing: PopupMenuButton<_CredentialAction>(
-        tooltip: context.tr.credentialActions,
-        onSelected: (value) {
-          if (value == _CredentialAction.edit) onEdit();
-          if (value == _CredentialAction.delete) onDelete();
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: _CredentialAction.edit,
-            child: _MenuItem(icon: AppIcons.edit, label: context.tr.edit),
-          ),
-          PopupMenuItem(
-            value: _CredentialAction.delete,
-            child: _MenuItem(icon: AppIcons.trash, label: context.tr.delete),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuItem extends StatelessWidget {
-  const _MenuItem({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [Icon(icon, size: 18), const SizedBox(width: 10), Text(label)],
-    );
-  }
-}
-
-class _CredentialSheet extends StatefulWidget {
-  const _CredentialSheet({this.existing});
-
-  final DemoCredential? existing;
-
-  @override
-  State<_CredentialSheet> createState() => _CredentialSheetState();
-}
-
-class _CredentialSheetState extends State<_CredentialSheet> {
-  late DemoCredentialKind _kind =
-      widget.existing?.kind ?? DemoCredentialKind.xmlrpc;
-  late final _name = TextEditingController(text: widget.existing?.name ?? '');
-  late final _label = TextEditingController(text: widget.existing?.label ?? '');
-  bool _remember = false;
-
-  DemoCredentialSchema get _schema {
-    return demoCredentialSchemas.firstWhere((schema) => schema.kind == _kind);
-  }
-
-  @override
-  void dispose() {
-    _name.dispose();
-    _label.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final schema = _schema;
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          left: 18,
-          right: 18,
-          top: 0,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-        ),
+      builder: (sheetContext) => SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 2),
-            Container(
-              height: 3,
-              decoration: const BoxDecoration(
-                gradient: AppGradients.primaryCta,
-                borderRadius: BorderRadius.all(Radius.circular(999)),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              widget.existing == null
-                  ? context.tr.addCredential
-                  : context.tr.editCredential,
-              style: context.text.titleLarge,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              context.tr.credentialSheetBody,
-              style: context.text.bodyMedium?.copyWith(color: s.muted),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<DemoCredentialKind>(
-              initialValue: _kind,
-              decoration: InputDecoration(labelText: context.tr.kind),
-              items: [
-                for (final item in demoCredentialSchemas)
-                  DropdownMenuItem(value: item.kind, child: Text(item.label)),
-              ],
-              onChanged: (value) {
-                if (value != null) setState(() => _kind = value);
+            ListTile(
+              leading: const Icon(AppIcons.edit),
+              title: Text(sheetContext.tr.rename),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _openProjectDetail(project.id);
               },
             ),
-            const SizedBox(height: 12),
-            AppTextField(label: context.tr.bundleName, controller: _name),
-            const SizedBox(height: 12),
-            AppTextField(
-              label: context.tr.label,
-              controller: _label,
-              hint: schema.label,
-            ),
-            const SizedBox(height: 16),
-            for (final field in schema.fields) ...[
-              field.options.isEmpty
-                  ? field.obscure
-                        ? AppPasswordField(label: field.label, hint: field.hint)
-                        : AppTextField(
-                            label: field.label,
-                            hint: field.hint,
-                            maxLines: field.multiline ? 4 : 1,
-                          )
-                  : DropdownButtonFormField<String>(
-                      decoration: InputDecoration(labelText: field.label),
-                      initialValue: field.options.first,
-                      items: [
-                        for (final option in field.options)
-                          DropdownMenuItem(value: option, child: Text(option)),
-                      ],
-                      onChanged: (_) {},
-                    ),
-              const SizedBox(height: 12),
-            ],
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(context.tr.memorizeCredential),
-              value: _remember,
-              onChanged: (value) => setState(() => _remember = value),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: GhostButton(
-                    label: context.tr.cancel,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+            ListTile(
+              leading: Icon(
+                AppIcons.trash,
+                color: Theme.of(sheetContext).colorScheme.error,
+              ),
+              title: Text(
+                sheetContext.tr.delete,
+                style: TextStyle(
+                  color: Theme.of(sheetContext).colorScheme.error,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: PrimaryButton(
-                    label: widget.existing == null
-                        ? context.tr.saveCredential
-                        : context.tr.updateCredential,
-                    icon: AppIcons.save,
-                    onPressed: _save,
-                  ),
-                ),
-              ],
+              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _confirmDeleteProject(project);
+              },
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _save() {
-    final fallback = _label.text.trim().isEmpty
-        ? demoCredentialKindLabel(_kind)
-        : _label.text.trim();
-    final generatedName = fallback.toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9]+'),
-      '-',
-    );
-    Navigator.of(context).pop(
-      DemoCredential(
-        name: _name.text.trim().isEmpty ? generatedName : _name.text.trim(),
-        label: fallback,
-        kind: _kind,
-        source: _remember ? context.tr.approvalPending : context.tr.session,
-        lastVerified: null,
-        isMemorized: _remember,
       ),
     );
   }

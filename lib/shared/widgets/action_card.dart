@@ -27,7 +27,7 @@ class ActionCard extends StatelessWidget {
     final s = context.saqqar;
     final accent = color ?? (warning ? s.warning : s.brandCyan);
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
         borderRadius: BorderRadius.circular(16),

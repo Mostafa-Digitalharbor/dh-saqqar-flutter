@@ -1,0 +1,7 @@
+/// Barrel export for the Account feature widgets.
+library;
+
+export 'change_password_card.dart';
+export 'preferences_card.dart';
+export 'profile_hero.dart';
+export 'stats_line.dart';

@@ -54,6 +54,11 @@ class AppIconButton extends StatelessWidget {
       body = Tooltip(message: tooltip!, child: body);
     }
 
-    return Opacity(opacity: disabled ? 0.5 : 1, child: body);
+    return Semantics(
+      button: true,
+      enabled: !disabled,
+      label: tooltip ?? '',
+      child: Opacity(opacity: disabled ? 0.5 : 1, child: body),
+    );
   }
 }

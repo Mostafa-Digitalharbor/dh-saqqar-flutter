@@ -1,0 +1,111 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/constants/ui_strings.dart';
+import '../../../core/i18n/app_localizations.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../shared/extensions/context_extensions.dart';
+import '../../demo/saqqar_demo_data.dart';
+
+/// Inline collapsible card representing a tool call (Odoo XML-RPC, SQL, shell,
+/// GitHub). Collapsed by default — header shows the tool name + timestamp;
+/// tapping reveals the monospace payload on the code plate.
+class ToolActivityCard extends StatefulWidget {
+  const ToolActivityCard({super.key, required this.message});
+
+  final DemoMessage message;
+
+  @override
+  State<ToolActivityCard> createState() => _ToolActivityCardState();
+}
+
+class _ToolActivityCardState extends State<ToolActivityCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    final tool = widget.message.toolName ?? context.tr.roleTool;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.fromLTRB(10, 7, 8, 7),
+          decoration: BoxDecoration(
+            color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: s.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(AppIcons.bolt, size: 12, color: s.muted),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      tool,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelSmall?.copyWith(
+                        color: s.muted,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    widget.message.time,
+                    style: context.text.labelSmall?.copyWith(
+                      color: s.muted,
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      AppIcons.chevronDown,
+                      size: 13,
+                      color: s.muted,
+                    ),
+                  ),
+                ],
+              ),
+              if (_expanded) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: s.codePlate,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: s.border),
+                  ),
+                  child: SelectableText(
+                    widget.message.content,
+                    style: context.text.bodySmall?.copyWith(
+                      fontFamily: UiStrings.monospaceFontFamily,
+                      color: s.brandCyan,
+                      height: 1.5,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

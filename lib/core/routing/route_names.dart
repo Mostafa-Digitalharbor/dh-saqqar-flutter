@@ -17,12 +17,6 @@ class RouteNames {
   static const vault = 'vault';
   static const vaultPath = '/vault';
 
-  static const inbox = 'inbox';
-  static const inboxPath = '/inbox';
-
-  static const files = 'files';
-  static const filesPath = '/files';
-
   static const account = 'account';
   static const accountPath = '/account';
 
@@ -32,6 +26,20 @@ class RouteNames {
 
   static const credentialAdd = 'credential_add';
   static const credentialAddPath = '/vault/add';
+
+  // Approval deep links now resolve into the chat that raised them, because
+  // approvals live per-conversation (Inbox tab was retired). Format:
+  //   /chats/<conversationId>?approval=<approvalId>
+  // and the chat screen pops its own approvals sheet when the query is set.
+  static const approvalDetail = 'approval_detail';
+  static String approvalDetailPath({
+    required String conversationId,
+    required String approvalId,
+  }) => '/chats/$conversationId?approval=$approvalId';
+
+  // Public read-only transcript view (from saqqar://share/<token>).
+  static const sharedTranscript = 'shared_transcript';
+  static String sharedTranscriptPath(String token) => '/share/$token';
 
   // Storybook (foundation-only, hidden behind a long-press in Account).
   static const storybook = 'storybook';

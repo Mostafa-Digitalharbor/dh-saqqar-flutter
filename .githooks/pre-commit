@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Pre-commit hook: blocks the commit if `flutter analyze` finds any issue
+# or if Dart formatting is out of date on the files being committed.
+#
+# Install once per clone:
+#   git config core.hooksPath .githooks
+#
+# Skip a single commit (use sparingly):
+#   git commit --no-verify
+
+set -euo pipefail
+
+# Only check staged Dart files — non-Dart commits run instantly.
+mapfile -t staged_dart < <(git diff --cached --name-only --diff-filter=ACMR -- '*.dart')
+if [ "${#staged_dart[@]}" -eq 0 ]; then
+  exit 0
+fi
+
+echo "▶ flutter analyze"
+flutter analyze --no-fatal-infos
+
+echo "▶ dart format --set-exit-if-changed (staged Dart files)"
+dart format --output=none --set-exit-if-changed "${staged_dart[@]}"
+
+echo "✓ pre-commit checks passed"

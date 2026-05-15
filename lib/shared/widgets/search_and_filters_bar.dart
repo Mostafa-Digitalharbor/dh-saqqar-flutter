@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../extensions/context_extensions.dart';
 
@@ -37,7 +38,7 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
+        DecoratedBox(
           decoration: BoxDecoration(
             color: s.surface2.withValues(alpha: context.isDark ? 0.62 : 0.86),
             borderRadius: BorderRadius.circular(14),
@@ -57,6 +58,7 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
               suffixIcon: query.isEmpty
                   ? null
                   : IconButton(
+                      tooltip: context.tr.clearSearch,
                       icon: Icon(AppIcons.close, size: 18, color: s.muted),
                       onPressed: () {
                         controller.clear();

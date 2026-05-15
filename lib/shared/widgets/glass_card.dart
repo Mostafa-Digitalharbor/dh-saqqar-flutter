@@ -40,12 +40,14 @@ class GlassCard extends StatelessWidget {
         color: color ?? s.cardBg,
         borderRadius: borderRadius,
         border: Border.all(color: borderColor ?? s.cardBorder),
+        // Tightened shadows: the old dark-mode shadow (60 blur) was bleeding
+        // beyond every card and reading as haze rather than depth.
         boxShadow: context.isDark
             ? [
                 BoxShadow(
-                  color: const Color(0xFF020617).withValues(alpha: 0.55),
-                  blurRadius: 60,
-                  offset: const Offset(0, 22),
+                  color: const Color(0xFF020617).withValues(alpha: 0.35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
                 ),
               ]
             : [

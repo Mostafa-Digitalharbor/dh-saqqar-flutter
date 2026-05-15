@@ -46,6 +46,189 @@ class AppStrings {
   String get authBrandBody => _t('auth_brand_body');
   String get openWorkspace => _t('open_workspace');
 
+  // Sign up
+  String get signUpTitle => _t('sign_up_title');
+  String get signUpSubtitle => _t('sign_up_subtitle');
+  String get confirmPassword => _t('confirm_password');
+  String get confirmPasswordHint => _t('confirm_password_hint');
+  String get emailOptional => _t('email_optional');
+  String get emailHint => _t('email_hint');
+  String get createAccountButton => _t('create_account_button');
+  String get alreadyHaveAccount => _t('already_have_account');
+  String get backToSignIn => _t('back_to_sign_in');
+  String get passwordTooShort => _t('password_too_short');
+  String get passwordsDoNotMatch => _t('passwords_do_not_match');
+  String get usernameRequired => _t('username_required');
+  String get accountCreatedToast => _t('account_created_toast');
+
+  // Change password
+  String get changePassword => _t('change_password');
+  String get currentPassword => _t('current_password');
+  String get newPassword => _t('new_password');
+  String get changePasswordHint => _t('change_password_hint');
+  String get changePasswordKeepSignedIn => _t('change_password_keep_signed_in');
+  String get currentPasswordWrong => _t('current_password_wrong');
+  String get passwordUpdatedToast => _t('password_updated_toast');
+  String get updatePassword => _t('update_password');
+
+  // Inline credential request (chat §6.7)
+  String get inlineCredentialRequestTitle => _t('inline_credential_request_title');
+  String get inlineCredentialRequestBody => _t('inline_credential_request_body');
+  String get provideCredential => _t('provide_credential');
+  String get useExistingCredential => _t('use_existing_credential');
+  String get inlineCredentialProvided => _t('inline_credential_provided');
+
+  // Project / Environment (matches web saqqaar.com data model)
+  String get pickEnvironment => _t('pick_environment');
+  String get pickEnvironmentSubtitle => _t('pick_environment_subtitle');
+  String get noEnvironmentPicked => _t('no_environment_picked');
+  String get pickEnvironmentToStart => _t('pick_environment_to_start');
+  String get environmentSetForChat => _t('environment_set_for_chat');
+  String get liveBadge => _t('live_badge');
+  String get readOnlyBadge => _t('read_only_badge');
+  String get autoApproveBadge => _t('auto_approve_badge');
+  String get project => _t('project');
+  String get environment => _t('environment');
+  String get changeEnvironment => _t('change_environment');
+
+  // Inline pending approvals banner (above composer)
+  String get reviewApproval => _t('review_approval');
+  String morePendingApprovals(int n) =>
+      _isArabic ? '+ $n موافقات أخرى معلّقة' : '+ $n more pending approvals';
+
+  // Chat header strip — 3 dropdowns matching the web's header
+  String get headerProject => _t('header_project');
+  String get headerEnvironment => _t('header_environment');
+  String get pickProjectFirst => _t('pick_project_first');
+  String get noProjectsYet => _t('no_projects_yet');
+  String get noEnvironmentsForProject => _t('no_environments_for_project');
+  String get headerNoneOption => _t('header_none_option');
+
+  // Vault lifecycle — matches web saqqaar.com verbatim copy
+  String get noStoredCredentialsTitle => _t('no_stored_credentials_title');
+  String get noStoredCredentialsBody => _t('no_stored_credentials_body');
+  String get projectName => _t('project_name');
+  String get addProject => _t('add_project');
+  String get addProjectHint => _t('add_project_hint');
+  String get manageProjects => _t('manage_projects');
+  String get projectSavedToast => _t('project_saved_toast');
+  String get projectDeletedToast => _t('project_deleted_toast');
+  String get deleteProjectTitle => _t('delete_project_title');
+  String deleteProjectBody(String name) => _isArabic
+      ? 'حذف المشروع "$name"؟ ستُحذف البيئات وبيانات الدخول المرتبطة بها.'
+      : 'Delete project "$name"? Environments and their credentials are deleted with it.';
+
+  String get addEnvironment => _t('add_environment');
+  String get addEnvironmentHint => _t('add_environment_hint');
+  String get environmentSavedToast => _t('environment_saved_toast');
+  String get environmentDeletedToast => _t('environment_deleted_toast');
+  String get deleteEnvironmentTitle => _t('delete_environment_title');
+  String deleteEnvironmentBody(String name) => _isArabic
+      ? 'حذف البيئة "$name"؟ ستُحذف جميع بيانات الدخول داخلها.'
+      : 'Delete environment "$name"? All credentials inside it are deleted.';
+
+  String get saveCredentialButton => _t('save_credential_button');
+  String get deleteCredentialButton => _t('delete_credential_button');
+  String get credentialSavedToast => _t('credential_saved_toast');
+  String get credentialDeletedToast => _t('credential_deleted_toast');
+  String get deleteCredentialTitle => _t('delete_credential_title');
+  String get deleteCredentialBody => _t('delete_credential_body');
+  String get notSavedYet => _t('not_saved_yet');
+  String lastVerifiedAt(String at) =>
+      _isArabic ? 'آخر تحقق: $at' : 'Last verified $at';
+
+  /// Relative-time label like "2 hours ago" / "just now" — used inline by
+  /// the credential form's "Last verified" hint.
+  String relativeTime(DateTime when) {
+    final diff = DateTime.now().difference(when);
+    final mins = diff.inMinutes;
+    final hours = diff.inHours;
+    final days = diff.inDays;
+    if (_isArabic) {
+      if (mins < 1) return 'الآن';
+      if (mins < 60) return 'منذ $mins دقيقة';
+      if (hours < 24) return 'منذ $hours ساعة';
+      if (days < 7) return 'منذ $days يوم';
+      if (days < 30) return 'منذ ${(days / 7).floor()} أسبوع';
+      return 'منذ ${(days / 30).floor()} شهر';
+    }
+    if (mins < 1) return 'just now';
+    if (mins < 60) return '$mins min ago';
+    if (hours < 24) return '$hours hour${hours == 1 ? '' : 's'} ago';
+    if (days < 7) return '$days day${days == 1 ? '' : 's'} ago';
+    if (days < 30) {
+      final w = (days / 7).floor();
+      return '$w week${w == 1 ? '' : 's'} ago';
+    }
+    final m = (days / 30).floor();
+    return '$m month${m == 1 ? '' : 's'} ago';
+  }
+
+  // Credential form: Test connection
+  String get testConnection => _t('test_connection');
+  String get testingConnection => _t('testing_connection');
+  String get connectionVerified => _t('connection_verified');
+  String get connectionFailed => _t('connection_failed');
+  String get noFieldsForKind => _t('no_fields_for_kind');
+  String get noEnvironments => _t('no_environments');
+  String get openEnvironment => _t('open_environment');
+  String get flagLive => _t('flag_live');
+  String get flagReadOnly => _t('flag_read_only');
+  String get flagAutoApprove => _t('flag_auto_approve');
+
+  // Artifacts (inline pill matches web's "Artifact ready" label)
+  String get artifactReady => _t('artifact_ready');
+
+  // 404 conversation fallback
+  String get conversationNotFoundTitle => _t('conversation_not_found_title');
+  String get conversationNotFoundBody => _t('conversation_not_found_body');
+  String get backToChats => _t('back_to_chats');
+
+  // Date-group headers for the conversations list (Today / Yesterday /
+  // Previous 7 days / Previous 30 days / Older — web parity).
+  String get dateGroupToday => _t('date_group_today');
+  String get dateGroupYesterday => _t('date_group_yesterday');
+  String get dateGroupPrevious7 => _t('date_group_previous_7');
+  String get dateGroupPrevious30 => _t('date_group_previous_30');
+  String get dateGroupOlder => _t('date_group_older');
+
+  // Contextual activity status labels (web's "Checking Odoo data",
+  // "Building Excel report", "Reading repository files", etc.).
+  String get activityCheckingOdoo => _t('activity_checking_odoo');
+  String get activityRunningQuery => _t('activity_running_query');
+  String get activityBuildingReport => _t('activity_building_report');
+  String get activityReadingRepo => _t('activity_reading_repo');
+  String get activityRunningCommand => _t('activity_running_command');
+  String get activityFinishingResponse => _t('activity_finishing_response');
+  String get activityReviewingAttachment =>
+      _t('activity_reviewing_attachment');
+
+  // Grouped approvals (web pre-approval shortcut)
+  String similarRequestsCount(int count) => _isArabic
+      ? '$count طلب مشابه'
+      : '$count similar requests';
+  String operationOnModel(String operation, String model) =>
+      _isArabic ? '$operation على `$model`' : '$operation on `$model`';
+  String approveAllN(int count) =>
+      _isArabic ? 'وافق على الكل ($count)' : 'Approve all $count';
+  String rejectAllN(int count) =>
+      _isArabic ? 'ارفض الكل ($count)' : 'Reject all $count';
+  String get preApprovalTip => _t('pre_approval_tip');
+  String get showIndividualRecords => _t('show_individual_records');
+  String get hideIndividualRecords => _t('hide_individual_records');
+  String approvalGrantedWithPreapproval(int count) => _isArabic
+      ? 'تمت الموافقة. $count طلب مماثل تمت الموافقة عليه مسبقاً.'
+      : 'Approval granted. $count similar request(s) pre-approved.';
+
+  // Live environment confirmation (web one-shot warning)
+  String liveWarningTitle(String envName) =>
+      _isArabic ? 'بيئة مباشرة: $envName' : 'Live environment: $envName';
+  String liveWarningBody(String envName, String projectName) => _isArabic
+      ? 'أنت على وشك التحدث مع "$envName" في مشروع "$projectName" — بيئة مباشرة. الإجراءات المؤذية لا تزال تحت الموافقة، لكن انتبه. هل تريد المتابعة؟'
+      : "You're about to talk to \"$envName\" in project \"$projectName\" — a LIVE environment. Destructive actions are still approval-gated, but be careful. Continue?";
+  String get sendToLive => _t('send_to_live');
+  String get dontAskAgain => _t('dont_ask_again');
+
   // Tabs
   String get tabChats => _t('tab_chats');
   String get tabVault => _t('tab_vault');
@@ -203,6 +386,17 @@ class AppStrings {
   String get credentialNone => _t('credential_none');
   String get credentialNoneHint => _t('credential_none_hint');
   String get copiedToClipboard => _t('copied_to_clipboard');
+  String get suggestUserCount => _t('suggest_user_count');
+  String get suggestExportUsers => _t('suggest_export_users');
+  String get suggestTailLog => _t('suggest_tail_log');
+  String get removeAttachment => _t('remove_attachment');
+  String get offlineTitle => _t('offline_title');
+  String get offlineBody => _t('offline_body');
+  String get askSaqqarAnything => _t('ask_saqqar_anything');
+  String get linkCopied => _t('link_copied');
+  String get dateToday => _t('date_today');
+  String get dateYesterday => _t('date_yesterday');
+  String get inboxRefreshed => _t('inbox_refreshed');
   String get roleYou => _t('role_you');
   String get roleAssistant => _t('role_assistant');
   String get roleTool => _t('role_tool');
@@ -294,7 +488,7 @@ const Map<String, String> _en = {
       'Live Odoo agent that diagnoses, reports, and acts with private credentials and approval gating on every risky change.',
   'open_workspace': 'Open workspace',
   'tab_chats': 'Chats',
-  'tab_vault': 'Vault',
+  'tab_vault': 'Projects',
   'tab_inbox': 'Inbox',
   'tab_files': 'Files',
   'tab_account': 'Account',
@@ -435,7 +629,7 @@ const Map<String, String> _en = {
   'start_conversation': 'Start a conversation',
   'send': 'Send',
   'auto_approve': 'Auto-approve',
-  'credential_vault': 'Credential Vault',
+  'credential_vault': 'Projects',
   'no_credentials': 'No credentials yet',
   'no_credentials_hint': 'Add one to let Saqqar work against your systems.',
   'add_credential': 'Add credential',
@@ -453,6 +647,17 @@ const Map<String, String> _en = {
   'credential_none': '— None —',
   'credential_none_hint': 'Saqqar will ask for credentials when needed.',
   'copied_to_clipboard': 'Copied to clipboard.',
+  'suggest_user_count': 'Show me how many users are in Odoo right now.',
+  'suggest_export_users': 'Export active internal users as Excel.',
+  'suggest_tail_log': 'Tail the Odoo server log for the last 100 lines.',
+  'remove_attachment': 'Remove attachment',
+  'offline_title': 'You\'re offline',
+  'offline_body': 'Saqqar needs a live connection to act.',
+  'ask_saqqar_anything': 'Ask Saqqar anything',
+  'link_copied': 'Link copied to clipboard.',
+  'date_today': 'Today',
+  'date_yesterday': 'Yesterday',
+  'inbox_refreshed': 'Inbox refreshed.',
   'role_you': 'You',
   'role_assistant': 'Saqqar',
   'role_tool': 'Tool',
@@ -462,7 +667,7 @@ const Map<String, String> _en = {
   'conversations_coverage_title': 'Conversations',
   'conversations_coverage_body':
       'Search, archive, rename, share, and open full work logs.',
-  'vault_coverage_title': 'Credential Vault',
+  'vault_coverage_title': 'Projects',
   'vault_coverage_body':
       'Odoo XML-RPC, PostgreSQL, server shell, GitHub, and approval-backed memorization.',
   'approvals_coverage_title': 'Approvals',
@@ -499,6 +704,136 @@ const Map<String, String> _en = {
   'assistant_plan_prefix': 'I can work on that with',
   'assistant_plan_suffix':
       'I will ask for approval before any write or server command.',
+
+  // Sign up
+  'sign_up_title': 'Set up your private workspace',
+  'sign_up_subtitle': 'Create an account to start using your operations copilot.',
+  'confirm_password': 'Confirm password',
+  'confirm_password_hint': 'Repeat your password',
+  'email_optional': 'Email (optional)',
+  'email_hint': 'you@example.com',
+  'create_account_button': 'Create account',
+  'already_have_account': 'Already have an account?',
+  'back_to_sign_in': 'Back to sign in',
+  'password_too_short': 'Password must be at least 8 characters.',
+  'passwords_do_not_match': 'Passwords do not match.',
+  'username_required': 'Username is required.',
+  'account_created_toast': 'Account ready. Welcome to Saqqar.',
+
+  // Change password
+  'change_password': 'Change password',
+  'current_password': 'Current password',
+  'new_password': 'New password',
+  'change_password_hint':
+      'Use at least 8 characters. You\'ll stay signed in after the update.',
+  'change_password_keep_signed_in':
+      "You'll stay signed in after the update.",
+  'current_password_wrong': 'Current password is incorrect.',
+  'password_updated_toast': 'Password updated.',
+  'update_password': 'Update password',
+
+  // Inline credential request
+  'inline_credential_request_title': 'Saqqar needs a credential',
+  'inline_credential_request_body':
+      'Pick a saved bundle or fill the form below. Saqqar uses the value for this turn only and stores it after approval.',
+  'provide_credential': 'Provide credential',
+  'use_existing_credential': 'Use a saved credential',
+  'inline_credential_provided': 'Credential provided. Saqqar resumed.',
+
+  // Inline pending approvals banner
+  'review_approval': 'Review',
+
+  // Chat header strip (web parity)
+  'header_project': 'Project',
+  'header_environment': 'Environment',
+  'pick_project_first': 'Pick a project first',
+  'no_projects_yet': '— No projects yet —',
+  'no_environments_for_project': '— No environments —',
+  'header_none_option': '—',
+
+  // Vault lifecycle (web saqqaar.com verbatim)
+  'no_stored_credentials_title': 'No stored credentials.',
+  'no_stored_credentials_body':
+      'The agent will request the exact access it needs.',
+  'project_name': 'Project name',
+  'add_project': 'Add project',
+  'add_project_hint': 'Add project…',
+  'manage_projects': 'Manage projects',
+  'project_saved_toast': 'Project saved.',
+  'project_deleted_toast': 'Project deleted.',
+  'delete_project_title': 'Delete project?',
+  'add_environment': 'Add environment',
+  'add_environment_hint': 'Add environment…',
+  'environment_saved_toast': 'Environment saved.',
+  'environment_deleted_toast': 'Environment deleted.',
+  'delete_environment_title': 'Delete environment?',
+  'save_credential_button': 'Save credential',
+  'delete_credential_button': 'Delete credential',
+  'credential_saved_toast': 'Credential saved.',
+  'credential_deleted_toast': 'Credential deleted.',
+  'delete_credential_title': 'Delete credential?',
+  'delete_credential_body':
+      'The agent will need to re-receive this credential the next time it asks.',
+  'not_saved_yet': 'Not saved yet.',
+  'test_connection': 'Test',
+  'testing_connection': 'Testing connection…',
+  'connection_verified': 'Connection verified.',
+  'connection_failed': "Couldn't reach the target.",
+  'no_fields_for_kind': 'No fields defined for this kind.',
+  'no_environments': '— No environments —',
+  'open_environment': 'Open',
+  'flag_live': 'Live',
+  'flag_read_only': 'Read-only',
+  'flag_auto_approve': 'Auto-approve',
+
+  // Project / Environment
+  'pick_environment': 'Pick an environment',
+  'pick_environment_subtitle':
+      'The credential the agent uses for this conversation.',
+  'no_environment_picked': '— No environment —',
+  'pick_environment_to_start': 'Pick an environment to start.',
+  'environment_set_for_chat': 'Environment set for this chat.',
+  'live_badge': 'LIVE',
+  'read_only_badge': 'READ-ONLY',
+  'auto_approve_badge': 'AUTO',
+  'project': 'Project',
+  'environment': 'Environment',
+  'change_environment': 'Change environment',
+
+  // Live environment confirmation
+  'send_to_live': 'Send to live',
+  'dont_ask_again': "Don't ask again for this environment",
+
+  // Grouped approvals
+  'pre_approval_tip':
+      "Tip: clicking 'Approve all' also pre-approves every future write of the same shape in this conversation.",
+  'show_individual_records': 'Show individual records',
+  'hide_individual_records': 'Hide individual records',
+
+  // Artifacts
+  'artifact_ready': 'Artifact ready',
+
+  // 404 conversation fallback
+  'conversation_not_found_title': 'Conversation not found',
+  'conversation_not_found_body':
+      "This chat may have been deleted or you don't have access to it.",
+  'back_to_chats': 'Back to chats',
+
+  // Date-group headers
+  'date_group_today': 'Today',
+  'date_group_yesterday': 'Yesterday',
+  'date_group_previous_7': 'Previous 7 days',
+  'date_group_previous_30': 'Previous 30 days',
+  'date_group_older': 'Older',
+
+  // Activity status labels
+  'activity_checking_odoo': 'Checking Odoo data',
+  'activity_running_query': 'Running database query',
+  'activity_building_report': 'Building Excel report',
+  'activity_reading_repo': 'Reading repository files',
+  'activity_running_command': 'Running server command',
+  'activity_finishing_response': 'Finishing response',
+  'activity_reviewing_attachment': 'Reviewing attachment',
 };
 
 const Map<String, String> _ar = {
@@ -525,7 +860,7 @@ const Map<String, String> _ar = {
       'وكيل أودو مباشر يشخّص ويجهز التقارير وينفذ عبر بيانات دخول خاصة وموافقات قبل أي تغيير حساس.',
   'open_workspace': 'فتح مساحة العمل',
   'tab_chats': 'المحادثات',
-  'tab_vault': 'الخزنة',
+  'tab_vault': 'المشاريع',
   'tab_inbox': 'الوارد',
   'tab_files': 'الملفات',
   'tab_account': 'الحساب',
@@ -662,7 +997,7 @@ const Map<String, String> _ar = {
   'start_conversation': 'ابدأ محادثة',
   'send': 'إرسال',
   'auto_approve': 'موافقة تلقائية',
-  'credential_vault': 'خزنة بيانات الدخول',
+  'credential_vault': 'المشاريع',
   'no_credentials': 'لا توجد بيانات دخول',
   'no_credentials_hint': 'أضف واحدة ليستطيع صقّار العمل على أنظمتك.',
   'add_credential': 'إضافة بيانات دخول',
@@ -679,6 +1014,17 @@ const Map<String, String> _ar = {
   'credential_none': '— بدون —',
   'credential_none_hint': 'صقّار يطلب بيانات الدخول عند الحاجة.',
   'copied_to_clipboard': 'تم النسخ.',
+  'suggest_user_count': 'كم عدد المستخدمين في أودو الآن؟',
+  'suggest_export_users': 'صدّر المستخدمين الداخليين النشطين كملف Excel.',
+  'suggest_tail_log': 'اعرض آخر 100 سطر من سجل سيرفر أودو.',
+  'remove_attachment': 'إزالة المرفق',
+  'offline_title': 'لا يوجد اتصال',
+  'offline_body': 'صقّار يحتاج اتصال مباشر للعمل.',
+  'ask_saqqar_anything': 'اسأل صقّار أي حاجة',
+  'link_copied': 'تم نسخ الرابط.',
+  'date_today': 'اليوم',
+  'date_yesterday': 'أمس',
+  'inbox_refreshed': 'تم تحديث الوارد.',
   'role_you': 'أنت',
   'role_assistant': 'صقّار',
   'role_tool': 'أداة',
@@ -688,7 +1034,7 @@ const Map<String, String> _ar = {
   'conversations_coverage_title': 'المحادثات',
   'conversations_coverage_body':
       'بحث وأرشفة وإعادة تسمية ومشاركة وفتح سجلات العمل كاملة.',
-  'vault_coverage_title': 'خزنة بيانات الدخول',
+  'vault_coverage_title': 'المشاريع',
   'vault_coverage_body':
       'Odoo XML-RPC وPostgreSQL والسيرفر وGitHub مع حفظ مدعوم بالموافقة.',
   'approvals_coverage_title': 'الموافقات',
@@ -723,4 +1069,132 @@ const Map<String, String> _ar = {
   'downloading': 'تنزيل',
   'assistant_plan_prefix': 'أقدر أشتغل على ذلك باستخدام',
   'assistant_plan_suffix': 'سأطلب الموافقة قبل أي كتابة أو أمر على السيرفر.',
+
+  // Sign up
+  'sign_up_title': 'جهز مساحتك الخاصة',
+  'sign_up_subtitle': 'أنشئ حسابك لتبدأ استخدام مساعد العمليات.',
+  'confirm_password': 'تأكيد كلمة المرور',
+  'confirm_password_hint': 'كرّر كلمة المرور',
+  'email_optional': 'البريد الإلكتروني (اختياري)',
+  'email_hint': 'you@example.com',
+  'create_account_button': 'إنشاء الحساب',
+  'already_have_account': 'لديك حساب بالفعل؟',
+  'back_to_sign_in': 'الرجوع لتسجيل الدخول',
+  'password_too_short': 'كلمة المرور لازم تكون 8 أحرف على الأقل.',
+  'passwords_do_not_match': 'كلمتا المرور غير متطابقتين.',
+  'username_required': 'اسم المستخدم مطلوب.',
+  'account_created_toast': 'تم إنشاء الحساب. أهلاً بك في صقّار.',
+
+  // Change password
+  'change_password': 'تغيير كلمة المرور',
+  'current_password': 'كلمة المرور الحالية',
+  'new_password': 'كلمة المرور الجديدة',
+  'change_password_hint':
+      'استخدم 8 أحرف على الأقل. ستبقى مسجلاً للدخول بعد التحديث.',
+  'change_password_keep_signed_in': 'ستبقى مسجلاً للدخول بعد التحديث.',
+  'current_password_wrong': 'كلمة المرور الحالية غير صحيحة.',
+  'password_updated_toast': 'تم تحديث كلمة المرور.',
+  'update_password': 'تحديث كلمة المرور',
+
+  // Inline credential request
+  'inline_credential_request_title': 'صقّار يحتاج بيانات دخول',
+  'inline_credential_request_body':
+      'اختر حزمة محفوظة أو املأ الحقول. يستخدمها صقّار لهذه الخطوة فقط ويحفظها بعد الموافقة.',
+  'provide_credential': 'تقديم بيانات الدخول',
+  'use_existing_credential': 'استخدم بيانات دخول محفوظة',
+  'inline_credential_provided': 'تم تقديم البيانات. صقّار استأنف العمل.',
+
+  // Inline pending approvals banner
+  'review_approval': 'مراجعة',
+
+  // Chat header strip
+  'header_project': 'المشروع',
+  'header_environment': 'البيئة',
+  'pick_project_first': 'اختر مشروعًا أولاً',
+  'no_projects_yet': '— لا توجد مشاريع بعد —',
+  'no_environments_for_project': '— لا توجد بيئات —',
+  'header_none_option': '—',
+
+  // Vault lifecycle
+  'no_stored_credentials_title': 'لا توجد بيانات دخول مخزّنة.',
+  'no_stored_credentials_body':
+      'سيطلب الوكيل الصلاحيات التي يحتاجها عند اللزوم.',
+  'project_name': 'اسم المشروع',
+  'add_project': 'إضافة مشروع',
+  'add_project_hint': 'أضف مشروعًا…',
+  'manage_projects': 'إدارة المشاريع',
+  'project_saved_toast': 'تم حفظ المشروع.',
+  'project_deleted_toast': 'تم حذف المشروع.',
+  'delete_project_title': 'حذف المشروع؟',
+  'add_environment': 'إضافة بيئة',
+  'add_environment_hint': 'أضف بيئة…',
+  'environment_saved_toast': 'تم حفظ البيئة.',
+  'environment_deleted_toast': 'تم حذف البيئة.',
+  'delete_environment_title': 'حذف البيئة؟',
+  'save_credential_button': 'حفظ بيانات الدخول',
+  'delete_credential_button': 'حذف بيانات الدخول',
+  'credential_saved_toast': 'تم حفظ بيانات الدخول.',
+  'credential_deleted_toast': 'تم حذف بيانات الدخول.',
+  'delete_credential_title': 'حذف بيانات الدخول؟',
+  'delete_credential_body':
+      'سيحتاج الوكيل لإعادة استلام بيانات الدخول هذه عند طلبها مرة أخرى.',
+  'not_saved_yet': 'لم تُحفظ بعد.',
+  'test_connection': 'اختبار',
+  'testing_connection': 'جارٍ اختبار الاتصال…',
+  'connection_verified': 'تم التحقق من الاتصال.',
+  'connection_failed': 'تعذّر الوصول للهدف.',
+  'no_fields_for_kind': 'لا توجد حقول معرّفة لهذا النوع.',
+  'no_environments': '— لا توجد بيئات —',
+  'open_environment': 'فتح',
+  'flag_live': 'مباشر',
+  'flag_read_only': 'قراءة فقط',
+  'flag_auto_approve': 'موافقة تلقائية',
+
+  // Project / Environment
+  'pick_environment': 'اختر بيئة',
+  'pick_environment_subtitle': 'بيانات الدخول التي سيستخدمها الوكيل لهذه المحادثة.',
+  'no_environment_picked': '— لا توجد بيئة —',
+  'pick_environment_to_start': 'اختر بيئة للبدء.',
+  'environment_set_for_chat': 'تم تعيين البيئة لهذه المحادثة.',
+  'live_badge': 'مباشر',
+  'read_only_badge': 'قراءة فقط',
+  'auto_approve_badge': 'تلقائي',
+  'project': 'المشروع',
+  'environment': 'البيئة',
+  'change_environment': 'تغيير البيئة',
+
+  // Live environment confirmation
+  'send_to_live': 'إرسال للمباشر',
+  'dont_ask_again': 'لا تسألني مرة أخرى لهذه البيئة',
+
+  // Grouped approvals
+  'pre_approval_tip':
+      'تنبيه: الضغط على "وافق على الكل" يوافق مسبقاً على أي كتابة لاحقة لها نفس الشكل في هذه المحادثة.',
+  'show_individual_records': 'عرض السجلات الفردية',
+  'hide_individual_records': 'إخفاء السجلات الفردية',
+
+  // Artifacts
+  'artifact_ready': 'الملف جاهز',
+
+  // 404 conversation fallback
+  'conversation_not_found_title': 'لم يتم العثور على المحادثة',
+  'conversation_not_found_body':
+      'قد تكون هذه المحادثة محذوفة أو ليس لديك صلاحية للوصول إليها.',
+  'back_to_chats': 'العودة للمحادثات',
+
+  // Date-group headers
+  'date_group_today': 'اليوم',
+  'date_group_yesterday': 'أمس',
+  'date_group_previous_7': 'آخر 7 أيام',
+  'date_group_previous_30': 'آخر 30 يومًا',
+  'date_group_older': 'الأقدم',
+
+  // Activity status labels
+  'activity_checking_odoo': 'يفحص بيانات أودو',
+  'activity_running_query': 'ينفّذ استعلام قاعدة البيانات',
+  'activity_building_report': 'يُجهز تقرير Excel',
+  'activity_reading_repo': 'يقرأ ملفات المستودع',
+  'activity_running_command': 'ينفّذ أمر على السيرفر',
+  'activity_finishing_response': 'يُنهي الرد',
+  'activity_reviewing_attachment': 'يراجع المرفق',
 };

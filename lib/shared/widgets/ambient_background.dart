@@ -27,39 +27,20 @@ class AmbientBackground extends StatelessWidget {
       return Container(color: s.bg, child: child);
     }
 
-    final cyan = s.brandCyan.withValues(alpha: 0.06 * intensity);
-    final purple = s.brandPurple.withValues(alpha: 0.04 * intensity);
+    // Single cyan glow at the top centre — cheaper to paint than the older
+    // 3-blob ambient and reads as a deliberate hero light source instead of
+    // ornamental haze.
+    final cyan = s.brandCyan.withValues(alpha: 0.07 * intensity);
 
-    return Container(
-      decoration: BoxDecoration(color: s.bg),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          _RadialBlob(color: cyan, alignment: const Alignment(-0.7, -0.85)),
-          _RadialBlob(color: purple, alignment: const Alignment(0.7, -0.85)),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _RadialBlob extends StatelessWidget {
-  const _RadialBlob({required this.color, required this.alignment});
-
-  final Color color;
-  final Alignment alignment;
-
-  @override
-  Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: RadialGradient(
-          center: alignment,
-          radius: 0.45,
-          colors: [color, Colors.transparent],
+          center: const Alignment(0, -0.9),
+          radius: 0.7,
+          colors: [cyan, s.bg],
         ),
       ),
+      child: child,
     );
   }
 }

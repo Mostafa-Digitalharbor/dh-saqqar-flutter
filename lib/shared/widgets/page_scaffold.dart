@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../extensions/context_extensions.dart';
+import 'offline_banner.dart';
 import 'saqqar_screen.dart';
 
 class PageScaffold extends StatelessWidget {
@@ -65,11 +66,18 @@ class PageScaffold extends StatelessWidget {
               ),
         actions: actions,
       ),
-      body: SaqqarScreen(
-        controller: controller,
-        padding: padding,
-        onRefresh: onRefresh,
-        children: children,
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(
+            child: SaqqarScreen(
+              controller: controller,
+              padding: padding,
+              onRefresh: onRefresh,
+              children: children,
+            ),
+          ),
+        ],
       ),
       floatingActionButton: floatingActionButton,
     );

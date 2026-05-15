@@ -9,7 +9,6 @@ import '../../shared/widgets/ambient_background.dart';
 import '../../shared/widgets/app_icon_button.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/app_toast.dart';
-import '../../shared/widgets/danger_button.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/eyebrow_label.dart';
 import '../../shared/widgets/ghost_button.dart';
@@ -121,9 +120,10 @@ class StorybookScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              DangerButton(
+              GhostButton(
                 label: context.tr.delete,
                 icon: Icons.delete_outline,
+                tone: GhostButtonTone.danger,
                 expand: true,
                 onPressed: () => AppToast.show(
                   context,

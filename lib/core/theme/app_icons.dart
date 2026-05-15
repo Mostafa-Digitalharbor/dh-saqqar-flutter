@@ -55,6 +55,7 @@ class AppIcons {
   static const IconData signIn = LucideIcons.logIn;
   static const IconData signOut = LucideIcons.logOut;
   static const IconData userPlus = LucideIcons.userPlus;
+  static const IconData mail = LucideIcons.mail;
   static const IconData settings = LucideIcons.settings;
   static const IconData palette = LucideIcons.palette;
   static const IconData success = LucideIcons.circleCheck;
@@ -63,4 +64,11 @@ class AppIcons {
   static const IconData server = LucideIcons.server;
   static const IconData drive = LucideIcons.hardDrive;
   static const IconData logoMark = LucideIcons.sparkles;
+  static const IconData cloudOff = LucideIcons.cloudOff;
+
+  /// Tab icon for the Projects (formerly "Credential Vault") section. A
+  /// briefcase reads as "your work projects" universally and is more
+  /// semantically right than the old `key` (credentials) glyph now that
+  /// the tab is project-centric.
+  static const IconData projects = LucideIcons.briefcase;
 }

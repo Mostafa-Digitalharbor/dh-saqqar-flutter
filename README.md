@@ -195,6 +195,20 @@ flutter analyze              # Lint + static analysis (must be clean before PRs)
 dart format lib              # Auto-format (line length 80)
 ```
 
+### Pre-commit hook (recommended)
+
+A `pre-commit` hook lives in [`.githooks/`](.githooks/) that runs
+`flutter analyze` and `dart format --set-exit-if-changed` on staged Dart
+files. Install once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+After that, every `git commit` blocks if analysis fails or formatting is
+stale. Bypass with `git commit --no-verify` — but please don't make a habit
+of it; CI runs the same checks and will block your PR anyway.
+
 ---
 
 ## Build & release

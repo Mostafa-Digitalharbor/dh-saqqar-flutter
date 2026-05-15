@@ -50,7 +50,7 @@ class AuthInterceptor extends QueuedInterceptor {
     }
 
     try {
-      final retried = await _dio.fetch(
+      final retried = await _dio.fetch<dynamic>(
         err.requestOptions..extra['didRetry'] = true,
       );
       handler.resolve(retried);

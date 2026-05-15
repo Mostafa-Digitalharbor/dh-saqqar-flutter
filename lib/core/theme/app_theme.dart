@@ -156,7 +156,7 @@ class AppTheme {
         ),
         secondaryLabelStyle: (textTheme.labelMedium ?? const TextStyle())
             .copyWith(color: AppColors.brandCyan, fontWeight: FontWeight.w700),
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.pillR),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.pillR),
         side: BorderSide(color: ext.border),
       ),
 
@@ -215,7 +215,7 @@ class AppTheme {
           ),
           textStyle: WidgetStateProperty.all(textTheme.labelMedium),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: AppRadius.buttonR),
+            const RoundedRectangleBorder(borderRadius: AppRadius.buttonR),
           ),
         ),
       ),
@@ -254,17 +254,17 @@ class AppTheme {
           borderRadius: AppRadius.inputR,
           borderSide: BorderSide(color: ext.cardBorder),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
-          borderSide: const BorderSide(color: AppColors.brandCyan, width: 1.5),
+          borderSide: BorderSide(color: AppColors.brandCyan, width: 1.5),
         ),
-        errorBorder: OutlineInputBorder(
+        errorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
-          borderSide: const BorderSide(color: AppColors.danger),
+          borderSide: BorderSide(color: AppColors.danger),
         ),
-        focusedErrorBorder: OutlineInputBorder(
+        focusedErrorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
-          borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
+          borderSide: BorderSide(color: AppColors.danger, width: 1.5),
         ),
       ),
 
@@ -284,7 +284,7 @@ class AppTheme {
         backgroundColor: ext.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.modalR),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.modalR),
         titleTextStyle: textTheme.headlineSmall,
         contentTextStyle: textTheme.bodyMedium,
       ),
@@ -303,7 +303,7 @@ class AppTheme {
         backgroundColor: ext.surface,
         contentTextStyle: textTheme.bodyMedium,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.toastR),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.toastR),
         elevation: 0,
       ),
 

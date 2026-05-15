@@ -5,15 +5,18 @@ import 'package:go_router/go_router.dart';
 import '../core/i18n/app_localizations.dart';
 import '../core/routing/route_names.dart';
 import '../core/theme/app_icons.dart';
-import '../features/inbox/state/approvals_controller.dart';
 import '../shared/extensions/context_extensions.dart';
 
-/// Spec §4.1 — Bottom Tab Bar (5 tabs).
+/// 3-tab bottom shell — Chats / Vault / Account. Inbox + Files were folded
+/// into the chat's own ⋯ menu (approvals and artifacts now live per-chat).
 class HomeShell extends ConsumerWidget {
   const HomeShell({super.key, required this.child});
 
   final Widget child;
 
+  // 3-tab shell. Inbox + Files were retired: approvals and artifacts now
+  // live inside the chat's own menu so users never have to leave a chat to
+  // act on its pending work.
   static const _tabs = <_TabSpec>[
     _TabSpec(
       routeName: RouteNames.chats,
@@ -23,18 +26,7 @@ class HomeShell extends ConsumerWidget {
     _TabSpec(
       routeName: RouteNames.vault,
       path: RouteNames.vaultPath,
-      icon: AppIcons.key,
-    ),
-    _TabSpec(
-      routeName: RouteNames.inbox,
-      path: RouteNames.inboxPath,
-      icon: AppIcons.shieldCheck,
-      tracksApprovals: true,
-    ),
-    _TabSpec(
-      routeName: RouteNames.files,
-      path: RouteNames.filesPath,
-      icon: AppIcons.files,
+      icon: AppIcons.projects,
     ),
     _TabSpec(
       routeName: RouteNames.account,
@@ -57,8 +49,6 @@ class HomeShell extends ConsumerWidget {
     return switch (i) {
       0 => context.tr.tabChats,
       1 => context.tr.tabVault,
-      2 => context.tr.tabInbox,
-      3 => context.tr.tabFiles,
       _ => context.tr.tabAccount,
     };
   }
@@ -68,8 +58,12 @@ class HomeShell extends ConsumerWidget {
     final location = GoRouterState.of(context).uri.toString();
     final selected = _indexFor(location);
     final s = context.saqqar;
-    final pendingApprovals = ref.watch(pendingApprovalsCountProvider);
 
+    // Per-tab transitions are owned by the GoRouter `CustomTransitionPage`
+    // pageBuilders. We MUST NOT wrap `child` in an AnimatedSwitcher here:
+    // ShellRoute hands us the same Navigator (with a single GlobalKey) on
+    // every rebuild, so keeping the previous instance alive during a switch
+    // animation duplicates that GlobalKey and tears the tree.
     return Scaffold(
       body: child,
       bottomNavigationBar: SafeArea(
@@ -101,9 +95,6 @@ class HomeShell extends ConsumerWidget {
                         spec: _tabs[i],
                         label: _labelFor(i, context),
                         selected: i == selected,
-                        badgeCount: _tabs[i].tracksApprovals
-                            ? pendingApprovals
-                            : 0,
                         onTap: () => context.go(_tabs[i].path),
                       ),
                     ),
@@ -122,14 +113,12 @@ class _NavTab extends StatelessWidget {
     required this.spec,
     required this.label,
     required this.selected,
-    required this.badgeCount,
     required this.onTap,
   });
 
   final _TabSpec spec;
   final String label;
   final bool selected;
-  final int badgeCount;
   final VoidCallback onTap;
 
   @override
@@ -159,32 +148,32 @@ class _NavTab extends StatelessWidget {
             children: [
               SizedBox(
                 height: 24,
-                child: badgeCount > 0
-                    ? Badge(
-                        offset: const Offset(8, -4),
-                        label: Text('$badgeCount'),
-                        backgroundColor: s.warning,
-                        textColor: Colors.white,
-                        child: Icon(spec.icon, size: 22, color: color),
-                      )
-                    : Icon(spec.icon, size: 22, color: color),
+                child: Icon(spec.icon, size: 22, color: color),
               ),
-              const SizedBox(height: 4),
-              AnimatedDefaultTextStyle(
+              // Material 3 pattern: only the active tab shows its label.
+              // Cuts visual noise on a 5-tab bar without losing the icon
+              // legend on the tab the user is currently on.
+              AnimatedSize(
                 duration: const Duration(milliseconds: 180),
-                style:
-                    (context.text.labelSmall ?? const TextStyle()).copyWith(
-                      color: color,
-                      fontSize: 11,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      letterSpacing: 0.2,
-                    ),
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
+                curve: Curves.easeOutCubic,
+                child: selected
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: (context.text.labelSmall ?? const TextStyle())
+                              .copyWith(
+                            color: color,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               ),
             ],
           ),
@@ -199,14 +188,9 @@ class _TabSpec {
     required this.routeName,
     required this.path,
     required this.icon,
-    this.tracksApprovals = false,
   });
 
   final String routeName;
   final String path;
   final IconData icon;
-
-  /// If true, the badge count for this tab is wired to the live pending
-  /// approvals provider (so it updates as the user approves/rejects).
-  final bool tracksApprovals;
 }

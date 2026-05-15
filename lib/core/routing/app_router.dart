@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/account/presentation/account_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
+import '../../features/auth/presentation/sign_up_screen.dart';
 import '../../features/chat/presentation/chat_screen.dart';
 import '../../features/conversations/presentation/conversations_screen.dart';
-import '../../features/files/presentation/files_screen.dart';
-import '../../features/inbox/presentation/inbox_screen.dart';
+import '../../features/share/presentation/shared_transcript_screen.dart';
 import '../../features/storybook/storybook_screen.dart';
 import '../../features/vault/presentation/vault_screen.dart';
 import '../../navigation/home_shell.dart';
@@ -35,12 +35,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: RouteNames.signUpPath,
+        name: RouteNames.signUp,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const SignUpScreen(),
+          kind: _RouteTransitionKind.fade,
+        ),
+      ),
+      GoRoute(
         path: RouteNames.storybookPath,
         name: RouteNames.storybook,
         pageBuilder: (_, state) => _transitionPage(
           state: state,
           child: const StorybookScreen(),
           kind: _RouteTransitionKind.scale,
+        ),
+      ),
+      GoRoute(
+        // Public read-only transcript view. Lives outside the shell so the
+        // tab bar doesn't follow non-authed deep-link visitors. Reached via
+        // `saqqar://share/<token>` (see DeepLinks).
+        path: '/share/:token',
+        name: RouteNames.sharedTranscript,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: SharedTranscriptScreen(token: state.pathParameters['token']!),
+          kind: _RouteTransitionKind.fade,
         ),
       ),
       ShellRoute(
@@ -74,18 +95,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: RouteNames.vault,
             pageBuilder: (_, state) =>
                 _transitionPage(state: state, child: const VaultScreen()),
-          ),
-          GoRoute(
-            path: RouteNames.inboxPath,
-            name: RouteNames.inbox,
-            pageBuilder: (_, state) =>
-                _transitionPage(state: state, child: const InboxScreen()),
-          ),
-          GoRoute(
-            path: RouteNames.filesPath,
-            name: RouteNames.files,
-            pageBuilder: (_, state) =>
-                _transitionPage(state: state, child: const FilesScreen()),
           ),
           GoRoute(
             path: RouteNames.accountPath,
