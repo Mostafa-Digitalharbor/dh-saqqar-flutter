@@ -8,3 +8,4 @@ export 'environment_detail_sheet.dart';
 export 'project_card.dart';
 export 'project_card_skeleton.dart';
 export 'project_detail_sheet.dart';
+export 'projects_list_sheet.dart';

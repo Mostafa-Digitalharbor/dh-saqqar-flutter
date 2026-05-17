@@ -30,6 +30,7 @@ class AppTextField extends StatelessWidget {
     this.onSubmitted,
     this.obscureText = false,
     this.autofillHints,
+    this.focusNode,
   });
 
   final String? label;
@@ -51,6 +52,11 @@ class AppTextField extends StatelessWidget {
   final bool obscureText;
   final Iterable<String>? autofillHints;
 
+  /// External focus node — lets the caller commit a rename on blur via
+  /// the node's listener (e.g. the project-name field in the project
+  /// detail dialog).
+  final FocusNode? focusNode;
+
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
@@ -60,6 +66,7 @@ class AppTextField extends StatelessWidget {
         if (label != null) ...[EyebrowLabel(label!), const SizedBox(height: 6)],
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
           initialValue: controller == null ? initialValue : null,
           keyboardType: keyboardType,
           textInputAction: textInputAction,

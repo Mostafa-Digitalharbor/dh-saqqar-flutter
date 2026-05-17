@@ -49,13 +49,35 @@ class ChatTypingRow extends StatelessWidget {
             if (statusLabel != null) ...[
               const SizedBox(width: 10),
               Flexible(
-                child: Text(
-                  statusLabel!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodySmall?.copyWith(
-                    color: s.muted,
-                    fontStyle: FontStyle.italic,
+                // Crossfade between status labels so the user perceives
+                // the agent moving from one tool to the next rather than
+                // a hard text swap. 220 ms matches the rest of the chat's
+                // motion language (FadeSlideIn message bubbles).
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.15),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Text(
+                    statusLabel!,
+                    key: ValueKey<String>(statusLabel!),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodySmall?.copyWith(
+                      color: s.muted,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
               ),

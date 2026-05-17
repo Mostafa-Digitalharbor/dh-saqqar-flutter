@@ -9,6 +9,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../inbox/state/approvals_controller.dart';
+import '../state/conversations_controller.dart';
 import 'conversation_action.dart';
 import 'conversation_row_menu.dart';
 import 'meta_dot.dart';
@@ -41,6 +42,15 @@ class ConversationCard extends ConsumerWidget {
     // controller so approvals resolved inside the chat clear the row dot.
     final needsAttention = conversation.hasPending ||
         ref.watch(conversationNeedsAttentionProvider(conversation.id));
+    // Effective display title — honours any user-supplied rename via the
+    // conversations controller so AppBar / list / search all stay in sync.
+    final effectiveTitle = ref.watch(
+      conversationTitleProvider(conversation),
+    );
+    final isPinned = ref.watch(
+      conversationsControllerProvider
+          .select((st) => st.pinnedIds.contains(conversation.id)),
+    );
 
     return Material(
       color: Colors.transparent,
@@ -97,9 +107,19 @@ class ConversationCard extends ConsumerWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (isPinned) ...[
+                            Icon(
+                              Icons.push_pin,
+                              size: 13,
+                              color: s.brandCyan,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
                           Expanded(
                             child: Text(
-                              conversation.title,
+                              effectiveTitle.trim().isEmpty
+                                  ? context.tr.untitledConversation
+                                  : effectiveTitle,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: context.text.titleSmall?.copyWith(
@@ -171,7 +191,7 @@ class ConversationCard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                ConversationRowMenu(onAction: onAction),
+                ConversationRowMenu(onAction: onAction, isPinned: isPinned),
               ],
             ),
           ),

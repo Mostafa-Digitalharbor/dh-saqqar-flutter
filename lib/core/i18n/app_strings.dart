@@ -77,6 +77,11 @@ class AppStrings {
   String get provideCredential => _t('provide_credential');
   String get useExistingCredential => _t('use_existing_credential');
   String get inlineCredentialProvided => _t('inline_credential_provided');
+  // Memorize toggle inside the inline credential request — mirrors the
+  // web's `remember_preference: "memorize" | "session_only"` switch. Used
+  // by the chat to pick which toast fires after submission.
+  String get inlineCredentialMemorized => _t('inline_credential_memorized');
+  String get inlineCredentialSession => _t('inline_credential_session');
 
   // Project / Environment (matches web saqqaar.com data model)
   String get pickEnvironment => _t('pick_environment');
@@ -109,6 +114,20 @@ class AppStrings {
   String get noStoredCredentialsBody => _t('no_stored_credentials_body');
   String get projectName => _t('project_name');
   String get addProject => _t('add_project');
+  String get projectsTitle => _t('projects_title');
+  String get backToProjects => _t('back_to_projects');
+  /// Numeric-first count rendering — always `N word` so the count
+  /// reads cleanly at a glance, even when the same row repeats across
+  /// dozens of projects. Drops the locale-specific pluralisation that
+  /// made rows like "بيئة واحدة" / "بيئتان" inconsistent next to the
+  /// numeric variants. Reserves the special "no environments" copy for
+  /// the empty case only.
+  String environmentCount(int n) {
+    if (_isArabic) {
+      return n == 0 ? 'لا توجد بيئات' : '$n بيئة';
+    }
+    return n == 0 ? 'no environments' : '$n environment${n == 1 ? '' : 's'}';
+  }
   String get addProjectHint => _t('add_project_hint');
   String get manageProjects => _t('manage_projects');
   String get projectSavedToast => _t('project_saved_toast');
@@ -176,6 +195,23 @@ class AppStrings {
   String get flagReadOnly => _t('flag_read_only');
   String get flagAutoApprove => _t('flag_auto_approve');
 
+  // Env card row enrichments — credential count badge, inline rename hint,
+  // and the confirm-mark-live dialog. Surface only when relevant; the
+  // badge is hidden when count == 0 so empty envs stay quiet.
+  /// Same `N word` rendering as [environmentCount] — keep the two count
+  /// helpers shaped identically so the vault rows scan as a single
+  /// vertical column of `N · label` pairs.
+  String credentialCount(int n) {
+    if (_isArabic) return '$n بيانات وصول';
+    return n == 1 ? '1 credential' : '$n credentials';
+  }
+  String get markEnvLiveTitle => _t('mark_env_live_title');
+  String markEnvLiveBody(String envName) => _isArabic
+      ? 'تفعيل "$envName" كبيئة مباشرة سيُشغّل تأكيد التحذير قبل أول رسالة في كل محادثة جديدة. هل تريد المتابعة؟'
+      : 'Marking "$envName" as LIVE turns on the warning gate before the first send in every new conversation. Continue?';
+  String get markAsLive => _t('mark_as_live');
+  String get envSearchHint => _t('env_search_hint');
+
   // Artifacts (inline pill matches web's "Artifact ready" label)
   String get artifactReady => _t('artifact_ready');
 
@@ -193,7 +229,10 @@ class AppStrings {
   String get dateGroupOlder => _t('date_group_older');
 
   // Contextual activity status labels (web's "Checking Odoo data",
-  // "Building Excel report", "Reading repository files", etc.).
+  // "Building Excel report", "Reading repository files", etc.). The chat
+  // typing row uses `pendingStatusForTool()` (see chat/state/tool_status.dart)
+  // to pick the right one per active tool — these mirror the per-tool
+  // branches in the web's `pendingStatusForTool()` (app.js line 2421).
   String get activityCheckingOdoo => _t('activity_checking_odoo');
   String get activityRunningQuery => _t('activity_running_query');
   String get activityBuildingReport => _t('activity_building_report');
@@ -202,6 +241,16 @@ class AppStrings {
   String get activityFinishingResponse => _t('activity_finishing_response');
   String get activityReviewingAttachment =>
       _t('activity_reviewing_attachment');
+  String get activityPreparingAccess => _t('activity_preparing_access');
+  String get activityInspectingOdooModel =>
+      _t('activity_inspecting_odoo_model');
+  String get activityApplyingOdooChange =>
+      _t('activity_applying_odoo_change');
+  String get activityBuildingExcel => _t('activity_building_excel');
+  String get activityBuildingPdf => _t('activity_building_pdf');
+  String get activityBuildingWord => _t('activity_building_word');
+  String get activityPreparingApproval =>
+      _t('activity_preparing_approval');
 
   // Grouped approvals (web pre-approval shortcut)
   String similarRequestsCount(int count) => _isArabic
@@ -284,6 +333,7 @@ class AppStrings {
   String get pending => _t('pending');
   String get risk => _t('risk');
   String get cancel => _t('cancel');
+  String get close => _t('close');
   String get save => _t('save');
   String get share => _t('share');
   String get retry => _t('retry');
@@ -333,7 +383,73 @@ class AppStrings {
   String get approvalGrantedExecuting => _t('approval_granted_executing');
   String get autoApproveOn => _t('auto_approve_on');
   String get autoApproveOff => _t('auto_approve_off');
+  // Deep think — global toggle in the chat header. Web parity (mirrors
+  // `state.deepThink` in app.js).
+  String get deepThink => _t('deep_think');
+  String get deepThinkTitle => _t('deep_think_title');
+  String get deepThinkOn => _t('deep_think_on');
+  String get deepThinkOff => _t('deep_think_off');
+  // Stop generation — composer button label + toast.
+  String get stopGeneration => _t('stop_generation');
+  String get generationStopped => _t('generation_stopped');
+  String get stopping => _t('stopping');
+  // Agent live-status copy — feeds the AppBar "Working" pill and the
+  // typing row's italic meta line. Three states because the web has
+  // distinct labels: pill (terse, "Working"), meta line (verbose,
+  // "Working on your request"), composer busy hint.
+  String get agentWorking => _t('agent_working');
+  String get agentThinking => _t('agent_thinking');
+  String get composerBusy => _t('composer_busy');
+  // Long-running report progress (run_progress.phase = building_report /
+  // rendering_report). Shown on the typing row while Excel/PDF/Word
+  // generation is in flight.
+  String phaseFetching(int current, int? total) {
+    if (total == null) {
+      return _isArabic ? 'جلب $current' : 'Fetching $current';
+    }
+    final pct = ((current / total) * 100).round().clamp(0, 100);
+    return _isArabic
+        ? 'جلب $current / $total · $pct%'
+        : 'Fetching $current / $total · $pct%';
+  }
+  String phaseRendering(int? rows) {
+    if (rows == null) {
+      return _isArabic ? 'كتابة الملف…' : 'Writing file…';
+    }
+    return _isArabic
+        ? 'كتابة الملف… $rows صف'
+        : 'Writing file… $rows rows';
+  }
+  // Credential form — extra submit action: save + the agent resumes
+  // immediately without dismissing the sheet. Web parity for the
+  // `saveAndContinue` button.
+  String get saveAndContinue => _t('save_and_continue');
+  String get credentialSavedContinuing => _t('credential_saved_continuing');
+  // Activity sheet — shows server-shell command outputs (stdout / stderr /
+  // exit). Mirrors the web's "Activity" tab in the Inbox drawer.
+  String get serverActivity => _t('server_activity');
+  String get serverActivityFailed => _t('server_activity_failed');
+  String get noServerActivity => _t('no_server_activity');
+  String get noServerActivityBody => _t('no_server_activity_body');
+  String get copyCommand => _t('copy_command');
+  String get copyStdout => _t('copy_stdout');
+  String get copied => _t('copied');
+  String exitCode(int code) => 'exit $code';
+  // Placeholder for a fresh chat whose agent-generated title hasn't landed
+  // yet. Web sends this in the conversation row + chat AppBar.
+  String get untitledConversation => _t('untitled_conversation');
+  // Placeholder-row chip ("Soon") — used on menu items whose wired action
+  // hasn't shipped yet so the user knows the row is real but not live.
+  String get comingSoonBadge => _t('coming_soon_badge');
+  String get comingSoonToast => _t('coming_soon_toast');
   String get renameConversation => _t('rename_conversation');
+  String get renameConversationHint => _t('rename_conversation_hint');
+  String get conversationRenamedToast => _t('conversation_renamed_toast');
+  String get conversationPinnedToast => _t('conversation_pinned_toast');
+  String get conversationUnpinnedToast => _t('conversation_unpinned_toast');
+  String get pinConversation => _t('pin_conversation');
+  String get unpinConversation => _t('unpin_conversation');
+  String get pinned => _t('pinned');
   String get deleteNeedsConfirmation => _t('delete_needs_confirmation');
   String get attachedFilesForReview => _t('attached_files_for_review');
   String get defaultApiError => _t('default_api_error');
@@ -539,6 +655,7 @@ const Map<String, String> _en = {
   'pending': 'pending',
   'risk': 'Risk',
   'cancel': 'Cancel',
+  'close': 'Close',
   'save': 'Save',
   'share': 'Share',
   'retry': 'Retry',
@@ -585,7 +702,38 @@ const Map<String, String> _en = {
   'approval_granted_executing': 'Approval granted. Executing approved action.',
   'auto_approve_on': 'Auto-approve on.',
   'auto_approve_off': 'Auto-approve off.',
+  'deep_think': 'Deep think',
+  'deep_think_title':
+      'Give Saqqar more reasoning budget for harder questions.',
+  'deep_think_on': 'Deep think on.',
+  'deep_think_off': 'Deep think off.',
+  'stop_generation': 'Stop generating',
+  'generation_stopped': 'Stopped.',
+  'stopping': 'Stopping…',
+  'agent_working': 'Working',
+  'agent_thinking': 'Working on your request.',
+  'composer_busy': 'Saqqar is working — type your next task; send unlocks when done.',
+  'save_and_continue': 'Save and continue',
+  'credential_saved_continuing': 'Credential saved — Saqqar is resuming.',
+  'server_activity': 'Server activity',
+  'server_activity_failed': 'Server activity (failed)',
+  'no_server_activity': 'No server commands yet.',
+  'no_server_activity_body':
+      'When Saqqar runs a shell command, the output will land here.',
+  'copy_command': 'Copy command',
+  'copy_stdout': 'Copy output',
+  'copied': 'Copied.',
+  'untitled_conversation': 'Untitled conversation',
+  'coming_soon_badge': 'Soon',
+  'coming_soon_toast': 'This action ships in the next build.',
   'rename_conversation': 'Rename conversation',
+  'rename_conversation_hint': 'Type a new title…',
+  'conversation_renamed_toast': 'Conversation renamed.',
+  'conversation_pinned_toast': 'Pinned to the top.',
+  'conversation_unpinned_toast': 'Unpinned.',
+  'pin_conversation': 'Pin to top',
+  'unpin_conversation': 'Unpin',
+  'pinned': 'Pinned',
   'delete_needs_confirmation': 'Delete needs confirmation in production.',
   'attached_files_for_review': 'Attached files for review.',
   'default_api_error': 'Something went wrong. Please try again.',
@@ -739,6 +887,10 @@ const Map<String, String> _en = {
   'provide_credential': 'Provide credential',
   'use_existing_credential': 'Use a saved credential',
   'inline_credential_provided': 'Credential provided. Saqqar resumed.',
+  'inline_credential_memorized':
+      'Storage approval created. Approve it to memorize this credential.',
+  'inline_credential_session':
+      'Credential used for this conversation only.',
 
   // Inline pending approvals banner
   'review_approval': 'Review',
@@ -758,6 +910,8 @@ const Map<String, String> _en = {
   'project_name': 'Project name',
   'add_project': 'Add project',
   'add_project_hint': 'Add project…',
+  'projects_title': 'Projects',
+  'back_to_projects': 'All projects',
   'manage_projects': 'Manage projects',
   'project_saved_toast': 'Project saved.',
   'project_deleted_toast': 'Project deleted.',
@@ -785,6 +939,9 @@ const Map<String, String> _en = {
   'flag_live': 'Live',
   'flag_read_only': 'Read-only',
   'flag_auto_approve': 'Auto-approve',
+  'mark_env_live_title': 'Mark as LIVE environment?',
+  'mark_as_live': 'Mark as LIVE',
+  'env_search_hint': 'Search environments…',
 
   // Project / Environment
   'pick_environment': 'Pick an environment',
@@ -834,6 +991,13 @@ const Map<String, String> _en = {
   'activity_running_command': 'Running server command',
   'activity_finishing_response': 'Finishing response',
   'activity_reviewing_attachment': 'Reviewing attachment',
+  'activity_preparing_access': 'Preparing access',
+  'activity_inspecting_odoo_model': 'Inspecting Odoo model',
+  'activity_applying_odoo_change': 'Applying Odoo change',
+  'activity_building_excel': 'Building Excel report',
+  'activity_building_pdf': 'Building PDF document',
+  'activity_building_word': 'Building Word document',
+  'activity_preparing_approval': 'Preparing approval',
 };
 
 const Map<String, String> _ar = {
@@ -911,6 +1075,7 @@ const Map<String, String> _ar = {
   'pending': 'معلّق',
   'risk': 'المخاطرة',
   'cancel': 'إلغاء',
+  'close': 'إغلاق',
   'save': 'حفظ',
   'share': 'مشاركة',
   'retry': 'إعادة المحاولة',
@@ -957,7 +1122,37 @@ const Map<String, String> _ar = {
   'approval_granted_executing': 'تمت الموافقة. جار تنفيذ الإجراء.',
   'auto_approve_on': 'الموافقة التلقائية مفعلة.',
   'auto_approve_off': 'الموافقة التلقائية متوقفة.',
+  'deep_think': 'تفكير عميق',
+  'deep_think_title': 'أعطِ صقاراً مساحة تفكير أوسع للأسئلة الأصعب.',
+  'deep_think_on': 'تفكير عميق مفعَّل.',
+  'deep_think_off': 'تفكير عميق متوقف.',
+  'stop_generation': 'إيقاف الردّ',
+  'generation_stopped': 'تم الإيقاف.',
+  'stopping': 'جارِ الإيقاف…',
+  'agent_working': 'يعمل',
+  'agent_thinking': 'يعمل على طلبك.',
+  'composer_busy': 'صقّار يعمل — اكتب مهمتك التالية، وسيُفعَّل الإرسال عند الانتهاء.',
+  'save_and_continue': 'حفظ ومتابعة',
+  'credential_saved_continuing': 'تم حفظ البيانات — صقّار يكمل العمل.',
+  'server_activity': 'نشاط الخادم',
+  'server_activity_failed': 'نشاط الخادم (فشل)',
+  'no_server_activity': 'لا توجد أوامر خادم بعد.',
+  'no_server_activity_body':
+      'عندما يُنفّذ صقّار أمر شل، ستظهر المخرجات هنا.',
+  'copy_command': 'نسخ الأمر',
+  'copy_stdout': 'نسخ المخرجات',
+  'copied': 'تم النسخ.',
+  'untitled_conversation': 'محادثة بدون عنوان',
+  'coming_soon_badge': 'قريباً',
+  'coming_soon_toast': 'هذا الإجراء يصل في الإصدار القادم.',
   'rename_conversation': 'إعادة تسمية المحادثة',
+  'rename_conversation_hint': 'اكتب عنوانًا جديدًا…',
+  'conversation_renamed_toast': 'تم تغيير اسم المحادثة.',
+  'conversation_pinned_toast': 'تم التثبيت في الأعلى.',
+  'conversation_unpinned_toast': 'تم إلغاء التثبيت.',
+  'pin_conversation': 'تثبيت في الأعلى',
+  'unpin_conversation': 'إلغاء التثبيت',
+  'pinned': 'مثبتة',
   'delete_needs_confirmation': 'الحذف يحتاج تأكيد في الإنتاج.',
   'attached_files_for_review': 'تم إرفاق الملفات للمراجعة.',
   'default_api_error': 'حدث خطأ. حاول مرة أخرى.',
@@ -1002,8 +1197,8 @@ const Map<String, String> _ar = {
   'no_credentials_hint': 'أضف واحدة ليستطيع صقّار العمل على أنظمتك.',
   'add_credential': 'إضافة بيانات دخول',
   'edit_credential': 'تعديل بيانات الدخول',
-  'save_credential': 'حفظ بيانات الدخول',
-  'update_credential': 'تحديث بيانات الدخول',
+  'save_credential': 'حفظ البيانات',
+  'update_credential': 'تحديث البيانات',
   'bundle_name': 'اسم الحزمة',
   'memorize_credential': 'تذكر بيانات الدخول للمحادثات القادمة بعد الموافقة.',
   'action_center': 'مركز الإجراءات',
@@ -1103,6 +1298,10 @@ const Map<String, String> _ar = {
   'provide_credential': 'تقديم بيانات الدخول',
   'use_existing_credential': 'استخدم بيانات دخول محفوظة',
   'inline_credential_provided': 'تم تقديم البيانات. صقّار استأنف العمل.',
+  'inline_credential_memorized':
+      'تم إنشاء طلب موافقة على الحفظ. وافِق عليه لتثبيت هذه البيانات للمحادثات المستقبلية.',
+  'inline_credential_session':
+      'سيتم استخدام هذه البيانات لهذه المحادثة فقط.',
 
   // Inline pending approvals banner
   'review_approval': 'مراجعة',
@@ -1122,6 +1321,8 @@ const Map<String, String> _ar = {
   'project_name': 'اسم المشروع',
   'add_project': 'إضافة مشروع',
   'add_project_hint': 'أضف مشروعًا…',
+  'projects_title': 'المشاريع',
+  'back_to_projects': 'كل المشاريع',
   'manage_projects': 'إدارة المشاريع',
   'project_saved_toast': 'تم حفظ المشروع.',
   'project_deleted_toast': 'تم حذف المشروع.',
@@ -1131,11 +1332,11 @@ const Map<String, String> _ar = {
   'environment_saved_toast': 'تم حفظ البيئة.',
   'environment_deleted_toast': 'تم حذف البيئة.',
   'delete_environment_title': 'حذف البيئة؟',
-  'save_credential_button': 'حفظ بيانات الدخول',
-  'delete_credential_button': 'حذف بيانات الدخول',
-  'credential_saved_toast': 'تم حفظ بيانات الدخول.',
-  'credential_deleted_toast': 'تم حذف بيانات الدخول.',
-  'delete_credential_title': 'حذف بيانات الدخول؟',
+  'save_credential_button': 'حفظ البيانات',
+  'delete_credential_button': 'حذف البيانات',
+  'credential_saved_toast': 'تم حفظ البيانات.',
+  'credential_deleted_toast': 'تم حذف البيانات.',
+  'delete_credential_title': 'حذف البيانات؟',
   'delete_credential_body':
       'سيحتاج الوكيل لإعادة استلام بيانات الدخول هذه عند طلبها مرة أخرى.',
   'not_saved_yet': 'لم تُحفظ بعد.',
@@ -1149,6 +1350,9 @@ const Map<String, String> _ar = {
   'flag_live': 'مباشر',
   'flag_read_only': 'قراءة فقط',
   'flag_auto_approve': 'موافقة تلقائية',
+  'mark_env_live_title': 'تفعيل البيئة كمباشرة؟',
+  'mark_as_live': 'تفعيل كمباشرة',
+  'env_search_hint': 'ابحث في البيئات…',
 
   // Project / Environment
   'pick_environment': 'اختر بيئة',
@@ -1197,4 +1401,11 @@ const Map<String, String> _ar = {
   'activity_running_command': 'ينفّذ أمر على السيرفر',
   'activity_finishing_response': 'يُنهي الرد',
   'activity_reviewing_attachment': 'يراجع المرفق',
+  'activity_preparing_access': 'يُجهّز الوصول',
+  'activity_inspecting_odoo_model': 'يفحص نموذج أودو',
+  'activity_applying_odoo_change': 'يُطبّق تعديلاً على أودو',
+  'activity_building_excel': 'يُجهز تقرير Excel',
+  'activity_building_pdf': 'يُجهز مستند PDF',
+  'activity_building_word': 'يُجهز مستند Word',
+  'activity_preparing_approval': 'يُجهّز طلب موافقة',
 };

@@ -9,33 +9,35 @@ import '../../../shared/widgets/responsive_content.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../vault/state/vault_controller.dart';
 
-/// Three-control header strip mirroring the web's chat header:
+/// Two-dropdown header strip — Project + Environment pickers only.
 ///
-///   [ Auto-approve toggle ] [ Project ▼ ] [ Environment ▼ ]
+///   [ Project ▼ ] [ Environment ▼ ]
 ///
-/// Sits between the AppBar and the message list. Project dropdown is
-/// always enabled (or shows "— No projects yet —" when empty). Environment
-/// dropdown is disabled until a project is picked and reads "Pick a
-/// project first" in that state. Picking a project resets the environment
-/// to null so the user re-selects within the new project's envs. Matches
-/// `onProjectChange()` / `onEnvironmentChange()` in `app.js`.
+/// The Deep think + Auto-approve toggles used to ride alongside but moved
+/// to the AppBar actions (see [ChatAppBarToggles]) on 2026-05-16: at phone
+/// widths the four-control strip squeezed the env dropdown into 2–3
+/// characters of label space, which broke discoverability. Splitting the
+/// strip (pickers stay below the AppBar; toggles go up top) gives each
+/// dropdown ~50% of the row.
+///
+/// Project dropdown is always enabled (or shows "— No projects yet —" when
+/// empty). Environment dropdown is disabled until a project is picked and
+/// reads "Pick a project first" in that state. Picking a project resets
+/// the environment to null so the user re-selects within the new project's
+/// envs. Matches `onProjectChange()` / `onEnvironmentChange()` in `app.js`.
 class ChatHeaderControls extends ConsumerWidget {
   const ChatHeaderControls({
     super.key,
     required this.projectId,
     required this.environmentId,
-    required this.autoApprove,
     required this.onProjectChanged,
     required this.onEnvironmentChanged,
-    required this.onAutoApproveChanged,
   });
 
   final String? projectId;
   final String? environmentId;
-  final bool autoApprove;
   final ValueChanged<String?> onProjectChanged;
   final ValueChanged<String?> onEnvironmentChanged;
-  final ValueChanged<bool> onAutoApproveChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,14 +62,6 @@ class ChatHeaderControls extends ConsumerWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Auto-approve — compact icon button. Tooltip + colour change
-            // already convey on/off; the eyebrow label "AUTO-APPROVE" was
-            // dropped to free up horizontal space for the env dropdown.
-            _AutoApproveIconToggle(
-              value: autoApprove,
-              onChanged: onAutoApproveChanged,
-            ),
-            const SizedBox(width: 8),
             Expanded(
               child: _StackedControl(
                 label: context.tr.headerProject,
@@ -112,21 +106,79 @@ class ChatHeaderControls extends ConsumerWidget {
   }
 }
 
-/// Compact 36×36 toggle that flips Auto-approve on/off. Uses a shield icon
-/// (filled when on, outlined when off) tinted brand-cyan. Replaces the
-/// labeled `AUTO-APPROVE` slot to save horizontal space on phone widths.
-class _AutoApproveIconToggle extends StatelessWidget {
-  const _AutoApproveIconToggle({required this.value, required this.onChanged});
+/// Bundle of the two chat-level toggles (Deep think + Auto-approve) sized
+/// for the AppBar actions slot. Renders them as a pair so the AppBar code
+/// only carries one widget per chat regardless of how many toggles ship
+/// later. Tap targets stay 36×36 — Material's minimum recommended.
+///
+/// Lives in the AppBar (not the dropdown strip) so the dropdowns get the
+/// full row width on small phones — see the rationale on
+/// [ChatHeaderControls].
+class ChatAppBarToggles extends StatelessWidget {
+  const ChatAppBarToggles({
+    super.key,
+    required this.deepThink,
+    required this.autoApprove,
+    required this.onDeepThinkChanged,
+    required this.onAutoApproveChanged,
+  });
+
+  final bool deepThink;
+  final bool autoApprove;
+  final ValueChanged<bool> onDeepThinkChanged;
+  final ValueChanged<bool> onAutoApproveChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ChatToggleIcon(
+          value: deepThink,
+          onChanged: onDeepThinkChanged,
+          icon: AppIcons.sparkles,
+          accent: context.saqqar.brandPurple,
+          tooltipOn: context.tr.deepThinkOn,
+          tooltipOff: context.tr.deepThinkTitle,
+        ),
+        const SizedBox(width: 4),
+        _ChatToggleIcon(
+          value: autoApprove,
+          onChanged: onAutoApproveChanged,
+          icon: autoApprove ? AppIcons.shieldCheck : AppIcons.shield,
+          accent: context.saqqar.brandCyan,
+          tooltipOn: context.tr.autoApproveOn,
+          tooltipOff: context.tr.autoApproveOff,
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact AppBar-sized icon toggle. Shared shape for Deep think +
+/// Auto-approve so the two read as a pair.
+class _ChatToggleIcon extends StatelessWidget {
+  const _ChatToggleIcon({
+    required this.value,
+    required this.onChanged,
+    required this.icon,
+    required this.accent,
+    required this.tooltipOn,
+    required this.tooltipOff,
+  });
 
   final bool value;
   final ValueChanged<bool> onChanged;
+  final IconData icon;
+  final Color accent;
+  final String tooltipOn;
+  final String tooltipOff;
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final color = value ? s.brandCyan : s.muted;
     return Tooltip(
-      message: value ? context.tr.autoApproveOn : context.tr.autoApproveOff,
+      message: value ? tooltipOn : tooltipOff,
       child: Material(
         color: Colors.transparent,
         borderRadius: AppRadius.buttonR,
@@ -139,18 +191,16 @@ class _AutoApproveIconToggle extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: value
-                  ? s.brandCyan.withValues(alpha: 0.14)
-                  : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
+                  ? accent.withValues(alpha: 0.14)
+                  : Colors.transparent,
               borderRadius: AppRadius.buttonR,
               border: Border.all(
-                color: value ? s.brandCyan.withValues(alpha: 0.40) : s.cardBorder,
+                color: value
+                    ? accent.withValues(alpha: 0.40)
+                    : Colors.transparent,
               ),
             ),
-            child: Icon(
-              value ? AppIcons.shieldCheck : AppIcons.shield,
-              size: 18,
-              color: color,
-            ),
+            child: Icon(icon, size: 18, color: value ? accent : s.muted),
           ),
         ),
       ),

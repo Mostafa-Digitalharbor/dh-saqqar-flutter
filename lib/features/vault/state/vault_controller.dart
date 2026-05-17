@@ -168,6 +168,49 @@ class VaultController extends Notifier<VaultState> {
     );
   }
 
+  /// Reorders the environments belonging to [projectId] so the one at
+  /// [oldIndex] (within the project's own env list) moves to [newIndex].
+  /// Environments belonging to other projects keep their relative order
+  /// untouched — we splice the project's slice back in at its original
+  /// insertion points after sorting it. Demo-only; once the backend
+  /// ships, swap for a single PATCH to the project that includes the new
+  /// ordered env id list.
+  void reorderEnvironment({
+    required String projectId,
+    required int oldIndex,
+    required int newIndex,
+  }) {
+    // Flutter's ReorderableListView reports `newIndex` as the slot you
+    // dropped INTO, which is +1 past the visual position when dragging
+    // down. Normalise to a stable insertion index.
+    final adjusted =
+        newIndex > oldIndex ? newIndex - 1 : newIndex;
+
+    final projectEnvs = <DemoEnvironment>[];
+    final originalPositions = <int>[];
+    for (var i = 0; i < state.environments.length; i++) {
+      if (state.environments[i].projectId == projectId) {
+        projectEnvs.add(state.environments[i]);
+        originalPositions.add(i);
+      }
+    }
+    if (oldIndex < 0 ||
+        oldIndex >= projectEnvs.length ||
+        adjusted < 0 ||
+        adjusted >= projectEnvs.length ||
+        oldIndex == adjusted) {
+      return;
+    }
+    final moved = projectEnvs.removeAt(oldIndex);
+    projectEnvs.insert(adjusted, moved);
+
+    final next = [...state.environments];
+    for (var i = 0; i < originalPositions.length; i++) {
+      next[originalPositions[i]] = projectEnvs[i];
+    }
+    state = state.copyWith(environments: next);
+  }
+
   void deleteEnvironment(String envId) {
     final remainingByEnvKind = {
       for (final entry in state.credentialsByEnvKind.entries)

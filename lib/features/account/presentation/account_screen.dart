@@ -7,9 +7,8 @@ import '../../../core/i18n/locale_controller.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/theme_controller.dart';
-import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/responsive_content.dart';
+import '../../../shared/widgets/page_scaffold.dart';
 import '../widgets/widgets.dart';
 
 /// Account tab — identity hero (with stats line), preferences, change
@@ -24,38 +23,29 @@ class AccountScreen extends ConsumerWidget {
     final mode = ref.watch(themeControllerProvider);
     final locale = ref.watch(localeControllerProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(context.tr.tabAccount)),
-      body: AmbientBackground(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            ResponsiveContent(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ProfileHero(
-                    onLongPress: () => context.pushNamed(RouteNames.storybook),
-                  ),
-                  const SizedBox(height: 14),
-                  PreferencesCard(mode: mode, locale: locale, ref: ref),
-                  const SizedBox(height: 14),
-                  const ChangePasswordCard(),
-                  const SizedBox(height: 14),
-                  GhostButton(
-                    label: context.tr.signOut,
-                    icon: AppIcons.signOut,
-                    tone: GhostButtonTone.danger,
-                    expand: true,
-                    onPressed: () => context.go(RouteNames.signInPath),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    return PageScaffold(
+      title: context.tr.tabAccount,
+      // Username + product affiliation as the subtitle so the brand row
+      // up top reads as "Saqqar / Account / who you are" — three
+      // pieces of orienting context in one glance.
+      subtitle: '${context.tr.sampleUsername} · ${context.tr.workspace}',
+      children: [
+        ProfileHero(
+          onLongPress: () => context.pushNamed(RouteNames.storybook),
         ),
-      ),
+        const SizedBox(height: 14),
+        PreferencesCard(mode: mode, locale: locale, ref: ref),
+        const SizedBox(height: 14),
+        const ChangePasswordCard(),
+        const SizedBox(height: 14),
+        GhostButton(
+          label: context.tr.signOut,
+          icon: AppIcons.signOut,
+          tone: GhostButtonTone.danger,
+          expand: true,
+          onPressed: () => context.go(RouteNames.signInPath),
+        ),
+      ],
     );
   }
 }

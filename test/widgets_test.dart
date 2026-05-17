@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
@@ -16,21 +17,24 @@ import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
 
 /// Wraps [child] with the bare-minimum scaffolding the Saqqar widgets need:
 /// MaterialApp with the locale delegates, the real Saqqar themes, and an
-/// `en` locale. Reproduces how the widgets render in production without
-/// pulling in GoRouter or Riverpod.
+/// `en` locale. Also wraps in a [ProviderScope] so any Riverpod-based
+/// widget (e.g. [ConversationCard] reading the rename + pin controllers)
+/// can resolve its providers without each test setting up its own.
 Widget _harness(Widget child, {Locale locale = const Locale('en')}) {
-  return MaterialApp(
-    locale: locale,
-    localizationsDelegates: const [
-      AppLocalizations.delegate,
-      GlobalMaterialLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-    ],
-    supportedLocales: const [Locale('en'), Locale('ar')],
-    theme: AppTheme.light(locale),
-    darkTheme: AppTheme.dark(locale),
-    home: Scaffold(body: Center(child: child)),
+  return ProviderScope(
+    child: MaterialApp(
+      locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en'), Locale('ar')],
+      theme: AppTheme.light(locale),
+      darkTheme: AppTheme.dark(locale),
+      home: Scaffold(body: Center(child: child)),
+    ),
   );
 }
 

@@ -83,6 +83,11 @@ class ChatApprovalCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (approval.isGrouped) ...[
+                      MiniChip('×${approval.groupedCount ?? 1}',
+                          color: s.warning),
+                      const SizedBox(width: 6),
+                    ],
                     MiniChip(approval.risk, color: s.warning),
                   ],
                 ),
@@ -118,8 +123,18 @@ class ChatApprovalCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
+                      // Web parity: when this approval is grouped (shape
+                      // shared by multiple pending writes), the primary
+                      // button approves the whole batch in one tap AND
+                      // pre-approves future writes of the same shape in
+                      // this conversation. The label must reflect that —
+                      // a generic "Approve" would be misleading.
                       child: PrimaryButton(
-                        label: context.tr.approve,
+                        label: approval.isGrouped
+                            ? context.tr.approveAllN(
+                                approval.groupedCount ?? 1,
+                              )
+                            : context.tr.approve,
                         icon: AppIcons.check,
                         onPressed: () {
                           HapticFeedback.mediumImpact();
@@ -129,6 +144,21 @@ class ChatApprovalCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                // Pre-approval hint — same copy the web uses below the
+                // "Approve all" button. Only rendered when the approval
+                // belongs to a shape group so single one-off approvals
+                // don't get an irrelevant disclosure.
+                if (approval.isGrouped) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    context.tr.preApprovalTip,
+                    style: context.text.labelSmall?.copyWith(
+                      color: s.muted,
+                      height: 1.4,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

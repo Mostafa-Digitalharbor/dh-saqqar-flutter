@@ -186,17 +186,41 @@ class DemoCredentialField {
     required this.name,
     required this.label,
     this.hint,
+    this.help,
     this.obscure = false,
     this.multiline = false,
     this.options = const [],
+    this.showWhen,
+    this.required = true,
   });
 
   final String name;
   final String label;
   final String? hint;
+
+  /// Secondary explanatory text rendered below the field (italic, muted).
+  /// Mirrors the web's `help` property on schema fields — e.g. for SSH the
+  /// password field carries "Fill this for password auth" so the user knows
+  /// why two auth-related fields appear together.
+  final String? help;
+
   final bool obscure;
   final bool multiline;
   final List<String> options;
+
+  /// Optional gate: only render this field when a SIBLING field in the same
+  /// schema currently holds one of the listed values. Web parity for the
+  /// `auth=password` vs `auth=key` conditional on server_shell — password
+  /// shows when auth=password; private_key shows when auth=key.
+  ///
+  /// Format: `(siblingFieldName, allowedValues)`. When null, the field is
+  /// always rendered.
+  final ({String field, List<String> values})? showWhen;
+
+  /// Whether the field must be filled. The form blocks Save with a hint when
+  /// any required field is empty. Default true to match the web's "all
+  /// fields required unless marked otherwise" pattern.
+  final bool required;
 }
 
 class DemoApproval {
@@ -280,6 +304,38 @@ class DemoPendingAction {
   /// The Chat screen reads this to render the inline credential request form
   /// (spec §6.7) when the user taps "Provide" instead of the dismiss path.
   final DemoCredentialKind? requestsCredential;
+}
+
+/// One `run_server_command` (or `run_server_sudo_command`) result —
+/// surfaced inside the chat's Activity sheet. Mirrors the web's
+/// `buildServerActivityCard()` payload: status dot (ok/err) + the executed
+/// command + stdout/stderr captures + exit code.
+class DemoServerActivity {
+  const DemoServerActivity({
+    required this.id,
+    required this.conversationId,
+    required this.command,
+    required this.createdLabel,
+    this.stdout = '',
+    this.stderr = '',
+    this.returnCode = 0,
+    this.host,
+  });
+
+  final String id;
+  final String conversationId;
+  final String command;
+  final String stdout;
+  final String stderr;
+  final int returnCode;
+  final String createdLabel;
+
+  /// Optional `user@host` label rendered in the card header for context —
+  /// helpful when the same conversation runs commands across multiple
+  /// boxes via different SSH credentials.
+  final String? host;
+
+  bool get failed => returnCode != 0 || stderr.trim().isNotEmpty;
 }
 
 class DemoArtifact {
@@ -541,11 +597,22 @@ const demoCredentialSchemas = <DemoCredentialSchema>[
     label: 'PostgreSQL',
     fields: [
       DemoCredentialField(name: 'host', label: 'Host'),
-      DemoCredentialField(name: 'port', label: 'Port', hint: '5432'),
+      DemoCredentialField(
+        name: 'port',
+        label: 'Port',
+        hint: '5432',
+        required: false,
+      ),
       DemoCredentialField(name: 'dbname', label: 'Database'),
       DemoCredentialField(name: 'username', label: 'Username'),
       DemoCredentialField(name: 'password', label: 'Password', obscure: true),
-      DemoCredentialField(name: 'sslmode', label: 'SSL mode', hint: 'prefer'),
+      DemoCredentialField(
+        name: 'sslmode',
+        label: 'SSL mode',
+        hint: 'prefer',
+        required: false,
+        help: 'Common values: disable · require · verify-full',
+      ),
     ],
   ),
   DemoCredentialSchema(
@@ -556,15 +623,32 @@ const demoCredentialSchemas = <DemoCredentialSchema>[
         name: 'auth',
         label: 'Auth',
         options: ['password', 'key'],
+        required: false,
+        help: 'Use password or SSH key',
       ),
       DemoCredentialField(name: 'host', label: 'Host'),
-      DemoCredentialField(name: 'port', label: 'Port', hint: '22'),
+      DemoCredentialField(
+        name: 'port',
+        label: 'Port',
+        hint: '22',
+        required: false,
+      ),
       DemoCredentialField(name: 'username', label: 'Username'),
-      DemoCredentialField(name: 'password', label: 'Password', obscure: true),
+      DemoCredentialField(
+        name: 'password',
+        label: 'Password',
+        obscure: true,
+        required: false,
+        help: 'Fill this for password auth',
+        showWhen: (field: 'auth', values: ['password']),
+      ),
       DemoCredentialField(
         name: 'private_key',
         label: 'Private key',
         multiline: true,
+        required: false,
+        help: 'Paste the private SSH key when auth is set to key',
+        showWhen: (field: 'auth', values: ['key']),
       ),
     ],
   ),
@@ -573,8 +657,8 @@ const demoCredentialSchemas = <DemoCredentialSchema>[
     label: 'GitHub',
     fields: [
       DemoCredentialField(name: 'token', label: 'Token', obscure: true),
-      DemoCredentialField(name: 'owner', label: 'Owner'),
-      DemoCredentialField(name: 'repo', label: 'Repo'),
+      DemoCredentialField(name: 'owner', label: 'Owner', required: false),
+      DemoCredentialField(name: 'repo', label: 'Repo', required: false),
     ],
   ),
 ];
@@ -788,6 +872,65 @@ const demoArtifacts = <DemoArtifact>[
 
 List<DemoArtifact> demoArtifactsForConversation(String conversationId) {
   return demoArtifacts.where((a) => a.conversationId == conversationId).toList();
+}
+
+/// Seeded server-command activity. Two conversations have shell runs so
+/// the Activity sheet has something to render in the demo; the rest stay
+/// empty and exercise the "No server commands yet" empty state.
+const demoServerActivity = <DemoServerActivity>[
+  DemoServerActivity(
+    id: 'act-1',
+    conversationId: 'prod-pulse',
+    command: 'tail -n 100 /var/log/odoo/odoo-server.log',
+    host: 'odoo@gac-prod',
+    createdLabel: '12 min ago',
+    stdout: '''2026-05-16 17:14:02,118 INFO gac-prod odoo.modules.loading: Modules loaded.
+2026-05-16 17:14:02,201 INFO gac-prod werkzeug: Listening on http://0.0.0.0:8069
+2026-05-16 17:14:02,310 INFO gac-prod odoo.service.server: HTTP service running
+2026-05-16 17:14:32,002 WARN gac-prod odoo.addons.mail: outbound queue length 142
+2026-05-16 17:14:55,440 INFO gac-prod odoo.http: 80.121.5.4 POST /web/dataset/call_kw 200''',
+  ),
+  DemoServerActivity(
+    id: 'act-2',
+    conversationId: 'prod-pulse',
+    command: 'systemctl status odoo --no-pager',
+    host: 'odoo@gac-prod',
+    createdLabel: '11 min ago',
+    stdout: '''● odoo.service - Odoo
+     Loaded: loaded (/etc/systemd/system/odoo.service; enabled)
+     Active: active (running) since Wed 2026-05-14 10:02:13 UTC; 2 days ago
+   Main PID: 1842 (python3)
+      Tasks: 12 (limit: 4644)
+     Memory: 612.4M''',
+  ),
+  DemoServerActivity(
+    id: 'act-3',
+    conversationId: 'prod-pulse',
+    command: r'df -h | grep -E "/$|/var"',
+    host: 'odoo@gac-prod',
+    createdLabel: '8 min ago',
+    stdout: '/dev/sda1        50G   38G   10G  79% /\n/dev/sdb1       100G   91G  9.5G  91% /var',
+    stderr: '',
+    returnCode: 0,
+  ),
+  DemoServerActivity(
+    id: 'act-4',
+    conversationId: 'prod-pulse',
+    command: 'pg_ctl status -D /var/lib/postgresql/16/main',
+    host: 'postgres@gac-prod',
+    createdLabel: '6 min ago',
+    stdout: '',
+    stderr: 'pg_ctl: server is not running\nError: connection refused on socket /var/run/postgresql/.s.PGSQL.5432',
+    returnCode: 3,
+  ),
+];
+
+List<DemoServerActivity> demoServerActivityForConversation(
+  String conversationId,
+) {
+  return demoServerActivity
+      .where((a) => a.conversationId == conversationId)
+      .toList();
 }
 
 List<DemoApproval> demoApprovalsForConversation(String conversationId) {

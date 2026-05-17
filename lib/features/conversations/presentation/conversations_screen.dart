@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/ui_strings.dart';
@@ -15,18 +16,25 @@ import '../../../shared/widgets/section_header.dart';
 import '../../../shared/widgets/pagination_bar.dart';
 import '../../../shared/widgets/search_and_filters_bar.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../../inbox/state/approvals_controller.dart';
+import '../state/conversations_controller.dart';
+import '../widgets/rename_conversation_dialog.dart';
 import '../widgets/widgets.dart';
 
 /// Conversations list — search + archive filter + paginated rows, with a
-/// gradient FAB to start a fresh chat.
-class ConversationsScreen extends StatefulWidget {
+/// gradient FAB to start a fresh chat. Pinned conversations float to the
+/// top regardless of recency (resolved via
+/// [orderedConversationsProvider]).
+class ConversationsScreen extends ConsumerStatefulWidget {
   const ConversationsScreen({super.key});
 
   @override
-  State<ConversationsScreen> createState() => _ConversationsScreenState();
+  ConsumerState<ConversationsScreen> createState() =>
+      _ConversationsScreenState();
 }
 
-class _ConversationsScreenState extends State<ConversationsScreen> {
+class _ConversationsScreenState
+    extends ConsumerState<ConversationsScreen> {
   static const _pageSize = 30;
   static const _initialLoadDelay = Duration(milliseconds: 650);
 
@@ -41,10 +49,18 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
 
   List<DemoConversation> get _filtered {
     final q = _query.trim().toLowerCase();
-    return demoConversations.where((conversation) {
+    // Read the ordered list so pinned conversations show first. Search
+    // matches against the effective title (post-rename overlay) so a
+    // user-supplied custom name still finds the right chat.
+    final ordered = ref.read(orderedConversationsProvider);
+    final renames =
+        ref.read(conversationsControllerProvider.select((s) => s.renames));
+    return ordered.where((conversation) {
       if (!_showArchived && conversation.isArchived) return false;
       if (q.isEmpty) return true;
-      return conversation.title.toLowerCase().contains(q) ||
+      final effectiveTitle =
+          (renames[conversation.id] ?? conversation.title).toLowerCase();
+      return effectiveTitle.contains(q) ||
           conversation.preview.toLowerCase().contains(q) ||
           conversation.activeCredential.toLowerCase().contains(q);
     }).toList();
@@ -118,6 +134,47 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     AppToast.show(context, message: text);
   }
 
+  /// Routes a per-row kebab-menu action to the right handler. Pin and
+  /// Rename are local-only and run against the conversations controller;
+  /// share / archive / delete are backend-bound and surface a toast that
+  /// echoes the action label until those endpoints land.
+  Future<void> _handleRowAction(
+    DemoConversation c,
+    ConversationAction action,
+  ) async {
+    final notifier = ref.read(conversationsControllerProvider.notifier);
+    switch (action) {
+      case ConversationAction.pin:
+        final wasPinned = notifier.isPinned(c.id);
+        notifier.togglePin(c.id);
+        _toast(
+          context,
+          wasPinned
+              ? context.tr.conversationUnpinnedToast
+              : context.tr.conversationPinnedToast,
+        );
+      case ConversationAction.rename:
+        final current = ref.read(conversationTitleProvider(c));
+        final next = await RenameConversationDialog.show(
+          context,
+          initial: current,
+        );
+        if (next == null || !mounted) return;
+        notifier.renameConversation(id: c.id, name: next);
+        _toast(context, context.tr.conversationRenamedToast);
+      case ConversationAction.share:
+      case ConversationAction.archive:
+      case ConversationAction.delete:
+        _toast(
+          context,
+          context.tr.actionOnConversation(
+            conversationActionLabel(context, action),
+            ref.read(conversationTitleProvider(c)),
+          ),
+        );
+    }
+  }
+
   /// Walks the paged conversations and inserts a [SectionHeader] each time
   /// the date bucket changes ("Today", "Yesterday", "Previous 7 days",
   /// "Older"). Archived conversations always render under "Older". Matches
@@ -145,13 +202,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           child: ConversationCard(
             conversation: c,
             onTap: () => context.go(RouteNames.chatPath(c.id)),
-            onAction: (action) => _toast(
-              context,
-              context.tr.actionOnConversation(
-                conversationActionLabel(context, action),
-                c.title,
-              ),
-            ),
+            onAction: (action) => _handleRowAction(c, action),
           ),
         ),
       );
@@ -181,11 +232,25 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to rename + pin state so the list re-derives the moment
+    // either changes — the `_filtered` getter only reads from these on
+    // demand, so without an explicit watch the screen wouldn't rebuild.
+    ref.watch(conversationsControllerProvider);
     final allConversations = _filtered;
     final conversations = _paged;
 
+    // Live subtitle — "12 conversations · 3 need your input" — gives
+    // the user a one-glance status of the workspace from the AppBar.
+    final pendingCount = ref.watch(pendingApprovalsCountProvider);
+    final totalCount = allConversations.length;
+    final subtitleText = pendingCount > 0
+        ? '$totalCount ${context.tr.conversations} · '
+            '$pendingCount ${context.tr.pending}'
+        : '$totalCount ${context.tr.conversations}';
+
     return PageScaffold(
       title: context.tr.tabChats,
+      subtitle: subtitleText,
       controller: _scrollController,
       onRefresh: () async {
         // Wipe the list and surface skeletons while the refetch runs, then

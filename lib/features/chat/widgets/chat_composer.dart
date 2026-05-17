@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
@@ -10,22 +9,49 @@ import 'attachment_chip.dart';
 import 'chat_send_button.dart';
 
 /// iMessage-style composer pill: attach icon + auto-growing text field +
-/// circular gradient send button. Renders an attachment preview row above the
-/// pill when [hasAttachment] is true. Pass `null` for [onSend] to render the
-/// send button in its disabled state (used when the device is offline).
+/// circular gradient send button. Renders an attachment preview row above
+/// the pill when [attachment] is non-null — paperclip taps fire
+/// [onAttach] (the chat screen opens the native file picker), the row's
+/// close button fires [onRemoveAttachment]. Pass `null` for [onSend] to
+/// render the send button in its disabled state (used when the device is
+/// offline).
 class ChatComposer extends StatelessWidget {
   const ChatComposer({
     super.key,
     required this.controller,
-    required this.hasAttachment,
+    required this.attachment,
     required this.onAttach,
+    required this.onRemoveAttachment,
     required this.onSend,
+    this.onStop,
+    this.stopping = false,
   });
 
   final TextEditingController controller;
-  final bool hasAttachment;
+
+  /// The currently staged attachment — null when no file is picked.
+  /// Renders the [AttachmentChip] row above the pill when set.
+  final DemoAttachment? attachment;
+
+  /// Tapped on the paperclip icon. The chat screen opens the native
+  /// file picker rooted at Photos / Files.
   final VoidCallback onAttach;
+
+  /// Tapped on the "x" next to the staged attachment chip. Clears
+  /// [attachment] back to null.
+  final VoidCallback onRemoveAttachment;
+
   final VoidCallback? onSend;
+
+  /// When non-null the send button morphs into a Stop control — the chat
+  /// screen passes a real callback while `_isThinking` so the user can
+  /// cancel an in-flight agent reply.
+  final VoidCallback? onStop;
+
+  /// Optimistic stop-in-flight state. While true the Stop button shows a
+  /// small spinner and becomes non-interactive so the user knows the cancel
+  /// is propagating.
+  final bool stopping;
 
   @override
   Widget build(BuildContext context) {
@@ -43,25 +69,19 @@ class ChatComposer extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (hasAttachment)
+              if (attachment != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Align(
                           alignment: AlignmentDirectional.centerStart,
-                          child: AttachmentChip(
-                            attachment: DemoAttachment(
-                              name: UiStrings.demoAttachmentName,
-                              kind: UiStrings.demoAttachmentKind,
-                              size: UiStrings.demoAttachmentSize,
-                            ),
-                          ),
+                          child: AttachmentChip(attachment: attachment!),
                         ),
                       ),
                       IconButton(
-                        onPressed: onAttach,
+                        onPressed: onRemoveAttachment,
                         icon: Icon(AppIcons.close, color: s.muted, size: 18),
                         visualDensity: VisualDensity.compact,
                         tooltip: context.tr.removeAttachment,
@@ -101,10 +121,19 @@ class ChatComposer extends StatelessWidget {
                             height: 1.4,
                           ),
                           decoration: InputDecoration(
-                            hintText: context.tr.composerHint,
+                            // While the agent is running the placeholder
+                            // explains why Send is muted — the textarea
+                            // stays editable so the user can queue their
+                            // next prompt instead of waiting idle.
+                            hintText: onStop != null
+                                ? context.tr.composerBusy
+                                : context.tr.composerHint,
                             hintStyle: context.text.bodyMedium?.copyWith(
                               color: s.muted,
                               fontSize: 15,
+                              fontStyle: onStop != null
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
                             ),
                             isCollapsed: true,
                             border: InputBorder.none,
@@ -118,7 +147,11 @@ class ChatComposer extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    ChatSendButton(onPressed: onSend),
+                    ChatSendButton(
+                      onPressed: onSend,
+                      onStop: onStop,
+                      stopping: stopping,
+                    ),
                   ],
                 ),
               ),

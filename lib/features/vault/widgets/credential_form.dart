@@ -162,6 +162,20 @@ class _CredentialFormState extends ConsumerState<CredentialForm> {
           : context.tr.lastVerifiedAt(saved.lastVerified!);
     }
 
+    // Pre-compute which fields should currently render — honours each
+    // field's `showWhen` rule against the current values of its siblings.
+    // Rebuilt every build because the user might toggle the gating field
+    // (e.g. SSH `auth`) inside the same form session.
+    bool isVisible(DemoCredentialField field) {
+      final rule = field.showWhen;
+      if (rule == null) return true;
+      final siblingValue =
+          _fieldControllers[rule.field]?.text.trim().toLowerCase() ?? '';
+      return rule.values
+          .map((v) => v.toLowerCase())
+          .contains(siblingValue);
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       child: Column(
@@ -173,13 +187,20 @@ class _CredentialFormState extends ConsumerState<CredentialForm> {
             hint: demoCredentialKindLabel(widget.kind),
           ),
           const SizedBox(height: 12),
-          for (final field in schema.fields) ...[
-            _SchemaField(
-              field: field,
-              controller: _fieldControllers[field.name]!,
-            ),
-            const SizedBox(height: 10),
-          ],
+          for (final field in schema.fields)
+            if (isVisible(field)) ...[
+              _SchemaField(
+                field: field,
+                controller: _fieldControllers[field.name]!,
+                // Rebuild parent on dropdown change so the conditional
+                // siblings (password / private_key) appear / disappear
+                // immediately when the user flips `auth`.
+                onValueChanged: field.options.isNotEmpty
+                    ? () => setState(() {})
+                    : null,
+              ),
+              const SizedBox(height: 10),
+            ],
           if (schema.fields.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -229,13 +250,48 @@ class _CredentialFormState extends ConsumerState<CredentialForm> {
 }
 
 class _SchemaField extends StatelessWidget {
-  const _SchemaField({required this.field, required this.controller});
+  const _SchemaField({
+    required this.field,
+    required this.controller,
+    this.onValueChanged,
+  });
 
   final DemoCredentialField field;
   final TextEditingController controller;
 
+  /// Called after the user picks a new option on a dropdown field. The
+  /// parent form uses this to rebuild itself when the gating field (e.g.
+  /// SSH `auth`) flips, so sibling fields whose `showWhen` rule depends on
+  /// this field appear / disappear immediately.
+  final VoidCallback? onValueChanged;
+
   @override
   Widget build(BuildContext context) {
+    final s = context.saqqar;
+    final input = _buildInput();
+    if (field.help == null) return input;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        input,
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 4),
+          child: Text(
+            field.help!,
+            style: context.text.labelSmall?.copyWith(
+              color: s.muted,
+              fontStyle: FontStyle.italic,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInput() {
     if (field.options.isNotEmpty) {
       return DropdownButtonFormField<String>(
         initialValue: controller.text.isNotEmpty
@@ -247,7 +303,9 @@ class _SchemaField extends StatelessWidget {
             DropdownMenuItem(value: option, child: Text(option)),
         ],
         onChanged: (value) {
-          if (value != null) controller.text = value;
+          if (value == null) return;
+          controller.text = value;
+          onValueChanged?.call();
         },
       );
     }

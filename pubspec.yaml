@@ -43,6 +43,12 @@ dependencies:
   # and `.remove()` calls inside main.dart / the in-app splash widget.
   flutter_native_splash: ^2.4.3
 
+  # Native file picker for the chat composer's attach button — covers
+  # photos, PDFs, Office docs, CSVs (matches the web's `accept` list).
+  # Returns file metadata + bytes/path; the chat surfaces just metadata
+  # locally and ships bytes to the backend once the attachments API lands.
+  file_picker: ^8.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

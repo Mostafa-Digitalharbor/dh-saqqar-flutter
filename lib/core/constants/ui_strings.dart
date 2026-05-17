@@ -22,6 +22,7 @@ class UiStrings {
   static const localeSystemCode = 'system';
   static const themePreferenceKey = 'saqqar.theme';
   static const localePreferenceKey = 'saqqar.locale';
+  static const deepThinkPreferenceKey = 'saqqar.deepThink';
 
   static const artifactExcel = 'Excel';
   static const artifactCsv = 'CSV';

@@ -13,6 +13,7 @@ import '../../../shared/widgets/fade_slide_in.dart';
 import '../../../shared/widgets/page_scaffold.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/search_and_filters_bar.dart';
+import '../../conversations/widgets/gradient_fab.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../state/vault_controller.dart';
 import '../widgets/widgets.dart';
@@ -57,8 +58,13 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     AppToast.show(context, message: text);
   }
 
-  void _openAddProject() {
-    ProjectDetailSheet.show(context);
+  /// Opens the projects list sheet (web parity for `projectsPopup`).
+  /// The sheet hosts a quick "Add project" inline form AND lists every
+  /// existing project with a delete button — single entry point for
+  /// project management. Tapping a project row pushes the matching
+  /// [ProjectDetailSheet] for env management.
+  void _openProjectsList() {
+    ProjectsListSheet.show(context);
   }
 
   void _openProjectDetail(String projectId) {
@@ -100,8 +106,23 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
     final visible =
         allProjects.where((p) => _matchesQuery(state, p)).toList();
 
+    // Subtitle — "N projects · M environments" — gives the user a
+    // one-glance view of vault size from the AppBar.
+    final projectCount = allProjects.length;
+    final envCount = state.environments.length;
+    final subtitleText = '$projectCount ${context.tr.projectsTitle.toLowerCase()}'
+        ' · ${context.tr.environmentCount(envCount)}';
+
     return PageScaffold(
       title: context.tr.tabVault,
+      subtitle: projectCount == 0 ? null : subtitleText,
+      // Pill-shaped FAB mirroring the Chats tab's "New conversation"
+      // entry — keeps the primary "create" verb in the same thumb-zone
+      // across both tabs so users build muscle memory once.
+      floatingActionButton: GradientFab(
+        onPressed: _openProjectsList,
+        label: context.tr.addProject,
+      ),
       onRefresh: () async {
         setState(() => _loading = true);
         final message = context.tr.credentialsRefreshed;
@@ -112,12 +133,9 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
         AppToast.show(context, message: message);
       },
       actions: [
-        AppIconButton(
-          icon: AppIcons.plus,
-          tooltip: context.tr.addProject,
-          bordered: false,
-          onPressed: _openAddProject,
-        ),
+        // The "+" used to live up here; moved to the bottom-end FAB on
+        // 2026-05-16 so the create-verb lives in the same thumb-zone
+        // as the Chats tab. Keeping only the refresh icon up top.
         AppIconButton(
           icon: AppIcons.refresh,
           tooltip: context.tr.refreshCredentials,
@@ -160,7 +178,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                       action: PrimaryButton(
                         label: context.tr.addProject,
                         icon: AppIcons.plus,
-                        onPressed: _openAddProject,
+                        onPressed: _openProjectsList,
                       ),
                     )
                   : visible.isEmpty

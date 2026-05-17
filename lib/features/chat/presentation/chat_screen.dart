@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,8 +22,13 @@ import '../../../shared/widgets/offline_banner.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../inbox/state/approvals_controller.dart';
+import '../state/deep_think_controller.dart';
 import '../state/live_env_ack.dart';
+import '../state/running_agents_controller.dart';
+import '../state/tool_status.dart';
 import '../widgets/widgets.dart';
+import '../../conversations/state/conversations_controller.dart';
+import '../../conversations/widgets/rename_conversation_dialog.dart';
 
 /// The chat screen. Owns the conversation state (messages, active credential,
 /// auto-approve toggle, composer text), wires the typing/scroll FSM, and
@@ -56,15 +62,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   String? _projectId;
 
   bool _autoApprove = false;
-  bool _hasAttachment = false;
+
+  /// The currently staged attachment (single — multi-file shipping isn't
+  /// in scope yet). When non-null the composer renders its chip above
+  /// the pill and Send becomes enabled even on an empty text field.
+  DemoAttachment? _attachment;
+
   bool _showScrollDown = false;
   bool _isThinking = false;
+
+  /// Optimistic flag flipped the moment the user taps Stop. Cleared once
+  /// the cancel propagates (today: end of the thinking timer; later: when
+  /// the server confirms `is_running=false`). While true, the Stop button
+  /// renders as a spinner and is non-interactive so the user can't tap it
+  /// twice.
+  bool _stopping = false;
+
   bool _loadingMessages = false;
 
-  /// When non-null, an inline credential-request card appears between the
-  /// status strip and the composer. Triggered from the Action Center when
-  /// the user taps "Provide" on a `requestsCredential` action.
-  DemoCredentialKind? _inlineCredentialKind;
+  /// Live progress for a long-running report tool. Non-null while the
+  /// backend reports `run_progress.phase = building_report | rendering_report`;
+  /// cleared once the artifact lands. Drives the [ChatRunProgressCard]
+  /// rendered above the message list.
+  RunProgress? _runProgress;
+  Timer? _progressTimer;
+
   Timer? _thinkingTimer;
   Timer? _loadingTimer;
 
@@ -142,6 +164,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void dispose() {
     _thinkingTimer?.cancel();
     _loadingTimer?.cancel();
+    _progressTimer?.cancel();
     _scroll.removeListener(_onScrollChanged);
     _composer.dispose();
     _scroll.dispose();
@@ -185,7 +208,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _send() async {
     final text = _composer.text.trim();
-    if (text.isEmpty && !_hasAttachment) return;
+    if (text.isEmpty && _attachment == null) return;
 
     // Block sends until the user picks an environment — the agent has no
     // credentials to work against otherwise.
@@ -232,51 +255,277 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ? UiStrings.demoAutoApprovedTool
         : null;
 
+    final predictedTool = guessToolFromPrompt(text);
+    final isReportTool = predictedTool == ToolNames.generateExcelReport ||
+        predictedTool == ToolNames.generatePdfReport ||
+        predictedTool == ToolNames.generateWordReport;
+
     setState(() {
       _messages.add(
         DemoMessage(
           role: DemoMessageRole.user,
           content: text.isEmpty ? context.tr.attachedFilesForReview : text,
           time: context.tr.now,
-          attachments: _hasAttachment
-              ? const [
-                  DemoAttachment(
-                    name: UiStrings.demoAttachmentName,
-                    kind: UiStrings.demoAttachmentKind,
-                    size: UiStrings.demoAttachmentSize,
-                  ),
-                ]
-              : const [],
+          attachments:
+              _attachment == null ? const [] : [_attachment!],
         ),
       );
       _composer.clear();
-      _hasAttachment = false;
+      _attachment = null;
       _isThinking = true;
+      _runProgress = null;
     });
+
+    // Tell the cross-tab agent indicator that this conversation just
+    // entered "running" state — drives the pulse dot in the AppBar
+    // brand row from anywhere in the app.
+    ref
+        .read(runningAgentsControllerProvider.notifier)
+        .markRunning(widget.conversationId);
 
     _scrollToBottomSoft();
 
+    if (isReportTool) {
+      _startReportProgressSimulation(predictedTool!);
+    }
+
     _thinkingTimer?.cancel();
-    _thinkingTimer = Timer(const Duration(milliseconds: 1400), () {
-      if (!mounted) return;
-      setState(() {
-        _isThinking = false;
-        _messages.add(
-          DemoMessage(
-            role: DemoMessageRole.assistant,
-            content: reply,
-            time: context.tr.now,
-            toolName: replyToolName,
-          ),
-        );
-      });
-      _scrollToBottomSoft();
+    _thinkingTimer = Timer(
+      isReportTool
+          ? const Duration(milliseconds: 4200)
+          : const Duration(milliseconds: 1400),
+      () {
+        if (!mounted) return;
+        _progressTimer?.cancel();
+        ref
+            .read(runningAgentsControllerProvider.notifier)
+            .markIdle(widget.conversationId);
+        setState(() {
+          _isThinking = false;
+          _runProgress = null;
+          _messages.add(
+            DemoMessage(
+              role: DemoMessageRole.assistant,
+              content: reply,
+              time: context.tr.now,
+              toolName: replyToolName,
+            ),
+          );
+        });
+        _scrollToBottomSoft();
+      },
+    );
+  }
+
+  /// Ticks a fake [RunProgress] through `building_report` → `rendering_report`
+  /// so the [ChatRunProgressCard] gets meaningful demo data. Replace with
+  /// real `conversation.run_progress` reads when the polling layer lands.
+  void _startReportProgressSimulation(String toolName) {
+    final fileName = switch (toolName) {
+      ToolNames.generatePdfReport ||
+      ToolNames.generatePdfDocument =>
+        'report.pdf',
+      ToolNames.generateWordReport ||
+      ToolNames.generateWordDocument =>
+        'report.docx',
+      _ => 'report.xlsx',
+    };
+    const total = 1247;
+    var current = 0;
+    setState(() {
+      _runProgress = RunProgress(
+        phase: RunProgressPhase.fetching,
+        current: current,
+        total: total,
+        fileName: fileName,
+      );
+    });
+    _progressTimer?.cancel();
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 220), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      current = (current + 92).clamp(0, total);
+      if (current < total) {
+        setState(() {
+          _runProgress = RunProgress(
+            phase: RunProgressPhase.fetching,
+            current: current,
+            total: total,
+            fileName: fileName,
+          );
+        });
+      } else {
+        t.cancel();
+        setState(() {
+          _runProgress = RunProgress(
+            phase: RunProgressPhase.rendering,
+            rows: total,
+            fileName: fileName,
+          );
+        });
+      }
     });
   }
 
   void _seedSuggestion(String prompt) {
     _composer.text = prompt;
     _composer.selection = TextSelection.collapsed(offset: prompt.length);
+  }
+
+  /// Opens the native file picker rooted in the device's Photos / Files
+  /// app. Accepts the same set the web composer does — images, PDFs,
+  /// Office docs, CSV/TSV — so the agent's later inspection has the
+  /// same surface to work with on mobile + web.
+  ///
+  /// The picker returns a [PlatformFile]; we keep just the metadata
+  /// (name, size, kind, optional thumbnail path) locally because the
+  /// chat surfaces only need that to render the chip. Bytes / actual
+  /// upload land when `/api/conversations/{id}/attachments/` ships.
+  Future<void> _pickAttachment() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const [
+        'png', 'jpg', 'jpeg', 'gif', 'webp',
+        'pdf',
+        'csv', 'tsv',
+        'xlsx', 'xls', 'xlsm',
+        'docx', 'doc',
+      ],
+      withData: false,
+      allowMultiple: false,
+    );
+    if (!mounted || result == null || result.files.isEmpty) return;
+    final picked = result.files.first;
+    setState(() {
+      _attachment = DemoAttachment(
+        name: picked.name,
+        kind: _kindForExtension(picked.extension),
+        size: _formatBytes(picked.size),
+        imageUrl: _isImageExt(picked.extension) ? picked.path : null,
+      );
+    });
+  }
+
+  /// Maps a file extension to one of the [DemoAttachment.kind] tokens
+  /// the chat bubble + attachment chip already know how to render.
+  String _kindForExtension(String? ext) {
+    final e = (ext ?? '').toLowerCase();
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp'].contains(e)) return 'Image';
+    if (e == 'pdf') return 'PDF';
+    if (['xlsx', 'xls', 'xlsm'].contains(e)) return 'XLSX';
+    if (['csv', 'tsv'].contains(e)) return 'CSV';
+    if (['docx', 'doc'].contains(e)) return 'DOCX';
+    return e.toUpperCase().padRight(3, ' ').trimRight();
+  }
+
+  bool _isImageExt(String? ext) =>
+      ['png', 'jpg', 'jpeg', 'gif', 'webp']
+          .contains((ext ?? '').toLowerCase());
+
+  /// Human-readable file size — "184 KB" / "2.4 MB". Used in the
+  /// attachment chip subtitle so the user gets a sense of upload cost
+  /// before tapping Send.
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).round()} KB';
+    }
+    final mb = bytes / (1024 * 1024);
+    return '${mb.toStringAsFixed(mb < 10 ? 1 : 0)} MB';
+  }
+
+  /// Opens the schema-driven credential request as a keyboard-aware
+  /// ModalBottomSheet. Replaces the inline render (max 45 % of the screen,
+  /// fought with the on-screen keyboard) with a sheet that takes up to
+  /// 95 % of the screen and dismisses via swipe-down — closer to how
+  /// users expect "fill this form" surfaces to behave on mobile.
+  Future<void> _openCredentialRequestSheet(DemoCredentialKind initial) async {
+    final result = await InlineCredentialRequest.show(
+      context,
+      initialKind: initial,
+    );
+    if (!mounted || result == null) return;
+    switch (result.kind) {
+      case InlineCredentialResultKind.provided:
+        _toast(
+          result.memorize
+              ? context.tr.inlineCredentialMemorized
+              : context.tr.inlineCredentialSession,
+        );
+      case InlineCredentialResultKind.providedContinuing:
+        // "Save and continue" — the agent resumes immediately so the
+        // toast tells the user the run picked back up. Once streaming
+        // lands, this branch also kicks the conversation back into
+        // running state without waiting for a fresh user message.
+        _toast(context.tr.credentialSavedContinuing);
+      case InlineCredentialResultKind.pickSaved:
+        await _openEnvironmentPicker();
+      case InlineCredentialResultKind.cancelled:
+        break;
+    }
+  }
+
+  /// Opens the rename dialog seeded with the conversation's effective
+  /// title (post-rename overlay). On Save, commits via the controller
+  /// so the AppBar title, conversation list row, and any other watcher
+  /// update in one frame.
+  Future<void> _renameConversation() async {
+    final conv = _conversation;
+    final current =
+        ref.read(conversationTitleProvider(conv));
+    final next = await RenameConversationDialog.show(
+      context,
+      initial: current,
+    );
+    if (next == null || !mounted) return;
+    ref.read(conversationsControllerProvider.notifier).renameConversation(
+          id: widget.conversationId,
+          name: next,
+        );
+    _toast(context.tr.conversationRenamedToast);
+  }
+
+  /// Toggles the conversation's pinned state. Pinned chats float to the
+  /// top of the Chats list (see `orderedConversationsProvider`).
+  void _togglePin() {
+    final wasPinned = ref
+        .read(conversationsControllerProvider.notifier)
+        .isPinned(widget.conversationId);
+    ref
+        .read(conversationsControllerProvider.notifier)
+        .togglePin(widget.conversationId);
+    _toast(
+      wasPinned
+          ? context.tr.conversationUnpinnedToast
+          : context.tr.conversationPinnedToast,
+    );
+  }
+
+  /// Cancels the in-flight assistant reply. Two-phase so the user gets
+  /// instant feedback even if the server cancel takes a beat:
+  ///   1. Optimistic flip — `_stopping = true` swaps the Stop button to a
+  ///      spinner and locks subsequent taps.
+  ///   2. ~250 ms later (mocking the round-trip), the thinking timer is
+  ///      killed and `_isThinking` clears, returning the composer to its
+  ///      idle Send state.
+  /// Web parity for the `state.stopping` optimistic flag in chat-v2.
+  Future<void> _stopGeneration() async {
+    if (!_isThinking || _stopping) return;
+    _thinkingTimer?.cancel();
+    _thinkingTimer = null;
+    setState(() => _stopping = true);
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    if (!mounted) return;
+    ref
+        .read(runningAgentsControllerProvider.notifier)
+        .markIdle(widget.conversationId);
+    setState(() {
+      _isThinking = false;
+      _stopping = false;
+    });
+    _toast(context.tr.generationStopped);
   }
 
   // -------- Build --------
@@ -328,6 +577,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (_isUnknownChat) return _buildNotFound(context);
     final conversation = _conversation;
     final online = ref.watch(connectivityControllerProvider);
+    final deepThink = ref.watch(deepThinkControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -337,8 +587,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           activeCredentialLabel: _environmentLabel,
           autoApprove: _autoApprove,
           onCredentialTap: _openEnvironmentPicker,
+          // Pencil next to the title opens the rename dialog. Hidden on
+          // the placeholder "new chat" since renaming a non-existent
+          // conversation makes no sense.
+          onRenameTap: _isNewChat ? null : _renameConversation,
+          // Surface the agent's live state in the AppBar so the user can
+          // scroll anywhere in the chat without losing the "Saqqar is
+          // working" signal. Pulses for ~1.4 s per cycle while in flight.
+          agentBusy: _isThinking,
         ),
         actions: [
+          // Chat-level toggles moved here on 2026-05-16 — used to live in
+          // the header strip but squeezed the dropdowns on small phones.
+          ChatAppBarToggles(
+            deepThink: deepThink,
+            autoApprove: _autoApprove,
+            onDeepThinkChanged: (value) {
+              ref.read(deepThinkControllerProvider.notifier).set(value);
+              _toast(
+                value ? context.tr.deepThinkOn : context.tr.deepThinkOff,
+              );
+            },
+            onAutoApproveChanged: (value) {
+              setState(() => _autoApprove = value);
+              _toast(
+                value ? context.tr.autoApproveOn : context.tr.autoApproveOff,
+              );
+            },
+          ),
+          const SizedBox(width: 4),
           AppIconButton(
             icon: AppIcons.more,
             tooltip: context.tr.more,
@@ -351,14 +628,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       body: AmbientBackground(
         child: Column(
           children: [
-            // 3-control header strip: Auto-approve | Project | Environment.
-            // Web parity — see ChatHeaderControls. Picking a project clears
-            // the env so the user always confirms which env within the new
-            // project they want to talk to.
+            // Header strip — Project + Environment dropdowns only. The
+            // toggles (Deep think + Auto-approve) moved to the AppBar
+            // actions; see ChatAppBarToggles above.
             ChatHeaderControls(
               projectId: _projectId,
               environmentId: _environmentId,
-              autoApprove: _autoApprove,
               onProjectChanged: (value) {
                 setState(() {
                   _projectId = value;
@@ -378,14 +653,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   _toast(context.tr.environmentSetForChat);
                 }
               },
-              onAutoApproveChanged: (value) {
-                setState(() => _autoApprove = value);
-                _toast(
-                  value ? context.tr.autoApproveOn : context.tr.autoApproveOff,
-                );
-              },
             ),
             const OfflineBanner(),
+            // Long-running report progress — Excel / PDF / Word generation.
+            // Rendered above the message list (not inside the typing row)
+            // because the user's eye needs to find the percentage fast,
+            // and the typing row sits at the message tail where new
+            // messages can push it off-screen.
+            if (_runProgress != null)
+              ChatRunProgressCard(progress: _runProgress!),
             Expanded(
               child: Stack(
                 children: [
@@ -410,31 +686,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ],
               ),
             ),
-            if (_inlineCredentialKind != null)
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(context).height * 0.45,
-                ),
-                child: SingleChildScrollView(
-                  child: ResponsiveContent(
-                    maxWidth: 760,
-                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-                    child: InlineCredentialRequest(
-                      initialKind: _inlineCredentialKind!,
-                      onProvide: (_, __) {
-                        setState(() => _inlineCredentialKind = null);
-                        _toast(context.tr.inlineCredentialProvided);
-                      },
-                      onPickSaved: () {
-                        setState(() => _inlineCredentialKind = null);
-                        _openEnvironmentPicker();
-                      },
-                      onCancel: () =>
-                          setState(() => _inlineCredentialKind = null),
-                    ),
-                  ),
-                ),
-              ),
             // Inline pending-approvals strip — sits right above the
             // composer so the user can act without leaving the chat.
             // Replaces the old hidden ⋯-menu entry as the primary surface.
@@ -446,9 +697,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             ChatComposer(
               controller: _composer,
-              hasAttachment: _hasAttachment,
-              onAttach: () => setState(() => _hasAttachment = !_hasAttachment),
+              attachment: _attachment,
+              onAttach: _pickAttachment,
+              onRemoveAttachment: () => setState(() => _attachment = null),
               onSend: online ? _send : null,
+              // Render Stop instead of Send while the agent is "running"
+              // (today: while the local thinking timer is in flight; later:
+              // while `conversation.is_running` is true on the backend).
+              onStop: _isThinking ? _stopGeneration : null,
+              stopping: _stopping,
             ),
           ],
         ),
@@ -591,48 +848,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// Opens the Project → Environment picker. On confirmation, swaps the
   /// active env for this conversation and re-evaluates the live warning
   /// gate (so the user gets a fresh prompt for a new live env).
-  /// Picks a contextual progress string for the typing indicator based on
-  /// the last user message + attachment state. Matches the web's labels:
-  /// "Checking Odoo data", "Building Excel report", "Running database
-  /// query", "Reading repository files", "Running server command", etc.
+  /// Picks the localised "Saqqar is doing X" label for the typing row.
   ///
-  /// This is a heuristic — once streaming + real tool-call events arrive
-  /// from the backend, swap this for the agent's reported activity.
+  /// Priority:
+  ///   1. The last assistant/tool message's `toolName` (real tool call
+  ///      reported by the backend) — passed through
+  ///      [pendingStatusForTool] for a 1:1 mapping with the web.
+  ///   2. Attachment review — covered inside [pendingStatusForTool].
+  ///   3. Heuristic guess from the last user message text — used on the
+  ///      very first frame after sending, before the backend has chosen a
+  ///      tool. Once the chat is wired to the streaming API the heuristic
+  ///      branch will only trigger for the first ~200 ms.
   String _contextualActivityLabel(DemoMessage? lastMessage) {
-    if (lastMessage == null) return context.tr.activityCheckingOdoo;
-    if (lastMessage.attachments.isNotEmpty) {
-      return context.tr.activityReviewingAttachment;
+    if (lastMessage == null) {
+      return pendingStatusForTool(context, toolName: null);
     }
-    final text = lastMessage.content.toLowerCase();
-    if (text.contains('export') ||
-        text.contains('excel') ||
-        text.contains('xlsx') ||
-        text.contains('csv') ||
-        text.contains('تقرير') ||
-        text.contains('صدّر')) {
-      return context.tr.activityBuildingReport;
+    final hasAttachment = lastMessage.attachments.isNotEmpty;
+    final reportedTool = lastMessage.toolName;
+    if (reportedTool != null && reportedTool.isNotEmpty) {
+      return pendingStatusForTool(
+        context,
+        toolName: reportedTool,
+        hasAttachment: hasAttachment,
+      );
     }
-    if (text.contains('log') ||
-        text.contains('tail') ||
-        text.contains('shell') ||
-        text.contains('command') ||
-        text.contains('سيرفر') ||
-        text.contains('سجل')) {
-      return context.tr.activityRunningCommand;
-    }
-    if (text.contains('postgres') ||
-        text.contains('sql') ||
-        text.contains('database') ||
-        text.contains('قاعدة')) {
-      return context.tr.activityRunningQuery;
-    }
-    if (text.contains('repo') ||
-        text.contains('github') ||
-        text.contains('addons') ||
-        text.contains('module')) {
-      return context.tr.activityReadingRepo;
-    }
-    return context.tr.activityCheckingOdoo;
+    final guess = guessToolFromPrompt(lastMessage.content);
+    return pendingStatusForTool(
+      context,
+      toolName: guess,
+      hasAttachment: hasAttachment,
+    );
   }
 
   Future<void> _openEnvironmentPicker() async {
@@ -670,6 +915,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ref.read(conversationOpenActionsProvider(widget.conversationId));
         final artifactsCount =
             demoArtifactsForConversation(widget.conversationId).length;
+        final activityCount =
+            demoServerActivityForConversation(widget.conversationId).length;
         return ChatSheet(
           title: sheetContext.tr.more,
           children: [
@@ -699,39 +946,76 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 _openArtifacts();
               },
             ),
+            // Activity — server-shell command outputs from THIS chat.
+            // Mirrors the web's Activity tab in the Inbox drawer. Hidden
+            // (trailing chip null) when no shell commands have run, since
+            // surfacing a 0 count adds noise.
+            ChatSheetItem(
+              icon: AppIcons.terminal,
+              color: s.brandCyan,
+              title: sheetContext.tr.serverActivity,
+              trailing: activityCount == 0
+                  ? null
+                  : MiniChip('$activityCount', color: s.brandCyan),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _openServerActivity();
+              },
+            ),
             const SizedBox(height: 4),
             Divider(color: s.border),
             const SizedBox(height: 4),
+            // Share / Archive remain backend-bound — kept as "Soon"
+            // pending API. Rename + Pin are now local-only operations
+            // (handled by the conversations controller) so they ship
+            // alongside the AppBar pencil and the row pin/unpin.
             ChatSheetItem(
               icon: AppIcons.share,
               title: sheetContext.tr.shareLink,
-              onTap: () => _sheetToast(
-                sheetContext,
-                sheetContext.tr.publicLinkCopied,
-              ),
+              comingSoon: true,
+              onTap: () =>
+                  _sheetToast(sheetContext, sheetContext.tr.comingSoonToast),
+            ),
+            Builder(
+              builder: (_) {
+                final pinned = ref
+                    .watch(conversationsControllerProvider)
+                    .isPinned(widget.conversationId);
+                return ChatSheetItem(
+                  icon: pinned ? AppIcons.shieldCheck : AppIcons.bolt,
+                  color: pinned ? s.brandCyan : null,
+                  title: pinned
+                      ? sheetContext.tr.unpinConversation
+                      : sheetContext.tr.pinConversation,
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _togglePin();
+                  },
+                );
+              },
             ),
             ChatSheetItem(
               icon: AppIcons.edit,
               title: sheetContext.tr.rename,
-              onTap: () => _sheetToast(
-                sheetContext,
-                sheetContext.tr.renameConversation,
-              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _renameConversation();
+              },
             ),
             ChatSheetItem(
               icon: AppIcons.archive,
               title: sheetContext.tr.archive,
+              comingSoon: true,
               onTap: () =>
-                  _sheetToast(sheetContext, sheetContext.tr.archivedToast),
+                  _sheetToast(sheetContext, sheetContext.tr.comingSoonToast),
             ),
             ChatSheetItem(
               icon: AppIcons.trash,
               color: s.danger,
               title: sheetContext.tr.delete,
-              onTap: () => _sheetToast(
-                sheetContext,
-                sheetContext.tr.deleteNeedsConfirmation,
-              ),
+              comingSoon: true,
+              onTap: () =>
+                  _sheetToast(sheetContext, sheetContext.tr.comingSoonToast),
             ),
           ],
         );
@@ -778,9 +1062,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               minHeight: 38,
                               onPressed: () {
                                 Navigator.of(context).pop();
-                                setState(
-                                  () => _inlineCredentialKind =
-                                      action.requestsCredential,
+                                _openCredentialRequestSheet(
+                                  action.requestsCredential!,
                                 );
                               },
                             ),
@@ -860,6 +1143,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ChatArtifactTile(
                   artifact: artifact,
                   onOpen: () => _toast(context.tr.opening(artifact.name)),
+                ),
+            ],
+    );
+  }
+
+  /// Opens the server-activity sheet — one [ServerActivityCard] per
+  /// `run_server_command` invocation in this conversation. The latest
+  /// failing card auto-expands so the user lands directly on what they
+  /// most likely came to look at.
+  void _openServerActivity() {
+    final activity =
+        demoServerActivityForConversation(widget.conversationId);
+    final lastFailingId = activity.reversed
+        .firstWhere(
+          (a) => a.failed,
+          orElse: () =>
+              const DemoServerActivity(id: '', conversationId: '', command: '', createdLabel: ''),
+        )
+        .id;
+    _openListSheet(
+      title: context.tr.serverActivity,
+      children: activity.isEmpty
+          ? [ChatSheetEmpty(text: context.tr.noServerActivity)]
+          : [
+              for (final a in activity)
+                ServerActivityCard(
+                  activity: a,
+                  initiallyExpanded: a.id == lastFailingId,
                 ),
             ],
     );

@@ -8,17 +8,18 @@ import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/confirm_dialog.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../state/vault_controller.dart';
 import 'credential_form.dart';
 
-/// Environment popup — rename + 3 flag switches + tab strip per credential
-/// kind, with a [CredentialForm] inside each tab. Matches the web's
-/// `environmentPopup`.
+/// Environment popup — breadcrumb + rename + tab strip per credential
+/// kind, with a [CredentialForm] inside each tab. Mirrors the web's
+/// `environmentPopup` exactly.
 ///
-/// Pass the env id; the sheet pulls live state from [VaultController].
+/// Flag toggles (Live / Read-only / Auto-approve) and the Delete action
+/// live one level up on the env row inside the project popup (see
+/// [_EnvRow] in `project_detail_sheet.dart`). The env detail is purely a
+/// credential editor.
 class EnvironmentDetailSheet extends ConsumerStatefulWidget {
   const EnvironmentDetailSheet({super.key, required this.environmentId});
 
@@ -63,22 +64,6 @@ class _EnvironmentDetailSheetState
     if (_initialised) return;
     _name.text = env.name;
     _initialised = true;
-  }
-
-  Future<void> _deleteEnv(DemoEnvironment env) async {
-    final ok = await ConfirmDialog.show(
-      context,
-      title: context.tr.deleteEnvironmentTitle,
-      body: context.tr.deleteEnvironmentBody(env.name),
-      confirmLabel: context.tr.delete,
-      destructive: true,
-      icon: AppIcons.trash,
-    );
-    if (!ok || !mounted) return;
-    ref.read(vaultControllerProvider.notifier).deleteEnvironment(env.id);
-    if (!mounted) return;
-    Navigator.of(context).pop();
-    AppToast.show(context, message: context.tr.environmentDeletedToast);
   }
 
   void _commitRename(String value) {
@@ -140,22 +125,73 @@ class _EnvironmentDetailSheetState
                   ),
                 ),
                 const SizedBox(height: 14),
-                Text(
-                  // Breadcrumb: Project › Environment
-                  '${project.name} › ${env.name}',
-                  style: context.text.labelMedium?.copyWith(color: s.muted),
+                // Header — breadcrumb ("Project › Env") on the start side,
+                // explicit X close on the end side. Matches the web layout
+                // exactly. The bold env title sits below the breadcrumb.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(AppIcons.server,
+                                  size: 13, color: s.muted),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  '${project.name} › ${env.name}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style:
+                                      context.text.labelMedium?.copyWith(
+                                    color: s.muted,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            env.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.text.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: context.tr.close,
+                      icon: const Icon(AppIcons.close),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                // Rename field — the env name displayed above is the
+                // last-saved value; this lets the user update it without
+                // backing out to the project popup. Submitting commits the
+                // rename via the controller.
                 AppTextField(
                   controller: _name,
                   hint: context.tr.environment,
-                  prefixIcon: AppIcons.server,
+                  prefixIcon: AppIcons.edit,
                   textInputAction: TextInputAction.done,
                   onSubmitted: _commitRename,
                 ),
-                const SizedBox(height: 10),
-                _FlagsRow(env: env),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
+                // Per-kind credential tabs — XML-RPC / PostgreSQL /
+                // Server shell / GitHub. Each tab's form is schema-driven
+                // from `demoCredentialSchemas`.
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: s.surface2.withValues(
@@ -187,14 +223,6 @@ class _EnvironmentDetailSheetState
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                GhostButton(
-                  label: context.tr.delete,
-                  icon: AppIcons.trash,
-                  tone: GhostButtonTone.danger,
-                  expand: true,
-                  onPressed: () => _deleteEnv(env),
-                ),
               ],
             ),
           ),
@@ -204,84 +232,8 @@ class _EnvironmentDetailSheetState
   }
 }
 
-/// Three switches that drive the env flags via [VaultController].
-/// Toggles are instant (no confirm dialog) — matches the web behaviour.
-class _FlagsRow extends ConsumerWidget {
-  const _FlagsRow({required this.env});
-
-  final DemoEnvironment env;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = context.saqqar;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
-        borderRadius: AppRadius.cardR,
-        border: Border.all(color: s.cardBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Column(
-          children: [
-            _FlagToggle(
-              label: context.tr.flagLive,
-              value: env.isLive,
-              color: s.danger,
-              onChanged: (v) => ref
-                  .read(vaultControllerProvider.notifier)
-                  .setEnvFlag(envId: env.id, isLive: v),
-            ),
-            _FlagToggle(
-              label: context.tr.flagReadOnly,
-              value: env.readOnly,
-              color: s.muted,
-              onChanged: (v) => ref
-                  .read(vaultControllerProvider.notifier)
-                  .setEnvFlag(envId: env.id, readOnly: v),
-            ),
-            _FlagToggle(
-              label: context.tr.flagAutoApprove,
-              value: env.autoApprove,
-              color: s.warning,
-              onChanged: (v) => ref
-                  .read(vaultControllerProvider.notifier)
-                  .setEnvFlag(envId: env.id, autoApprove: v),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FlagToggle extends StatelessWidget {
-  const _FlagToggle({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.onChanged,
-  });
-
-  final String label;
-  final bool value;
-  final Color color;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: context.text.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Switch(value: value, activeThumbColor: color, onChanged: onChanged),
-      ],
-    );
-  }
-}
+// `_FlagsRow` + `_FlagToggle` were removed on 2026-05-16 — the three env
+// flags (Live / Read-only / Auto-approve) now live exclusively on the env
+// card row inside the project popup (see `project_detail_sheet.dart`),
+// mirroring the web. Surfacing them in two places was redundant and made
+// the env detail sheet feel busy.
