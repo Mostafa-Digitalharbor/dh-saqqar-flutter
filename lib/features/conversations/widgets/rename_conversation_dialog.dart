@@ -68,24 +68,29 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
 
+    // Flutter's [Dialog] already adds `MediaQuery.viewInsets` to its
+    // own padding when computing position — that floats the whole
+    // dialog above the keyboard automatically. The old AnimatedPadding
+    // here was duplicating that work by injecting `viewInsets.bottom`
+    // INTO the dialog body, which stretched the card by the keyboard
+    // height and made it look like a tall blank panel.
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       backgroundColor: s.surface,
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.modalR),
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(bottom: viewInsets),
-        child: SizedBox(
-          width: 360,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: SizedBox(
+        width: 360,
+        // Wrap in a scroll view so the column never overflows when
+        // the Arabic font + system text-scaling (1.25x+) pushes the
+        // header/buttons past the dialog's max height. On a normal
+        // device the content fits and no scrollbar is shown.
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
                   children: [
@@ -138,7 +143,6 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

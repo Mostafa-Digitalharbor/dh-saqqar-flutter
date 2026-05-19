@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
-import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
 /// Centered/left-aligned Saqqar mark + name + tagline used on the auth
 /// screens (`compact: true` on phones, otherwise the wider hero layout).
+///
+/// The mark inside the gradient ring is the same `saqqar-icon-foreground`
+/// asset rendered on the launch splash — keeps the brand consistent across
+/// the very first surfaces a new user sees (splash → auth).
 class BrandLockup extends StatelessWidget {
   const BrandLockup({super.key, this.compact = false});
 
@@ -15,6 +18,10 @@ class BrandLockup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
+    final ringSize = compact ? 68.0 : 80.0;
+    // Logo inset 4 px from the ring so the foreground glyph reads as
+    // "sitting inside" the gradient halo rather than crowding the edge.
+    final logoSize = ringSize - 18;
 
     return Column(
       crossAxisAlignment: compact
@@ -22,8 +29,8 @@ class BrandLockup extends StatelessWidget {
           : CrossAxisAlignment.start,
       children: [
         Container(
-          width: compact ? 68 : 80,
-          height: compact ? 68 : 80,
+          width: ringSize,
+          height: ringSize,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -37,10 +44,12 @@ class BrandLockup extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(
-            AppIcons.logoMark,
-            color: Colors.white,
-            size: compact ? 30 : 36,
+          child: Image.asset(
+            'assets/img/saqqar-icon-foreground.png',
+            width: logoSize,
+            height: logoSize,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.medium,
           ),
         ),
         SizedBox(height: compact ? 18 : 24),

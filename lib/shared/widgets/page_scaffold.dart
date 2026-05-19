@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/i18n/app_localizations.dart';
 import '../../core/routing/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
-import '../../features/chat/state/running_agents_controller.dart';
+import '../../features/chat/view_model/running_agents_cubit.dart';
 import '../extensions/context_extensions.dart';
 import 'offline_banner.dart';
+import 'saqqar_logo.dart';
 import 'saqqar_screen.dart';
 
 /// Lightweight single-row chrome for every root tab:
@@ -110,7 +111,7 @@ class _PageScaffoldState extends State<PageScaffold> {
 /// next to the brand wordmark whenever ANY conversation has the agent
 /// mid-run — gives the user cross-tab "Saqqar is busy somewhere"
 /// awareness even when they're not in a chat.
-class _SaqqarBrandHeader extends ConsumerWidget {
+class _SaqqarBrandHeader extends StatelessWidget {
   const _SaqqarBrandHeader({
     required this.title,
     required this.actions,
@@ -122,9 +123,11 @@ class _SaqqarBrandHeader extends ConsumerWidget {
   final bool elevated;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = context.saqqar;
-    final agentRunning = ref.watch(hasAnyAgentRunningProvider);
+    final agentRunning = context.select<RunningAgentsCubit, bool>(
+      (cubit) => cubit.state.isNotEmpty,
+    );
     // Resting shadow is barely-there so the bar blends with the surface
     // at scroll position 0. As the user scrolls, the shadow lifts to
     // signal "this chrome is now over content" — same pattern iOS uses.
@@ -180,24 +183,11 @@ class _SaqqarBrandHeader extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(20, 0, 12, 0),
                 child: Row(
               children: [
-                // Start side: brand wordmark with the cyan→purple gradient
-                // (ShaderMask paints over the white text so the gradient
-                // shows through letterforms cleanly).
-                ShaderMask(
-                  shaderCallback: (rect) =>
-                      AppGradients.vivid.createShader(Offset.zero & rect.size),
-                  blendMode: BlendMode.srcIn,
-                  child: const Text(
-                    'Saqqar',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.4,
-                      height: 1.0,
-                    ),
-                  ),
-                ),
+                // Start side: brand wordmark — uses the SAQQÂR logo
+                // image (asset `assets/img/saqqar-logo.png`). Falls
+                // back to a gradient-text "SAQQAR" if the file is
+                // missing so the layout never blows up mid-handover.
+                const SaqqarLogo(height: 22),
                 // Cross-tab "agent is working" pulse — slides in next to
                 // the wordmark the moment any conversation pushes itself
                 // into the running set, slides out when the last one
@@ -306,84 +296,50 @@ class _SaqqarBrandHeader extends ConsumerWidget {
   }
 }
 
-/// Per-action shortcut emitted by the user avatar menu. Kept private
-/// to the scaffold because no one else has a reason to fan-out on it.
-enum _UserMenuAction { account, signOut }
-
-/// Circular user avatar in the brand bar's end slot. Tapping opens a
-/// [PopupMenuButton] with quick shortcuts — Account (jumps to the
-/// Account tab) and Sign out (returns to /sign-in). Same surface every
-/// tab inherits so the user has a 2-tap escape hatch from anywhere.
+/// Circular user avatar in the brand bar's end slot. Tap takes you
+/// straight to the Account tab — the previous popup with an "Account"
+/// item + a destructive "Sign out" item was redundant (Sign out has
+/// its own button inside the Account screen) and the extra hop slowed
+/// the common case down for no benefit.
 class _UserAvatarMenu extends StatelessWidget {
   const _UserAvatarMenu();
 
-  void _handle(BuildContext context, _UserMenuAction action) {
-    switch (action) {
-      case _UserMenuAction.account:
-        context.go(RouteNames.accountPath);
-      case _UserMenuAction.signOut:
-        context.go(RouteNames.signInPath);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
     final initial = context.tr.sampleUsername
         .characters
         .firstOrNull
         ?.toUpperCase() ??
         'U';
-    return PopupMenuButton<_UserMenuAction>(
-      tooltip: context.tr.tabAccount,
-      offset: const Offset(0, 40),
-      color: s.surface,
-      surfaceTintColor: Colors.transparent,
-      onSelected: (a) => _handle(context, a),
-      itemBuilder: (_) => [
-        PopupMenuItem(
-          value: _UserMenuAction.account,
-          child: Row(
-            children: [
-              Icon(Icons.person_outline, size: 18, color: s.text),
-              const SizedBox(width: 10),
-              Text(context.tr.tabAccount),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: _UserMenuAction.signOut,
-          child: Row(
-            children: [
-              const Icon(Icons.logout_rounded, size: 18, color: AppColors.danger),
-              const SizedBox(width: 10),
-              Text(
-                context.tr.signOut,
-                style: const TextStyle(color: AppColors.danger),
+    return Semantics(
+      button: true,
+      label: context.tr.tabAccount,
+      child: Tooltip(
+        message: context.tr.tabAccount,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => context.go(RouteNames.accountPath),
+          child: Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: AppGradients.vivid,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.12),
+                width: 0.8,
               ),
-            ],
-          ),
-        ),
-      ],
-      child: Container(
-        width: 32,
-        height: 32,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: AppGradients.vivid,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.12),
-            width: 0.8,
-          ),
-        ),
-        child: Text(
-          initial,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-            height: 1.0,
+            ),
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+              ),
+            ),
           ),
         ),
       ),

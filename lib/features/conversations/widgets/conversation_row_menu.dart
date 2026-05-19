@@ -7,16 +7,21 @@ import 'conversation_action.dart';
 
 /// Overflow menu (kebab) on each conversation row: pin / rename / share /
 /// archive / delete. The "delete" entry is tinted danger to set
-/// expectations. The Pin label flips to Unpin when [isPinned] is true.
+/// expectations. The Pin label flips to Unpin when [isPinned] is true,
+/// and the Archive label flips to Unarchive when [isArchived] is true
+/// so a row that's already in the archive bucket reads as "Unarchive"
+/// instead of confusingly offering Archive again.
 class ConversationRowMenu extends StatelessWidget {
   const ConversationRowMenu({
     super.key,
     required this.onAction,
     this.isPinned = false,
+    this.isArchived = false,
   });
 
   final ValueChanged<ConversationAction> onAction;
   final bool isPinned;
+  final bool isArchived;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +52,14 @@ class ConversationRowMenu extends StatelessWidget {
         ),
         PopupMenuItem(
           value: ConversationAction.archive,
-          child: _MenuRow(icon: AppIcons.archive, label: context.tr.archive),
+          child: _MenuRow(
+            // Same `ConversationAction.archive` value either way — the
+            // screen's handler already inspects `c.isArchived` and
+            // routes to unarchiveConversation when true. We only flip
+            // the label/icon here.
+            icon: isArchived ? Icons.unarchive_outlined : AppIcons.archive,
+            label: isArchived ? context.tr.unarchive : context.tr.archive,
+          ),
         ),
         PopupMenuItem(
           value: ConversationAction.delete,

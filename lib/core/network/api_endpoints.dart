@@ -2,6 +2,10 @@
 ///
 /// `baseUrl` is read from `--dart-define=SAQQAR_BASE_URL=...` at build time
 /// (see `tool/run_dev.ps1` — defaults to production saqqaar.com if unset).
+///
+/// All paths are pinned to `/api/v1/` per SAQQAR_MOBILE_API.md §0
+/// (Versioning). `/api/` still works (back-compat) but `/api/v2/` will be
+/// the first to break the v1 contract, so pinning protects us.
 class ApiEndpoints {
   ApiEndpoints._();
 
@@ -10,71 +14,80 @@ class ApiEndpoints {
     defaultValue: 'https://saqqaar.com',
   );
 
-  // Auth (token endpoints — backend must add per BACKEND_REQUEST).
-  static const String login = '/api/auth/login/';
-  static const String register = '/api/auth/register/';
-  static const String refresh = '/api/auth/refresh/';
-  static const String logout = '/api/auth/logout/';
-  static const String me = '/api/auth/me/';
-  static const String changePassword = '/api/auth/password/change/';
+  // ── Auth (§1) ─────────────────────────────────────────────────────────
+  static const String login = '/api/v1/auth/login/';
+  static const String register = '/api/v1/auth/register/';
+  static const String logout = '/api/v1/auth/logout/';
+  static const String me = '/api/v1/auth/me/';
 
-  // Conversations.
-  static const String conversations = '/api/conversations/';
-  static String conversationDetail(String id) => '/api/conversations/$id/';
+  /// Rotates the password and returns a fresh bearer token. Every other
+  /// device's token is revoked server-side.
+  static const String changePassword = '/api/v1/auth/password/';
+
+  // ── Conversations (§2) ────────────────────────────────────────────────
+  static const String conversations = '/api/v1/conversations/';
+  static String conversationDetail(String id) =>
+      '/api/v1/conversations/$id/';
   static String conversationMessages(String id) =>
-      '/api/conversations/$id/messages/';
+      '/api/v1/conversations/$id/messages/';
   static String conversationAttachments(String id) =>
-      '/api/conversations/$id/attachments/';
+      '/api/v1/conversations/$id/attachments/';
+  static String conversationAttachmentStatus(
+    String conversationId,
+    String attachmentId,
+  ) =>
+      '/api/v1/conversations/$conversationId/attachments/$attachmentId/status/';
+
+  static String conversationCredentialsActive(String id) =>
+      '/api/v1/conversations/$id/credentials/active/';
   static String conversationCredentialsToggle(String id) =>
-      '/api/conversations/$id/credentials/toggle/';
+      '/api/v1/conversations/$id/credentials/toggle/';
   static String conversationDismiss(String id) =>
-      '/api/conversations/$id/pending-actions/dismiss/';
+      '/api/v1/conversations/$id/pending-actions/dismiss/';
 
-  /// Cancels a running agent for the conversation. Body: empty.
-  /// 204 on success, 409 {agent_not_running} if there's nothing to stop.
-  static String conversationStop(String id) => '/api/conversations/$id/stop/';
+  /// Cooperative cancel — sets `stop_requested=true`; the agent worker
+  /// exits cleanly between tool rounds. Idempotent.
+  static String conversationStop(String id) =>
+      '/api/v1/conversations/$id/stop/';
 
-  static String conversationShare(String id) => '/api/conversations/$id/share/';
+  static String conversationShare(String id) =>
+      '/api/v1/conversations/$id/share/';
 
-  // Credentials.
-  static const String credentials = '/api/credentials/';
-  static const String credentialSchemas = '/api/credentials/schemas/';
+  // ── Credentials (§7) ─────────────────────────────────────────────────
+  static const String credentials = '/api/v1/credentials/';
+  static const String credentialSchemas = '/api/v1/credentials/schemas/';
+  static String credentialDetail(String name) =>
+      '/api/v1/credentials/$name/';
 
-  // Projects & Environments hierarchy (per credential vault deep-dive
-  // against the production saqqaar.com JS). Backend needs to expose:
-  static const String projects = '/api/projects/';
-  static String projectDetail(String id) => '/api/projects/$id/';
+  // ── Projects & Environments (§11) ────────────────────────────────────
+  static const String projects = '/api/v1/projects/';
+  static String projectDetail(String id) => '/api/v1/projects/$id/';
   static String projectEnvironments(String projectId) =>
-      '/api/projects/$projectId/environments/';
-  static String environmentDetail(String id) => '/api/environments/$id/';
-
-  /// Per-environment, per-kind credential — `kind` is one of
-  /// `xmlrpc | postgres | server_shell | github`. PUT to save, DELETE to
-  /// remove. Matches the web's:
-  /// `PUT /api/environments/{id}/credentials/{kind}/`
+      '/api/v1/projects/$projectId/environments/';
+  static String environmentDetail(String id) =>
+      '/api/v1/environments/$id/';
+  static String environmentCredentials(String environmentId) =>
+      '/api/v1/environments/$environmentId/credentials/';
   static String environmentCredential(String environmentId, String kind) =>
-      '/api/environments/$environmentId/credentials/$kind/';
+      '/api/v1/environments/$environmentId/credentials/$kind/';
 
-  /// Mutate / delete a saved credential bundle. `name` is the user-chosen
-  /// slug (e.g. "icg-staging"), not a UUID.
-  static String credentialDetail(String name) => '/api/credentials/$name/';
+  // ── Approvals (§8) ───────────────────────────────────────────────────
+  /// Flat feed for the Inbox tab. `?status=pending` is the primary call;
+  /// response includes `pending_count` for the bottom-nav badge.
+  static const String approvals = '/api/v1/approvals/';
+  static String approvalDecision(String id) =>
+      '/api/v1/approvals/$id/decision/';
 
-  // Approvals.
-  /// Inbox feed. `?status=pending` is the primary call; response includes
-  /// `pending_count` for the bottom-nav badge.
-  static const String approvals = '/api/approvals/';
-  static String approvalDecision(String id) => '/api/approvals/$id/decision/';
+  // ── Artifacts (§9) ───────────────────────────────────────────────────
+  static const String artifacts = '/api/v1/artifacts/';
 
-  // Artifacts (files).
-  /// `?kind=<KIND>&conversation=<id>&limit=…&cursor=…` — all filters optional.
-  static const String artifacts = '/api/artifacts/';
-  static String artifactDownload(String id) =>
-      '/api/artifacts/$id/download/';
+  // ── Shares (§10) — public, no bearer ─────────────────────────────────
+  static String shareTranscript(String token) => '/api/v1/shares/$token/';
 
-  // i18n.
-  static String i18n(String lang) => '/api/i18n/$lang.json';
+  // ── i18n (§13) — public, no bearer ───────────────────────────────────
+  static String i18n(String lang) => '/api/v1/i18n/$lang.json';
 
-  // Devices (push registration — reserved for v2).
-  static const String registerDevice = '/api/devices/register/';
-  static const String unregisterDevice = '/api/devices/unregister/';
+  // ── Devices / push (§12) ─────────────────────────────────────────────
+  static const String devices = '/api/v1/devices/';
+  static String deviceDetail(String id) => '/api/v1/devices/$id/';
 }

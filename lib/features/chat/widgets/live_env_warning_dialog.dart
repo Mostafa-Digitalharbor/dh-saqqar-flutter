@@ -6,7 +6,6 @@ import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../demo/saqqar_demo_data.dart';
 
 /// One-shot confirmation that fires the first time the user sends a message
 /// to a `is_live: true` environment in a conversation. Wording matches the
@@ -19,24 +18,28 @@ enum LiveAckResult { cancel, confirmOnce, confirmGlobal }
 class LiveEnvWarningDialog extends StatefulWidget {
   const LiveEnvWarningDialog({
     super.key,
-    required this.environment,
-    required this.project,
+    required this.environmentName,
+    required this.projectName,
   });
 
-  final DemoEnvironment environment;
-  final DemoProject project;
+  /// Source-agnostic — pass the real env's `name` (from `VaultData`) OR
+  /// `demoEnvironmentLabel(demoEnv)` for the legacy demo path. The
+  /// dialog only renders these as text; it doesn't need the typed
+  /// models.
+  final String environmentName;
+  final String projectName;
 
   static Future<LiveAckResult> show(
     BuildContext context, {
-    required DemoEnvironment environment,
-    required DemoProject project,
+    required String environmentName,
+    required String projectName,
   }) async {
     final result = await showDialog<LiveAckResult>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (_) => LiveEnvWarningDialog(
-        environment: environment,
-        project: project,
+        environmentName: environmentName,
+        projectName: projectName,
       ),
     );
     return result ?? LiveAckResult.cancel;
@@ -97,7 +100,7 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        context.tr.liveWarningTitle(widget.environment.name),
+                        context.tr.liveWarningTitle(widget.environmentName),
                         style: context.text.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
@@ -106,8 +109,8 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                       const SizedBox(height: 8),
                       Text(
                         context.tr.liveWarningBody(
-                          widget.environment.name,
-                          widget.project.name,
+                          widget.environmentName,
+                          widget.projectName,
                         ),
                         style: context.text.bodyMedium?.copyWith(
                           color: s.muted,

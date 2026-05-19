@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
+import '../../shared/widgets/saqqar_logo.dart';
 
 /// Custom in-app launch screen.
 ///
@@ -259,19 +260,11 @@ class _Wordmark extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ShaderMask(
-          shaderCallback: (rect) =>
-              AppGradients.vivid.createShader(Offset.zero & rect.size),
-          child: const Text(
-            'Saqqar',
-            style: TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-              color: Colors.white,
-            ),
-          ),
-        ),
+        // SAQQÂR logo image — replaces the gradient-text wordmark on
+        // 2026-05-17. Splash sits on a dark navy backdrop, so the
+        // logo's navy strokes get tinted white via the SaqqarLogo
+        // ColorFilter for legibility.
+        const SaqqarLogo(height: 44),
         const SizedBox(height: 6),
         Text(
           context.tr.appTagline,

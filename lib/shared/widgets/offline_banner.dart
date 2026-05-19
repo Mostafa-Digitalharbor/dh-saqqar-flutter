@@ -1,42 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/i18n/app_localizations.dart';
-import '../../core/network/connectivity_controller.dart';
+import '../../core/network/view_model/connectivity_cubit.dart';
 import '../../core/theme/app_icons.dart';
 import '../extensions/context_extensions.dart';
 
 /// Top-of-screen sticky banner that animates in when the device is offline.
 ///
-/// Reads [connectivityControllerProvider] so it stays in lockstep with any
-/// other surface that depends on connectivity (e.g., the chat composer
-/// disables send when this is shown). Animates a 220 ms ease-out slide +
-/// fade so going on/offline feels intentional, not jarring.
-class OfflineBanner extends ConsumerWidget {
+/// Reads [ConnectivityCubit] so it stays in lockstep with any other surface
+/// that depends on connectivity (e.g., the chat composer disables send when
+/// this is shown). Animates a 220 ms ease-out slide + fade so going
+/// on/offline feels intentional, not jarring.
+class OfflineBanner extends StatelessWidget {
   const OfflineBanner({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final online = ref.watch(connectivityControllerProvider);
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      alignment: Alignment.topCenter,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) {
-          return SizeTransition(
-            sizeFactor: animation,
-            axisAlignment: -1,
-            child: FadeTransition(opacity: animation, child: child),
-          );
-        },
-        child: online
-            ? const SizedBox.shrink(key: ValueKey('online'))
-            : const _OfflineRow(key: ValueKey('offline')),
-      ),
+  Widget build(BuildContext context) {
+    return BlocBuilder<ConnectivityCubit, bool>(
+      builder: (context, online) {
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+            child: online
+                ? const SizedBox.shrink(key: ValueKey('online'))
+                : const _OfflineRow(key: ValueKey('offline')),
+          ),
+        );
+      },
     );
   }
 }

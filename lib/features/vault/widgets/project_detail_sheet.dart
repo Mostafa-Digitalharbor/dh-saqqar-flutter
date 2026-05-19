@@ -1,17 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../demo/saqqar_demo_data.dart';
-import '../state/vault_controller.dart';
+import '../data/project_models.dart';
+import '../view_model/vault_cubit.dart';
 import 'environment_detail_sheet.dart';
 import 'projects_list_sheet.dart';
 
@@ -32,7 +33,7 @@ import 'projects_list_sheet.dart';
 /// purely a per-project editor (the [existingProjectId] is required).
 /// Delete-project lives in [ProjectsListSheet] too — surfacing it here
 /// duplicated the surface and made the dialog feel busy.
-class ProjectDetailSheet extends ConsumerStatefulWidget {
+class ProjectDetailSheet extends StatefulWidget {
   const ProjectDetailSheet({super.key, required this.existingProjectId});
 
   final String existingProjectId;
@@ -50,10 +51,10 @@ class ProjectDetailSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<ProjectDetailSheet> createState() => _ProjectDetailSheetState();
+  State<ProjectDetailSheet> createState() => _ProjectDetailSheetState();
 }
 
-class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
+class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
   late final TextEditingController _name;
   late final FocusNode _nameFocus;
   final TextEditingController _newEnv = TextEditingController();
@@ -69,14 +70,14 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
   @override
   void initState() {
     super.initState();
-    final initialName = ref
-        .read(vaultControllerProvider)
-        .projects
-        .firstWhere(
-          (p) => p.id == widget.existingProjectId,
-          orElse: () => const DemoProject(id: 'missing', name: ''),
-        )
-        .name;
+    final initialName = context
+            .read<VaultCubit>()
+            .state
+            .data
+            .dataOrNull
+            ?.projectById(widget.existingProjectId)
+            ?.name ??
+        '';
     _name = TextEditingController(text: initialName);
     _nameFocus = FocusNode();
     // Auto-commit the rename on blur so the user never has to hunt for
@@ -96,20 +97,13 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
     super.dispose();
   }
 
-  void _toast(String message, {ToastVariant variant = ToastVariant.info}) {
-    AppToast.show(context, message: message, variant: variant);
-  }
-
   void _commitRename() {
     final next = _name.text.trim();
-    final current = ref
-        .read(vaultControllerProvider)
-        .projects
-        .firstWhere(
-          (p) => p.id == widget.existingProjectId,
-          orElse: () => const DemoProject(id: 'missing', name: ''),
-        )
-        .name;
+    final cubit = context.read<VaultCubit>();
+    final current = cubit.state.data.dataOrNull
+            ?.projectById(widget.existingProjectId)
+            ?.name ??
+        '';
     if (next.isEmpty || next == current) {
       // Restore the previous value if the user blanked the field or
       // didn't actually change anything — saves a no-op write + keeps
@@ -117,11 +111,7 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
       _name.text = current;
       return;
     }
-    ref.read(vaultControllerProvider.notifier).renameProject(
-          projectId: widget.existingProjectId,
-          name: next,
-        );
-    _toast(context.tr.projectSavedToast, variant: ToastVariant.success);
+    cubit.renameProject(id: widget.existingProjectId, name: next);
   }
 
   void _backToProjectsList() {
@@ -132,7 +122,7 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
   /// Case-insensitive substring filter against the env name. When the
   /// search field is empty, returns the list unchanged so we don't pay
   /// for a filter pass on small projects.
-  List<DemoEnvironment> _filterEnvs(List<DemoEnvironment> all) {
+  List<Environment> _filterEnvs(List<Environment> all) {
     final q = _envSearch.text.trim().toLowerCase();
     if (q.isEmpty) return all;
     return all.where((e) => e.name.toLowerCase().contains(q)).toList();
@@ -141,17 +131,18 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
   Future<void> _addEnv() async {
     final name = _newEnv.text.trim();
     if (name.isEmpty) return;
-    ref.read(vaultControllerProvider.notifier).createEnvironment(
+    final ok = await context.read<VaultCubit>().createEnvironment(
           projectId: widget.existingProjectId,
           name: name,
         );
-    _newEnv.clear();
     if (!mounted) return;
-    setState(() {});
-    _toast(context.tr.environmentSavedToast, variant: ToastVariant.success);
+    if (ok) {
+      _newEnv.clear();
+      setState(() {});
+    }
   }
 
-  Future<void> _deleteEnv(DemoEnvironment env) async {
+  Future<void> _deleteEnv(Environment env) async {
     final ok = await ConfirmDialog.show(
       context,
       title: context.tr.deleteEnvironmentTitle,
@@ -161,27 +152,32 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
       icon: AppIcons.trash,
     );
     if (!ok || !mounted) return;
-    ref.read(vaultControllerProvider.notifier).deleteEnvironment(env.id);
-    if (!mounted) return;
-    _toast(context.tr.environmentDeletedToast);
+    await context.read<VaultCubit>().deleteEnvironment(env.id);
   }
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final state = ref.watch(vaultControllerProvider);
-    final project = state.projects.firstWhere(
-      (p) => p.id == widget.existingProjectId,
-      orElse: () => const DemoProject(id: 'missing', name: '—'),
-    );
-    final envs = state.environmentsForProject(widget.existingProjectId);
+    final state = context.watch<VaultCubit>().state;
+    final data = state.data.dataOrNull;
+    final project = data?.projectById(widget.existingProjectId);
+    final envs = data?.environmentsForProject(widget.existingProjectId) ??
+        const <Environment>[];
 
     // Centred dialog sized like the projects list popup — body grows
     // with content but never past ~70 % screen height; long env lists
     // scroll inside the body.
+    //
+    // Flutter's [Dialog] already adds `MediaQuery.viewInsets` to its
+    // own padding when computing position, so it floats above the
+    // keyboard automatically. The old AnimatedPadding here was
+    // injecting `viewInsets.bottom` INTO the dialog body, which
+    // stretched the card by the keyboard height and made the env-name
+    // edit field look like a tall blank panel.
     final screenH = MediaQuery.sizeOf(context).height;
-    final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
     final maxHeight = (screenH * 0.7).clamp(420.0, 640.0);
+
+    final projectName = project?.name ?? '—';
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -190,18 +186,14 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(20)),
       ),
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(bottom: viewInsets),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                 // ── Header: eyebrow + project name + Close ──────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +204,7 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'PROJECT',
+                            context.tr.project.toUpperCase(),
                             style: context.text.labelSmall?.copyWith(
                               color: s.brandCyan,
                               fontWeight: FontWeight.w900,
@@ -222,7 +214,7 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            project.name,
+                            projectName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: context.text.titleLarge?.copyWith(
@@ -285,21 +277,6 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
                           const SizedBox(height: 14),
                           _EnvList(
                             envs: _filterEnvs(envs),
-                            // Reordering only makes sense against the
-                            // unfiltered full list — drag-handles drop
-                            // out automatically when the user is
-                            // searching, since the positions on screen
-                            // don't match the underlying order.
-                            reorderable: _envSearch.text.trim().isEmpty,
-                            onReorder: (oldIdx, newIdx) {
-                              ref
-                                  .read(vaultControllerProvider.notifier)
-                                  .reorderEnvironment(
-                                    projectId: widget.existingProjectId,
-                                    oldIndex: oldIdx,
-                                    newIndex: newIdx,
-                                  );
-                            },
                             onOpen: (env) {
                               Navigator.of(context).pop();
                               EnvironmentDetailSheet.show(
@@ -326,7 +303,8 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
                             const SizedBox(width: 10),
                             PrimaryButton(
                               label: context.tr.addEnvironment,
-                              onPressed: _addEnv,
+                              onPressed:
+                                  state.actionInFlight ? null : _addEnv,
                             ),
                           ],
                         ),
@@ -338,13 +316,10 @@ class _ProjectDetailSheetState extends ConsumerState<ProjectDetailSheet> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 
-/// Renders the env card list with optional drag-to-reorder. The
-/// reorderable variant is shown when nothing is filtering the list
 /// Full-width pill button — "← All projects" back link rendered below
 /// the dialog divider. Closes the current project detail and reopens the
 /// projects list. Web parity (`backToProjects` label + ghost styling).
@@ -382,65 +357,30 @@ class _BackToProjectsPill extends StatelessWidget {
   }
 }
 
-/// (the search field is empty) — dragging a row in a filtered list
-/// would mis-target the underlying full list, so we fall back to a
-/// plain Column there.
-///
-/// Long-press initiates the drag on mobile (Flutter's default). The
-/// drag handle isn't a separate widget — the whole row is grabbable so
-/// the layout stays uncluttered.
+/// Renders the env card list as a plain Column. The server doesn't
+/// support custom env ordering, so the previous drag-to-reorder affordance
+/// was removed.
 class _EnvList extends StatelessWidget {
   const _EnvList({
     required this.envs,
-    required this.reorderable,
-    required this.onReorder,
     required this.onOpen,
     required this.onDelete,
   });
 
-  final List<DemoEnvironment> envs;
-  final bool reorderable;
-  final void Function(int oldIndex, int newIndex) onReorder;
-  final void Function(DemoEnvironment env) onOpen;
-  final void Function(DemoEnvironment env) onDelete;
+  final List<Environment> envs;
+  final void Function(Environment env) onOpen;
+  final void Function(Environment env) onDelete;
 
   @override
   Widget build(BuildContext context) {
-    if (!reorderable) {
-      return Column(
-        children: [
-          for (final env in envs)
-            _EnvRow(
-              key: ValueKey(env.id),
-              env: env,
-              onOpen: () => onOpen(env),
-              onDelete: () => onDelete(env),
-            ),
-        ],
-      );
-    }
-    return ReorderableListView(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      buildDefaultDragHandles: false,
-      onReorder: onReorder,
-      proxyDecorator: (child, _, animation) => Material(
-        color: Colors.transparent,
-        elevation: 8,
-        shadowColor: context.saqqar.brandCyan.withValues(alpha: 0.3),
-        borderRadius: AppRadius.cardR,
-        child: child,
-      ),
+    return Column(
       children: [
         for (final env in envs)
-          ReorderableDragStartListener(
+          _EnvRow(
             key: ValueKey(env.id),
-            index: envs.indexOf(env),
-            child: _EnvRow(
-              env: env,
-              onOpen: () => onOpen(env),
-              onDelete: () => onDelete(env),
-            ),
+            env: env,
+            onOpen: () => onOpen(env),
+            onDelete: () => onDelete(env),
           ),
       ],
     );
@@ -459,8 +399,8 @@ class _EnvList extends StatelessWidget {
 /// ```
 ///
 ///   1. Always-editable name TextField — web parity for the inline
-///      rename (`data-popup-env-rename`). Submitting or losing focus
-///      commits via [VaultController.renameEnvironment].
+///      rename. Submitting or losing focus commits via
+///      [VaultCubit.updateEnvironment].
 ///   2. Credential count chip — only renders when the env has at least
 ///      one saved credential so empty envs stay quiet.
 ///   3. Checkboxes (not switches) for the three flags — match the web
@@ -468,7 +408,7 @@ class _EnvList extends StatelessWidget {
 ///   4. Toggling **Live** false → true pops a confirm dialog (the gate
 ///      is destructive UX — first-send warning fires from that moment).
 ///      Toggling true → false is one-tap (lifts a gate, non-destructive).
-class _EnvRow extends ConsumerStatefulWidget {
+class _EnvRow extends StatefulWidget {
   const _EnvRow({
     super.key,
     required this.env,
@@ -476,15 +416,15 @@ class _EnvRow extends ConsumerStatefulWidget {
     required this.onDelete,
   });
 
-  final DemoEnvironment env;
+  final Environment env;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
 
   @override
-  ConsumerState<_EnvRow> createState() => _EnvRowState();
+  State<_EnvRow> createState() => _EnvRowState();
 }
 
-class _EnvRowState extends ConsumerState<_EnvRow> {
+class _EnvRowState extends State<_EnvRow> {
   late final TextEditingController _rename;
   late final FocusNode _focusNode;
 
@@ -526,10 +466,9 @@ class _EnvRowState extends ConsumerState<_EnvRow> {
       _rename.text = widget.env.name;
       return;
     }
-    ref.read(vaultControllerProvider.notifier).renameEnvironment(
-          envId: widget.env.id,
-          name: next,
-        );
+    context
+        .read<VaultCubit>()
+        .updateEnvironment(id: widget.env.id, name: next);
   }
 
   Future<void> _onLiveChanged(bool value) async {
@@ -537,9 +476,9 @@ class _EnvRowState extends ConsumerState<_EnvRow> {
     // true) needs explicit confirmation because the chat surface will
     // start gating first sends from this moment on.
     if (!value) {
-      ref
-          .read(vaultControllerProvider.notifier)
-          .setEnvFlag(envId: widget.env.id, isLive: false);
+      unawaited(context
+          .read<VaultCubit>()
+          .updateEnvironment(id: widget.env.id, isLive: false));
       return;
     }
     final ok = await ConfirmDialog.show(
@@ -551,20 +490,19 @@ class _EnvRowState extends ConsumerState<_EnvRow> {
       icon: AppIcons.shieldAlert,
     );
     if (!ok || !mounted) return;
-    ref
-        .read(vaultControllerProvider.notifier)
-        .setEnvFlag(envId: widget.env.id, isLive: true);
+    unawaited(context
+        .read<VaultCubit>()
+        .updateEnvironment(id: widget.env.id, isLive: true));
   }
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final notifier = ref.read(vaultControllerProvider.notifier);
+    final cubit = context.read<VaultCubit>();
     final env = widget.env;
-    final credCount = ref.watch(
-      vaultControllerProvider.select(
-        (st) => st.credentialsByEnvKind[env.id]?.length ?? 0,
-      ),
+    final credCount = context.select<VaultCubit, int>(
+      (c) =>
+          c.state.data.dataOrNull?.credentialsByEnv[env.id]?.length ?? 0,
     );
 
     return Padding(
@@ -612,7 +550,7 @@ class _EnvRowState extends ConsumerState<_EnvRow> {
                   value: env.readOnly,
                   activeColor: s.muted,
                   onChanged: (v) =>
-                      notifier.setEnvFlag(envId: env.id, readOnly: v),
+                      cubit.updateEnvironment(id: env.id, readOnly: v),
                 ),
               ],
             ),
@@ -639,27 +577,40 @@ class _EnvRowState extends ConsumerState<_EnvRow> {
             ],
             const SizedBox(height: 10),
             // ── Row 2: Auto-approve + Open + Delete ─────────────────
-            Row(
+            // Wrap (not Row) so on narrow phones the action buttons
+            // can flow to a second line instead of overflowing. The
+            // checkbox keeps the start side, Open + Delete sit on the
+            // end via the inner Row — they read as a single action
+            // group regardless of whether the line wrapped.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 _FlagCheckbox(
                   label: context.tr.flagAutoApprove,
                   value: env.autoApprove,
                   activeColor: s.warning,
                   onChanged: (v) =>
-                      notifier.setEnvFlag(envId: env.id, autoApprove: v),
+                      cubit.updateEnvironment(id: env.id, autoApprove: v),
                 ),
-                const Spacer(),
-                PrimaryButton(
-                  label: context.tr.openEnvironment,
-                  minHeight: 36,
-                  onPressed: widget.onOpen,
-                ),
-                const SizedBox(width: 8),
-                GhostButton(
-                  label: context.tr.delete,
-                  minHeight: 36,
-                  tone: GhostButtonTone.danger,
-                  onPressed: widget.onDelete,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PrimaryButton(
+                      label: context.tr.openEnvironment,
+                      minHeight: 36,
+                      onPressed: widget.onOpen,
+                    ),
+                    const SizedBox(width: 8),
+                    GhostButton(
+                      label: context.tr.delete,
+                      minHeight: 36,
+                      tone: GhostButtonTone.danger,
+                      onPressed: widget.onDelete,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -826,4 +777,3 @@ class _FlagCheckbox extends StatelessWidget {
     );
   }
 }
-

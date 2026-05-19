@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -7,9 +7,9 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../../shared/widgets/app_toast.dart';
-import '../../demo/saqqar_demo_data.dart';
-import '../state/vault_controller.dart';
+import '../data/credential_models.dart';
+import '../data/project_models.dart';
+import '../view_model/vault_cubit.dart';
 import 'credential_form.dart';
 
 /// Environment popup — breadcrumb + rename + tab strip per credential
@@ -18,9 +18,9 @@ import 'credential_form.dart';
 ///
 /// Flag toggles (Live / Read-only / Auto-approve) and the Delete action
 /// live one level up on the env row inside the project popup (see
-/// [_EnvRow] in `project_detail_sheet.dart`). The env detail is purely a
+/// `_EnvRow` in `project_detail_sheet.dart`). The env detail is purely a
 /// credential editor.
-class EnvironmentDetailSheet extends ConsumerStatefulWidget {
+class EnvironmentDetailSheet extends StatefulWidget {
   const EnvironmentDetailSheet({super.key, required this.environmentId});
 
   final String environmentId;
@@ -37,21 +37,28 @@ class EnvironmentDetailSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<EnvironmentDetailSheet> createState() =>
-      _EnvironmentDetailSheetState();
+  State<EnvironmentDetailSheet> createState() => _EnvironmentDetailSheetState();
 }
 
-class _EnvironmentDetailSheetState
-    extends ConsumerState<EnvironmentDetailSheet> {
+class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
   late final TextEditingController _name;
   bool _initialised = false;
 
-  static const _kinds = DemoCredentialKind.values;
+  static const _kinds = CredentialKind.values;
 
   @override
   void initState() {
     super.initState();
     _name = TextEditingController();
+    // Lazy-fetch the env's credentials — the projects-list endpoint
+    // doesn't include them so the credential forms would otherwise
+    // render against an empty cache. Safe to call multiple times.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context
+          .read<VaultCubit>()
+          .loadEnvironmentCredentials(widget.environmentId);
+    });
   }
 
   @override
@@ -60,7 +67,7 @@ class _EnvironmentDetailSheetState
     super.dispose();
   }
 
-  void _ensureName(DemoEnvironment env) {
+  void _ensureName(Environment env) {
     if (_initialised) return;
     _name.text = env.name;
     _initialised = true;
@@ -69,38 +76,32 @@ class _EnvironmentDetailSheetState
   void _commitRename(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
-    ref.read(vaultControllerProvider.notifier).renameEnvironment(
-          envId: widget.environmentId,
-          name: trimmed,
-        );
-    if (!mounted) return;
-    AppToast.show(
-      context,
-      message: context.tr.environmentSavedToast,
-      variant: ToastVariant.success,
-    );
+    context
+        .read<VaultCubit>()
+        .updateEnvironment(id: widget.environmentId, name: trimmed);
   }
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final state = ref.watch(vaultControllerProvider);
-    final env = state.environments.firstWhere(
-      (e) => e.id == widget.environmentId,
-      orElse: () => const DemoEnvironment(
-        id: 'missing',
-        projectId: 'missing',
-        name: '—',
-      ),
-    );
-    _ensureName(env);
-    final project = state.projects.firstWhere(
-      (p) => p.id == env.projectId,
-      orElse: () => const DemoProject(id: 'missing', name: '—'),
-    );
+    final state = context.watch<VaultCubit>().state;
+    final data = state.data.dataOrNull;
+    final env = data?.environmentById(widget.environmentId);
+    final project = env != null ? data?.projectById(env.projectId) : null;
 
+    final schemas = data?.schemas ?? const <CredentialSchema>[];
     final maxHeight = MediaQuery.sizeOf(context).height * 0.92;
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
+
+    if (env == null) {
+      // Env may have been deleted while this sheet was open, or data is
+      // still loading — render an empty surface so we don't crash on
+      // missing lookups.
+      return const SizedBox.shrink();
+    }
+
+    _ensureName(env);
+    final projectName = project?.name ?? '—';
 
     return DefaultTabController(
       length: _kinds.length,
@@ -143,7 +144,7 @@ class _EnvironmentDetailSheetState
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  '${project.name} › ${env.name}',
+                                  '$projectName › ${env.name}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style:
@@ -191,7 +192,7 @@ class _EnvironmentDetailSheetState
                 const SizedBox(height: 14),
                 // Per-kind credential tabs — XML-RPC / PostgreSQL /
                 // Server shell / GitHub. Each tab's form is schema-driven
-                // from `demoCredentialSchemas`.
+                // from the loaded credential schemas.
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: s.surface2.withValues(
@@ -207,7 +208,8 @@ class _EnvironmentDetailSheetState
                     indicatorColor: s.brandCyan,
                     tabAlignment: TabAlignment.start,
                     tabs: [
-                      for (final k in _kinds) Tab(text: demoCredentialKindLabel(k)),
+                      for (final k in _kinds)
+                        Tab(text: _kindLabel(k, schemas)),
                     ],
                   ),
                 ),
@@ -230,10 +232,13 @@ class _EnvironmentDetailSheetState
       ),
     );
   }
-}
 
-// `_FlagsRow` + `_FlagToggle` were removed on 2026-05-16 — the three env
-// flags (Live / Read-only / Auto-approve) now live exclusively on the env
-// card row inside the project popup (see `project_detail_sheet.dart`),
-// mirroring the web. Surfacing them in two places was redundant and made
-// the env detail sheet feel busy.
+  /// Resolve the human label for a kind from the loaded schemas, falling
+  /// back to the enum name when the schema endpoint hasn't returned yet.
+  String _kindLabel(CredentialKind kind, List<CredentialSchema> schemas) {
+    for (final s in schemas) {
+      if (s.kind == kind) return s.label;
+    }
+    return kind.name;
+  }
+}

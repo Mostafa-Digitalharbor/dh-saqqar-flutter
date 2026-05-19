@@ -7,6 +7,11 @@ import 'api_exception.dart';
 
 /// Converts every [DioException] into an [ApiException] so the upper layers
 /// don't have to know Dio.
+///
+/// The backend envelope is `{ "ok": false, "error": "human msg" }` per
+/// SAQQAR_MOBILE_API.md §14, with optional `auth: false` on 401 and
+/// `retry_after: <seconds>` on 429. We read `error` first, fall back to
+/// the DRF default `detail`, then field errors.
 class ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
@@ -30,13 +35,32 @@ class ErrorInterceptor extends Interceptor {
     ).defaultApiError;
     String? code;
     Map<String, List<String>>? fieldErrors;
+    int? retryAfter;
 
     if (data is Map<String, dynamic>) {
-      if (data['detail'] is String) message = data['detail'] as String;
-      if (data['code'] is String) code = data['code'] as String;
+      // Spec envelope: { ok: false, error: "..." }
+      if (data['error'] is String) {
+        message = data['error'] as String;
+      } else if (data['detail'] is String) {
+        // DRF fallback (some legacy endpoints).
+        message = data['detail'] as String;
+      }
 
-      // Per-field DRF validation errors.
-      final fieldKeys = data.keys.where((k) => k != 'detail' && k != 'code');
+      if (data['code'] is String) code = data['code'] as String;
+      if (data['retry_after'] is num) {
+        retryAfter = (data['retry_after'] as num).toInt();
+      }
+
+      // Per-field validation errors (DRF style: { "field": ["msg", ...] }).
+      const reservedKeys = {
+        'ok',
+        'error',
+        'detail',
+        'code',
+        'auth',
+        'retry_after',
+      };
+      final fieldKeys = data.keys.where((k) => !reservedKeys.contains(k));
       if (fieldKeys.isNotEmpty) {
         fieldErrors = {};
         for (final key in fieldKeys) {
@@ -48,6 +72,14 @@ class ErrorInterceptor extends Interceptor {
           }
         }
         if (fieldErrors.isEmpty) fieldErrors = null;
+      }
+    }
+
+    // Honor Retry-After header when the body omits it.
+    if (retryAfter == null) {
+      final headerValue = err.response?.headers.value('retry-after');
+      if (headerValue != null) {
+        retryAfter = int.tryParse(headerValue);
       }
     }
 
@@ -68,6 +100,7 @@ class ErrorInterceptor extends Interceptor {
       statusCode: status,
       code: code,
       fieldErrors: fieldErrors,
+      retryAfterSeconds: retryAfter,
     );
   }
 }

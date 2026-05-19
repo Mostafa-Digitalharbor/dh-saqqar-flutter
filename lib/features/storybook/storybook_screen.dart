@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/i18n/app_localizations.dart';
-import '../../core/i18n/locale_controller.dart';
-import '../../core/theme/theme_controller.dart';
+import '../../core/i18n/view_model/locale_cubit.dart';
+import '../../core/theme/view_model/theme_cubit.dart';
 import '../../shared/extensions/context_extensions.dart';
 import '../../shared/widgets/ambient_background.dart';
 import '../../shared/widgets/app_icon_button.dart';
@@ -21,11 +21,11 @@ import '../../shared/widgets/user_avatar.dart';
 /// Showcase screen — every shared widget rendered with both themes
 /// reachable via the Account screen. Used by the developer to verify
 /// dark + light + LTR + RTL parity in one place.
-class StorybookScreen extends ConsumerWidget {
+class StorybookScreen extends StatelessWidget {
   const StorybookScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = context.saqqar;
 
     return AmbientBackground(
@@ -37,8 +37,7 @@ class StorybookScreen extends ConsumerWidget {
           actions: [
             IconButton(
               icon: Icon(context.isDark ? Icons.light_mode : Icons.dark_mode),
-              onPressed: () =>
-                  ref.read(themeControllerProvider.notifier).toggle(),
+              onPressed: () => context.read<ThemeCubit>().toggle(),
               tooltip: context.tr.toggleTheme,
             ),
             IconButton(
@@ -47,9 +46,8 @@ class StorybookScreen extends ConsumerWidget {
                     ? Icons.format_textdirection_l_to_r
                     : Icons.format_textdirection_r_to_l,
               ),
-              onPressed: () => ref
-                  .read(localeControllerProvider.notifier)
-                  .toggleEnglishArabic(),
+              onPressed: () =>
+                  context.read<LocaleCubit>().toggleEnglishArabic(),
               tooltip: context.tr.toggleLanguage,
             ),
           ],

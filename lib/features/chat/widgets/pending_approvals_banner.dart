@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
@@ -11,7 +11,7 @@ import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../demo/saqqar_demo_data.dart';
-import '../../inbox/state/approvals_controller.dart';
+import '../../inbox/view_model/approvals_cubit.dart';
 
 /// Inline strip rendered just above the composer when this conversation has
 /// pending approvals. Replaces the old hidden ⋯-menu item: the user no longer
@@ -22,7 +22,7 @@ import '../../inbox/state/approvals_controller.dart';
 /// - 1 pending → shows the approval title + body + Reject/Approve actions.
 /// - 2+ pending → shows the first one inline + a "+X more pending" tail
 ///   that taps through to [onReviewMore] (the existing chat approvals sheet).
-class PendingApprovalsBanner extends ConsumerWidget {
+class PendingApprovalsBanner extends StatelessWidget {
   const PendingApprovalsBanner({
     super.key,
     required this.conversationId,
@@ -37,9 +37,9 @@ class PendingApprovalsBanner extends ConsumerWidget {
   final VoidCallback onReviewMore;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = context.saqqar;
-    final approvalsState = ref.watch(approvalsControllerProvider);
+    final approvalsState = context.watch<ApprovalsCubit>().state;
     final pending = demoApprovalsForConversation(conversationId)
         .where(
           (a) => approvalsState.statusFor(a) == DemoApprovalStatus.pending,

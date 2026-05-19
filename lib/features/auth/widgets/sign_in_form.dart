@@ -22,6 +22,8 @@ class SignInForm extends StatelessWidget {
     required this.username,
     required this.password,
     required this.onSubmit,
+    this.usernameError,
+    this.passwordError,
   });
 
   final bool wide;
@@ -29,6 +31,8 @@ class SignInForm extends StatelessWidget {
   final TextEditingController username;
   final TextEditingController password;
   final VoidCallback onSubmit;
+  final String? usernameError;
+  final String? passwordError;
 
   @override
   Widget build(BuildContext context) {
@@ -66,12 +70,17 @@ class SignInForm extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 AppTextField(
-                  label: context.tr.username,
-                  hint: context.tr.usernameHint,
+                  label: context.tr.emailLabel,
+                  hint: context.tr.emailHint,
                   controller: username,
-                  prefixIcon: AppIcons.user,
+                  prefixIcon: AppIcons.mail,
                   textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.username],
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [
+                    AutofillHints.email,
+                    AutofillHints.username,
+                  ],
+                  errorText: usernameError,
                 ),
                 const SizedBox(height: 16),
                 AppPasswordField(
@@ -80,6 +89,7 @@ class SignInForm extends StatelessWidget {
                   controller: password,
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => onSubmit(),
+                  errorText: passwordError,
                 ),
                 const SizedBox(height: 22),
                 PrimaryButton(

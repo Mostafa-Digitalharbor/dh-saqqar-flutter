@@ -19,6 +19,7 @@ class GhostButton extends StatelessWidget {
     this.expand = false,
     this.minHeight = 48,
     this.tone = GhostButtonTone.neutral,
+    this.loading = false,
   });
 
   final String label;
@@ -28,10 +29,16 @@ class GhostButton extends StatelessWidget {
   final double minHeight;
   final GhostButtonTone tone;
 
+  /// When true, replaces the leading [icon] with an inline spinner and
+  /// disables the tap target. Use for cubit-bound submit buttons (see
+  /// [AsyncSubmitButton.ghost]) so the user gets immediate feedback that
+  /// the action is in flight.
+  final bool loading;
+
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final disabled = onPressed == null;
+    final disabled = onPressed == null || loading;
     final isDanger = tone == GhostButtonTone.danger;
 
     final fg = isDanger ? s.danger : s.text;
@@ -81,7 +88,17 @@ class GhostButton extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
                       children: [
-                        if (icon != null) ...[
+                        if (loading) ...[
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(fg),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                        ] else if (icon != null) ...[
                           Icon(icon, size: 18, color: fg),
                           const SizedBox(width: 10),
                         ],

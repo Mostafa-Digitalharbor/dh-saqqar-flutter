@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../demo/saqqar_demo_data.dart';
-import '../state/vault_controller.dart';
+import '../data/project_models.dart';
+import '../view_model/vault_cubit.dart';
 import 'project_detail_sheet.dart';
 
 /// Web-parity "Projects" popup. Replaces the old single-purpose new-project
@@ -29,7 +28,7 @@ import 'project_detail_sheet.dart';
 /// bottom sheet felt too committal for what is essentially a quick
 /// management surface. The internal project list scrolls when it
 /// outgrows the dialog body; the header stays pinned.
-class ProjectsListSheet extends ConsumerStatefulWidget {
+class ProjectsListSheet extends StatefulWidget {
   const ProjectsListSheet({super.key});
 
   static Future<void> show(BuildContext context) {
@@ -41,10 +40,10 @@ class ProjectsListSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<ProjectsListSheet> createState() => _ProjectsListSheetState();
+  State<ProjectsListSheet> createState() => _ProjectsListSheetState();
 }
 
-class _ProjectsListSheetState extends ConsumerState<ProjectsListSheet> {
+class _ProjectsListSheetState extends State<ProjectsListSheet> {
   final TextEditingController _newName = TextEditingController();
 
   @override
@@ -53,26 +52,27 @@ class _ProjectsListSheetState extends ConsumerState<ProjectsListSheet> {
     super.dispose();
   }
 
-  void _toast(String message, {ToastVariant variant = ToastVariant.info}) {
-    AppToast.show(context, message: message, variant: variant);
-  }
-
   Future<void> _addProject() async {
     final name = _newName.text.trim();
     if (name.isEmpty) return;
-    final newId =
-        ref.read(vaultControllerProvider.notifier).createProject(name: name);
-    if (!mounted) return;
-    _toast(context.tr.projectSavedToast, variant: ToastVariant.success);
+    final ok = await context.read<VaultCubit>().createProject(name: name);
+    if (!ok || !mounted) return;
+    // Find the project we just created so we can drill into its detail
+    // sheet — the cubit appends new projects to the end of the list, and
+    // names within a workspace are unique enough to disambiguate.
+    final data = context.read<VaultCubit>().state.data.dataOrNull;
+    final created = data?.projects.where((p) => p.name == name).lastOrNull;
     // Push the new project's detail sheet (env management) so the user
     // can immediately add environments — staying on the projects list
     // after Create made the user tap the row again just to do the next
     // logical step. Close THIS dialog first so we don't stack sheets.
     Navigator.of(context).pop();
-    await ProjectDetailSheet.show(context, existingProjectId: newId);
+    if (created != null) {
+      await ProjectDetailSheet.show(context, existingProjectId: created.id);
+    }
   }
 
-  Future<void> _deleteProject(DemoProject project) async {
+  Future<void> _deleteProject(Project project) async {
     final ok = await ConfirmDialog.show(
       context,
       title: context.tr.deleteProjectTitle,
@@ -82,13 +82,10 @@ class _ProjectsListSheetState extends ConsumerState<ProjectsListSheet> {
       icon: AppIcons.trash,
     );
     if (!ok || !mounted) return;
-    ref.read(vaultControllerProvider.notifier).deleteProject(project.id);
-    if (!mounted) return;
-    setState(() {});
-    _toast(context.tr.projectDeletedToast);
+    await context.read<VaultCubit>().deleteProject(project.id);
   }
 
-  Future<void> _openProject(DemoProject project) async {
+  Future<void> _openProject(Project project) async {
     // Close this sheet first so the user has a single-sheet context —
     // stacking sheets gets disorienting on phones. The project detail
     // sheet handles its own close → returns the user to the chat (since
@@ -103,8 +100,9 @@ class _ProjectsListSheetState extends ConsumerState<ProjectsListSheet> {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final state = ref.watch(vaultControllerProvider);
-    final projects = state.projects;
+    final state = context.watch<VaultCubit>().state;
+    final data = state.data.dataOrNull;
+    final projects = data?.projects ?? const <Project>[];
 
     // Dialog body sits at ~60% of the screen height (slightly past
     // mid-screen so the user can comfortably scroll a handful of
@@ -146,7 +144,7 @@ class _ProjectsListSheetState extends ConsumerState<ProjectsListSheet> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'PROJECT',
+                          context.tr.project.toUpperCase(),
                           style: context.text.labelSmall?.copyWith(
                             color: s.brandCyan,
                             fontWeight: FontWeight.w900,
@@ -188,7 +186,7 @@ class _ProjectsListSheetState extends ConsumerState<ProjectsListSheet> {
                   const SizedBox(width: 10),
                   PrimaryButton(
                     label: context.tr.addProject,
-                    onPressed: _addProject,
+                    onPressed: state.actionInFlight ? null : _addProject,
                   ),
                 ],
               ),
@@ -212,9 +210,7 @@ class _ProjectsListSheetState extends ConsumerState<ProjectsListSheet> {
                             const SizedBox(height: 10),
                         itemBuilder: (_, index) {
                           final project = projects[index];
-                          final envCount = state
-                              .environmentsForProject(project.id)
-                              .length;
+                          final envCount = project.environments.length;
                           return _ProjectRow(
                             project: project,
                             envCount: envCount,
@@ -244,7 +240,7 @@ class _ProjectRow extends StatelessWidget {
     required this.onDelete,
   });
 
-  final DemoProject project;
+  final Project project;
   final int envCount;
   final VoidCallback onTap;
   final VoidCallback onDelete;

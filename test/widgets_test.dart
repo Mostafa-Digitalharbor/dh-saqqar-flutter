@@ -1,6 +1,9 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
@@ -11,17 +14,132 @@ import 'package:saqqar_app/features/chat/widgets/chat_mini_switch.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_scroll_down_button.dart';
 import 'package:saqqar_app/features/chat/widgets/credential_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/message_bubble.dart';
+import 'package:saqqar_app/features/conversations/data/attachment_models.dart';
+import 'package:saqqar_app/features/conversations/data/conversation_models.dart';
+import 'package:saqqar_app/features/conversations/data/conversations_repository.dart';
+import 'package:saqqar_app/features/conversations/view_model/conversations_cubit.dart';
 import 'package:saqqar_app/features/conversations/widgets/conversation_card.dart';
 import 'package:saqqar_app/features/conversations/widgets/meta_dot.dart';
 import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/inbox/view_model/approvals_cubit.dart';
+
+/// Stub repository for widget tests — never makes a real HTTP call.
+/// Every method returns a benign empty / no-op value so widgets that
+/// poke the cubit during construction don't blow up.
+class _StubConversationsRepository implements ConversationsRepository {
+  @override
+  Future<({List<ConversationSummary> conversations, int? total})> list({
+    int limit = 30,
+    bool includeArchived = false,
+  }) async =>
+      (conversations: const <ConversationSummary>[], total: 0);
+
+  @override
+  Future<String> create({String? title}) async => 'stub-id';
+
+  @override
+  Future<ConversationSnapshot> getSnapshot(String id, {DateTime? since}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Conversation> patch({
+    required String id,
+    String? title,
+    bool? isArchived,
+    bool? autoApprove,
+    String? environmentId,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> delete(String id) async {}
+
+  @override
+  Future<({bool isRunning, bool stopRequested})> stop(String id) async =>
+      (isRunning: false, stopRequested: false);
+
+  @override
+  Future<({String token, String url, String path})> share(String id) async =>
+      (token: '', url: '', path: '');
+
+  @override
+  Future<void> revokeShare(String id) async {}
+
+  @override
+  Future<String?> setActiveCredential({
+    required String id,
+    required String? name,
+  }) async =>
+      null;
+
+  @override
+  Future<List<String>> toggleCredential({
+    required String id,
+    required String name,
+    required bool enabled,
+  }) async =>
+      const [];
+
+  @override
+  Future<ConversationSnapshot> dismissPendingAction({
+    required String conversationId,
+    String? actionType,
+    String? credentialName,
+    String? credentialKind,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ConversationSnapshot> sendMessage({
+    required String conversationId,
+    required String content,
+    List<String> attachmentIds = const [],
+    String? model,
+    bool deepThink = false,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<Attachment>> uploadAttachments({
+    required String conversationId,
+    required List<File> files,
+  }) async =>
+      const [];
+
+  @override
+  Future<Attachment> getAttachmentStatus({
+    required String conversationId,
+    required String attachmentId,
+  }) {
+    throw UnimplementedError();
+  }
+}
+
+// Silence the unused-import warnings for the Dio types that
+// _StubConversationsRepository's implements brings transitively.
+// ignore: unused_element
+Dio? _silenceDio;
 
 /// Wraps [child] with the bare-minimum scaffolding the Saqqar widgets need:
-/// MaterialApp with the locale delegates, the real Saqqar themes, and an
-/// `en` locale. Also wraps in a [ProviderScope] so any Riverpod-based
-/// widget (e.g. [ConversationCard] reading the rename + pin controllers)
-/// can resolve its providers without each test setting up its own.
+/// MaterialApp with the locale delegates + the real Saqqar themes, plus a
+/// `MultiBlocProvider` so any Cubit-reading widget (e.g. [ConversationCard]
+/// pulling the rename + pin state from [ConversationsCubit], or the chat
+/// row pulling needs-attention from [ApprovalsCubit]) resolves its
+/// dependencies without each test setting up its own tree.
 Widget _harness(Widget child, {Locale locale = const Locale('en')}) {
-  return ProviderScope(
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider<ConversationsCubit>(
+        create: (_) => ConversationsCubit(
+          repository: _StubConversationsRepository(),
+        ),
+      ),
+      BlocProvider<ApprovalsCubit>(create: (_) => ApprovalsCubit()),
+    ],
     child: MaterialApp(
       locale: locale,
       localizationsDelegates: const [
@@ -173,11 +291,21 @@ void main() {
       expect(find.byIcon(Icons.message), findsOneWidget);
     });
 
-    testWidgets('ConversationCard renders title, preview, and message count', (
+    testWidgets('ConversationCard renders title and message count', (
       tester,
     ) async {
-      final conversation = demoConversations.firstWhere(
-        (c) => !c.isArchived,
+      // The card was changed on user request (2026-05-18) to show
+      // ONLY title + relative time + message count — the
+      // `lastMessagePreview` line was removed because the assistant's
+      // reply text was visually noisy and often redundant with the title.
+      final conversation = ConversationSummary(
+        id: 'test-conv-1',
+        title: 'GAC production audit',
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+        updatedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        isArchived: false,
+        messageCount: 14,
+        lastMessagePreview: 'Pulled the last 30 invoices.',
       );
       await tester.pumpWidget(
         _harness(
@@ -189,7 +317,8 @@ void main() {
         ),
       );
       expect(find.text(conversation.title), findsOneWidget);
-      expect(find.text(conversation.preview), findsOneWidget);
+      // Preview should NOT render anymore — explicit regression guard.
+      expect(find.text(conversation.lastMessagePreview), findsNothing);
       expect(find.text('${conversation.messageCount}'), findsOneWidget);
     });
   });

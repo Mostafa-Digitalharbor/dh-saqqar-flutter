@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const _kAccessTokenKey = 'saqqar.auth.access';
@@ -9,8 +8,12 @@ const _kRefreshTokenKey = 'saqqar.auth.refresh';
 ///
 /// All accessors are async — never cache the result in a long-lived field
 /// without invalidating it on logout.
+///
+/// DI: provided once at app boot via `RepositoryProvider<SecureTokenStore>`
+/// in `main.dart`. Tests provide an in-memory fake instead.
 class SecureTokenStore {
-  SecureTokenStore(this._storage);
+  SecureTokenStore([FlutterSecureStorage? storage])
+      : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
@@ -20,30 +23,30 @@ class SecureTokenStore {
   );
 
   Future<void> writeAccessToken(String token) => _storage.write(
-    key: _kAccessTokenKey,
-    value: token,
-    aOptions: _aOptions,
-    iOptions: _iOptions,
-  );
+        key: _kAccessTokenKey,
+        value: token,
+        aOptions: _aOptions,
+        iOptions: _iOptions,
+      );
 
   Future<void> writeRefreshToken(String token) => _storage.write(
-    key: _kRefreshTokenKey,
-    value: token,
-    aOptions: _aOptions,
-    iOptions: _iOptions,
-  );
+        key: _kRefreshTokenKey,
+        value: token,
+        aOptions: _aOptions,
+        iOptions: _iOptions,
+      );
 
   Future<String?> readAccessToken() => _storage.read(
-    key: _kAccessTokenKey,
-    aOptions: _aOptions,
-    iOptions: _iOptions,
-  );
+        key: _kAccessTokenKey,
+        aOptions: _aOptions,
+        iOptions: _iOptions,
+      );
 
   Future<String?> readRefreshToken() => _storage.read(
-    key: _kRefreshTokenKey,
-    aOptions: _aOptions,
-    iOptions: _iOptions,
-  );
+        key: _kRefreshTokenKey,
+        aOptions: _aOptions,
+        iOptions: _iOptions,
+      );
 
   Future<void> clear() async {
     await _storage.delete(
@@ -58,7 +61,3 @@ class SecureTokenStore {
     );
   }
 }
-
-final secureTokenStoreProvider = Provider<SecureTokenStore>((ref) {
-  return SecureTokenStore(const FlutterSecureStorage());
-});

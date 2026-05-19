@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:go_router/go_router.dart';
 
 import '../core/i18n/app_localizations.dart';
 import '../core/routing/route_names.dart';
 import '../core/theme/app_icons.dart';
 import '../shared/extensions/context_extensions.dart';
+import '../shared/widgets/confirm_dialog.dart';
 
 /// 3-tab bottom shell — Chats / Vault / Account. Inbox + Files were folded
 /// into the chat's own ⋯ menu (approvals and artifacts now live per-chat).
-class HomeShell extends ConsumerWidget {
+class HomeShell extends StatelessWidget {
   const HomeShell({super.key, required this.child});
 
   final Widget child;
@@ -54,7 +55,7 @@ class HomeShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
     final selected = _indexFor(location);
     final s = context.saqqar;
@@ -64,9 +65,18 @@ class HomeShell extends ConsumerWidget {
     // ShellRoute hands us the same Navigator (with a single GlobalKey) on
     // every rebuild, so keeping the previous instance alive during a switch
     // animation duplicates that GlobalKey and tears the tree.
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: SafeArea(
+    return PopScope(
+      // System back at the shell root would close the app on Android.
+      // Intercept it so the user gets the same Yes/No confirmation as the
+      // sign-out flow — protects against accidental exits.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _confirmExit(context);
+      },
+      child: Scaffold(
+        body: child,
+        bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
@@ -104,7 +114,28 @@ class HomeShell extends ConsumerWidget {
           ),
         ),
       ),
+        ),
     );
+  }
+
+  /// Confirms the user really wants to leave the app, then yields back to
+  /// the OS via [SystemNavigator.pop]. Uses the same destructive Yes/No
+  /// confirm as sign-out so the two "you're about to lose state" moments
+  /// stay visually consistent.
+  Future<void> _confirmExit(BuildContext context) async {
+    final tr = context.tr;
+    final confirmed = await ConfirmDialog.show(
+      context,
+      title: tr.exitAppConfirmTitle,
+      body: tr.exitAppConfirmBody,
+      confirmLabel: tr.confirmYes,
+      cancelLabel: tr.confirmNo,
+      icon: AppIcons.signOut,
+      destructive: true,
+    );
+    if (confirmed) {
+      await SystemNavigator.pop();
+    }
   }
 }
 

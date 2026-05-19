@@ -107,6 +107,11 @@ class AppStrings {
   String get pickProjectFirst => _t('pick_project_first');
   String get noProjectsYet => _t('no_projects_yet');
   String get noEnvironmentsForProject => _t('no_environments_for_project');
+  String get createEnvironmentCta => _t('create_environment_cta');
+  String get createEnvironmentConfirmTitle =>
+      _t('create_environment_confirm_title');
+  String get createEnvironmentConfirmBody =>
+      _t('create_environment_confirm_body');
   String get headerNoneOption => _t('header_none_option');
 
   // Vault lifecycle — matches web saqqaar.com verbatim copy
@@ -294,6 +299,10 @@ class AppStrings {
   String get themeLight => _t('theme_light');
   String get themeSystem => _t('theme_system');
   String get language => _t('language');
+  String get switchLanguageToEnglish => _t('switch_language_to_english');
+  String get switchLanguageToArabic => _t('switch_language_to_arabic');
+  String get switchThemeToLight => _t('switch_theme_to_light');
+  String get switchThemeToDark => _t('switch_theme_to_dark');
   String get english => _t('english');
   String get arabic => _t('arabic');
   String get system => _t('system');
@@ -301,6 +310,7 @@ class AppStrings {
   String get latest => _t('latest');
   String get all => _t('all');
   String get archived => _t('archived');
+  String get showArchivedAction => _t('show_archived_action');
   String get memorized => _t('memorized');
   String get session => _t('session');
   String get notVerified => _t('not_verified');
@@ -321,6 +331,7 @@ class AppStrings {
   String get shareLink => _t('share_link');
   String get rename => _t('rename');
   String get archive => _t('archive');
+  String get unarchive => _t('unarchive');
   String get delete => _t('delete');
   String get edit => _t('edit');
   String get dismiss => _t('dismiss');
@@ -333,6 +344,8 @@ class AppStrings {
   String get pending => _t('pending');
   String get risk => _t('risk');
   String get cancel => _t('cancel');
+  String get confirmYes => _t('confirm_yes');
+  String get confirmNo => _t('confirm_no');
   String get close => _t('close');
   String get save => _t('save');
   String get share => _t('share');
@@ -443,6 +456,15 @@ class AppStrings {
   String get comingSoonBadge => _t('coming_soon_badge');
   String get comingSoonToast => _t('coming_soon_toast');
   String get renameConversation => _t('rename_conversation');
+  String get openConversations => _t('open_conversations');
+  String get openApprovals => _t('open_approvals');
+  String get sidebarTitle => _t('sidebar_title');
+  String get inboxTitle => _t('inbox_title');
+  String get youLabel => _t('you_label');
+  String get brandEyebrow => _t('brand_eyebrow');
+  String get today => _t('today_label');
+  String get older => _t('older_label');
+  String get noMatches => _t('no_matches');
   String get renameConversationHint => _t('rename_conversation_hint');
   String get conversationRenamedToast => _t('conversation_renamed_toast');
   String get conversationPinnedToast => _t('conversation_pinned_toast');
@@ -453,6 +475,98 @@ class AppStrings {
   String get deleteNeedsConfirmation => _t('delete_needs_confirmation');
   String get attachedFilesForReview => _t('attached_files_for_review');
   String get defaultApiError => _t('default_api_error');
+  String get loading => _t('loading');
+
+  // ── Typed error categories (used by ApiErrorMapper) ────────────────
+  // One key per AppFailure subtype. Adding a new failure → add one EN +
+  // one AR string here + one switch arm in ApiErrorMapper._baseMessage.
+  String get errorNetwork => _t('error_network');
+  String get errorTimeout => _t('error_timeout');
+  String get errorCancelled => _t('error_cancelled');
+  String get errorUnauthorized => _t('error_unauthorized');
+  String get errorForbidden => _t('error_forbidden');
+  String get errorNotFound => _t('error_not_found');
+  String get errorValidation => _t('error_validation');
+  String get errorConflict => _t('error_conflict');
+  String get errorRateLimited => _t('error_rate_limited');
+  String errorRateLimitedWithRetry(int seconds) =>
+      _t('error_rate_limited_with_retry').replaceFirst('{seconds}', '$seconds');
+  String get errorPayloadTooLarge => _t('error_payload_too_large');
+  String get errorServer => _t('error_server');
+  String get errorUnknown => _t('error_unknown');
+
+  // ── Vault action labels (prefix for "<action> · <error>" messages) ──
+  String get vaultActionLoadFailed => _t('vault_action_load_failed');
+  String get vaultActionCreateProjectFailed =>
+      _t('vault_action_create_project_failed');
+  String get vaultActionRenameProjectFailed =>
+      _t('vault_action_rename_project_failed');
+  String get vaultActionDeleteProjectFailed =>
+      _t('vault_action_delete_project_failed');
+  String get vaultActionCreateEnvironmentFailed =>
+      _t('vault_action_create_environment_failed');
+  String get vaultActionUpdateEnvironmentFailed =>
+      _t('vault_action_update_environment_failed');
+  String get vaultActionDeleteEnvironmentFailed =>
+      _t('vault_action_delete_environment_failed');
+  String get vaultActionLoadCredentialsFailed =>
+      _t('vault_action_load_credentials_failed');
+  String get vaultActionSaveCredentialFailed =>
+      _t('vault_action_save_credential_failed');
+  String get vaultActionDeleteCredentialFailed =>
+      _t('vault_action_delete_credential_failed');
+
+  // ── Vault action toasts (one-shot success messages) ────────────────
+  String get vaultToastProjectCreated => _t('vault_toast_project_created');
+  String get vaultToastProjectDeleted => _t('vault_toast_project_deleted');
+  String get vaultToastEnvironmentCreated =>
+      _t('vault_toast_environment_created');
+  String get vaultToastEnvironmentDeleted =>
+      _t('vault_toast_environment_deleted');
+  String get vaultToastCredentialSaved => _t('vault_toast_credential_saved');
+  String get vaultToastCredentialDeleted =>
+      _t('vault_toast_credential_deleted');
+
+  // ── Conversations action labels + toasts (Phase 4) ──
+  String get conversationsActionLoadFailed =>
+      _t('conversations_action_load_failed');
+  String get conversationsActionCreateFailed =>
+      _t('conversations_action_create_failed');
+  String get conversationsActionRenameFailed =>
+      _t('conversations_action_rename_failed');
+  String get conversationsActionArchiveFailed =>
+      _t('conversations_action_archive_failed');
+  String get conversationsActionUnarchiveFailed =>
+      _t('conversations_action_unarchive_failed');
+  String get conversationsActionDeleteFailed =>
+      _t('conversations_action_delete_failed');
+  String get conversationsActionStopFailed =>
+      _t('conversations_action_stop_failed');
+
+  String get conversationCreatedToast => _t('conversation_created_toast');
+  String get conversationArchivedToast => _t('conversation_archived_toast');
+  String get conversationUnarchivedToast =>
+      _t('conversation_unarchived_toast');
+  String get conversationDeletedToast => _t('conversation_deleted_toast');
+  String get conversationStoppedToast => _t('conversation_stopped_toast');
+
+  // Auth flow toasts + error mapping (mobile API §1, §14)
+  String get signedInToast => _t('signed_in_toast');
+  String get signedOutToast => _t('signed_out_toast');
+  String get sessionEndedToast => _t('session_ended_toast');
+  String get signOutConfirmTitle => _t('sign_out_confirm_title');
+  String get signOutConfirmBody => _t('sign_out_confirm_body');
+  String get signingOut => _t('signing_out');
+  String get exitAppConfirmTitle => _t('exit_app_confirm_title');
+  String get exitAppConfirmBody => _t('exit_app_confirm_body');
+  String get authInvalidCredentials => _t('auth_invalid_credentials');
+  String get authEmailTaken => _t('auth_email_taken');
+  String get authNetworkError => _t('auth_network_error');
+  String get authRateLimited => _t('auth_rate_limited');
+  String get authBootingSession => _t('auth_booting_session');
+  String get emailLabel => _t('email_label');
+  String get emailRequired => _t('email_required');
+  String get emailInvalid => _t('email_invalid');
   String get primaryTapped => _t('primary_tapped');
   String get ghostTapped => _t('ghost_tapped');
   String get dangerTapped => _t('danger_tapped');
@@ -482,6 +596,7 @@ class AppStrings {
   String get newConversation => _t('new_conversation');
   String get noConversations => _t('no_conversations');
   String get noConversationsHint => _t('no_conversations_hint');
+  String get noArchivedConversations => _t('no_archived_conversations');
   String get startConversation => _t('start_conversation');
   String get send => _t('send');
   String get autoApprove => _t('auto_approve');
@@ -505,6 +620,23 @@ class AppStrings {
   String get suggestUserCount => _t('suggest_user_count');
   String get suggestExportUsers => _t('suggest_export_users');
   String get suggestTailLog => _t('suggest_tail_log');
+
+  // Empty-chat suggestions surface (replaces the bare "Start a conversation"
+  // headline on 2026-05-17 — 4 prefab prompts that fill the composer on tap).
+  String get emptyChatTitle => _t('empty_chat_title');
+  String get emptyChatBody => _t('empty_chat_body');
+  String get suggestExploreTitle => _t('suggest_explore_title');
+  String get suggestExploreSub => _t('suggest_explore_sub');
+  String get suggestExplorePrompt => _t('suggest_explore_prompt');
+  String get suggestSummarizeTitle => _t('suggest_summarize_title');
+  String get suggestSummarizeSub => _t('suggest_summarize_sub');
+  String get suggestSummarizePrompt => _t('suggest_summarize_prompt');
+  String get suggestReportTitle => _t('suggest_report_title');
+  String get suggestReportSub => _t('suggest_report_sub');
+  String get suggestReportPrompt => _t('suggest_report_prompt');
+  String get suggestServerLogsTitle => _t('suggest_server_logs_title');
+  String get suggestServerLogsSub => _t('suggest_server_logs_sub');
+  String get suggestServerLogsPrompt => _t('suggest_server_logs_prompt');
   String get removeAttachment => _t('remove_attachment');
   String get offlineTitle => _t('offline_title');
   String get offlineBody => _t('offline_body');
@@ -520,6 +652,10 @@ class AppStrings {
 
   // Account coverage
   String get standardUser => _t('standard_user');
+  String get staffUser => _t('staff_user');
+  String get adminUser => _t('admin_user');
+  String get accountJoinedLabel => _t('account_joined_label');
+  String get accountLastLoginLabel => _t('account_last_login_label');
   String get openStorybook => _t('open_storybook');
   String get conversationsCoverageTitle => _t('conversations_coverage_title');
   String get conversationsCoverageBody => _t('conversations_coverage_body');
@@ -589,8 +725,8 @@ const Map<String, String> _en = {
   'powered_by_digital_harbor': 'Powered by Digital Harbor',
   'welcome_back': 'Welcome back',
   'sign_in_subtitle': 'Sign in to continue to your workspace.',
-  'username': 'Username',
-  'username_hint': 'username',
+  'username': 'Name',
+  'username_hint': 'Your full name',
   'password': 'Password',
   'auth_password_hint': 'Enter your password',
   'email': 'Email',
@@ -616,6 +752,10 @@ const Map<String, String> _en = {
   'theme_light': 'Light',
   'theme_system': 'System',
   'language': 'Language',
+  'switch_language_to_english': 'Switch language to English',
+  'switch_language_to_arabic': 'التبديل إلى العربية',
+  'switch_theme_to_light': 'Switch to light theme',
+  'switch_theme_to_dark': 'Switch to dark theme',
   'english': 'English',
   'arabic': 'Arabic',
   'system': 'System',
@@ -623,6 +763,7 @@ const Map<String, String> _en = {
   'latest': 'Latest',
   'all': 'All',
   'archived': 'Archived',
+  'show_archived_action': 'Show',
   'memorized': 'memorized',
   'session': 'session',
   'not_verified': 'Not verified',
@@ -643,6 +784,7 @@ const Map<String, String> _en = {
   'share_link': 'Share link',
   'rename': 'Rename',
   'archive': 'Archive',
+  'unarchive': 'Unarchive',
   'delete': 'Delete',
   'edit': 'Edit',
   'dismiss': 'Dismiss',
@@ -655,6 +797,8 @@ const Map<String, String> _en = {
   'pending': 'pending',
   'risk': 'Risk',
   'cancel': 'Cancel',
+  'confirm_yes': 'Yes',
+  'confirm_no': 'No',
   'close': 'Close',
   'save': 'Save',
   'share': 'Share',
@@ -727,6 +871,15 @@ const Map<String, String> _en = {
   'coming_soon_badge': 'Soon',
   'coming_soon_toast': 'This action ships in the next build.',
   'rename_conversation': 'Rename conversation',
+  'open_conversations': 'Open conversations',
+  'open_approvals': 'Open approvals',
+  'sidebar_title': 'Conversations',
+  'inbox_title': 'Inbox',
+  'you_label': 'You',
+  'brand_eyebrow': 'Saqqar',
+  'today_label': 'Today',
+  'older_label': 'Older',
+  'no_matches': 'No matches.',
   'rename_conversation_hint': 'Type a new title…',
   'conversation_renamed_toast': 'Conversation renamed.',
   'conversation_pinned_toast': 'Pinned to the top.',
@@ -737,6 +890,70 @@ const Map<String, String> _en = {
   'delete_needs_confirmation': 'Delete needs confirmation in production.',
   'attached_files_for_review': 'Attached files for review.',
   'default_api_error': 'Something went wrong. Please try again.',
+  'loading': 'Loading…',
+  // ── Typed error categories ──
+  'error_network': "Couldn't reach the server. Check your connection.",
+  'error_timeout': 'The server took too long to respond. Please try again.',
+  'error_cancelled': 'The action was cancelled.',
+  'error_unauthorized': 'Your session ended. Please sign in again.',
+  'error_forbidden': "You don't have permission to do this.",
+  'error_not_found': "We couldn't find what you were looking for.",
+  'error_validation': 'Some fields need your attention.',
+  'error_conflict': 'That action conflicts with current data. Refresh and try again.',
+  'error_rate_limited': 'Too many attempts. Please slow down.',
+  'error_rate_limited_with_retry': 'Too many attempts. Try again in {seconds}s.',
+  'error_payload_too_large': 'That file is too large. The limit is 25 MB.',
+  'error_server': 'The server hit a problem. Please try again in a moment.',
+  'error_unknown': 'Something went wrong. Please try again.',
+  // ── Vault action labels (prefixes) ──
+  'vault_action_load_failed': "Couldn't load your projects",
+  'vault_action_create_project_failed': "Couldn't create the project",
+  'vault_action_rename_project_failed': "Couldn't rename the project",
+  'vault_action_delete_project_failed': "Couldn't delete the project",
+  'vault_action_create_environment_failed': "Couldn't create the environment",
+  'vault_action_update_environment_failed': "Couldn't update the environment",
+  'vault_action_delete_environment_failed': "Couldn't delete the environment",
+  'vault_action_load_credentials_failed': "Couldn't load credentials",
+  'vault_action_save_credential_failed': "Couldn't save the credential",
+  'vault_action_delete_credential_failed': "Couldn't delete the credential",
+  // ── Vault success toasts ──
+  'vault_toast_project_created': 'Project created.',
+  'vault_toast_project_deleted': 'Project deleted.',
+  'vault_toast_environment_created': 'Environment created.',
+  'vault_toast_environment_deleted': 'Environment deleted.',
+  'vault_toast_credential_saved': 'Credential saved.',
+  'vault_toast_credential_deleted': 'Credential deleted.',
+  // ── Conversations action labels + toasts (Phase 4) ──
+  'conversations_action_load_failed': "Couldn't load your conversations",
+  'conversations_action_create_failed': "Couldn't create the conversation",
+  'conversations_action_rename_failed': "Couldn't rename the conversation",
+  'conversations_action_archive_failed': "Couldn't archive the conversation",
+  'conversations_action_unarchive_failed':
+      "Couldn't restore the conversation",
+  'conversations_action_delete_failed': "Couldn't delete the conversation",
+  'conversations_action_stop_failed': "Couldn't stop the conversation",
+  'conversation_created_toast': 'Conversation started.',
+  'conversation_archived_toast': 'Conversation archived.',
+  'conversation_unarchived_toast': 'Conversation restored.',
+  'conversation_deleted_toast': 'Conversation deleted.',
+  'conversation_stopped_toast': 'Generation stopped.',
+  'signed_in_toast': 'Signed in.',
+  'signed_out_toast': 'Signed out.',
+  'session_ended_toast': 'Your session ended. Please sign in again.',
+  'sign_out_confirm_title': 'Sign out',
+  'sign_out_confirm_body':
+      'You will need to sign in again to access your projects and chats.',
+  'signing_out': 'Signing out…',
+  'exit_app_confirm_title': 'Exit Saqqar',
+  'exit_app_confirm_body': 'Are you sure you want to close the app?',
+  'auth_invalid_credentials': 'Invalid email or password.',
+  'auth_email_taken': 'That email is already in use.',
+  'auth_network_error': "Couldn't reach the server. Check your connection.",
+  'auth_rate_limited': 'Too many attempts. Try again in a moment.',
+  'auth_booting_session': 'Restoring your session…',
+  'email_label': 'Email',
+  'email_required': 'Email is required.',
+  'email_invalid': "That doesn't look like a valid email.",
   'primary_tapped': 'Primary tapped',
   'ghost_tapped': 'Ghost tapped',
   'danger_tapped': 'Danger tapped',
@@ -774,6 +991,7 @@ const Map<String, String> _en = {
   'no_conversations': 'No conversations yet',
   'no_conversations_hint':
       'Start a new conversation to ask Saqqar to operate on your Odoo.',
+  'no_archived_conversations': 'No archived conversations',
   'start_conversation': 'Start a conversation',
   'send': 'Send',
   'auto_approve': 'Auto-approve',
@@ -798,6 +1016,24 @@ const Map<String, String> _en = {
   'suggest_user_count': 'Show me how many users are in Odoo right now.',
   'suggest_export_users': 'Export active internal users as Excel.',
   'suggest_tail_log': 'Tail the Odoo server log for the last 100 lines.',
+  'empty_chat_title': 'What should we work on?',
+  'empty_chat_body': 'Tap a suggestion or describe what you need.',
+  'suggest_explore_title': 'Explore my data',
+  'suggest_explore_sub': 'Browse models, fields, or records.',
+  'suggest_explore_prompt':
+      'List the top 10 customers by total invoiced this year and show their outstanding balance.',
+  'suggest_summarize_title': 'Summarize a document',
+  'suggest_summarize_sub': 'Upload a PDF / Word / Excel file.',
+  'suggest_summarize_prompt':
+      'Summarize the attached document in 5 bullet points and flag anything that looks like a risk or open question.',
+  'suggest_report_title': 'Generate a report',
+  'suggest_report_sub': 'Export Excel / PDF / Word.',
+  'suggest_report_prompt':
+      'Generate a sales report for last month grouped by salesperson, exported as Excel.',
+  'suggest_server_logs_title': 'Check server logs',
+  'suggest_server_logs_sub': 'Tail logs or run a server command.',
+  'suggest_server_logs_prompt':
+      'Tail the Odoo server log for the last 200 lines and highlight any errors or warnings.',
   'remove_attachment': 'Remove attachment',
   'offline_title': 'You\'re offline',
   'offline_body': 'Saqqar needs a live connection to act.',
@@ -811,6 +1047,10 @@ const Map<String, String> _en = {
   'role_tool': 'Tool',
   'role_system': 'System',
   'standard_user': 'Standard user',
+  'staff_user': 'Staff',
+  'admin_user': 'Administrator',
+  'account_joined_label': 'Joined',
+  'account_last_login_label': 'Last login',
   'open_storybook': 'Open storybook',
   'conversations_coverage_title': 'Conversations',
   'conversations_coverage_body':
@@ -865,7 +1105,7 @@ const Map<String, String> _en = {
   'back_to_sign_in': 'Back to sign in',
   'password_too_short': 'Password must be at least 8 characters.',
   'passwords_do_not_match': 'Passwords do not match.',
-  'username_required': 'Username is required.',
+  'username_required': 'Name is required.',
   'account_created_toast': 'Account ready. Welcome to Saqqar.',
 
   // Change password
@@ -901,6 +1141,10 @@ const Map<String, String> _en = {
   'pick_project_first': 'Pick a project first',
   'no_projects_yet': '— No projects yet —',
   'no_environments_for_project': '— No environments —',
+  'create_environment_cta': '+ Add environment',
+  'create_environment_confirm_title': 'Create an environment?',
+  'create_environment_confirm_body':
+      "This project doesn't have any environments yet. Add one to start chatting in this project.",
   'header_none_option': '—',
 
   // Vault lifecycle (web saqqaar.com verbatim)
@@ -1009,8 +1253,8 @@ const Map<String, String> _ar = {
   'powered_by_digital_harbor': 'Powered by Digital Harbor',
   'welcome_back': 'أهلا بعودتك',
   'sign_in_subtitle': 'سجّل دخولك لمتابعة مساحة العمل.',
-  'username': 'اسم المستخدم',
-  'username_hint': 'اسم المستخدم',
+  'username': 'الاسم',
+  'username_hint': 'اسمك بالكامل',
   'password': 'كلمة المرور',
   'auth_password_hint': 'أدخل كلمة المرور',
   'email': 'البريد الإلكتروني',
@@ -1036,6 +1280,10 @@ const Map<String, String> _ar = {
   'theme_light': 'فاتح',
   'theme_system': 'النظام',
   'language': 'اللغة',
+  'switch_language_to_english': 'Switch language to English',
+  'switch_language_to_arabic': 'التبديل إلى العربية',
+  'switch_theme_to_light': 'التبديل للوضع الفاتح',
+  'switch_theme_to_dark': 'التبديل للوضع الداكن',
   'english': 'English',
   'arabic': 'العربية',
   'system': 'النظام',
@@ -1043,6 +1291,7 @@ const Map<String, String> _ar = {
   'latest': 'الأحدث',
   'all': 'الكل',
   'archived': 'مؤرشف',
+  'show_archived_action': 'عرض',
   'memorized': 'محفوظ',
   'session': 'جلسة',
   'not_verified': 'غير موثق',
@@ -1063,6 +1312,7 @@ const Map<String, String> _ar = {
   'share_link': 'رابط المشاركة',
   'rename': 'إعادة تسمية',
   'archive': 'أرشفة',
+  'unarchive': 'إلغاء الأرشفة',
   'delete': 'حذف',
   'edit': 'تعديل',
   'dismiss': 'إخفاء',
@@ -1075,6 +1325,8 @@ const Map<String, String> _ar = {
   'pending': 'معلّق',
   'risk': 'المخاطرة',
   'cancel': 'إلغاء',
+  'confirm_yes': 'نعم',
+  'confirm_no': 'لا',
   'close': 'إغلاق',
   'save': 'حفظ',
   'share': 'مشاركة',
@@ -1146,6 +1398,15 @@ const Map<String, String> _ar = {
   'coming_soon_badge': 'قريباً',
   'coming_soon_toast': 'هذا الإجراء يصل في الإصدار القادم.',
   'rename_conversation': 'إعادة تسمية المحادثة',
+  'open_conversations': 'فتح المحادثات',
+  'open_approvals': 'فتح الموافقات',
+  'sidebar_title': 'المحادثات',
+  'inbox_title': 'صندوق الوارد',
+  'you_label': 'أنت',
+  'brand_eyebrow': 'صقّار',
+  'today_label': 'اليوم',
+  'older_label': 'الأقدم',
+  'no_matches': 'لا توجد نتائج.',
   'rename_conversation_hint': 'اكتب عنوانًا جديدًا…',
   'conversation_renamed_toast': 'تم تغيير اسم المحادثة.',
   'conversation_pinned_toast': 'تم التثبيت في الأعلى.',
@@ -1156,6 +1417,69 @@ const Map<String, String> _ar = {
   'delete_needs_confirmation': 'الحذف يحتاج تأكيد في الإنتاج.',
   'attached_files_for_review': 'تم إرفاق الملفات للمراجعة.',
   'default_api_error': 'حدث خطأ. حاول مرة أخرى.',
+  'loading': 'جارٍ التحميل…',
+  // ── Typed error categories ──
+  'error_network': 'تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.',
+  'error_timeout': 'استغرق الخادم وقتاً طويلاً. حاول مرة أخرى.',
+  'error_cancelled': 'تم إلغاء العملية.',
+  'error_unauthorized': 'انتهت جلستك. سجّل الدخول من جديد.',
+  'error_forbidden': 'ليس لديك صلاحية لتنفيذ هذه العملية.',
+  'error_not_found': 'لم نتمكن من العثور على المطلوب.',
+  'error_validation': 'بعض الحقول تحتاج للمراجعة.',
+  'error_conflict': 'هذه العملية تتعارض مع البيانات الحالية. حدّث الصفحة ثم حاول مجدداً.',
+  'error_rate_limited': 'محاولات كثيرة. تمهّل قليلاً.',
+  'error_rate_limited_with_retry': 'محاولات كثيرة. حاول بعد {seconds} ثانية.',
+  'error_payload_too_large': 'الملف كبير جداً. الحد الأقصى 25 ميجابايت.',
+  'error_server': 'وقعت مشكلة في الخادم. حاول بعد قليل.',
+  'error_unknown': 'حدث خطأ. حاول مرة أخرى.',
+  // ── Vault action labels (prefixes) ──
+  'vault_action_load_failed': 'تعذّر تحميل مشاريعك',
+  'vault_action_create_project_failed': 'تعذّر إنشاء المشروع',
+  'vault_action_rename_project_failed': 'تعذّر إعادة تسمية المشروع',
+  'vault_action_delete_project_failed': 'تعذّر حذف المشروع',
+  'vault_action_create_environment_failed': 'تعذّر إنشاء البيئة',
+  'vault_action_update_environment_failed': 'تعذّر تحديث البيئة',
+  'vault_action_delete_environment_failed': 'تعذّر حذف البيئة',
+  'vault_action_load_credentials_failed': 'تعذّر تحميل بيانات الدخول',
+  'vault_action_save_credential_failed': 'تعذّر حفظ بيانات الدخول',
+  'vault_action_delete_credential_failed': 'تعذّر حذف بيانات الدخول',
+  // ── Vault success toasts ──
+  'vault_toast_project_created': 'تم إنشاء المشروع.',
+  'vault_toast_project_deleted': 'تم حذف المشروع.',
+  'vault_toast_environment_created': 'تم إنشاء البيئة.',
+  'vault_toast_environment_deleted': 'تم حذف البيئة.',
+  'vault_toast_credential_saved': 'تم حفظ بيانات الدخول.',
+  'vault_toast_credential_deleted': 'تم حذف بيانات الدخول.',
+  // ── Conversations action labels + toasts (Phase 4) ──
+  'conversations_action_load_failed': 'تعذّر تحميل محادثاتك',
+  'conversations_action_create_failed': 'تعذّر إنشاء المحادثة',
+  'conversations_action_rename_failed': 'تعذّر إعادة تسمية المحادثة',
+  'conversations_action_archive_failed': 'تعذّر أرشفة المحادثة',
+  'conversations_action_unarchive_failed': 'تعذّر استعادة المحادثة',
+  'conversations_action_delete_failed': 'تعذّر حذف المحادثة',
+  'conversations_action_stop_failed': 'تعذّر إيقاف المحادثة',
+  'conversation_created_toast': 'بدأت المحادثة.',
+  'conversation_archived_toast': 'تمت أرشفة المحادثة.',
+  'conversation_unarchived_toast': 'تمت استعادة المحادثة.',
+  'conversation_deleted_toast': 'تم حذف المحادثة.',
+  'conversation_stopped_toast': 'تم إيقاف الجيل.',
+  'signed_in_toast': 'تم تسجيل الدخول.',
+  'signed_out_toast': 'تم تسجيل الخروج.',
+  'session_ended_toast': 'انتهت جلستك. سجّل الدخول من جديد.',
+  'sign_out_confirm_title': 'تسجيل الخروج',
+  'sign_out_confirm_body':
+      'هتحتاج تسجّل الدخول من جديد عشان توصل لمشاريعك ومحادثاتك.',
+  'signing_out': 'جاري تسجيل الخروج…',
+  'exit_app_confirm_title': 'الخروج من صقّار',
+  'exit_app_confirm_body': 'هل أنت متأكد من إغلاق التطبيق؟',
+  'auth_invalid_credentials': 'البريد أو كلمة المرور غير صحيحة.',
+  'auth_email_taken': 'هذا البريد مستخدم بالفعل.',
+  'auth_network_error': 'تعذّر الاتصال بالخادم. تحقق من الإنترنت.',
+  'auth_rate_limited': 'محاولات كثيرة. جرّب بعد لحظات.',
+  'auth_booting_session': 'جارٍ استعادة الجلسة…',
+  'email_label': 'البريد الإلكتروني',
+  'email_required': 'البريد الإلكتروني مطلوب.',
+  'email_invalid': 'البريد الإلكتروني غير صحيح.',
   'primary_tapped': 'تم ضغط الزر الرئيسي',
   'ghost_tapped': 'تم ضغط الزر الثانوي',
   'danger_tapped': 'تم ضغط زر الخطر',
@@ -1189,6 +1513,7 @@ const Map<String, String> _ar = {
   'new_conversation': 'محادثة جديدة',
   'no_conversations': 'لا توجد محادثات بعد',
   'no_conversations_hint': 'ابدأ محادثة جديدة واطلب من صقّار العمل على أودو.',
+  'no_archived_conversations': 'لا توجد محادثات مؤرشفة',
   'start_conversation': 'ابدأ محادثة',
   'send': 'إرسال',
   'auto_approve': 'موافقة تلقائية',
@@ -1212,6 +1537,24 @@ const Map<String, String> _ar = {
   'suggest_user_count': 'كم عدد المستخدمين في أودو الآن؟',
   'suggest_export_users': 'صدّر المستخدمين الداخليين النشطين كملف Excel.',
   'suggest_tail_log': 'اعرض آخر 100 سطر من سجل سيرفر أودو.',
+  'empty_chat_title': 'ما الذي نعمل عليه؟',
+  'empty_chat_body': 'اضغط على اقتراح أو اكتب ما تحتاجه.',
+  'suggest_explore_title': 'استكشف بياناتي',
+  'suggest_explore_sub': 'تصفّح النماذج والحقول والسجلات.',
+  'suggest_explore_prompt':
+      'اعرض أعلى 10 عملاء من حيث إجمالي الفواتير هذا العام مع رصيدهم المتبقي.',
+  'suggest_summarize_title': 'لخّص مستندًا',
+  'suggest_summarize_sub': 'ارفع ملف PDF أو Word أو Excel.',
+  'suggest_summarize_prompt':
+      'لخّص المستند المرفق في 5 نقاط وأشِر إلى أي مخاطر أو أسئلة مفتوحة.',
+  'suggest_report_title': 'أنشئ تقريرًا',
+  'suggest_report_sub': 'صدّر Excel أو PDF أو Word.',
+  'suggest_report_prompt':
+      'أنشئ تقرير مبيعات للشهر الماضي مجمّعًا حسب البائع، وصدّره كملف Excel.',
+  'suggest_server_logs_title': 'افحص سجلات السيرفر',
+  'suggest_server_logs_sub': 'اعرض السجلات أو نفّذ أمرًا على السيرفر.',
+  'suggest_server_logs_prompt':
+      'اعرض آخر 200 سطر من سجل سيرفر أودو وأبرز أي أخطاء أو تحذيرات.',
   'remove_attachment': 'إزالة المرفق',
   'offline_title': 'لا يوجد اتصال',
   'offline_body': 'صقّار يحتاج اتصال مباشر للعمل.',
@@ -1225,6 +1568,10 @@ const Map<String, String> _ar = {
   'role_tool': 'أداة',
   'role_system': 'النظام',
   'standard_user': 'مستخدم عادي',
+  'staff_user': 'فريق العمل',
+  'admin_user': 'مسؤول',
+  'account_joined_label': 'تاريخ الانضمام',
+  'account_last_login_label': 'آخر تسجيل دخول',
   'open_storybook': 'فتح Storybook',
   'conversations_coverage_title': 'المحادثات',
   'conversations_coverage_body':
@@ -1277,7 +1624,7 @@ const Map<String, String> _ar = {
   'back_to_sign_in': 'الرجوع لتسجيل الدخول',
   'password_too_short': 'كلمة المرور لازم تكون 8 أحرف على الأقل.',
   'passwords_do_not_match': 'كلمتا المرور غير متطابقتين.',
-  'username_required': 'اسم المستخدم مطلوب.',
+  'username_required': 'الاسم مطلوب.',
   'account_created_toast': 'تم إنشاء الحساب. أهلاً بك في صقّار.',
 
   // Change password
@@ -1312,6 +1659,10 @@ const Map<String, String> _ar = {
   'pick_project_first': 'اختر مشروعًا أولاً',
   'no_projects_yet': '— لا توجد مشاريع بعد —',
   'no_environments_for_project': '— لا توجد بيئات —',
+  'create_environment_cta': '+ أضف بيئة',
+  'create_environment_confirm_title': 'هل تريد إنشاء بيئة؟',
+  'create_environment_confirm_body':
+      'هذا المشروع ليس لديه أي بيئات بعد. أضف بيئة لتبدأ المحادثة في هذا المشروع.',
   'header_none_option': '—',
 
   // Vault lifecycle

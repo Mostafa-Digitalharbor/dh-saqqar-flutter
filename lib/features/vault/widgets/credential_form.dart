@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../demo/saqqar_demo_data.dart';
-import '../state/vault_controller.dart';
+import '../data/credential_models.dart';
+import '../view_model/vault_cubit.dart';
 
 /// Schema-driven credential form rendered inside a tab of
 /// [EnvironmentDetailSheet]. Mirrors the web's `env-credential-form`:
 /// label input + per-schema fields + "Last verified" hint + Save/Delete.
 ///
-/// `Save` calls [VaultController.saveCredential]; `Delete` calls
-/// [VaultController.deleteCredential] after a confirm dialog.
-class CredentialForm extends ConsumerStatefulWidget {
+/// `Save` calls [VaultCubit.saveEnvironmentCredential]; `Delete` calls
+/// [VaultCubit.deleteEnvironmentCredential] after a confirm dialog.
+class CredentialForm extends StatefulWidget {
   const CredentialForm({
     super.key,
     required this.envId,
@@ -26,24 +25,16 @@ class CredentialForm extends ConsumerStatefulWidget {
   });
 
   final String envId;
-  final DemoCredentialKind kind;
+  final CredentialKind kind;
 
   @override
-  ConsumerState<CredentialForm> createState() => _CredentialFormState();
+  State<CredentialForm> createState() => _CredentialFormState();
 }
 
-class _CredentialFormState extends ConsumerState<CredentialForm> {
+class _CredentialFormState extends State<CredentialForm> {
   late final TextEditingController _label;
   final Map<String, TextEditingController> _fieldControllers = {};
   bool _initialised = false;
-  bool _testing = false;
-
-  DemoCredentialSchema? get _schema {
-    for (final s in demoCredentialSchemas) {
-      if (s.kind == widget.kind) return s;
-    }
-    return null;
-  }
 
   @override
   void initState() {
@@ -60,54 +51,35 @@ class _CredentialFormState extends ConsumerState<CredentialForm> {
     super.dispose();
   }
 
-  void _ensureControllers(DemoCredentialSchema schema, DemoCredential? saved) {
+  void _ensureControllers(CredentialSchema schema, Credential? saved) {
     if (_initialised) return;
     _label.text = saved?.label ?? '';
+    final payload = saved?.payload ?? const <String, dynamic>{};
     for (final field in schema.fields) {
-      _fieldControllers[field.name] = TextEditingController(
-        // No saved values in the demo — backend will return the masked
-        // payload once it ships `GET /api/environments/{id}/credentials/{kind}/`.
-        text: field.options.isNotEmpty ? field.options.first : '',
-      );
+      final raw = payload[field.name];
+      final initial = raw?.toString() ??
+          // Fall back to the first option for select fields so the user
+          // sees a valid choice immediately.
+          (field.type == CredentialFieldType.select &&
+                  (field.options?.isNotEmpty ?? false)
+              ? field.options!.first
+              : '');
+      _fieldControllers[field.name] = TextEditingController(text: initial);
     }
     _initialised = true;
   }
 
   Future<void> _save() async {
-    final values = <String, String>{};
+    final payload = <String, dynamic>{};
     for (final entry in _fieldControllers.entries) {
-      values[entry.key] = entry.value.text.trim();
+      payload[entry.key] = entry.value.text.trim();
     }
-    ref.read(vaultControllerProvider.notifier).saveCredential(
+    await context.read<VaultCubit>().saveEnvironmentCredential(
           envId: widget.envId,
           kind: widget.kind,
-          label: _label.text,
-          values: values,
+          payload: payload,
+          label: _label.text.trim().isEmpty ? null : _label.text.trim(),
         );
-    AppToast.show(
-      context,
-      message: context.tr.credentialSavedToast,
-      variant: ToastVariant.success,
-    );
-  }
-
-  Future<void> _test() async {
-    setState(() => _testing = true);
-    // Demo only — pretends to ping the target. Swap for the real
-    // POST /api/environments/{id}/credentials/{kind}/verify when it ships.
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    ref.read(vaultControllerProvider.notifier).verifyCredential(
-          envId: widget.envId,
-          kind: widget.kind,
-        );
-    setState(() => _testing = false);
-    if (!mounted) return;
-    AppToast.show(
-      context,
-      message: context.tr.connectionVerified,
-      variant: ToastVariant.success,
-    );
   }
 
   Future<void> _delete() async {
@@ -120,21 +92,19 @@ class _CredentialFormState extends ConsumerState<CredentialForm> {
       icon: AppIcons.trash,
     );
     if (!ok || !mounted) return;
-    ref.read(vaultControllerProvider.notifier).deleteCredential(
+    await context.read<VaultCubit>().deleteEnvironmentCredential(
           envId: widget.envId,
           kind: widget.kind,
         );
-    if (!mounted) return;
-    AppToast.show(context, message: context.tr.credentialDeletedToast);
   }
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final schema = _schema;
-    final saved = ref
-        .watch(vaultControllerProvider)
-        .credentialFor(widget.envId, widget.kind);
+    final state = context.watch<VaultCubit>().state;
+    final data = state.data.dataOrNull;
+    final schema = data?.schemaFor(widget.kind);
+    final saved = data?.credentialFor(widget.envId, widget.kind);
 
     if (schema == null) {
       return Padding(
@@ -150,30 +120,12 @@ class _CredentialFormState extends ConsumerState<CredentialForm> {
 
     final hasCredential = saved != null;
     String hint;
-    if (!hasCredential || saved.lastVerified == null) {
+    if (!hasCredential || saved.lastVerifiedAt == null) {
       hint = context.tr.notSavedYet;
     } else {
-      // Try parsing as ISO timestamp (set by VaultController._nowLabel).
-      // Fall back to the raw string for legacy demo entries that still
-      // hold a "May 9, 12:23 AM" formatted label.
-      final parsed = DateTime.tryParse(saved.lastVerified!);
-      hint = parsed != null
-          ? context.tr.lastVerifiedAt(context.tr.relativeTime(parsed))
-          : context.tr.lastVerifiedAt(saved.lastVerified!);
-    }
-
-    // Pre-compute which fields should currently render — honours each
-    // field's `showWhen` rule against the current values of its siblings.
-    // Rebuilt every build because the user might toggle the gating field
-    // (e.g. SSH `auth`) inside the same form session.
-    bool isVisible(DemoCredentialField field) {
-      final rule = field.showWhen;
-      if (rule == null) return true;
-      final siblingValue =
-          _fieldControllers[rule.field]?.text.trim().toLowerCase() ?? '';
-      return rule.values
-          .map((v) => v.toLowerCase())
-          .contains(siblingValue);
+      hint = context.tr.lastVerifiedAt(
+        context.tr.relativeTime(saved.lastVerifiedAt!),
+      );
     }
 
     return SingleChildScrollView(
@@ -184,23 +136,16 @@ class _CredentialFormState extends ConsumerState<CredentialForm> {
           AppTextField(
             label: context.tr.label,
             controller: _label,
-            hint: demoCredentialKindLabel(widget.kind),
+            hint: schema.label,
           ),
           const SizedBox(height: 12),
-          for (final field in schema.fields)
-            if (isVisible(field)) ...[
-              _SchemaField(
-                field: field,
-                controller: _fieldControllers[field.name]!,
-                // Rebuild parent on dropdown change so the conditional
-                // siblings (password / private_key) appear / disappear
-                // immediately when the user flips `auth`.
-                onValueChanged: field.options.isNotEmpty
-                    ? () => setState(() {})
-                    : null,
-              ),
-              const SizedBox(height: 10),
-            ],
+          for (final field in schema.fields) ...[
+            _SchemaField(
+              field: field,
+              controller: _fieldControllers[field.name]!,
+            ),
+            const SizedBox(height: 10),
+          ],
           if (schema.fields.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -221,24 +166,16 @@ class _CredentialFormState extends ConsumerState<CredentialForm> {
                 child: PrimaryButton(
                   label: context.tr.saveCredentialButton,
                   icon: AppIcons.save,
-                  onPressed: _save,
+                  onPressed: state.actionInFlight ? null : _save,
                 ),
               ),
               if (hasCredential) ...[
                 const SizedBox(width: 8),
                 GhostButton(
-                  label: _testing
-                      ? context.tr.testingConnection
-                      : context.tr.testConnection,
-                  icon: AppIcons.bolt,
-                  onPressed: _testing ? null : _test,
-                ),
-                const SizedBox(width: 8),
-                GhostButton(
                   label: context.tr.deleteCredentialButton,
                   icon: AppIcons.trash,
                   tone: GhostButtonTone.danger,
-                  onPressed: _delete,
+                  onPressed: state.actionInFlight ? null : _delete,
                 ),
               ],
             ],
@@ -253,23 +190,16 @@ class _SchemaField extends StatelessWidget {
   const _SchemaField({
     required this.field,
     required this.controller,
-    this.onValueChanged,
   });
 
-  final DemoCredentialField field;
+  final CredentialField field;
   final TextEditingController controller;
-
-  /// Called after the user picks a new option on a dropdown field. The
-  /// parent form uses this to rebuild itself when the gating field (e.g.
-  /// SSH `auth`) flips, so sibling fields whose `showWhen` rule depends on
-  /// this field appear / disappear immediately.
-  final VoidCallback? onValueChanged;
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final input = _buildInput();
-    if (field.help == null) return input;
+    if (field.help.isEmpty) return input;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -279,7 +209,7 @@ class _SchemaField extends StatelessWidget {
         Padding(
           padding: const EdgeInsetsDirectional.only(start: 4),
           child: Text(
-            field.help!,
+            field.help,
             style: context.text.labelSmall?.copyWith(
               color: s.muted,
               fontStyle: FontStyle.italic,
@@ -292,35 +222,53 @@ class _SchemaField extends StatelessWidget {
   }
 
   Widget _buildInput() {
-    if (field.options.isNotEmpty) {
-      return DropdownButtonFormField<String>(
-        initialValue: controller.text.isNotEmpty
-            ? controller.text
-            : field.options.first,
-        decoration: InputDecoration(labelText: field.label),
-        items: [
-          for (final option in field.options)
-            DropdownMenuItem(value: option, child: Text(option)),
-        ],
-        onChanged: (value) {
-          if (value == null) return;
-          controller.text = value;
-          onValueChanged?.call();
-        },
-      );
+    switch (field.type) {
+      case CredentialFieldType.select:
+        final options = field.options ?? const <String>[];
+        return DropdownButtonFormField<String>(
+          initialValue: controller.text.isNotEmpty
+              ? controller.text
+              : (options.isNotEmpty ? options.first : null),
+          decoration: InputDecoration(labelText: field.label),
+          items: [
+            for (final option in options)
+              DropdownMenuItem(value: option, child: Text(option)),
+          ],
+          onChanged: (value) {
+            if (value == null) return;
+            controller.text = value;
+          },
+        );
+      case CredentialFieldType.password:
+        return AppPasswordField(
+          label: field.label,
+          hint: field.placeholder.isEmpty ? null : field.placeholder,
+          controller: controller,
+        );
+      case CredentialFieldType.textarea:
+        return AppTextField(
+          label: field.label,
+          hint: field.placeholder.isEmpty ? null : field.placeholder,
+          controller: controller,
+          maxLines: 4,
+        );
+      case CredentialFieldType.number:
+        return AppTextField(
+          label: field.label,
+          hint: field.placeholder.isEmpty ? null : field.placeholder,
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+            signed: false,
+          ),
+        );
+      case CredentialFieldType.text:
+        return AppTextField(
+          label: field.label,
+          hint: field.placeholder.isEmpty ? null : field.placeholder,
+          controller: controller,
+        );
     }
-    if (field.obscure) {
-      return AppPasswordField(
-        label: field.label,
-        hint: field.hint,
-        controller: controller,
-      );
-    }
-    return AppTextField(
-      label: field.label,
-      hint: field.hint,
-      controller: controller,
-      maxLines: field.multiline ? 4 : 1,
-    );
   }
 }
+

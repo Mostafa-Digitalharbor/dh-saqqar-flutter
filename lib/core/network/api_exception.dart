@@ -9,6 +9,7 @@ class ApiException implements Exception {
     this.statusCode,
     this.code,
     this.fieldErrors,
+    this.retryAfterSeconds,
   });
 
   final ApiExceptionKind kind;
@@ -21,10 +22,16 @@ class ApiException implements Exception {
   /// Per-field validation errors from `400` responses (e.g. `{ "username": ["..."] }`).
   final Map<String, List<String>>? fieldErrors;
 
+  /// Set on 429 — seconds to back off before retrying. Honors both the
+  /// JSON body's `retry_after` and the `Retry-After` HTTP header.
+  final int? retryAfterSeconds;
+
   bool get isUnauthorized => statusCode == 401;
   bool get isForbidden => statusCode == 403;
   bool get isNotFound => statusCode == 404;
   bool get isValidation => statusCode == 400 || statusCode == 422;
+  bool get isConflict => statusCode == 409;
+  bool get isRateLimited => statusCode == 429;
 
   @override
   String toString() => 'ApiException($kind, $statusCode, $message)';

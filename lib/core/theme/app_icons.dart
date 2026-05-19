@@ -31,6 +31,7 @@ class AppIcons {
   static const IconData database = LucideIcons.database;
   static const IconData github = LucideIcons.gitBranch;
   static const IconData sparkles = LucideIcons.sparkles;
+  static const IconData lightbulb = LucideIcons.lightbulb;
   static const IconData shield = LucideIcons.shield;
   static const IconData shieldCheck = LucideIcons.shieldCheck;
   static const IconData shieldAlert = LucideIcons.shieldAlert;
@@ -44,6 +45,8 @@ class AppIcons {
   static const IconData chats = LucideIcons.messageCircle;
   static const IconData message = LucideIcons.messageSquare;
   static const IconData inbox = LucideIcons.inbox;
+  static const IconData menu = LucideIcons.menu;
+  static const IconData bell = LucideIcons.bell;
   static const IconData files = LucideIcons.folderOpen;
   static const IconData file = LucideIcons.file;
   static const IconData fileText = LucideIcons.fileText;

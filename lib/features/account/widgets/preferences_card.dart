@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/i18n/locale_controller.dart';
+import '../../../core/i18n/view_model/locale_cubit.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/theme_controller.dart';
+import '../../../core/theme/view_model/theme_cubit.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/glass_card.dart';
 
 /// Theme + language preferences card. Reads/writes the two top-level
-/// Riverpod controllers (`themeControllerProvider`, `localeControllerProvider`).
+/// Cubits ([ThemeCubit], [LocaleCubit]).
 class PreferencesCard extends StatelessWidget {
   const PreferencesCard({
     super.key,
     required this.mode,
     required this.locale,
-    required this.ref,
   });
 
   final AppThemeMode mode;
   final Locale? locale;
-  final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {
@@ -58,9 +56,8 @@ class PreferencesCard extends StatelessWidget {
               ),
             ],
             selected: {mode},
-            onSelectionChanged: (selection) => ref
-                .read(themeControllerProvider.notifier)
-                .setMode(selection.first),
+            onSelectionChanged: (selection) =>
+                context.read<ThemeCubit>().setMode(selection.first),
           ),
           const SizedBox(height: 18),
           Text(
@@ -87,9 +84,7 @@ class PreferencesCard extends StatelessWidget {
             selected: {locale?.languageCode ?? UiStrings.localeSystemCode},
             onSelectionChanged: (selection) {
               final value = selection.first;
-              ref
-                  .read(localeControllerProvider.notifier)
-                  .setLocale(
+              context.read<LocaleCubit>().setLocale(
                     value == UiStrings.localeSystemCode ? null : Locale(value),
                   );
             },

@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/animations/pulse_dot.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/mini_chip.dart';
-import '../../demo/saqqar_demo_data.dart';
-import '../../inbox/state/approvals_controller.dart';
-import '../state/conversations_controller.dart';
+import '../../inbox/view_model/approvals_cubit.dart';
+import '../data/conversation_models.dart';
+import '../view_model/conversations_cubit.dart';
 import 'conversation_action.dart';
 import 'conversation_row_menu.dart';
 import 'meta_dot.dart';
 
-/// Single row in the conversation list. Tap opens the chat; the kebab menu
-/// reveals row-level actions. Archived rows render at 70% opacity with an
-/// amber "archived" chip.
+/// Single row in the conversation list. Tap opens the chat; the kebab
+/// menu reveals row-level actions. Archived rows render at 70% opacity
+/// with an amber "archived" chip.
 ///
-/// ConsumerWidget so the "needs attention" pulse dot stays live — when the
-/// user approves something inside a chat, the dot on that conversation row
-/// disappears without us reloading the whole list.
-class ConversationCard extends ConsumerWidget {
+/// Reads the "needs attention" pulse dot live via a `BlocSelector` on
+/// [ApprovalsCubit] — when the user approves something inside a chat,
+/// the dot on that conversation row disappears without us reloading the
+/// whole list.
+class ConversationCard extends StatelessWidget {
   const ConversationCard({
     super.key,
     required this.conversation,
@@ -29,28 +31,27 @@ class ConversationCard extends ConsumerWidget {
     required this.onAction,
   });
 
-  final DemoConversation conversation;
+  final ConversationSummary conversation;
   final VoidCallback onTap;
   final ValueChanged<ConversationAction> onAction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = context.saqqar;
     final isArchived = conversation.isArchived;
-    final hasCredential = conversation.activeCredential != 'none';
-    // Combine the demo's pre-baked hint with the live per-conversation
-    // controller so approvals resolved inside the chat clear the row dot.
-    final needsAttention = conversation.hasPending ||
-        ref.watch(conversationNeedsAttentionProvider(conversation.id));
-    // Effective display title — honours any user-supplied rename via the
-    // conversations controller so AppBar / list / search all stay in sync.
-    final effectiveTitle = ref.watch(
-      conversationTitleProvider(conversation),
+    final needsAttention = context.select<ApprovalsCubit, bool>(
+      (cubit) => cubit.state.conversationNeedsAttention(conversation.id),
     );
-    final isPinned = ref.watch(
-      conversationsControllerProvider
-          .select((st) => st.pinnedIds.contains(conversation.id)),
+    final isPinned = context.select<ConversationsCubit, bool>(
+      (cubit) =>
+          cubit.state.data.dataOrNull?.pinnedIds.contains(conversation.id) ??
+          false,
     );
+
+    final title = conversation.title.trim();
+    // `lastMessagePreview` removed on user request — the row now shows
+    // title + relative time + message count only. The assistant's reply
+    // text was visually noisy and often redundant with the title.
 
     return Material(
       color: Colors.transparent,
@@ -117,9 +118,9 @@ class ConversationCard extends ConsumerWidget {
                           ],
                           Expanded(
                             child: Text(
-                              effectiveTitle.trim().isEmpty
+                              title.isEmpty
                                   ? context.tr.untitledConversation
-                                  : effectiveTitle,
+                                  : title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: context.text.titleSmall?.copyWith(
@@ -130,23 +131,16 @@ class ConversationCard extends ConsumerWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            conversation.updatedLabel,
+                            AppDateFormat.relative(
+                              context,
+                              conversation.updatedAt,
+                            ),
                             style: context.text.labelSmall?.copyWith(
                               color: s.muted,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        conversation.preview,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.bodySmall?.copyWith(
-                          color: s.muted,
-                          height: 1.4,
-                        ),
                       ),
                       const SizedBox(height: 10),
                       Row(
@@ -156,20 +150,8 @@ class ConversationCard extends ConsumerWidget {
                             text: '${conversation.messageCount}',
                             color: s.muted,
                           ),
-                          if (hasCredential) ...[
-                            const SizedBox(width: 10),
-                            Flexible(
-                              child: MetaDot(
-                                icon: AppIcons.key,
-                                text: conversation.activeCredential,
-                                color: s.brandCyan,
-                              ),
-                            ),
-                          ],
                           if (needsAttention) ...[
                             const SizedBox(width: 10),
-                            // Pulse dot + tiny label so the row reads as
-                            // "this one needs attention" at a glance.
                             PulseDot(color: s.warning),
                             const SizedBox(width: 4),
                             Text(
@@ -191,7 +173,11 @@ class ConversationCard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                ConversationRowMenu(onAction: onAction, isPinned: isPinned),
+                ConversationRowMenu(
+                  onAction: onAction,
+                  isPinned: isPinned,
+                  isArchived: isArchived,
+                ),
               ],
             ),
           ),

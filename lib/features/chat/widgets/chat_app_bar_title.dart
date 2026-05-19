@@ -1,37 +1,55 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../conversations/state/conversations_controller.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../../../shared/widgets/marquee_text.dart';
 
-/// AppBar title slot for the chat screen: gradient Saqqar avatar + the
-/// conversation title + a subtitle row showing the active credential and
-/// an "Auto-approve on" pill when relevant.
+/// AppBar title slot for the chat screen: conversation title + a
+/// subtitle row showing the active credential + env flag badges
+/// (LIVE / READ-ONLY) when relevant + an "Auto-approve on" pill.
+///
+/// Pure presentational — all the data comes from the parent
+/// (chat_screen). The screen resolves the title from the live
+/// snapshot, so the AppBar updates whenever a poll tick lands a fresh
+/// `conversation.title`.
 ///
 /// Tapping the row opens the credential picker. A small inline edit
 /// pencil sits next to the title — tapping it opens the rename dialog
-/// (web parity for `#renameButton`). [onRenameTap] fires with the
-/// current effective title (post-rename overlay) and lets the parent
-/// open the appropriate dialog.
-class ChatAppBarTitle extends ConsumerWidget {
+/// (web parity for `#renameButton`).
+class ChatAppBarTitle extends StatelessWidget {
   const ChatAppBarTitle({
     super.key,
-    required this.conversation,
+    required this.title,
     required this.activeCredentialLabel,
     required this.autoApprove,
     required this.onCredentialTap,
+    this.envIsLive = false,
+    this.envReadOnly = false,
     this.onRenameTap,
     this.agentBusy = false,
   });
 
-  final DemoConversation conversation;
+  /// Already-resolved conversation title. Falls back to the localized
+  /// "Untitled conversation" label below when blank — the parent
+  /// shouldn't pass placeholder text like "Start a conversation"; it
+  /// should pass the empty string and let the widget format it.
+  final String title;
+
+  /// Subtitle text — the env name, or "No environment picked" copy.
   final String activeCredentialLabel;
+
   final bool autoApprove;
+
+  /// When true, render the amber LIVE badge next to [activeCredentialLabel].
+  /// The bound env's `environment.is_live` is the source of truth.
+  final bool envIsLive;
+
+  /// When true, render the cyan READ-ONLY badge next to [activeCredentialLabel].
+  /// The bound env's `environment.read_only` is the source of truth.
+  final bool envReadOnly;
+
   final VoidCallback onCredentialTap;
   final VoidCallback? onRenameTap;
 
@@ -42,16 +60,11 @@ class ChatAppBarTitle extends ConsumerWidget {
   final bool agentBusy;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = context.saqqar;
-    // Pull the effective title via the controller so renames done from
-    // any surface (this AppBar pencil or the ⋯ menu) reflect instantly
-    // without prop-drilling through chat_screen.
-    final effectiveTitle =
-        ref.watch(conversationTitleProvider(conversation));
-    final displayTitle = effectiveTitle.trim().isEmpty
+    final displayTitle = title.trim().isEmpty
         ? context.tr.untitledConversation
-        : effectiveTitle;
+        : title;
 
     return InkWell(
       onTap: onCredentialTap,
@@ -60,18 +73,9 @@ class ChatAppBarTitle extends ConsumerWidget {
         padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 4, 4),
         child: Row(
           children: [
-            Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppGradients.vivid,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-              ),
-              child: const Icon(AppIcons.sparkles, color: Colors.white, size: 17),
-            ),
-            const SizedBox(width: 10),
+            // The gradient sparkles avatar was retired on 2026-05-17 —
+            // the hamburger leading + the agent's gradient wordmark in
+            // each message body already establish "Saqqar speaking".
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,11 +84,13 @@ class ChatAppBarTitle extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
+                      // Long conversation titles scroll horizontally so
+                      // the user can read the whole thing instead of
+                      // hitting a cropped "Reschedule yesterday's…"
+                      // ellipsis. Short titles render as static text.
                       Flexible(
-                        child: Text(
-                          displayTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: MarqueeText(
+                          text: displayTitle,
                           style: context.text.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                             height: 1.15,
@@ -138,6 +144,23 @@ class ChatAppBarTitle extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      // Env-flag badges — render only when the bound env
+                      // actually carries the flag. LIVE is amber (the
+                      // user should notice they're about to operate on
+                      // production); READ-ONLY is cyan (informational,
+                      // less alarming). Both can show together.
+                      if (envIsLive) ...[
+                        const SizedBox(width: 6),
+                        const _EnvFlagBadge(
+                          variant: _EnvFlagVariant.live,
+                        ),
+                      ],
+                      if (envReadOnly) ...[
+                        const SizedBox(width: 6),
+                        const _EnvFlagBadge(
+                          variant: _EnvFlagVariant.readOnly,
+                        ),
+                      ],
                       if (autoApprove) ...[
                         const SizedBox(width: 8),
                         _AutoApprovePill(),
@@ -224,6 +247,53 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Two-color variant of [_EnvFlagBadge]:
+///   * `live` — amber. The env is `is_live=true` on the server; any
+///     write operation hits real production data.
+///   * `readOnly` — cyan. The env is `read_only=true`; destructive
+///     calls (writes, shell commands) are refused server-side.
+enum _EnvFlagVariant { live, readOnly }
+
+/// Compact uppercase pill rendered next to the env name in the AppBar
+/// subtitle when the bound env carries the matching flag. Sized to
+/// match [_AutoApprovePill] so the three can ride together without
+/// crowding the title row.
+class _EnvFlagBadge extends StatelessWidget {
+  const _EnvFlagBadge({required this.variant});
+
+  final _EnvFlagVariant variant;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    final color = switch (variant) {
+      _EnvFlagVariant.live => s.warning,
+      _EnvFlagVariant.readOnly => s.brandCyan,
+    };
+    final label = switch (variant) {
+      _EnvFlagVariant.live => context.tr.liveBadge,
+      _EnvFlagVariant.readOnly => context.tr.readOnlyBadge,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: AppRadius.pillR,
+        border: Border.all(color: color.withValues(alpha: 0.40)),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: context.text.labelSmall?.copyWith(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.8,
         ),
       ),
     );

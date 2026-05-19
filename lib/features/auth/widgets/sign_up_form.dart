@@ -10,35 +10,34 @@ import '../../../shared/widgets/primary_button.dart';
 import 'brand_lockup.dart';
 
 /// Card-shaped sign-up form mirroring [SignInForm]: optional brand lockup,
-/// title + subtitle, username/email/password/confirm-password, primary
+/// title + subtitle, email/password/confirm-password, primary
 /// "Create account", divider, "Back to sign in" ghost button, footer.
 ///
-/// Validates client-side (username present, password ≥ 8 chars, passwords
-/// match). Server validation will surface via the controller's `errors`
-/// callback once the auth API is wired.
+/// Validates client-side (password ≥ 8 chars, passwords match). Server
+/// validation surfaces via the screen's typed-failure pipeline. Username
+/// was removed from the form — Django auto-derives it from the email on
+/// register, and the account screen displays whatever the server returns.
 class SignUpForm extends StatelessWidget {
   const SignUpForm({
     super.key,
     required this.wide,
     required this.loading,
-    required this.username,
     required this.email,
     required this.password,
     required this.confirmPassword,
-    required this.usernameError,
     required this.passwordError,
     required this.confirmError,
     required this.onSubmit,
     required this.onBackToSignIn,
+    this.emailError,
   });
 
   final bool wide;
   final bool loading;
-  final TextEditingController username;
   final TextEditingController email;
   final TextEditingController password;
   final TextEditingController confirmPassword;
-  final String? usernameError;
+  final String? emailError;
   final String? passwordError;
   final String? confirmError;
   final VoidCallback onSubmit;
@@ -80,23 +79,14 @@ class SignUpForm extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 AppTextField(
-                  label: context.tr.username,
-                  hint: context.tr.usernameHint,
-                  controller: username,
-                  prefixIcon: AppIcons.user,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.newUsername],
-                  errorText: usernameError,
-                ),
-                const SizedBox(height: 16),
-                AppTextField(
-                  label: context.tr.emailOptional,
+                  label: context.tr.emailLabel,
                   hint: context.tr.emailHint,
                   controller: email,
                   prefixIcon: AppIcons.mail,
                   textInputAction: TextInputAction.next,
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
+                  errorText: emailError,
                 ),
                 const SizedBox(height: 16),
                 AppPasswordField(

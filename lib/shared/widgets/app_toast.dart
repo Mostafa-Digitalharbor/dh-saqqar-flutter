@@ -6,23 +6,59 @@ import '../extensions/context_extensions.dart';
 
 enum ToastVariant { success, error, info }
 
+/// An inline action button rendered on the trailing edge of a toast.
+///
+/// Use for retry-style affordances (network errors), undo (after deletes),
+/// or "View details" links. Tap auto-dismisses the toast before invoking
+/// [onPressed] so navigating away doesn't leave the toast hanging.
+class ToastAction {
+  const ToastAction({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+}
+
 /// Spec §5.13 — bottom-center toast on mobile.
 ///
 /// Use `AppToast.show(context, ...)` to display. Built on top of Material's
 /// `ScaffoldMessenger.showSnackBar` so it composes with route changes.
+///
+/// Two-line layout when both [title] and [message] are supplied:
+///   * **Title** — bold, action-contextual ("Couldn't save the credential").
+///   * **Message** — muted weight, the actual error ("Check your connection").
+///
+/// One-line layout when only [message] is supplied (back-compat with the
+/// older single-string call sites).
 class AppToast {
   AppToast._();
 
   static void show(
     BuildContext context, {
     required String message,
+    String? title,
     ToastVariant variant = ToastVariant.info,
     Duration? duration,
+    ToastAction? action,
   }) {
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
 
     messenger.hideCurrentSnackBar();
+
+    // Wrap the action so the toast dismisses BEFORE the user's callback
+    // runs. Any navigation triggered inside the callback would otherwise
+    // race with the snackbar's dismiss animation.
+    final wrappedAction = action == null
+        ? null
+        : ToastAction(
+            label: action.label,
+            onPressed: () {
+              messenger.hideCurrentSnackBar();
+              WidgetsBinding.instance
+                  .addPostFrameCallback((_) => action.onPressed());
+            },
+          );
+
     messenger.showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
@@ -30,22 +66,33 @@ class AppToast {
         elevation: 0,
         margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
         padding: EdgeInsets.zero,
-        duration:
-            duration ??
+        duration: duration ??
             (variant == ToastVariant.error
                 ? const Duration(seconds: 5)
                 : const Duration(seconds: 3)),
-        content: _ToastContent(message: message, variant: variant),
+        content: _ToastContent(
+          title: title,
+          message: message,
+          variant: variant,
+          action: wrappedAction,
+        ),
       ),
     );
   }
 }
 
 class _ToastContent extends StatelessWidget {
-  const _ToastContent({required this.message, required this.variant});
+  const _ToastContent({
+    required this.message,
+    required this.variant,
+    this.title,
+    this.action,
+  });
 
+  final String? title;
   final String message;
   final ToastVariant variant;
+  final ToastAction? action;
 
   Color _color(BuildContext context) {
     final s = context.saqqar;
@@ -57,21 +104,22 @@ class _ToastContent extends StatelessWidget {
   }
 
   IconData get _icon => switch (variant) {
-    ToastVariant.success => AppIcons.success,
-    ToastVariant.error => AppIcons.error,
-    ToastVariant.info => AppIcons.info,
-  };
+        ToastVariant.success => AppIcons.success,
+        ToastVariant.error => AppIcons.error,
+        ToastVariant.info => AppIcons.info,
+      };
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final c = _color(context);
+    final hasTitle = title != null && title!.trim().isNotEmpty;
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
+        constraints: const BoxConstraints(maxWidth: 420),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: s.surface,
             borderRadius: AppRadius.toastR,
@@ -85,21 +133,74 @@ class _ToastContent extends StatelessWidget {
             ],
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(_icon, size: 18, color: c),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(_icon, size: 18, color: c),
+              ),
               const SizedBox(width: 10),
               Flexible(
-                child: Text(
-                  message,
-                  style: (context.text.bodyMedium ?? const TextStyle())
-                      .copyWith(color: c, fontWeight: FontWeight.w500),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasTitle) ...[
+                      Text(
+                        title!,
+                        style: (context.text.bodyMedium ?? const TextStyle())
+                            .copyWith(
+                          color: c,
+                          fontWeight: FontWeight.w800,
+                          height: 1.25,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        message,
+                        style: (context.text.bodySmall ?? const TextStyle())
+                            .copyWith(color: s.muted, height: 1.35),
+                      ),
+                    ] else
+                      Text(
+                        message,
+                        style: (context.text.bodyMedium ?? const TextStyle())
+                            .copyWith(color: c, fontWeight: FontWeight.w500),
+                      ),
+                  ],
                 ),
               ),
+              if (action != null) ...[
+                const SizedBox(width: 10),
+                _ToastActionButton(action: action!, color: c),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ToastActionButton extends StatelessWidget {
+  const _ToastActionButton({required this.action, required this.color});
+
+  final ToastAction action;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: action.onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: color,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        minimumSize: const Size(0, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+      child: Text(action.label),
     );
   }
 }

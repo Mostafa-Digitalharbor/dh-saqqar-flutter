@@ -1,15 +1,24 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/account/presentation/account_screen.dart';
-import '../../features/auth/presentation/sign_in_screen.dart';
-import '../../features/auth/presentation/sign_up_screen.dart';
-import '../../features/chat/presentation/chat_screen.dart';
-import '../../features/conversations/presentation/conversations_screen.dart';
-import '../../features/share/presentation/shared_transcript_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../features/account/view/account_screen.dart';
+import '../../features/auth/view/sign_in_screen.dart';
+import '../../features/auth/view/sign_up_screen.dart';
+import '../../features/auth/view_model/auth_cubit.dart';
+import '../../features/auth/view_model/auth_state.dart';
+import '../../features/chat/view/chat_screen.dart';
+import '../../features/chat/view_model/chat_cubit.dart';
+import '../../features/conversations/data/conversations_repository.dart';
+import '../../features/conversations/view/conversations_screen.dart';
+import '../../features/share/view/shared_transcript_screen.dart';
 import '../../features/storybook/storybook_screen.dart';
-import '../../features/vault/presentation/vault_screen.dart';
+import '../../features/vault/view/vault_screen.dart';
+import '../constants/ui_strings.dart';
 import '../../navigation/home_shell.dart';
 import '../i18n/app_localizations.dart';
 import 'route_names.dart';
@@ -17,13 +26,50 @@ import 'route_names.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
-/// GoRouter config. Auth-aware redirects will be added when the auth
-/// controller is wired in Sprint 2 (currently every route is reachable).
-final routerProvider = Provider<GoRouter>((ref) {
+/// Public routes that don't require an authenticated session. Used by the
+/// gate below to decide whether to redirect to `/sign-in`.
+const _publicPaths = <String>{
+  RouteNames.signInPath,
+  RouteNames.signUpPath,
+};
+
+/// `/share/<token>` is public — anyone with the token can read.
+bool _isPublicShare(String location) => location.startsWith('/share/');
+
+/// Builds a GoRouter wired against the supplied [AuthCubit].
+///
+/// The gate:
+///   - While `status == initial` or `loading`, defer redirect decisions
+///     (the launch splash is still on screen, then awaits the bootstrap
+///     before handing off).
+///   - When unauthenticated, force `/sign-in` for any protected route.
+///   - When authenticated, bounce off `/sign-in` and `/sign-up`.
+///
+/// The router is rebuilt as a singleton inside `app.dart` (kept in a
+/// `late final` so it survives hot reloads / theme changes).
+GoRouter buildAppRouter(AuthCubit authCubit) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: RouteNames.chatsPath,
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: kDebugMode,
+    refreshListenable: _AuthRefreshNotifier(authCubit),
+    redirect: (context, state) {
+      final auth = authCubit.state;
+      // Wait for bootstrap to resolve — the splash holds the UI in the
+      // meantime, so no flash of /chats before the gate decides.
+      if (!auth.isResolved) return null;
+
+      final location = state.matchedLocation;
+      final isPublic =
+          _publicPaths.contains(location) || _isPublicShare(location);
+      final isAuthed = auth.isAuthenticated;
+
+      if (!isAuthed && !isPublic) return RouteNames.signInPath;
+      if (isAuthed && _publicPaths.contains(location)) {
+        return RouteNames.chatsPath;
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: RouteNames.signInPath,
@@ -53,9 +99,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        // Public read-only transcript view. Lives outside the shell so the
-        // tab bar doesn't follow non-authed deep-link visitors. Reached via
-        // `saqqar://share/<token>` (see DeepLinks).
         path: '/share/:token',
         name: RouteNames.sharedTranscript,
         pageBuilder: (_, state) => _transitionPage(
@@ -80,13 +123,30 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: ':id',
                 name: RouteNames.chat,
                 parentNavigatorKey: _rootNavigatorKey,
-                pageBuilder: (_, state) => _transitionPage(
-                  state: state,
-                  child: ChatScreen(
-                    conversationId: state.pathParameters['id']!,
-                  ),
-                  kind: _RouteTransitionKind.detail,
-                ),
+                pageBuilder: (_, state) {
+                  final id = state.pathParameters['id']!;
+                  final isNewChat = id == UiStrings.newConversationId;
+                  return _transitionPage(
+                    state: state,
+                    // Per-route BlocProvider: ChatCubit instance lives
+                    // for the lifetime of one chat route. On pop, close()
+                    // fires, cancelling the snapshot poll timer +
+                    // attachment status pollers. The "new chat"
+                    // sentinel skips the cubit (no server conversation
+                    // to poll yet) — the screen falls back to the
+                    // create-then-route flow.
+                    child: isNewChat
+                        ? ChatScreen(conversationId: id)
+                        : BlocProvider<ChatCubit>(
+                            create: (ctx) => ChatCubit(
+                              conversationId: id,
+                              repository: ctx.read<ConversationsRepository>(),
+                            )..load(),
+                            child: ChatScreen(conversationId: id),
+                          ),
+                    kind: _RouteTransitionKind.detail,
+                  );
+                },
               ),
             ],
           ),
@@ -109,7 +169,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       body: Center(child: Text(context.tr.routeNotFound(state.uri))),
     ),
   );
-});
+}
+
+/// Bridges [AuthCubit]'s stream to GoRouter's `refreshListenable` so the
+/// gate re-runs `redirect` whenever the auth status flips.
+class _AuthRefreshNotifier extends ChangeNotifier {
+  _AuthRefreshNotifier(this._cubit) {
+    _sub = _cubit.stream.listen((_) => notifyListeners());
+  }
+
+  final AuthCubit _cubit;
+  late final StreamSubscription<AuthState> _sub;
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
+}
 
 enum _RouteTransitionKind { tab, detail, fade, scale }
 

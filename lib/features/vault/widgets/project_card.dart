@@ -5,10 +5,10 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/mini_chip.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/project_models.dart';
 
 /// Vault refactor (P0 from the web audit). Each card represents one
-/// [DemoProject]; its [DemoEnvironment]s are listed underneath as tappable
+/// [Project]; its [Environment]s are listed underneath as tappable
 /// rows. Tapping an env raises [onEnvTap]. Tapping the project header
 /// (name/icon/env count) raises [onTap] so the parent can open the
 /// project-detail sheet (rename / add env / delete project).
@@ -27,9 +27,9 @@ class ProjectCard extends StatelessWidget {
     this.onLongPress,
   });
 
-  final DemoProject project;
-  final List<DemoEnvironment> environments;
-  final ValueChanged<DemoEnvironment> onEnvTap;
+  final Project project;
+  final List<Environment> environments;
+  final ValueChanged<Environment> onEnvTap;
 
   /// Opens [ProjectDetailSheet] for this project. When null the project
   /// header is non-interactive (only env rows respond to taps).
@@ -142,7 +142,7 @@ class ProjectCard extends StatelessWidget {
 class _EnvironmentRow extends StatelessWidget {
   const _EnvironmentRow({required this.env, required this.onTap});
 
-  final DemoEnvironment env;
+  final Environment env;
   final VoidCallback onTap;
 
   @override
@@ -174,39 +174,33 @@ class _EnvironmentRow extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          env.name,
-                          style: context.text.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                    Flexible(
+                      child: Text(
+                        env.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
-                        if (env.isLive) ...[
-                          const SizedBox(width: 8),
-                          MiniChip(context.tr.liveBadge, color: s.danger),
-                        ],
-                        if (env.readOnly) ...[
-                          const SizedBox(width: 6),
-                          MiniChip(context.tr.readOnlyBadge, color: s.muted),
-                        ],
-                        if (env.autoApprove) ...[
-                          const SizedBox(width: 6),
-                          MiniChip(
-                            context.tr.autoApproveBadge,
-                            color: s.warning,
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${env.credentialNames.length} ${context.tr.credentials}',
-                      style: context.text.bodySmall?.copyWith(color: s.muted),
-                    ),
+                    if (env.isLive) ...[
+                      const SizedBox(width: 8),
+                      MiniChip(context.tr.liveBadge, color: s.danger),
+                    ],
+                    if (env.readOnly) ...[
+                      const SizedBox(width: 6),
+                      MiniChip(context.tr.readOnlyBadge, color: s.muted),
+                    ],
+                    if (env.autoApprove) ...[
+                      const SizedBox(width: 6),
+                      MiniChip(
+                        context.tr.autoApproveBadge,
+                        color: s.warning,
+                      ),
+                    ],
                   ],
                 ),
               ),

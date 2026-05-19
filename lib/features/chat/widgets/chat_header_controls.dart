@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/responsive_content.dart';
-import '../../demo/saqqar_demo_data.dart';
-import '../../vault/state/vault_controller.dart';
+import '../../vault/data/project_models.dart';
+import '../../vault/view_model/vault_cubit.dart';
 
 /// Two-dropdown header strip — Project + Environment pickers only.
 ///
@@ -25,13 +25,14 @@ import '../../vault/state/vault_controller.dart';
 /// reads "Pick a project first" in that state. Picking a project resets
 /// the environment to null so the user re-selects within the new project's
 /// envs. Matches `onProjectChange()` / `onEnvironmentChange()` in `app.js`.
-class ChatHeaderControls extends ConsumerWidget {
+class ChatHeaderControls extends StatelessWidget {
   const ChatHeaderControls({
     super.key,
     required this.projectId,
     required this.environmentId,
     required this.onProjectChanged,
     required this.onEnvironmentChanged,
+    required this.onCreateEnvironmentRequested,
   });
 
   final String? projectId;
@@ -39,14 +40,21 @@ class ChatHeaderControls extends ConsumerWidget {
   final ValueChanged<String?> onProjectChanged;
   final ValueChanged<String?> onEnvironmentChanged;
 
+  /// Fired when the user taps the environment slot while the selected
+  /// project has no environments yet. The chat screen wires this to a
+  /// confirm dialog → ProjectDetailSheet so the user can add an env
+  /// without leaving the chat tab.
+  final ValueChanged<String> onCreateEnvironmentRequested;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = context.saqqar;
-    final vault = ref.watch(vaultControllerProvider);
-    final projects = vault.projects;
-    final envs = projectId == null
-        ? const <DemoEnvironment>[]
-        : vault.environmentsForProject(projectId!);
+    final vault = context.watch<VaultCubit>().state;
+    final data = vault.data.dataOrNull;
+    final projects = data?.projects ?? const <Project>[];
+    final envs = (projectId == null || data == null)
+        ? const <Environment>[]
+        : data.environmentsForProject(projectId!);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -83,20 +91,28 @@ class ChatHeaderControls extends ConsumerWidget {
             Expanded(
               child: _StackedControl(
                 label: context.tr.headerEnvironment,
-                child: _DropdownPill(
-                  enabled: projectId != null,
-                  hint: projectId == null
-                      ? context.tr.pickProjectFirst
-                      : (envs.isEmpty
-                          ? context.tr.noEnvironmentsForProject
-                          : context.tr.headerNoneOption),
-                  value: environmentId,
-                  items: [
-                    for (final e in envs)
-                      _DropdownItem(value: e.id, label: e.name),
-                  ],
-                  onChanged: onEnvironmentChanged,
-                ),
+                // When the selected project has no envs, swap the
+                // dropdown (which would render empty + non-functional)
+                // for a tappable "+ Add environment" pill that routes
+                // the user to the env creation flow. Dropdown stays for
+                // every other case.
+                child: (projectId != null && envs.isEmpty)
+                    ? _CreateEnvironmentPill(
+                        onTap: () =>
+                            onCreateEnvironmentRequested(projectId!),
+                      )
+                    : _DropdownPill(
+                        enabled: projectId != null,
+                        hint: projectId == null
+                            ? context.tr.pickProjectFirst
+                            : context.tr.headerNoneOption,
+                        value: environmentId,
+                        items: [
+                          for (final e in envs)
+                            _DropdownItem(value: e.id, label: e.name),
+                        ],
+                        onChanged: onEnvironmentChanged,
+                      ),
               ),
             ),
           ],
@@ -243,6 +259,66 @@ class _DropdownItem {
   const _DropdownItem({required this.value, required this.label});
   final String value;
   final String label;
+}
+
+/// CTA-styled pill rendered in place of the env dropdown when the
+/// selected project has no environments yet. Tapping fires
+/// [ChatHeaderControls.onCreateEnvironmentRequested] — the chat screen
+/// pops a confirm dialog → ProjectDetailSheet so the user can add an
+/// env without losing their place in the chat.
+///
+/// Visually styled to match the dropdown's footprint (same height +
+/// border radius) so the row geometry doesn't jump when the project
+/// picker changes.
+class _CreateEnvironmentPill extends StatelessWidget {
+  const _CreateEnvironmentPill({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppRadius.buttonR,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.buttonR,
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            // Brand-cyan tinted fill so the "this is the next thing to
+            // do" CTA visually pops vs. the muted disabled dropdown
+            // state it replaces.
+            color: s.brandCyan.withValues(alpha: 0.12),
+            borderRadius: AppRadius.buttonR,
+            border: Border.all(
+              color: s.brandCyan.withValues(alpha: 0.40),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(AppIcons.plus, size: 16, color: s.brandCyan),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  context.tr.createEnvironmentCta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall?.copyWith(
+                    color: s.brandCyan,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Compact pill-styled dropdown — Material's [DropdownButton] under the hood,
