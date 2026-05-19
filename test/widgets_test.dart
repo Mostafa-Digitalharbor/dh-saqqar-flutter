@@ -48,6 +48,8 @@ class _StubConversationsRepository implements ConversationsRepository {
     String? title,
     bool? isArchived,
     bool? autoApprove,
+    bool? deepThink,
+    Map<String, dynamic>? context,
     String? environmentId,
   }) {
     throw UnimplementedError();

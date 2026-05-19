@@ -31,6 +31,10 @@ class SaqqarScreen extends StatelessWidget {
       physics: onRefresh != null
           ? const AlwaysScrollableScrollPhysics()
           : physics,
+      // Pre-render ~1.5 screenfuls of off-screen rows so flick-scroll
+      // never reveals a row that wasn't built yet — user explicitly
+      // asked for the "everything was already there" feel.
+      cacheExtent: 1500,
       children: [
         ResponsiveContent(
           padding: padding,

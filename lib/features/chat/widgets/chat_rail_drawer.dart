@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,6 +14,7 @@ import '../../../shared/widgets/marquee_text.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../inbox/data/approval_models.dart' as inbox_api;
 import '../../inbox/data/approvals_api.dart';
+import '../../inbox/data/artifact_downloader.dart';
 import '../../inbox/data/artifact_models.dart' as inbox_api;
 import '../view_model/chat_cubit.dart';
 import 'chat_approval_card.dart';
@@ -96,6 +98,47 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
     } catch (_) {
       if (!mounted) return;
       _toast(tr.defaultApiError);
+    }
+  }
+
+  /// Downloads the artifact (or reuses the cached copy under the app's
+  /// documents directory) and hands it off to the OS's matching
+  /// viewer — Adobe / Drive for PDF, Word for DOCX, Excel for XLSX,
+  /// gallery for images, etc. Surfaces a "Downloading…" toast on
+  /// first fetch and a localized error if either step fails.
+  Future<void> _openArtifact(inbox_api.Artifact artifact) async {
+    final tr = context.tr;
+    final downloader = ArtifactDownloader(context.read<Dio>());
+    AppToast.show(
+      context,
+      message: tr.downloadingArtifact,
+      variant: ToastVariant.info,
+    );
+    final result = await downloader.downloadAndOpen(artifact);
+    if (!mounted) return;
+    switch (result) {
+      case ArtifactOpenSuccess():
+        // OS now owns the viewer — no extra toast, the file's on
+        // screen.
+        break;
+      case ArtifactOpenNoViewer():
+        AppToast.show(
+          context,
+          message: tr.artifactNoViewer,
+          variant: ToastVariant.error,
+        );
+      case ArtifactOpenFailed():
+        AppToast.show(
+          context,
+          message: tr.artifactOpenFailed,
+          variant: ToastVariant.error,
+        );
+      case ArtifactDownloadFailed():
+        AppToast.show(
+          context,
+          message: tr.artifactDownloadFailed,
+          variant: ToastVariant.error,
+        );
     }
   }
 
@@ -198,7 +241,7 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
                   ),
                   _ArtifactsTab(
                     artifacts: artifacts,
-                    onOpen: (a) => _toast(context.tr.opening(a.name)),
+                    onOpen: _openArtifact,
                   ),
                   // Activity tab is a placeholder until the backend
                   // surfaces a server-activity feed.
@@ -383,6 +426,7 @@ class _ApprovalsTab extends StatelessWidget {
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      cacheExtent: 1500,
       itemCount: approvals.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) => ChatApprovalCard(
@@ -411,6 +455,7 @@ class _ArtifactsTab extends StatelessWidget {
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      cacheExtent: 1500,
       itemCount: artifacts.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) => ChatArtifactTile(

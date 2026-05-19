@@ -34,16 +34,30 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
+  /// Temporary client-side bypass: the shared demo account
+  /// `test / test` skips the email-format check so the company team
+  /// can sign in with the test creds without the validator rejecting
+  /// `"test"` for missing `@`/`.`. The server still authenticates
+  /// normally — this only relaxes the local format guard. Remove once
+  /// the demo account is retired.
+  static const _demoUsername = 'test';
+  static const _demoPassword = 'test';
+
   bool _validate() {
     final tr = context.tr;
     final email = _email.text.trim();
+    final password = _password.text;
+
+    final isDemoLogin = email == _demoUsername && password == _demoPassword;
+
     String? emailErr;
     if (email.isEmpty) {
       emailErr = tr.emailRequired;
-    } else if (!email.contains('@') || !email.contains('.')) {
+    } else if (!isDemoLogin &&
+        (!email.contains('@') || !email.contains('.'))) {
       emailErr = tr.emailInvalid;
     }
-    final pwErr = _password.text.isEmpty ? tr.passwordTooShort : null;
+    final pwErr = password.isEmpty ? tr.passwordTooShort : null;
     setState(() {
       _emailError = emailErr;
       _passwordError = pwErr;

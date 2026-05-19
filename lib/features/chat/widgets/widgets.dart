@@ -24,6 +24,7 @@ export 'chat_rail_drawer.dart';
 export 'chat_run_progress_card.dart';
 export 'chat_sidebar_drawer.dart';
 export 'chat_scroll_down_button.dart';
+export 'chat_thinking_pill.dart';
 export 'chat_send_button.dart';
 export 'chat_sheet.dart';
 export 'chat_sheet_empty.dart';

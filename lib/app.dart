@@ -117,6 +117,11 @@ class _SaqqarAppState extends State<SaqqarApp> {
         darkTheme: darkTheme,
         locale: locale,
         supportedLocales: AppStrings.supported,
+        // Smooth iOS-style scroll on every platform. Android's default
+        // ClampingScrollPhysics felt "heavy / panicky" on touch — the
+        // bouncing physics + AlwaysScrollable parent gives momentum
+        // and gentle deceleration everywhere consistently.
+        scrollBehavior: const _SmoothScrollBehavior(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -142,5 +147,26 @@ class _SaqqarAppState extends State<SaqqarApp> {
         },
       ),
     );
+  }
+}
+
+/// App-wide [ScrollBehavior] that swaps Android's default clamping
+/// physics for the iOS-style bouncing variant on every platform.
+///
+/// IMPORTANT: plain [BouncingScrollPhysics] without an
+/// `AlwaysScrollable` parent. An earlier revision wrapped it with
+/// `AlwaysScrollableScrollPhysics` and that turned every nested
+/// scrollable in the app — markdown bodies, code blocks, dropdowns —
+/// into a scroll surface, which made long messages inside a chat
+/// bubble scroll internally instead of expanding the bubble. Surfaces
+/// that genuinely need "always scrollable" (e.g. the chat list itself,
+/// which has to support pull-to-refresh) opt in locally on their own
+/// `physics` parameter.
+class _SmoothScrollBehavior extends MaterialScrollBehavior {
+  const _SmoothScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const BouncingScrollPhysics();
   }
 }

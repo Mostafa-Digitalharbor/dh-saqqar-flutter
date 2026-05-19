@@ -7,6 +7,7 @@
 // ignore_for_file: unused_element
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -94,6 +95,12 @@ class _ChatScreenState extends State<ChatScreen> {
   /// the pill and Send becomes enabled even on an empty text field.
   DemoAttachment? _attachment;
 
+  /// The actual file on disk for the currently-staged attachment.
+  /// Separate from [_attachment] (which is just display metadata) so
+  /// `_sendAsNewConversation` can perform the deferred upload after
+  /// it has a `conversation_id` to bind the upload to.
+  File? _pendingFile;
+
   bool _showScrollDown = false;
   bool _isThinking = false;
 
@@ -150,11 +157,95 @@ class _ChatScreenState extends State<ChatScreen> {
     final snapshot =
         context.watch<ChatCubit>().state.data.dataOrNull;
     if (snapshot == null) return const [];
+    // Filter what the chat lane actually shows the user:
+    //
+    //   * Drop `tool` messages — raw JSON outputs the agent consumed
+    //     internally (describe_odoo_model results, SQL rows, etc.).
+    //     The adjacent `assistant` message already explains what the
+    //     tool returned in plain language.
+    //   * Drop `assistant` messages with empty content — those are
+    //     pure tool-call invocations (the agent is just dispatching a
+    //     tool, no human-readable reply yet). Rendering them shows up
+    //     as a blank bubble with just a timestamp.
+    //   * Drop `user` messages whose content is clearly a system
+    //     payload, not human typing — approval acknowledgements
+    //     ("approve" / "approved" / "reject" / "rejected"), raw JSON
+    //     blobs the server persists when a button-tap is logged as a
+    //     turn, etc. The end user didn't type these and shouldn't see
+    //     them surface as their own messages.
+    //   * Drop any message whose content carries the `[agent-control]`
+    //     marker — server-side directives that drive the agent to
+    //     execute an approved action (e.g. "Approval '<id>'
+    //     [agent-control] ... is approved. Execute the approved Odoo
+    //     write..."). On the web these stay hidden; we match that.
+    final visible = snapshot.messages.where((m) {
+      if (m.role == api.MessageRole.tool) return false;
+      if (m.role == api.MessageRole.assistant &&
+          m.content.trim().isEmpty) {
+        return false;
+      }
+      if (m.role == api.MessageRole.user &&
+          _isSystemUserPayload(m.content)) {
+        return false;
+      }
+      if (_isAgentControlPayload(m.content)) return false;
+      return true;
+    });
     // Closure capture: pass `context` into the adapter so the
     // timestamp resolves through the current locale.
-    return snapshot.messages
-        .map((m) => _adaptApiMessage(m, context))
-        .toList();
+    return visible.map((m) => _adaptApiMessage(m, context)).toList();
+  }
+
+  /// Heuristic for "this user message wasn't actually typed by the
+  /// user — it's a system-injected payload (approval ack, button-tap
+  /// echo, raw JSON envelope) that leaked into the conversation as a
+  /// `user` row server-side". The server doesn't currently mark these
+  /// distinctly, so we sniff the content.
+  ///
+  /// Tight on purpose — only filters obvious payloads (single-word
+  /// approve/reject keywords or JSON blobs). Anything that looks like
+  /// real prose passes through, including short replies like "تمام"
+  /// or "yes" (those are 3+ chars and not in the keyword list).
+  static const _approvalKeywords = {
+    'approve',
+    'approved',
+    'reject',
+    'rejected',
+    'accept',
+    'accepted',
+    'deny',
+    'denied',
+  };
+
+  bool _isSystemUserPayload(String content) {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty) return true;
+    // Single-word approval acks ("approve" / "rejected" etc.) — these
+    // come from clicking the inline approval card, not from typing.
+    if (_approvalKeywords.contains(trimmed.toLowerCase())) return true;
+    // JSON-shaped payload — a raw envelope the server persisted as a
+    // user message. Real users don't type JSON.
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Detects the server-side "approval granted, now go execute"
+  /// directives the agent receives after a user accepts an approval.
+  /// They carry the literal `[agent-control]` marker and start with
+  /// `Approval '<id>' ...` so we match either signal — the marker is
+  /// the authoritative one, the prefix is the cheap early-exit.
+  bool _isAgentControlPayload(String content) {
+    if (content.isEmpty) return false;
+    if (content.contains('[agent-control]')) return true;
+    final trimmed = content.trimLeft();
+    if (trimmed.startsWith("Approval '") &&
+        trimmed.contains('is approved')) {
+      return true;
+    }
+    return false;
   }
 
   /// True when the server reports the agent is mid-run for this
@@ -483,8 +574,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!_scroll.hasClients) return;
     _scroll.animateTo(
       _scroll.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutQuart,
     );
   }
 
@@ -493,8 +584,8 @@ class _ChatScreenState extends State<ChatScreen> {
       if (_scroll.hasClients) {
         _scroll.animateTo(
           _scroll.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 360),
+          curve: Curves.easeOutQuart,
         );
       }
     });
@@ -571,6 +662,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _composer.clear();
     setState(() {
       _attachment = null;
+      _pendingFile = null;
     });
     context.read<RunningAgentsCubit>().markRunning(widget.conversationId);
     final ok = await context.read<ChatCubit>().sendMessage(
@@ -610,14 +702,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }) async {
     final repo = context.read<ConversationsRepository>();
     final conversationsCubit = context.read<ConversationsCubit>();
-    // Snapshot the composer text + clear it optimistically. If the
-    // create fails, we restore so the user doesn't have to retype.
+    // Snapshot the composer text + the pending attachment file BEFORE
+    // we clear local state — the upload below needs the File on disk,
+    // and rolling back on failure needs the chip metadata to restore.
     final pendingText = text.isEmpty
         ? context.tr.attachedFilesForReview
         : text;
+    final pendingFile = _pendingFile;
+    final attachmentChip = _attachment;
     _composer.clear();
     setState(() {
       _attachment = null;
+      _pendingFile = null;
       _isThinking = true;
     });
     try {
@@ -633,10 +729,25 @@ class _ChatScreenState extends State<ChatScreen> {
       //    the env doesn't belong to this user) — surface as an error.
       await repo.patch(id: newId, environmentId: env.id);
       if (!mounted) return;
+      // 2.5) Upload any deferred attachment now that we have a
+      //      conversation id. Skipped when there's nothing to upload.
+      //      Failures here are surfaced — the user typed/picked
+      //      something on purpose, silently dropping it is worse than
+      //      a clear error.
+      final attachmentIds = <String>[];
+      if (pendingFile != null) {
+        final uploaded = await repo.uploadAttachments(
+          conversationId: newId,
+          files: [pendingFile],
+        );
+        attachmentIds.addAll(uploaded.map((a) => a.id));
+        if (!mounted) return;
+      }
       // 3) Send the message — first message in the brand-new conv.
       await repo.sendMessage(
         conversationId: newId,
         content: pendingText,
+        attachmentIds: attachmentIds,
         deepThink: deepThink,
       );
       if (!mounted) return;
@@ -649,7 +760,14 @@ class _ChatScreenState extends State<ChatScreen> {
       context.go(RouteNames.chatPath(newId));
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isThinking = false);
+      setState(() {
+        _isThinking = false;
+        // Restore the picked file + chip so the user doesn't have to
+        // re-attach after a transient failure (network blip, server
+        // 500 between create and send, etc.).
+        _attachment = attachmentChip;
+        _pendingFile = pendingFile;
+      });
       _composer.text = pendingText == context.tr.attachedFilesForReview
           ? ''
           : pendingText;
@@ -761,6 +879,27 @@ class _ChatScreenState extends State<ChatScreen> {
   /// (name, size, kind, optional thumbnail path) locally because the
   /// chat surfaces only need that to render the chip. Bytes / actual
   /// upload land when `/api/conversations/{id}/attachments/` ships.
+  /// Drops the currently-staged attachment — clears the composer chip
+  /// AND removes it from the cubit's `stagedAttachments` so the next
+  /// `sendMessage` doesn't ship the orphaned id. New chats never have
+  /// a cubit yet, so we just clear local state in that case.
+  void _removeAttachment() {
+    if (!_isNewChat) {
+      // The cubit indexes staged attachments by their server-side id.
+      // We don't carry that id at the screen level (the chip only has
+      // display metadata), so clear the whole staged list — only one
+      // attachment ever rides at a time today.
+      final cubit = context.read<ChatCubit>();
+      for (final a in cubit.state.stagedAttachments) {
+        cubit.removeStagedAttachment(a.id);
+      }
+    }
+    setState(() {
+      _attachment = null;
+      _pendingFile = null;
+    });
+  }
+
   Future<void> _pickAttachment() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -776,6 +915,11 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     if (!mounted || result == null || result.files.isEmpty) return;
     final picked = result.files.first;
+    final path = picked.path;
+    if (path == null || path.isEmpty) return;
+
+    // UI metadata for the composer chip — keeps the visual confirmation
+    // instant even if the upload below is still in flight.
     setState(() {
       _attachment = DemoAttachment(
         name: picked.name,
@@ -783,7 +927,28 @@ class _ChatScreenState extends State<ChatScreen> {
         size: _formatBytes(picked.size),
         imageUrl: _isImageExt(picked.extension) ? picked.path : null,
       );
+      _pendingFile = File(path);
     });
+
+    // Existing chats own a [ChatCubit] — stage the upload immediately
+    // so the attachment id is already on the server by the time the
+    // user hits Send. New chats can't upload yet (no conversation id)
+    // — _sendAsNewConversation does the deferred upload after it
+    // creates the conversation.
+    if (!_isNewChat) {
+      final cubit = context.read<ChatCubit>();
+      final ok = await cubit.uploadAttachments([File(path)]);
+      if (!mounted) return;
+      if (!ok) {
+        // Upload failed — clear the local chip so the user knows the
+        // attachment didn't make it onto the message.
+        setState(() {
+          _attachment = null;
+          _pendingFile = null;
+        });
+        _toast(context.tr.defaultApiError);
+      }
+    }
   }
 
   /// Maps a file extension to one of the [DemoAttachment.kind] tokens
@@ -975,7 +1140,22 @@ class _ChatScreenState extends State<ChatScreen> {
     // dead. Kept the helper around because legacy code paths still
     // reach for `_conversation.title` in places not yet migrated.
     final online = context.watch<ConnectivityCubit>().state;
-    final deepThink = context.watch<DeepThinkCubit>().state;
+    // Source of truth for the per-conversation toggles:
+    //   * Existing chat → live from the snapshot (server is canonical,
+    //     so flipping from the web shows up here on the next poll).
+    //   * New chat (no cubit yet) → local state until the conversation
+    //     gets created; carried forward into the first send.
+    final snapshotConv = _isNewChat
+        ? null
+        : context
+            .watch<ChatCubit>()
+            .state
+            .data
+            .dataOrNull
+            ?.conversation;
+    final deepThink = snapshotConv?.deepThink ??
+        context.watch<DeepThinkCubit>().state;
+    final autoApprove = snapshotConv?.autoApprove ?? _autoApprove;
 
     // Brief §4.1 mobile header — hamburger left + title middle + bell
     // right with a pending-approvals badge. Badge count reads from the
@@ -1117,18 +1297,32 @@ class _ChatScreenState extends State<ChatScreen> {
               focusNode: _composerFocus,
               attachment: _attachment,
               onAttach: _pickAttachment,
-              onRemoveAttachment: () => setState(() => _attachment = null),
+              onRemoveAttachment: _removeAttachment,
               onSend: online ? _send : null,
               deepThink: deepThink,
-              autoApprove: _autoApprove,
+              autoApprove: autoApprove,
               onDeepThinkChanged: (value) {
+                // New chats keep the local cubit until the
+                // conversation exists; existing chats PATCH the
+                // per-conversation flag so the web sees the change
+                // on its next poll and vice versa.
                 context.read<DeepThinkCubit>().set(value);
+                if (!_isNewChat) {
+                  context.read<ChatCubit>().setDeepThink(value);
+                }
                 _toast(
                   value ? context.tr.deepThinkOn : context.tr.deepThinkOff,
                 );
               },
               onAutoApproveChanged: (value) {
-                setState(() => _autoApprove = value);
+                if (_isNewChat) {
+                  setState(() => _autoApprove = value);
+                } else {
+                  // Optimistic local mirror so the switch animates
+                  // before the snapshot poll catches up.
+                  setState(() => _autoApprove = value);
+                  context.read<ChatCubit>().setAutoApprove(value);
+                }
                 _toast(
                   value
                       ? context.tr.autoApproveOn
@@ -1322,7 +1516,12 @@ class _ChatScreenState extends State<ChatScreen> {
     // itemBuilder closure below.
     final messages = _effectiveMessages;
     final hasThinking = _effectiveIsThinking;
-    final thinkingIndex = messages.length;
+    // Group consecutive assistant messages into "turns" so we can show
+    // a single collapsed "Saqqar thinking · N steps · Xs" pill instead
+    // of N separate intermediate bubbles. Final reply in each turn
+    // stays expanded as a normal message. Web parity per user request.
+    final timeline = _buildTimeline(messages);
+    final thinkingIndex = timeline.length;
 
     // Pending approvals render inline at the tail of the message list —
     // moved out of the above-composer banner on 2026-05-17 so they
@@ -1344,9 +1543,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 .where((a) => a.status == api.ApprovalStatus.pending)
                 .toList() ??
             const []);
-    final firstApprovalIndex =
-        messages.length + (hasThinking ? 1 : 0);
-    final totalCount = messages.length +
+    final firstApprovalIndex = timeline.length + (hasThinking ? 1 : 0);
+    final totalCount = timeline.length +
         (hasThinking ? 1 : 0) +
         pendingApprovals.length +
         1;
@@ -1355,6 +1553,22 @@ class _ChatScreenState extends State<ChatScreen> {
       controller: _scroll,
       padding: EdgeInsets.zero,
       itemCount: totalCount,
+      // Smooth iOS-style scroll on every platform — Android's default
+      // `ClampingScrollPhysics` reads as "heavy" / "panicky" the moment
+      // you touch the screen. Bouncing physics gives momentum, gentle
+      // deceleration, and a soft over-edge cue that matches the
+      // conversation tempo. `AlwaysScrollableScrollPhysics` keeps the
+      // pull-to-refresh-style drag responsive even when the content
+      // fits in one screen (so the user can scroll without the list
+      // feeling locked).
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      // Pre-render ~1.5 screenfuls of off-screen bubbles so flick-
+      // scrolling never hits a blank gap while the builder catches up.
+      // Bumped from the default 250 dp — chat bubbles are taller than
+      // average list rows because of the markdown body.
+      cacheExtent: 1500,
       itemBuilder: (context, index) {
         // Trailing spacer.
         if (index == totalCount - 1) return const SizedBox(height: 16);
@@ -1364,9 +1578,6 @@ class _ChatScreenState extends State<ChatScreen> {
         if (index >= firstApprovalIndex &&
             index < firstApprovalIndex + pendingApprovals.length) {
           final approval = pendingApprovals[index - firstApprovalIndex];
-          // Bridge real api.Approval → DemoApproval for the existing
-          // card widget. Same one-way translation pattern as the chat
-          // sidebar / rail drawer.
           return ResponsiveContent(
             maxWidth: 760,
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
@@ -1382,70 +1593,145 @@ class _ChatScreenState extends State<ChatScreen> {
           );
         }
 
-        // Typing indicator slot — sits after the last real message.
+        // Typing indicator slot — sits after the last timeline entry.
         if (hasThinking && index == thinkingIndex) {
-          final previous = messages.isEmpty ? null : messages.last;
-          final firstOfGroup =
-              previous == null || previous.role != DemoMessageRole.assistant;
+          final previousMessage = timeline.isEmpty
+              ? null
+              : timeline.last.lastMessage;
+          final firstOfGroup = previousMessage == null ||
+              previousMessage.role != DemoMessageRole.assistant;
           return ResponsiveContent(
             maxWidth: 760,
             padding: EdgeInsets.fromLTRB(14, firstOfGroup ? 14 : 2, 14, 0),
             child: ChatTypingRow(
               firstOfGroup: firstOfGroup,
-              statusLabel: _contextualActivityLabel(previous),
+              statusLabel: _contextualActivityLabel(previousMessage),
             ),
           );
         }
 
-        final message = messages[index];
-        final previous = index == 0 ? null : messages[index - 1];
-        final next = index == messages.length - 1
-            ? null
-            : messages[index + 1];
-        final isFirstOfGroup =
-            previous == null || previous.role != message.role;
-        // If a typing bubble follows this message, treat it as continuing the
-        // assistant's group so the avatar/time logic stays consistent.
-        final nextRole =
-            next?.role ?? (hasThinking ? DemoMessageRole.assistant : null);
-        final isLastOfGroup = nextRole != message.role;
+        // Timeline entry — either a single message bubble or a
+        // grouped agent turn (thinking pill + final reply).
+        final entry = timeline[index];
+        final previousEntry = index == 0 ? null : timeline[index - 1];
+        final entryAnchor = entry.firstMessage;
+        final previousLast = previousEntry?.lastMessage;
 
         // Date separator above the first message of a new calendar day.
-        final showDateSeparator =
-            message.createdAt != null &&
-            ChatDateSeparator.needs(previous?.createdAt, message.createdAt!);
+        final showDateSeparator = entryAnchor.createdAt != null &&
+            ChatDateSeparator.needs(
+              previousLast?.createdAt,
+              entryAnchor.createdAt!,
+            );
 
-        final row = ResponsiveContent(
-          maxWidth: 760,
-          padding: EdgeInsets.fromLTRB(
-            14,
-            isFirstOfGroup && !showDateSeparator ? 14 : 2,
-            14,
-            isLastOfGroup ? 6 : 0,
-          ),
-          child: MessageRow(
-            message: message,
-            isFirstOfGroup: isFirstOfGroup,
-            isLastOfGroup: isLastOfGroup,
-          ),
-        );
-
-        // Subtle entry: 6 px slide + opacity over 220 ms. FadeSlideIn
-        // respects Reduce Motion automatically. Stagger is disabled
-        // (index: 0) because in chat we want each new bubble to feel
-        // independent, not part of a cascade.
         final animated = FadeSlideIn(
           duration: const Duration(milliseconds: 220),
           offset: const Offset(0, 6),
-          child: row,
+          child: _buildTimelineEntry(
+            entry,
+            showDateSeparator: showDateSeparator,
+            previousLast: previousLast,
+          ),
         );
 
         if (!showDateSeparator) return animated;
         return Column(
-          children: [ChatDateSeparator(date: message.createdAt!), animated],
+          children: [
+            ChatDateSeparator(date: entryAnchor.createdAt!),
+            animated,
+          ],
         );
       },
     );
+  }
+
+  /// Renders one [_TimelineEntry] as either a plain [MessageRow] or a
+  /// [ChatThinkingPill] + the final reply. Keeps the bubble-grouping
+  /// (`isFirstOfGroup` / `isLastOfGroup`) heuristics out of the
+  /// itemBuilder closure so the index math up top stays readable.
+  Widget _buildTimelineEntry(
+    _TimelineEntry entry, {
+    required bool showDateSeparator,
+    required DemoMessage? previousLast,
+  }) {
+    if (entry is _SingleMessageEntry) {
+      final message = entry.message;
+      final isFirstOfGroup = previousLast == null ||
+          previousLast.role != message.role;
+      return ResponsiveContent(
+        maxWidth: 760,
+        padding: EdgeInsets.fromLTRB(
+          14,
+          isFirstOfGroup && !showDateSeparator ? 14 : 2,
+          14,
+          6,
+        ),
+        child: MessageRow(
+          message: message,
+          isFirstOfGroup: isFirstOfGroup,
+          isLastOfGroup: true,
+        ),
+      );
+    }
+    final turn = entry as _AgentTurnEntry;
+    final finalReply = turn.finalReply;
+    final pillThenReply = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ChatThinkingPill(
+          steps: turn.thinkingSteps,
+          totalDuration: turn.duration,
+        ),
+        const SizedBox(height: 6),
+        MessageRow(
+          message: finalReply,
+          isFirstOfGroup: true,
+          isLastOfGroup: true,
+        ),
+      ],
+    );
+    return ResponsiveContent(
+      maxWidth: 760,
+      padding: EdgeInsets.fromLTRB(14, showDateSeparator ? 2 : 14, 14, 6),
+      child: pillThenReply,
+    );
+  }
+
+  /// Walks the flat message list and bundles each user-→-agent round
+  /// into a [_TimelineEntry]. Runs of 2+ consecutive assistant messages
+  /// collapse into one [_AgentTurnEntry] (everything before the last
+  /// becomes "thinking steps"; the last stays as the final reply).
+  /// Single user messages and lone assistant replies map straight to
+  /// [_SingleMessageEntry] so unchanged turns render exactly as before.
+  List<_TimelineEntry> _buildTimeline(List<DemoMessage> messages) {
+    final out = <_TimelineEntry>[];
+    var i = 0;
+    while (i < messages.length) {
+      final m = messages[i];
+      if (m.role != DemoMessageRole.assistant) {
+        out.add(_SingleMessageEntry(m));
+        i++;
+        continue;
+      }
+      // Collect a run of consecutive assistant messages.
+      var j = i;
+      while (j < messages.length &&
+          messages[j].role == DemoMessageRole.assistant) {
+        j++;
+      }
+      final run = messages.sublist(i, j);
+      if (run.length == 1) {
+        out.add(_SingleMessageEntry(run.first));
+      } else {
+        out.add(_AgentTurnEntry(
+          thinkingSteps: run.sublist(0, run.length - 1),
+          finalReply: run.last,
+        ));
+      }
+      i = j;
+    }
+    return out;
   }
 
   // -------- Sheets --------
@@ -1798,6 +2084,10 @@ DemoAttachment _adaptApiAttachment(api.Attachment a) {
     kind: a.kind.toUpperCase(),
     size: _humanSize(a.sizeBytes),
     imageUrl: a.kind == 'image' ? a.absoluteUrl : null,
+    // Carry the server-side id + absolute URL so the AttachmentChip
+    // tap handler can download + open the file via [ArtifactDownloader].
+    serverId: a.id,
+    downloadUrl: a.absoluteUrl,
   );
 }
 
@@ -1834,4 +2124,71 @@ class _ResolvedEnv {
   final bool readOnly;
   final String projectId;
   final String projectName;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Chat timeline entries
+// ─────────────────────────────────────────────────────────────────────────
+
+/// One renderable slot in the chat list. The flat `messages` list gets
+/// reshaped into this sealed family by [_ChatScreenState._buildTimeline]
+/// so consecutive agent steps can be folded into a single "Saqqar
+/// thinking" pill above the final reply (web parity, per user request).
+sealed class _TimelineEntry {
+  const _TimelineEntry();
+
+  /// First message in this entry — used for date-separator anchoring
+  /// (calendar-day boundary against the previous entry).
+  DemoMessage get firstMessage;
+
+  /// Last message in this entry — used for the "previous role" check
+  /// when the next entry starts a new group.
+  DemoMessage get lastMessage;
+}
+
+/// A solo bubble — either a user message or a lone assistant reply
+/// that had no thinking steps preceding it.
+class _SingleMessageEntry extends _TimelineEntry {
+  const _SingleMessageEntry(this.message);
+
+  final DemoMessage message;
+
+  @override
+  DemoMessage get firstMessage => message;
+
+  @override
+  DemoMessage get lastMessage => message;
+}
+
+/// A multi-step agent turn: all intermediate "thinking" assistant
+/// messages collapsed into a pill, plus the final reply that gets
+/// rendered as a normal bubble below it.
+class _AgentTurnEntry extends _TimelineEntry {
+  const _AgentTurnEntry({
+    required this.thinkingSteps,
+    required this.finalReply,
+  });
+
+  final List<DemoMessage> thinkingSteps;
+  final DemoMessage finalReply;
+
+  @override
+  DemoMessage get firstMessage =>
+      thinkingSteps.isEmpty ? finalReply : thinkingSteps.first;
+
+  @override
+  DemoMessage get lastMessage => finalReply;
+
+  /// Wall-clock duration the agent spent on this turn — first thinking
+  /// step's `createdAt` → final reply's `createdAt`. Returns null when
+  /// either side is missing a timestamp (older cached messages) so the
+  /// pill can hide the `· 14s` segment cleanly.
+  Duration? get duration {
+    if (thinkingSteps.isEmpty) return null;
+    final start = thinkingSteps.first.createdAt;
+    final end = finalReply.createdAt;
+    if (start == null || end == null) return null;
+    final delta = end.difference(start);
+    return delta.isNegative ? null : delta;
+  }
 }

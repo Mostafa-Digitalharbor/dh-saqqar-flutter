@@ -10,17 +10,31 @@ import '../../demo/saqqar_demo_data.dart';
 /// When the attachment is an image and has an [DemoAttachment.imageUrl],
 /// renders an inline preview (max 240 px tall) on top of the metadata
 /// footer. Non-image kinds fall back to a tight icon + name + meta row.
+///
+/// [onTap] makes the whole chip tappable (download + open with the OS's
+/// matching viewer). Pass null in contexts where opening makes no sense
+/// (e.g. the composer preview tray before the message is sent).
 class AttachmentChip extends StatelessWidget {
-  const AttachmentChip({super.key, required this.attachment});
+  const AttachmentChip({super.key, required this.attachment, this.onTap});
 
   final DemoAttachment attachment;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    if (attachment.isImage && attachment.imageUrl != null) {
-      return _ImageAttachment(attachment: attachment);
-    }
-    return _FileAttachment(attachment: attachment);
+    final child = attachment.isImage && attachment.imageUrl != null
+        ? _ImageAttachment(attachment: attachment)
+        : _FileAttachment(attachment: attachment);
+    if (onTap == null) return child;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: child,
+      ),
+    );
   }
 }
 

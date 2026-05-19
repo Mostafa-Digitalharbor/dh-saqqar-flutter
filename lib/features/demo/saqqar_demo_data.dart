@@ -124,6 +124,8 @@ class DemoAttachment {
     required this.kind,
     required this.size,
     this.imageUrl,
+    this.downloadUrl,
+    this.serverId,
     this.source = AttachmentSource.userUpload,
   });
 
@@ -135,6 +137,15 @@ class DemoAttachment {
   /// preview inline (capped at 240 px tall) above the file meta row. Always
   /// null for non-image kinds.
   final String? imageUrl;
+
+  /// Absolute URL of the underlying file on the server (PDF, DOCX, image,
+  /// etc.). When non-null the attachment chip becomes tappable and the
+  /// download flow opens the file with the OS's matching viewer.
+  final String? downloadUrl;
+
+  /// Server-side id of the attachment. Used as the on-disk cache key so
+  /// the same file isn't re-downloaded each time the user taps it.
+  final String? serverId;
 
   final AttachmentSource source;
 

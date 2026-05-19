@@ -269,6 +269,7 @@ class _ConversationGroupedList extends StatelessWidget {
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+      cacheExtent: 1500,
       children: [
         if (today.isNotEmpty) ...[
           _GroupLabel(text: context.tr.today),

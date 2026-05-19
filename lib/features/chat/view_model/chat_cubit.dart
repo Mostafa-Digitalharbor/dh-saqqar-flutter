@@ -86,6 +86,75 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   /// Manual refresh — same code path as the polling tick.
   Future<void> refresh() => _pollOnce();
 
+  /// PATCH the per-conversation `auto_approve` flag on the server and
+  /// reflect the new value in our snapshot optimistically. Same shape
+  /// the web uses, so flipping the switch on either device shows up on
+  /// the other after the next poll.
+  Future<void> setAutoApprove(bool value) =>
+      _patchConversationFlag(autoApprove: value);
+
+  /// PATCH the per-conversation `deep_think` flag. Servers that don't
+  /// surface the field yet silently ignore the key — the next poll
+  /// just returns the previous value and the local UI flips back.
+  Future<void> setDeepThink(bool value) =>
+      _patchConversationFlag(deepThink: value);
+
+  Future<void> _patchConversationFlag({
+    bool? autoApprove,
+    bool? deepThink,
+  }) async {
+    final current = state.data.dataOrNull;
+    if (current == null) return;
+    // Optimistic: paint the new value in the snapshot before the
+    // server round-trip lands so the toggle responds instantly.
+    final mergedContext = deepThink == null
+        ? null
+        : {
+            ...current.conversation.context,
+            'deep_think': deepThink,
+          };
+    final optimistic = current.copyWith(
+      conversation: current.conversation.copyWith(
+        autoApprove: autoApprove ?? current.conversation.autoApprove,
+        deepThink: deepThink ?? current.conversation.deepThink,
+        context: mergedContext ?? current.conversation.context,
+      ),
+    );
+    emit(state.copyWith(data: DataSuccess(optimistic)));
+    try {
+      await _repo.patch(
+        id: conversationId,
+        autoApprove: autoApprove,
+        deepThink: deepThink,
+        // Belt-and-braces: also merge deep_think into `context` so a
+        // backend that persists toggles inside the context scratchpad
+        // (the shape the web uses today) picks the value up too. Any
+        // unrelated context keys are preserved via the spread above.
+        context: mergedContext,
+      );
+      // Pull the canonical snapshot so any server-side coercion (e.g.
+      // the server normalising auto_approve when the env is read_only)
+      // wins over the optimistic value.
+      await _pollOnce();
+    } catch (e, st) {
+      AppLogger.warn(
+        _tag,
+        '_patchConversationFlag(autoApprove=$autoApprove, '
+            'deepThink=$deepThink) failed',
+        error: e,
+        stackTrace: st,
+      );
+      // Rollback the optimistic change.
+      emit(state.copyWith(data: DataSuccess(current)));
+      emit(state.copyWith(
+        actionFailure: ChatActionFailure(
+          action: ChatAction.patch,
+          failure: ApiErrorMapper.toFailure(e),
+        ),
+      ));
+    }
+  }
+
   /// Pause polling — call when the chat goes off-screen (route pop,
   /// app backgrounded). Safe to call multiple times.
   void pause() {

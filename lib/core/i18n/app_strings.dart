@@ -327,6 +327,10 @@ class AppStrings {
   String get search => _t('search');
   String get refresh => _t('refresh');
   String get download => _t('download');
+  String get downloadingArtifact => _t('downloading_artifact');
+  String get artifactNoViewer => _t('artifact_no_viewer');
+  String get artifactOpenFailed => _t('artifact_open_failed');
+  String get artifactDownloadFailed => _t('artifact_download_failed');
   String get more => _t('more');
   String get shareLink => _t('share_link');
   String get rename => _t('rename');
@@ -412,6 +416,8 @@ class AppStrings {
   // "Working on your request"), composer busy hint.
   String get agentWorking => _t('agent_working');
   String get agentThinking => _t('agent_thinking');
+  String get saqqarThinking => _t('saqqar_thinking');
+  String get thinkingStepsLabel => _t('thinking_steps_label');
   String get composerBusy => _t('composer_busy');
   // Long-running report progress (run_progress.phase = building_report /
   // rendering_report). Shown on the typing row while Excel/PDF/Word
@@ -780,6 +786,10 @@ const Map<String, String> _en = {
   'search': 'Search',
   'refresh': 'Refresh',
   'download': 'Download',
+  'downloading_artifact': 'Downloading…',
+  'artifact_no_viewer': "Couldn't find an app to open this file.",
+  'artifact_open_failed': "Couldn't open the file.",
+  'artifact_download_failed': "Couldn't download the file. Try again.",
   'more': 'More',
   'share_link': 'Share link',
   'rename': 'Rename',
@@ -856,6 +866,8 @@ const Map<String, String> _en = {
   'stopping': 'Stopping…',
   'agent_working': 'Working',
   'agent_thinking': 'Working on your request.',
+  'saqqar_thinking': 'Saqqar thinking',
+  'thinking_steps_label': 'steps',
   'composer_busy': 'Saqqar is working — type your next task; send unlocks when done.',
   'save_and_continue': 'Save and continue',
   'credential_saved_continuing': 'Credential saved — Saqqar is resuming.',
@@ -1308,6 +1320,10 @@ const Map<String, String> _ar = {
   'search': 'بحث',
   'refresh': 'تحديث',
   'download': 'تنزيل',
+  'downloading_artifact': 'جاري التنزيل…',
+  'artifact_no_viewer': 'مفيش تطبيق مثبت يقدر يفتح الملف ده.',
+  'artifact_open_failed': 'تعذّر فتح الملف.',
+  'artifact_download_failed': 'تعذّر تنزيل الملف. حاول مرة أخرى.',
   'more': 'المزيد',
   'share_link': 'رابط المشاركة',
   'rename': 'إعادة تسمية',
@@ -1383,6 +1399,8 @@ const Map<String, String> _ar = {
   'stopping': 'جارِ الإيقاف…',
   'agent_working': 'يعمل',
   'agent_thinking': 'يعمل على طلبك.',
+  'saqqar_thinking': 'صقّار يفكر',
+  'thinking_steps_label': 'خطوات',
   'composer_busy': 'صقّار يعمل — اكتب مهمتك التالية، وسيُفعَّل الإرسال عند الانتهاء.',
   'save_and_continue': 'حفظ ومتابعة',
   'credential_saved_continuing': 'تم حفظ البيانات — صقّار يكمل العمل.',

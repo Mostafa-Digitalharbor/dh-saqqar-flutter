@@ -50,44 +50,38 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
   late final Animation<double> _scale;
   late final Animation<double> _fade;
   late final Animation<double> _wordmarkSlide;
-  late final Animation<double> _wordmarkFade;
-  late final Animation<double> _glowPulse;
 
   @override
   void initState() {
     super.initState();
     _entrance = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      // Longer than the old 900 ms so the dramatic zoom has room to
+      // breathe — the wordmark starts at ~25 % of its final size and
+      // grows smoothly, which would feel rushed at the old duration.
+      duration: const Duration(milliseconds: 1600),
     );
     _progress = AnimationController(
       vsync: this,
       duration: widget.minDuration,
     );
 
-    _scale = Tween<double>(begin: 0.62, end: 1.0).animate(
-      CurvedAnimation(parent: _entrance, curve: Curves.easeOutBack),
+    // Big zoom-in: tiny → full size with a smooth ease so the wordmark
+    // appears to "expand into focus" instead of popping in.
+    _scale = Tween<double>(begin: 0.25, end: 1.0).animate(
+      CurvedAnimation(parent: _entrance, curve: Curves.easeOutCubic),
     );
     _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _entrance,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
       ),
     );
     _wordmarkSlide = Tween<double>(begin: 12, end: 0).animate(
       CurvedAnimation(
         parent: _entrance,
-        curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic),
+        curve: const Interval(0.55, 1.0, curve: Curves.easeOutCubic),
       ),
-    );
-    _wordmarkFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entrance,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
-      ),
-    );
-    _glowPulse = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _entrance, curve: Curves.easeOutQuad),
     );
 
     _entrance.forward();
@@ -154,42 +148,28 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
         fit: StackFit.expand,
         children: [
           _AmbientBackdrop(animation: _entrance),
+          // Wordmark only — the circular "S" icon was retired on user
+          // request. The entrance scale/fade animation that used to land
+          // on the icon now lands on the wordmark itself so the splash
+          // still feels alive instead of popping flat.
           Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedBuilder(
-                  animation: _entrance,
-                  builder: (context, child) {
-                    final scale = reduceMotion ? 1.0 : _scale.value;
-                    final fade = reduceMotion ? 1.0 : _fade.value;
-                    final glow = reduceMotion ? 1.0 : _glowPulse.value;
-                    return Opacity(
-                      opacity: fade,
-                      child: Transform.scale(
-                        scale: scale,
-                        child: _LogoMark(glow: glow),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 28),
-                AnimatedBuilder(
-                  animation: _entrance,
-                  builder: (context, child) {
-                    final dy = reduceMotion ? 0.0 : _wordmarkSlide.value;
-                    final fade = reduceMotion ? 1.0 : _wordmarkFade.value;
-                    return Opacity(
-                      opacity: fade,
-                      child: Transform.translate(
-                        offset: Offset(0, dy),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: const _Wordmark(),
-                ),
-              ],
+            child: AnimatedBuilder(
+              animation: _entrance,
+              builder: (context, _) {
+                final scale = reduceMotion ? 1.0 : _scale.value;
+                final fade = reduceMotion ? 1.0 : _fade.value;
+                final dy = reduceMotion ? 0.0 : _wordmarkSlide.value;
+                return Opacity(
+                  opacity: fade,
+                  child: Transform.translate(
+                    offset: Offset(0, dy),
+                    child: Transform.scale(
+                      scale: scale,
+                      child: const _Wordmark(),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           PositionedDirectional(
@@ -204,54 +184,6 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
   }
 }
 
-class _LogoMark extends StatelessWidget {
-  const _LogoMark({required this.glow});
-  final double glow;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 132,
-      height: 132,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: AppGradients.vivid,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.16),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brandCyan.withValues(alpha: 0.55 * glow),
-            blurRadius: 60 * glow,
-            spreadRadius: 8 * glow,
-          ),
-          BoxShadow(
-            color: AppColors.brandPurple.withValues(alpha: 0.35 * glow),
-            blurRadius: 40 * glow,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Image.asset(
-        'assets/img/saqqar-icon-foreground.png',
-        width: 96,
-        height: 96,
-        fit: BoxFit.contain,
-        // Asset is generated by tool/generate_app_icon.dart; if it's somehow
-        // missing on a fresh checkout, fall back to a sparkle glyph so the
-        // splash never renders empty.
-        errorBuilder: (_, __, ___) => const Icon(
-          Icons.auto_awesome,
-          size: 64,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-}
-
 class _Wordmark extends StatelessWidget {
   const _Wordmark();
 
@@ -260,12 +192,12 @@ class _Wordmark extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // SAQQÂR logo image — replaces the gradient-text wordmark on
-        // 2026-05-17. Splash sits on a dark navy backdrop, so the
-        // logo's navy strokes get tinted white via the SaqqarLogo
-        // ColorFilter for legibility.
-        const SaqqarLogo(height: 44),
-        const SizedBox(height: 6),
+        // SAQQÂR wordmark — bumped to 96 dp so the zoom-in lands on a
+        // genuinely large hero. Force the dark variant (white strokes)
+        // because the splash always sits on a dark navy backdrop
+        // regardless of the system theme.
+        const SaqqarLogo(height: 96, forceVariant: Brightness.dark),
+        const SizedBox(height: 10),
         Text(
           context.tr.appTagline,
           style: const TextStyle(

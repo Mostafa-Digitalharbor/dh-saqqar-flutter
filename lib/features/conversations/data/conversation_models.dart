@@ -215,6 +215,7 @@ class Conversation {
     required this.createdAt,
     required this.updatedAt,
     required this.autoApprove,
+    required this.deepThink,
     required this.isRunning,
     required this.stopRequested,
     this.context = const {},
@@ -237,6 +238,19 @@ class Conversation {
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool autoApprove;
+
+  /// Per-conversation "deep think" toggle. Nullable on purpose:
+  ///   * `true` / `false` — the server returned an explicit value, use
+  ///     it as the source of truth (the web persists it the same way).
+  ///   * `null`           — the server didn't include the field at all
+  ///     (older deployments where deep-think lives only client-side).
+  ///     Callers fall back to the local [DeepThinkCubit] in that case
+  ///     so the toggle still works inside the app even when no sync
+  ///     channel exists.
+  ///
+  /// Read from the top-level `deep_think` field first (canonical),
+  /// falls back to `context['deep_think']` for backwards compatibility.
+  final bool? deepThink;
   final bool isArchived;
 
   /// `true` while the agent worker is processing this conversation.
@@ -261,14 +275,22 @@ class Conversation {
     final env = json['environment'];
     final proj = json['project'];
     final rp = json['run_progress'];
+    final ctx = (json['context'] as Map?)?.cast<String, dynamic>() ?? const {};
+    // Deep-think persistence shape isn't pinned yet — try the top-level
+    // canonical key first, then fall back to `context.deep_think` for
+    // older snapshots. STAYS null when neither is present so callers
+    // can fall back to the local DeepThinkCubit instead of defaulting
+    // to false (which used to clobber the user's local toggle the
+    // moment the next poll landed).
+    final deepThinkRaw = json['deep_think'] ?? ctx['deep_think'];
     return Conversation(
       id: json['id'] as String,
       title: json['title'] as String? ?? '',
-      context: (json['context'] as Map?)?.cast<String, dynamic>() ??
-          const {},
+      context: ctx,
       createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
       updatedAt: _parseDate(json['updated_at']) ?? DateTime.now(),
       autoApprove: json['auto_approve'] as bool? ?? false,
+      deepThink: deepThinkRaw is bool ? deepThinkRaw : null,
       isArchived: json['is_archived'] as bool? ?? false,
       isRunning: json['is_running'] as bool? ?? false,
       stopRequested: json['stop_requested'] as bool? ?? false,
@@ -286,6 +308,44 @@ class Conversation {
               'environments': const <Map<String, dynamic>>[],
             })
           : null,
+    );
+  }
+
+  /// Returns a copy with selected fields overridden. Used by ChatCubit
+  /// to flip per-conversation toggles (auto_approve / deep_think)
+  /// optimistically before the server round-trip lands.
+  Conversation copyWith({
+    String? title,
+    Map<String, dynamic>? context,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? autoApprove,
+    bool? deepThink,
+    bool? isArchived,
+    bool? isRunning,
+    bool? stopRequested,
+    RunProgress? runProgress,
+    String? runError,
+    String? activeCredential,
+    Environment? environment,
+    Project? project,
+  }) {
+    return Conversation(
+      id: id,
+      title: title ?? this.title,
+      context: context ?? this.context,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      autoApprove: autoApprove ?? this.autoApprove,
+      deepThink: deepThink ?? this.deepThink,
+      isArchived: isArchived ?? this.isArchived,
+      isRunning: isRunning ?? this.isRunning,
+      stopRequested: stopRequested ?? this.stopRequested,
+      runProgress: runProgress ?? this.runProgress,
+      runError: runError ?? this.runError,
+      activeCredential: activeCredential ?? this.activeCredential,
+      environment: environment ?? this.environment,
+      project: project ?? this.project,
     );
   }
 }
@@ -362,6 +422,34 @@ class ConversationSnapshot {
           .cast<Map<String, dynamic>>()
           .map(PendingAction.fromJson)
           .toList(),
+    );
+  }
+
+  /// Returns a copy with selected fields overridden. Used by ChatCubit
+  /// to swap the inner [Conversation] when an optimistic flag flip
+  /// needs to land in the snapshot without re-fetching the full body.
+  ConversationSnapshot copyWith({
+    Conversation? conversation,
+    List<Message>? messages,
+    DateTime? cursor,
+    bool? delta,
+    List<Approval>? approvals,
+    List<Artifact>? artifacts,
+    List<Credential>? availableCredentials,
+    List<String>? disabledCredentials,
+    List<PendingAction>? pendingActions,
+  }) {
+    return ConversationSnapshot(
+      conversation: conversation ?? this.conversation,
+      messages: messages ?? this.messages,
+      cursor: cursor ?? this.cursor,
+      delta: delta ?? this.delta,
+      approvals: approvals ?? this.approvals,
+      artifacts: artifacts ?? this.artifacts,
+      availableCredentials:
+          availableCredentials ?? this.availableCredentials,
+      disabledCredentials: disabledCredentials ?? this.disabledCredentials,
+      pendingActions: pendingActions ?? this.pendingActions,
     );
   }
 }

@@ -17,6 +17,7 @@ enum ChatAction {
   setActiveCredential,
   toggleCredential,
   share,
+  patch,
 }
 
 enum ChatToast {

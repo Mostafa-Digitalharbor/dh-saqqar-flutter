@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
@@ -7,6 +9,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../../inbox/data/artifact_downloader.dart';
 import 'artifact_pill.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
@@ -81,7 +84,12 @@ class _UserBubble extends StatelessWidget {
                 ChatMarkdown(data: message.content, isUser: true),
                 for (final attachment in message.attachments) ...[
                   const SizedBox(height: 8),
-                  AttachmentChip(attachment: attachment),
+                  AttachmentChip(
+                    attachment: attachment,
+                    onTap: attachment.downloadUrl == null
+                        ? null
+                        : () => _openAttachment(context, attachment),
+                  ),
                 ],
               ],
             ),
@@ -200,12 +208,17 @@ class _AgentMessage extends StatelessWidget {
             if (attachment.isAgentGenerated)
               ArtifactPill(
                 attachment: attachment,
-                onOpen: () {
-                  // Caller wires share-sheet / new-tab open here.
-                },
+                onOpen: attachment.downloadUrl == null
+                    ? () {}
+                    : () => _openAttachment(context, attachment),
               )
             else
-              AttachmentChip(attachment: attachment),
+              AttachmentChip(
+                attachment: attachment,
+                onTap: attachment.downloadUrl == null
+                    ? null
+                    : () => _openAttachment(context, attachment),
+              ),
           ],
         ],
       ),
@@ -221,4 +234,59 @@ Future<void> _copyMessage(BuildContext context, DemoMessage message) async {
     message: context.tr.copiedToClipboard,
     variant: ToastVariant.success,
   );
+}
+
+/// Downloads the attachment (or reuses the cached copy under the
+/// app's documents directory) and hands it off to the OS's matching
+/// viewer — PDF reader for PDFs, Word for DOCX, Excel for XLSX,
+/// gallery for images, etc. Same flow the artifact downloader uses
+/// in the rail drawer, just keyed by the attachment's server id so
+/// the cache stays per-file.
+///
+/// Caller must guard with `attachment.downloadUrl != null`; this
+/// function asserts both [downloadUrl] and [serverId] are set.
+Future<void> _openAttachment(
+  BuildContext context,
+  DemoAttachment attachment,
+) async {
+  final url = attachment.downloadUrl;
+  final cacheKey = attachment.serverId;
+  if (url == null || cacheKey == null) return;
+  final tr = context.tr;
+  AppToast.show(
+    context,
+    message: tr.downloadingArtifact,
+    variant: ToastVariant.info,
+  );
+  final downloader = ArtifactDownloader(context.read<Dio>());
+  final result = await downloader.downloadAndOpenUrl(
+    url: url,
+    cacheKey: cacheKey,
+    originalName: attachment.name,
+    kindHint: attachment.kind,
+  );
+  if (!context.mounted) return;
+  switch (result) {
+    case ArtifactOpenSuccess():
+      // System viewer is now on screen — no extra toast needed.
+      break;
+    case ArtifactOpenNoViewer():
+      AppToast.show(
+        context,
+        message: tr.artifactNoViewer,
+        variant: ToastVariant.error,
+      );
+    case ArtifactOpenFailed():
+      AppToast.show(
+        context,
+        message: tr.artifactOpenFailed,
+        variant: ToastVariant.error,
+      );
+    case ArtifactDownloadFailed():
+      AppToast.show(
+        context,
+        message: tr.artifactDownloadFailed,
+        variant: ToastVariant.error,
+      );
+  }
 }

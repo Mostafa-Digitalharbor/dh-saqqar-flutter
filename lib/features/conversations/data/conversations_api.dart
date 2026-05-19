@@ -78,22 +78,31 @@ class ConversationsApi {
   // ── Metadata ────────────────────────────────────────────────────────
 
   /// `PATCH /api/v1/conversations/<id>/` — any subset of title / archive
-  /// flag / auto-approve / bound environment.
+  /// flag / auto-approve / deep-think / bound environment.
   ///
   /// To clear the environment binding, pass [environmentId] as the
   /// sentinel empty string `''` (Dio drops keys whose value is `null`,
   /// which would otherwise silently no-op).
+  ///
+  /// [deepThink] is forwarded as `deep_think` so the per-conversation
+  /// toggle stays in sync with the web. Servers that don't yet support
+  /// the field silently ignore the key — the snapshot's `deep_think`
+  /// just stays at its previous value and the local UI doesn't break.
   Future<Conversation> patch({
     required String id,
     String? title,
     bool? isArchived,
     bool? autoApprove,
+    bool? deepThink,
+    Map<String, dynamic>? context,
     String? environmentId,
   }) async {
     final body = <String, dynamic>{
       if (title != null) 'title': title,
       if (isArchived != null) 'is_archived': isArchived,
       if (autoApprove != null) 'auto_approve': autoApprove,
+      if (deepThink != null) 'deep_think': deepThink,
+      if (context != null) 'context': context,
       if (environmentId != null)
         'environment_id': environmentId.isEmpty ? null : environmentId,
     };

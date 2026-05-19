@@ -24,13 +24,18 @@ class ChatTypingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
 
+    // Compact slot — wordmark sized so it hugs the bubble's start edge
+    // instead of feeling like a full avatar's worth of space.
     final avatarSlot = SizedBox(
-      width: 32,
+      width: 50,
       child: firstOfGroup
-          ? const ChatAvatar(isUser: false)
+          ? const Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: ChatAvatar(isUser: false),
+            )
           : const SizedBox.shrink(),
     );
-    const gap = SizedBox(width: 10);
+    const gap = SizedBox(width: 8);
 
     final bubble = ScanlineOverlay(
       color: s.brandCyan,

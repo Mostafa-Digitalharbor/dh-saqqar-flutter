@@ -53,18 +53,24 @@ class ConversationsRepository {
     String? title,
     bool? isArchived,
     bool? autoApprove,
+    bool? deepThink,
+    Map<String, dynamic>? context,
     String? environmentId,
   }) async {
     AppLogger.info(
       _tag,
       'patch(id=$id, title=$title, isArchived=$isArchived, '
-          'autoApprove=$autoApprove, environmentId=$environmentId)',
+          'autoApprove=$autoApprove, deepThink=$deepThink, '
+          'contextKeys=${context?.keys.toList()}, '
+          'environmentId=$environmentId)',
     );
     return _api.patch(
       id: id,
       title: title,
       isArchived: isArchived,
       autoApprove: autoApprove,
+      deepThink: deepThink,
+      context: context,
       environmentId: environmentId,
     );
   }

@@ -50,6 +50,13 @@ dependencies:
   # locally and ships bytes to the backend once the attachments API lands.
   file_picker: ^8.1.4
 
+  # Artifact download + open. `path_provider` gives us the app's
+  # documents directory (no runtime permission needed), `open_filex`
+  # hands the saved file off to the OS's matching viewer — Adobe PDF,
+  # Word, Excel, image gallery, etc.
+  path_provider: ^2.1.4
+  open_filex: ^4.5.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -68,31 +75,35 @@ flutter:
   assets:
     - assets/img/
 
-# App-icon generator config. Source: assets/img/saqqar-icon.png — generated
-# by `tool/generate_app_icon.dart` so the icon is reproducible from code.
+# App-icon generator config — points at the composed SAQQÂR wordmark
+# (navy on a white rounded square, padded inside the tile so it isn't
+# crowding the edges). Regenerate with:
+#   dart run tool/generate_launcher_icon.dart
+#   dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: 'launcher_icon'
   ios: true
-  image_path: 'assets/img/saqqar-icon.png'
-  adaptive_icon_background: '#030712'
-  adaptive_icon_foreground: 'assets/img/saqqar-icon-foreground.png'
+  image_path: 'assets/img/saqqar-launcher.png'
+  adaptive_icon_background: '#FFFFFF'
+  adaptive_icon_foreground: 'assets/img/saqqar-launcher-foreground.png'
   remove_alpha_ios: true
   min_sdk_android: 21
   web:
     generate: true
-    image_path: 'assets/img/saqqar-icon.png'
-    background_color: '#030712'
+    image_path: 'assets/img/saqqar-launcher.png'
+    background_color: '#FFFFFF'
     theme_color: '#06B6D4'
 
-# Splash screen generator config. Dark navy bg + cyan glow, matches the auth
-# screen ambient palette. The branding mark sits centered, scaled to ~30%.
+# Splash screen generator config. The splash itself stays on the dark
+# navy backdrop because the in-app theme + status bar match — use the
+# white-on-transparent dark variant of the wordmark there.
 flutter_native_splash:
   color: '#030712'
   color_dark: '#030712'
-  image: 'assets/img/saqqar-icon-foreground.png'
-  image_dark: 'assets/img/saqqar-icon-foreground.png'
+  image: 'assets/img/saqqar-logo-dark.png'
+  image_dark: 'assets/img/saqqar-logo-dark.png'
   android_12:
-    image: 'assets/img/saqqar-icon-foreground.png'
+    image: 'assets/img/saqqar-logo-dark.png'
     color: '#030712'
     icon_background_color: '#030712'
   fullscreen: false

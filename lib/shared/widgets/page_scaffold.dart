@@ -6,6 +6,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/routing/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
+import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/chat/view_model/running_agents_cubit.dart';
 import '../extensions/context_extensions.dart';
 import 'offline_banner.dart';
@@ -178,16 +179,17 @@ class _SaqqarBrandHeader extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              height: 56,
+              height: 64,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 12, 0),
                 child: Row(
               children: [
-                // Start side: brand wordmark — uses the SAQQÂR logo
-                // image (asset `assets/img/saqqar-logo.png`). Falls
-                // back to a gradient-text "SAQQAR" if the file is
-                // missing so the layout never blows up mid-handover.
-                const SaqqarLogo(height: 22),
+                // Start side: brand wordmark — bumped to 36 dp tall
+                // per user request so the SAQQÂR logo reads as the
+                // dominant element of the brand bar instead of a
+                // background detail. Bar height bumped to 64 to give
+                // the larger logo breathing room.
+                const SaqqarLogo(height: 36),
                 // Cross-tab "agent is working" pulse — slides in next to
                 // the wordmark the moment any conversation pushes itself
                 // into the running set, slides out when the last one
@@ -306,11 +308,23 @@ class _UserAvatarMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = context.tr.sampleUsername
-        .characters
-        .firstOrNull
-        ?.toUpperCase() ??
-        'U';
+    // Initial is derived from the currently signed-in user — username
+    // first, email local-part as a fallback, then the localized sample
+    // for the brief pre-bootstrap window. The previous version hard-
+    // coded the sample username, so the same letter showed up no
+    // matter who was signed in.
+    final user = context.watch<AuthCubit>().state.user;
+    final identitySource = (() {
+      if (user == null) return context.tr.sampleUsername;
+      if (user.username.trim().isNotEmpty) return user.username.trim();
+      if (user.email.trim().isNotEmpty) {
+        final email = user.email.trim();
+        final at = email.indexOf('@');
+        return at > 0 ? email.substring(0, at) : email;
+      }
+      return context.tr.sampleUsername;
+    })();
+    final initial = identitySource.characters.firstOrNull?.toUpperCase() ?? 'U';
     return Semantics(
       button: true,
       label: context.tr.tabAccount,

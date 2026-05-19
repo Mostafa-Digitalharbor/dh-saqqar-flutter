@@ -205,6 +205,10 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                     : ListView.separated(
                         shrinkWrap: true,
                         padding: EdgeInsets.zero,
+                        // Pre-render rows that haven't scrolled into
+                        // view yet so the sheet's scroll feels like
+                        // everything was already there.
+                        cacheExtent: 1500,
                         itemCount: projects.length,
                         separatorBuilder: (_, __) =>
                             const SizedBox(height: 10),
