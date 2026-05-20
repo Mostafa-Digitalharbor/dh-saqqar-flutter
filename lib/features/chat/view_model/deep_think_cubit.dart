@@ -17,6 +17,11 @@ class DeepThinkCubit extends Cubit<bool> {
   final SharedPreferences _prefs;
 
   Future<void> set(bool value) async {
+    // Idempotent — skip the SharedPreferences write + emit when the
+    // value hasn't changed. Important because the chat screen syncs
+    // this cubit from snapshot polls, which fire every 1.5–15 s and
+    // would otherwise re-write the prefs file on every tick.
+    if (value == state) return;
     emit(value);
     await _prefs.setBool(UiStrings.deepThinkPreferenceKey, value);
   }

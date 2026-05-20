@@ -63,13 +63,34 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen>
+    with WidgetsBindingObserver {
   // -------- State --------
 
   final _composer = TextEditingController();
   final _composerFocus = FocusNode();
   final _scroll = ScrollController();
   late List<DemoMessage> _messages;
+
+  /// In-memory cache of the last scroll offset per conversation id so
+  /// jumping out (Conversations tab, another chat) and back lands the
+  /// user exactly where they were reading instead of slamming back to
+  /// the latest message.
+  ///
+  /// A `null` value is the "was at bottom" sentinel — we save null when
+  /// the user is at / near the latest message, so re-entering a chat
+  /// they were actively following keeps auto-scrolling to bottom on the
+  /// next visit (which is what "stay on the latest" should mean), not
+  /// freezing them at the old maxScrollExtent.
+  ///
+  /// Survives in-session navigation only — wiped on app restart, which
+  /// is the right semantics: a cold start should feel fresh.
+  static final Map<String, double?> _savedScrollOffsets = {};
+
+  /// Guards [_restoreScrollIfNeeded] so the restore only fires on the
+  /// first frame after the message list has actual children. Without
+  /// this, the post-frame callback would re-jump on every state emit.
+  bool _hasRestoredScroll = false;
 
   /// Active environment id for this conversation. Null means "no env picked
   /// yet" — the chat blocks Send until the user picks one, matching the
@@ -542,20 +563,84 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
     _scroll.addListener(_onScrollChanged);
+    // Listen for app foreground / background transitions so the chat
+    // poll timer pauses when the user minimises the app — without this,
+    // a chat sitting in a paused process keeps firing GET requests
+    // every 1.5 s (running) / 15 s (idle), draining battery and data.
+    WidgetsBinding.instance.addObserver(this);
     // Loading skeleton state now comes from the cubit's DataLoading
     // (see the build method) — no local timer needed.
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _thinkingTimer?.cancel();
     _loadingTimer?.cancel();
     _progressTimer?.cancel();
     _scroll.removeListener(_onScrollChanged);
+    _persistScrollOffset();
     _composer.dispose();
     _composerFocus.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_isNewChat) return;
+    // ChatCubit owns the poll timer; pause it when the OS reports the
+    // app left the foreground, resume on return. `paused` covers the
+    // common "user swiped home" case; `inactive` is the transitional
+    // state on iOS (phone call overlay, control center pull-down) and
+    // also worth pausing for — polling resumes the moment the app is
+    // visible again. `detached` means the process is being torn down,
+    // so no work to do here.
+    final cubit = context.read<ChatCubit>();
+    switch (state) {
+      case AppLifecycleState.resumed:
+        cubit.resume();
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        cubit.pause();
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  /// Snapshots the current scroll state to [_savedScrollOffsets] so the
+  /// next time the user opens this conversation we can land them where
+  /// they were instead of at the bottom. Stores `null` when they were
+  /// at the latest message — see the field's doc for why.
+  void _persistScrollOffset() {
+    if (_isNewChat) return;
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (!position.hasContentDimensions) return;
+    final atBottom = position.extentAfter < 32;
+    _savedScrollOffsets[widget.conversationId] =
+        atBottom ? null : position.pixels;
+  }
+
+  /// Jumps to the last-seen offset for this conversation (or to the
+  /// latest message when there's nothing saved / the user left while
+  /// pinned to bottom). One-shot: guarded by [_hasRestoredScroll] so
+  /// it only fires on the first frame after messages render — every
+  /// subsequent poll / state emit is a no-op.
+  void _restoreScrollIfNeeded() {
+    if (_hasRestoredScroll || _isNewChat) return;
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (!position.hasContentDimensions || position.maxScrollExtent <= 0) return;
+    _hasRestoredScroll = true;
+    final saved = _savedScrollOffsets[widget.conversationId];
+    if (saved == null) {
+      _scroll.jumpTo(position.maxScrollExtent);
+      return;
+    }
+    _scroll.jumpTo(saved.clamp(0.0, position.maxScrollExtent));
   }
 
   // -------- Scroll handling --------
@@ -637,7 +722,25 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
 
-    final deepThink = context.read<DeepThinkCubit>().state;
+    // Deep-think source of truth depends on the chat lifecycle:
+    //   * Existing chat → the conversation snapshot's `deep_think`
+    //     (server is canonical, so a web-side flip lands here on the
+    //     next poll). Fall back to the local cubit only when we don't
+    //     have a snapshot yet (very first paint).
+    //   * New chat → no conversation row exists, so the local cubit
+    //     is the only state. We PATCH the new conv with this value
+    //     below so its server default matches.
+    final localDeepThink = context.read<DeepThinkCubit>().state;
+    final deepThink = _isNewChat
+        ? localDeepThink
+        : (context
+                .read<ChatCubit>()
+                .state
+                .data
+                .dataOrNull
+                ?.conversation
+                .deepThink ??
+            localDeepThink);
 
     // ── New chat path ─────────────────────────────────────────────────
     // We don't have a ChatCubit yet (no UUID to scope it to), so this
@@ -725,9 +828,18 @@ class _ChatScreenState extends State<ChatScreen> {
           : pendingText;
       final newId = await repo.create(title: title);
       if (!mounted) return;
-      // 2) Bind the picked environment. The server may reject (e.g.
-      //    the env doesn't belong to this user) — surface as an error.
-      await repo.patch(id: newId, environmentId: env.id);
+      // 2) Bind the picked environment AND persist the user's current
+      //    deep-think preference onto the new conversation. Without the
+      //    `deepThink` PATCH the new row would default to false server-
+      //    side, so the next time we poll the snapshot the toggle would
+      //    appear OFF even though the user has it ON locally. Pass null
+      //    when the user has it off (matches server default; saves a
+      //    no-op write) — non-null only when we need to flip it on.
+      await repo.patch(
+        id: newId,
+        environmentId: env.id,
+        deepThink: deepThink ? true : null,
+      );
       if (!mounted) return;
       // 2.5) Upload any deferred attachment now that we have a
       //      conversation id. Skipped when there's nothing to upload.
@@ -1157,6 +1269,20 @@ class _ChatScreenState extends State<ChatScreen> {
         context.watch<DeepThinkCubit>().state;
     final autoApprove = snapshotConv?.autoApprove ?? _autoApprove;
 
+    // Mirror the server-authoritative `deep_think` back into the local
+    // [DeepThinkCubit] AFTER the current frame so a flip on the web
+    // (which lands via snapshot poll) also updates the persisted
+    // preference. Without this, opening a NEW chat after a web-side
+    // flip would still seed from the stale local value. Idempotent
+    // inside the cubit's `set` — safe to fire on every rebuild.
+    final serverDeepThink = snapshotConv?.deepThink;
+    if (serverDeepThink != null && !_isNewChat) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<DeepThinkCubit>().set(serverDeepThink);
+      });
+    }
+
     // Brief §4.1 mobile header — hamburger left + title middle + bell
     // right with a pending-approvals badge. Badge count reads from the
     // live snapshot (existing chats) so it reflects the server's truth
@@ -1185,6 +1311,13 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
+        // Slightly taller than Material's default (56 dp) so the
+        // subtitle row inside [ChatAppBarTitle] can wrap to a second
+        // line on tiny phones (320–360 px) when the env name + all
+        // three flag badges (LIVE / READ-ONLY / AUTO) are present at
+        // once. On a roomy screen the AppBar still renders at the
+        // same effective height because the wrap stays on one line.
+        toolbarHeight: 64,
         // Hamburger on the start side — toggles the custom sidebar
         // state. We don't use `Scaffold.openDrawer` anymore.
         leading: IconButton(
@@ -1549,6 +1682,16 @@ class _ChatScreenState extends State<ChatScreen> {
         pendingApprovals.length +
         1;
 
+    // Schedule a one-shot restore for the first frame in which the
+    // ListView has measurable content. _restoreScrollIfNeeded guards
+    // itself with `_hasRestoredScroll`, so subsequent poll-driven
+    // builds skip the post-frame work entirely.
+    if (!_hasRestoredScroll && totalCount > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _restoreScrollIfNeeded();
+      });
+    }
+
     return ListView.builder(
       controller: _scroll,
       padding: EdgeInsets.zero,
@@ -1577,11 +1720,21 @@ class _ChatScreenState extends State<ChatScreen> {
         // after the last real message).
         if (index >= firstApprovalIndex &&
             index < firstApprovalIndex + pendingApprovals.length) {
-          final approval = pendingApprovals[index - firstApprovalIndex];
+          final approvalIdx = index - firstApprovalIndex;
+          final approval = pendingApprovals[approvalIdx];
           return ResponsiveContent(
             maxWidth: 760,
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+            // ValueKey on approval.id binds the FadeSlideIn state to a
+            // specific approval — when 3+ approvals arrive on the same
+            // poll tick, Flutter no longer reuses one cached FadeSlideIn
+            // for the slot and every card gets its own fresh entrance.
+            // Pairing that with `index: approvalIdx` cascades them so
+            // they read as "Card 1, then 2, then 3" rather than all
+            // popping at once.
             child: FadeSlideIn(
+              key: ValueKey('approval-${approval.id}'),
+              index: approvalIdx,
               duration: const Duration(milliseconds: 220),
               offset: const Offset(0, 6),
               child: ChatApprovalCard(

@@ -58,12 +58,24 @@ class _SkeletonBlockState extends State<SkeletonBlock>
     final s = context.saqqar;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
+    // Edge tone — a fraction darker than `surface2` so the gradient
+    // bookends with the appearance of recessed corners. Keeps the
+    // block reading as "a slot waiting to be filled" instead of "a
+    // flat rectangle". Computed once outside the animator so the
+    // shimmer frame doesn't pay for the color math each tick.
+    final edgeTone = Color.lerp(s.surface2, s.cardBorder, 0.35) ?? s.surface2;
+    final border = Border.all(
+      color: s.cardBorder.withValues(alpha: 0.45),
+      width: 0.6,
+    );
+
     final block = Container(
       width: widget.width,
       height: widget.height,
       decoration: BoxDecoration(
         color: s.surface2,
         borderRadius: BorderRadius.circular(widget.radius),
+        border: border,
       ),
     );
 
@@ -72,19 +84,31 @@ class _SkeletonBlockState extends State<SkeletonBlock>
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (context, _) {
-        // Sweep a soft highlight from -1 to 2 (slightly past both edges) so
-        // the shimmer enters from one side and leaves on the other.
+        // Sweep a soft highlight from -1 to 2 (slightly past both edges)
+        // so the shimmer enters from one side and leaves on the other.
+        // 5-stop gradient (edge → mid → highlight → mid → edge) gives
+        // the sweep a faux-curvature: the block looks like it's
+        // catching light on a soft cylinder instead of being a flat
+        // plate. Edge tone is just dim enough to imply depth without
+        // making the skeleton look bruised.
         final t = (_ctrl.value * 3) - 1;
         return Container(
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.radius),
+            border: border,
             gradient: LinearGradient(
-              begin: Alignment(t - 0.6, 0),
-              end: Alignment(t + 0.6, 0),
-              colors: [s.surface2, s.surface3, s.surface2],
-              stops: const [0.0, 0.5, 1.0],
+              begin: Alignment(t - 0.7, 0),
+              end: Alignment(t + 0.7, 0),
+              colors: [
+                edgeTone,
+                s.surface2,
+                s.surface3,
+                s.surface2,
+                edgeTone,
+              ],
+              stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
             ),
           ),
         );

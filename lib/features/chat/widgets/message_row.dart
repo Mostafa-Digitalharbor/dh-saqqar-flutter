@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/extensions/responsive_breakpoints.dart';
 import '../../demo/saqqar_demo_data.dart';
 import 'message_bubble.dart';
 import 'tool_activity_card.dart';
@@ -36,12 +37,17 @@ class MessageRow extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Spec §8 — user clamps to 88 %, agent clamps to 96 %. Neither
-        // side renders an avatar anymore: the agent identifies itself
-        // via the gradient wordmark in its message body, and the user
-        // avatar was retired on 2026-05-17 (redundant — the bubble's
-        // alignment + cyan fill already say "this is you").
-        final factor = _isUser ? 0.88 : 0.96;
+        // Spec §8 — user clamps to 88 %, agent clamps to 96 %. On
+        // the `compact` tier (≤400 px) the 88 % cap leaves user
+        // messages with so little width that URLs and Arabic phrases
+        // wrap one-or-two-words-per-line; relax to 94 % below the
+        // breakpoint so the bubble breathes. Neither side renders an
+        // avatar — the agent's gradient wordmark identifies itself
+        // inside the message body, and the user avatar was retired on
+        // 2026-05-17 (alignment + cyan fill already say "this is you").
+        final tier = breakpointForWidth(constraints.maxWidth);
+        final userFactor = tier.isCompactOrBelow ? 0.94 : 0.88;
+        final factor = _isUser ? userFactor : 0.96;
         final bubble = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: constraints.maxWidth * factor),
           child: MessageBubble(

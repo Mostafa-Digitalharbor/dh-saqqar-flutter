@@ -57,6 +57,12 @@ dependencies:
   path_provider: ^2.1.4
   open_filex: ^4.5.0
 
+  # Crash + error reporting. Wired in `main.dart` via `SentryFlutter.init`;
+  # the DSN comes from `--dart-define=SAQQAR_SENTRY_DSN=...` so it stays
+  # out of source control. When the DSN is missing (e.g. local dev) the
+  # SDK quietly no-ops so we never gate boot on a network call.
+  sentry_flutter: ^8.13.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

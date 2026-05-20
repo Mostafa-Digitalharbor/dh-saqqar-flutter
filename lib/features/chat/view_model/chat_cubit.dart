@@ -107,6 +107,11 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
     if (current == null) return;
     // Optimistic: paint the new value in the snapshot before the
     // server round-trip lands so the toggle responds instantly.
+    // Also stash `deep_think` into context so a backend that still
+    // reads it from the legacy scratchpad (and not the new top-level
+    // column) picks the change up. Safe to send both — the new top-
+    // level wins server-side when present, the context copy is a
+    // belt-and-braces fallback for partial rollouts.
     final mergedContext = deepThink == null
         ? null
         : {
@@ -122,15 +127,20 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
     );
     emit(state.copyWith(data: DataSuccess(optimistic)));
     try {
-      await _repo.patch(
+      final patched = await _repo.patch(
         id: conversationId,
         autoApprove: autoApprove,
         deepThink: deepThink,
-        // Belt-and-braces: also merge deep_think into `context` so a
-        // backend that persists toggles inside the context scratchpad
-        // (the shape the web uses today) picks the value up too. Any
-        // unrelated context keys are preserved via the spread above.
         context: mergedContext,
+      );
+      // Log the echoed conversation so a divergence between what we
+      // sent and what the server kept is visible during sync issues
+      // (e.g. server quietly dropping `deep_think` while accepting
+      // `auto_approve`).
+      AppLogger.info(
+        _tag,
+        'PATCH echoed conversation: autoApprove=${patched.autoApprove}, '
+            'deepThink=${patched.deepThink}',
       );
       // Pull the canonical snapshot so any server-side coercion (e.g.
       // the server normalising auto_approve when the env is read_only)
@@ -189,6 +199,19 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       final snapshot = await _repo.getSnapshot(
         conversationId,
         since: cursor,
+      );
+      // Surface the per-conversation toggle values the server is
+      // sending so a "toggle doesn't sync" report can be pinpointed
+      // to either a missing field in the snapshot or a UI binding
+      // issue. Logs are intentionally on the conversation flags only
+      // (not message payloads) — the polling tick fires every 1.5 s
+      // when running, anything heavier would spam the console.
+      AppLogger.info(
+        _tag,
+        'snapshot conversation flags: autoApprove='
+            '${snapshot.conversation.autoApprove}, '
+            'deepThink=${snapshot.conversation.deepThink}, '
+            'ctxDeepThink=${snapshot.conversation.context['deep_think']}',
       );
       _mergeSnapshot(snapshot);
     } catch (e, st) {

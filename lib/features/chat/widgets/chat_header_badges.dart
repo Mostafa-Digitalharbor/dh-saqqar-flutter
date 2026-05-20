@@ -4,6 +4,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/text_scale_lock.dart';
 import '../../demo/saqqar_demo_data.dart';
 
 /// Brief §4.1 — compact env-badges strip rendered under the chat AppBar
@@ -67,34 +68,42 @@ class ChatHeaderBadges extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              // Project name as plain text — flush typography per brief.
-              Flexible(
-                child: Text(
-                  hasSelection
-                      ? '${project!.name} · ${environment!.name}'
-                      : context.tr.pickProjectFirst,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.labelMedium?.copyWith(
-                    color: hasSelection ? s.text : s.muted,
-                    fontWeight: FontWeight.w700,
-                  ),
+              // Project/env label + optional badges share an Expanded
+              // Wrap so the badges flow onto a second visual line on
+              // narrow phones (320–360 px) instead of pushing the
+              // chevron off-screen or truncating the env name to a few
+              // letters. Chevron stays anchored to the trailing edge.
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 260),
+                      child: Text(
+                        hasSelection
+                            ? '${project!.name} · ${environment!.name}'
+                            : context.tr.pickProjectFirst,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.labelMedium?.copyWith(
+                          color: hasSelection ? s.text : s.muted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (environment != null) ...[
+                      if (environment!.isLive)
+                        _Badge(label: 'LIVE', color: s.warning),
+                      if (environment!.readOnly)
+                        _Badge(label: 'READ-ONLY', color: s.muted),
+                      if (environment!.autoApprove)
+                        _Badge(label: 'AUTO', color: s.brandCyan),
+                    ],
+                  ],
                 ),
               ),
-              if (environment != null) ...[
-                if (environment!.isLive) ...[
-                  const SizedBox(width: 8),
-                  _Badge(label: 'LIVE', color: s.warning),
-                ],
-                if (environment!.readOnly) ...[
-                  const SizedBox(width: 6),
-                  _Badge(label: 'READ-ONLY', color: s.muted),
-                ],
-                if (environment!.autoApprove) ...[
-                  const SizedBox(width: 6),
-                  _Badge(label: 'AUTO', color: s.brandCyan),
-                ],
-              ],
               const SizedBox(width: 6),
               Icon(AppIcons.chevronDown, size: 14, color: s.muted),
             ],
@@ -112,20 +121,22 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: AppRadius.pillR,
-        border: Border.all(color: color.withValues(alpha: 0.40)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.6,
+    return TextScaleLock(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.14),
+          borderRadius: AppRadius.pillR,
+          border: Border.all(color: color.withValues(alpha: 0.40)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.6,
+          ),
         ),
       ),
     );

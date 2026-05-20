@@ -9,7 +9,11 @@ analyzer:
   errors:
     # Turn unused imports into errors so dead imports never reach main.
     unused_import: error
-    unused_local_variable: warning
+    unused_local_variable: error
+    # Misclassified parameters waste reviewer time and signal a stale
+    # API somewhere — promote to warning so it always shows up in the
+    # IDE gutter even when CI is configured to tolerate warnings.
+    unused_element: warning
     todo: ignore
   language:
     strict-casts: true
@@ -30,6 +34,18 @@ linter:
     test_types_in_equals: true
     unawaited_futures: true
     use_build_context_synchronously: true
+    # Late-stage additions: each one has caught a real bug in this app
+    # or a sister project. Cheap to keep on, expensive to debug
+    # without. `discarded_futures` is intentionally NOT in this set —
+    # it produces noise on every `AnimationController.repeat()` /
+    # `.forward()` call in initState (~10 sites). `unawaited_futures`
+    # above already catches the higher-signal case of forgotten awaits
+    # inside async functions, where the fix is unambiguous.
+    noop_primitive_operations: true
+    null_check_on_nullable_type_parameter: true
+    throw_in_finally: true
+    avoid_returning_null_for_void: true
+    unrelated_type_equality_checks: true
 
     # API hygiene
     avoid_empty_else: true
@@ -47,6 +63,7 @@ linter:
     # Style
     avoid_unnecessary_containers: true
     avoid_unused_constructor_parameters: true
+    prefer_interpolation_to_compose_strings: true
     sort_child_properties_last: true
     sort_unnamed_constructors_first: true
     unnecessary_lambdas: true

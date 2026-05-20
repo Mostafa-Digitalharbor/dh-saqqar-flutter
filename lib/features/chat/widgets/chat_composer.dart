@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
@@ -263,7 +264,10 @@ class _ComposerToggle extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: AppRadius.pillR,
         child: InkWell(
-          onTap: () => onChanged(!value),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onChanged(!value);
+          },
           borderRadius: AppRadius.pillR,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),

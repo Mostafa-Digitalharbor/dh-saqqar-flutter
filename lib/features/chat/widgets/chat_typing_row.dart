@@ -58,22 +58,29 @@ class ChatTypingRow extends StatelessWidget {
                 // the agent moving from one tool to the next rather than
                 // a hard text swap. 220 ms matches the rest of the chat's
                 // motion language (FadeSlideIn message bubbles).
+                //
+                // Pure FadeTransition (no slide). The earlier slide
+                // offset competed with the user's own scroll velocity
+                // when the typing row was near a viewport edge — the
+                // 2-3 px sub-pixel translate every tick read as drift,
+                // not motion. A fade is enough signal for "the agent's
+                // status just changed" and stays calm under scroll.
+                // `layoutBuilder` keeps the outgoing child inline so
+                // the row's intrinsic width doesn't snap during the
+                // crossfade window.
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
                   switchInCurve: Curves.easeOut,
                   switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.15),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    );
-                  },
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: AlignmentDirectional.centerStart,
+                    children: [
+                      ...previous,
+                      if (current != null) current,
+                    ],
+                  ),
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
                   child: Text(
                     statusLabel!,
                     key: ValueKey<String>(statusLabel!),

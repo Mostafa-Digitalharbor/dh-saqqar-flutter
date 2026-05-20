@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+import 'package:flutter/services.dart'
+    show Clipboard, ClipboardData, HapticFeedback;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
@@ -227,6 +230,10 @@ class _AgentMessage extends StatelessWidget {
 }
 
 Future<void> _copyMessage(BuildContext context, DemoMessage message) async {
+  // Fire haptic the moment the long-press resolves — before the async
+  // clipboard write — so the user feels the action register without
+  // waiting for the toast.
+  unawaited(HapticFeedback.mediumImpact());
   await Clipboard.setData(ClipboardData(text: message.content));
   if (!context.mounted) return;
   AppToast.show(

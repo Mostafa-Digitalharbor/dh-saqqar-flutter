@@ -127,7 +127,10 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
         curve: Curves.easeOut,
         padding: EdgeInsets.only(bottom: viewInsets),
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
+          // Match the cap used by ProjectDetailSheet so the dialog
+          // doesn't stretch the full width on foldables / landscape
+          // phones — the project list becomes hard to scan past ~520 px.
+          constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: 520),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
             child: Column(
@@ -203,7 +206,12 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                         ),
                       )
                     : ListView.separated(
-                        shrinkWrap: true,
+                        // No `shrinkWrap: true` — the parent `Flexible`
+                        // already bounds the ListView's height to the
+                        // sheet's remaining space, so leaving shrinkWrap
+                        // on disables the lazy builder for nothing and
+                        // forces every row into memory upfront (bad for
+                        // workspaces with 30+ projects).
                         padding: EdgeInsets.zero,
                         // Pre-render rows that haven't scrolled into
                         // view yet so the sheet's scroll feels like

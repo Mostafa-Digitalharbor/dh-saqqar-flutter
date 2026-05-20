@@ -141,13 +141,21 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    // Pull brightness from the active MaterialApp theme so the splash
+    // tracks the user's saved preference (Theme cubit hydrates from
+    // SharedPreferences synchronously in `main.dart`, so first paint
+    // already has the correct brightness). Hot restart preserves the
+    // preference, which was the bug the user hit: the splash was
+    // hardcoded to dark and ignored the active theme.
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final bg = isLight ? Colors.white : AppColors.darkBg;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: bg,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          _AmbientBackdrop(animation: _entrance),
+          _AmbientBackdrop(animation: _entrance, isLight: isLight),
           // Wordmark only — the circular "S" icon was retired on user
           // request. The entrance scale/fade animation that used to land
           // on the icon now lands on the wordmark itself so the splash
@@ -165,7 +173,7 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
                     offset: Offset(0, dy),
                     child: Transform.scale(
                       scale: scale,
-                      child: const _Wordmark(),
+                      child: _Wordmark(isLight: isLight),
                     ),
                   ),
                 );
@@ -185,7 +193,9 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
 }
 
 class _Wordmark extends StatelessWidget {
-  const _Wordmark();
+  const _Wordmark({required this.isLight});
+
+  final bool isLight;
 
   @override
   Widget build(BuildContext context) {
@@ -193,15 +203,18 @@ class _Wordmark extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // SAQQÂR wordmark — bumped to 96 dp so the zoom-in lands on a
-        // genuinely large hero. Force the dark variant (white strokes)
-        // because the splash always sits on a dark navy backdrop
-        // regardless of the system theme.
-        const SaqqarLogo(height: 96, forceVariant: Brightness.dark),
+        // genuinely large hero. Force the variant that contrasts with
+        // the splash backdrop: navy + cyan strokes on the light/white
+        // backdrop, white strokes on the dark navy one.
+        SaqqarLogo(
+          height: 96,
+          forceVariant: isLight ? Brightness.light : Brightness.dark,
+        ),
         const SizedBox(height: 10),
         Text(
           context.tr.appTagline,
-          style: const TextStyle(
-            color: AppColors.darkMuted,
+          style: TextStyle(
+            color: isLight ? AppColors.lightMuted : AppColors.darkMuted,
             fontSize: 13,
             fontWeight: FontWeight.w500,
             letterSpacing: 0.4,
@@ -249,14 +262,25 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-/// Soft cyan→purple gradient that breathes behind the logo. Driven by the
-/// same entrance controller so it lands in sync with the wordmark.
+/// Soft cyan→purple gradient that breathes behind the logo. Driven by
+/// the same entrance controller so it lands in sync with the wordmark.
+///
+/// The outer stop tracks the surrounding background ([Scaffold] color)
+/// so the gradient fades seamlessly into the splash chrome — pure white
+/// on light mode, dark navy on dark mode. Center alphas are tuned per
+/// theme too: the same 0.18 cyan that reads as "moody glow" on navy
+/// reads as "muddy bruise" on white, so we drop the alpha on light.
 class _AmbientBackdrop extends StatelessWidget {
-  const _AmbientBackdrop({required this.animation});
+  const _AmbientBackdrop({required this.animation, required this.isLight});
+
   final Animation<double> animation;
+  final bool isLight;
 
   @override
   Widget build(BuildContext context) {
+    final outer = isLight ? Colors.white : AppColors.darkBg;
+    final cyanAlpha = isLight ? 0.10 : 0.18;
+    final purpleAlpha = isLight ? 0.06 : 0.10;
     return AnimatedBuilder(
       animation: animation,
       builder: (context, _) {
@@ -267,9 +291,9 @@ class _AmbientBackdrop extends StatelessWidget {
               center: const Alignment(0, -0.15),
               radius: 0.95 + 0.15 * t,
               colors: [
-                AppColors.brandCyan.withValues(alpha: 0.18 * t),
-                AppColors.brandPurple.withValues(alpha: 0.10 * t),
-                AppColors.darkBg,
+                AppColors.brandCyan.withValues(alpha: cyanAlpha * t),
+                AppColors.brandPurple.withValues(alpha: purpleAlpha * t),
+                outer,
               ],
               stops: const [0.0, 0.45, 1.0],
             ),

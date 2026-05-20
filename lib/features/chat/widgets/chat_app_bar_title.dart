@@ -5,6 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/marquee_text.dart';
+import '../../../shared/widgets/text_scale_lock.dart';
 
 /// AppBar title slot for the chat screen: conversation title + a
 /// subtitle row showing the active credential + env flag badges
@@ -121,50 +122,57 @@ class ChatAppBarTitle extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Row(
+                  // Subtitle uses Wrap so the env-flag badges (LIVE /
+                  // READ-ONLY / AUTO) flow to a second row on narrow
+                  // phones instead of fighting the env name for the
+                  // last few pixels. `crossAxisAlignment.center` keeps
+                  // the dot + badges visually aligned with the text.
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 3,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: s.success,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          activeCredentialLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.labelSmall?.copyWith(
-                            color: s.muted,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: s.success,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 6),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 220),
+                            child: Text(
+                              activeCredentialLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.text.labelSmall?.copyWith(
+                                color: s.muted,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      // Env-flag badges — render only when the bound env
-                      // actually carries the flag. LIVE is amber (the
-                      // user should notice they're about to operate on
-                      // production); READ-ONLY is cyan (informational,
-                      // less alarming). Both can show together.
-                      if (envIsLive) ...[
-                        const SizedBox(width: 6),
-                        const _EnvFlagBadge(
-                          variant: _EnvFlagVariant.live,
-                        ),
-                      ],
-                      if (envReadOnly) ...[
-                        const SizedBox(width: 6),
+                      // Env-flag badges — render only when the bound
+                      // env actually carries the flag. LIVE is amber
+                      // (the user should notice they're about to
+                      // operate on production); READ-ONLY is cyan
+                      // (informational, less alarming). Both can show
+                      // together; on narrow phones they wrap below the
+                      // env name instead of clipping it.
+                      if (envIsLive)
+                        const _EnvFlagBadge(variant: _EnvFlagVariant.live),
+                      if (envReadOnly)
                         const _EnvFlagBadge(
                           variant: _EnvFlagVariant.readOnly,
                         ),
-                      ],
-                      if (autoApprove) ...[
-                        const SizedBox(width: 8),
-                        _AutoApprovePill(),
-                      ],
+                      if (autoApprove) _AutoApprovePill(),
                     ],
                   ),
                 ],
@@ -210,43 +218,45 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
     return Semantics(
       liveRegion: true,
       label: context.tr.agentWorking,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: s.brandCyan.withValues(alpha: 0.14),
-          borderRadius: AppRadius.pillR,
-          border: Border.all(color: s.brandCyan.withValues(alpha: 0.40)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedBuilder(
-              animation: _pulse,
-              builder: (_, __) {
-                final t = reduceMotion
-                    ? 1.0
-                    : Curves.easeInOut.transform(_pulse.value);
-                return Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: s.brandCyan.withValues(alpha: 0.45 + 0.55 * t),
-                    shape: BoxShape.circle,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(width: 6),
-            Text(
-              context.tr.agentWorking.toUpperCase(),
-              style: context.text.labelSmall?.copyWith(
-                color: s.brandCyan,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
+      child: TextScaleLock(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: s.brandCyan.withValues(alpha: 0.14),
+            borderRadius: AppRadius.pillR,
+            border: Border.all(color: s.brandCyan.withValues(alpha: 0.40)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _pulse,
+                builder: (_, __) {
+                  final t = reduceMotion
+                      ? 1.0
+                      : Curves.easeInOut.transform(_pulse.value);
+                  return Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: s.brandCyan.withValues(alpha: 0.45 + 0.55 * t),
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                },
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                context.tr.agentWorking.toUpperCase(),
+                style: context.text.labelSmall?.copyWith(
+                  color: s.brandCyan,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -280,20 +290,22 @@ class _EnvFlagBadge extends StatelessWidget {
       _EnvFlagVariant.live => context.tr.liveBadge,
       _EnvFlagVariant.readOnly => context.tr.readOnlyBadge,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
-        borderRadius: AppRadius.pillR,
-        border: Border.all(color: color.withValues(alpha: 0.40)),
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: context.text.labelSmall?.copyWith(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
+    return TextScaleLock(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.16),
+          borderRadius: AppRadius.pillR,
+          border: Border.all(color: color.withValues(alpha: 0.40)),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: context.text.labelSmall?.copyWith(
+            color: color,
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+          ),
         ),
       ),
     );
@@ -307,20 +319,22 @@ class _AutoApprovePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        color: s.warning.withValues(alpha: 0.16),
-        borderRadius: AppRadius.pillR,
-        border: Border.all(color: s.warning.withValues(alpha: 0.40)),
-      ),
-      child: Text(
-        context.tr.auto.toUpperCase(),
-        style: context.text.labelSmall?.copyWith(
-          color: s.warning,
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
+    return TextScaleLock(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: s.warning.withValues(alpha: 0.16),
+          borderRadius: AppRadius.pillR,
+          border: Border.all(color: s.warning.withValues(alpha: 0.40)),
+        ),
+        child: Text(
+          context.tr.auto.toUpperCase(),
+          style: context.text.labelSmall?.copyWith(
+            color: s.warning,
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+          ),
         ),
       ),
     );

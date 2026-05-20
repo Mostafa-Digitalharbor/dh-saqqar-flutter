@@ -248,15 +248,17 @@ class _SaqqarBrandHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 7),
-                Text(
-                  title.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.labelMedium?.copyWith(
-                    color: s.text.withValues(alpha: 0.82),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 11,
-                    letterSpacing: 1.6,
+                Expanded(
+                  child: Text(
+                    title.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelMedium?.copyWith(
+                      color: s.text.withValues(alpha: 0.82),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11,
+                      letterSpacing: 1.6,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

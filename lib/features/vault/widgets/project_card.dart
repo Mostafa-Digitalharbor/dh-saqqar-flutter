@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
@@ -63,7 +64,16 @@ class ProjectCard extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: onTap,
-              onLongPress: onLongPress,
+              // Pulse the haptic the moment the long-press resolves so
+              // the quick-actions sheet feels like it "lifts" out of the
+              // card — without this, the sheet appearance is the only
+              // confirmation and on slower phones it's a beat late.
+              onLongPress: onLongPress == null
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      onLongPress!();
+                    },
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                 child: Row(
@@ -92,6 +102,8 @@ class ProjectCard extends StatelessWidget {
                         children: [
                           Text(
                             project.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: context.text.titleMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.1,
@@ -100,6 +112,8 @@ class ProjectCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             '${environments.length} ${context.tr.environment}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: context.text.bodySmall?.copyWith(
                               color: s.muted,
                             ),

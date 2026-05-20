@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -94,10 +95,17 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     if (next == _pageIndex) return;
     setState(() => _pageIndex = next);
     if (!_scrollController.hasClients) return;
+    // Soft haptic + a slower-than-default ease so the page swap reads
+    // as an intentional "you moved to a new page" rather than the list
+    // teleporting to the top. The auto-advance trigger fires when the
+    // user is already at the bottom, so the trip back to offset 0 needs
+    // the extra runway (380 ms vs the 220 ms motion baseline) to
+    // register before the new rows take the user's attention.
+    HapticFeedback.lightImpact();
     _scrollController.animateTo(
       0,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOutQuart,
     );
   }
 

@@ -1,4 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Network access. INTERNET is what every Dio request to
+         saqqaar.com needs; ACCESS_NETWORK_STATE is what the
+         connectivity_plus plugin reads to drive the OfflineBanner.
+
+         The debug + profile manifests each declare INTERNET on their
+         own so `flutter run` (dev / hot-reload builds) works without
+         touching this file. Release APKs ONLY merge from main, so
+         leaving these out here is what produced "Couldn't reach the
+         server" on every device the team installed the APK on while
+         the dev build worked fine. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <application
         android:label="Saqqar"
         android:name="${applicationName}"

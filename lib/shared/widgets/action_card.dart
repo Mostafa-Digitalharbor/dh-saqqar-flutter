@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../extensions/context_extensions.dart';
+import '../extensions/responsive_breakpoints.dart';
 
 class ActionCard extends StatelessWidget {
   const ActionCard({
@@ -109,7 +110,8 @@ class ActionCard extends StatelessWidget {
                   const SizedBox(height: 14),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final stacked = constraints.maxWidth < 340;
+                      final stacked =
+                          breakpointForWidth(constraints.maxWidth).isTinyOrBelow;
                       if (stacked) {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,

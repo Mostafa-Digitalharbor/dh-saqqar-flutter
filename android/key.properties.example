@@ -1,0 +1,24 @@
+# Copy this file to `android/key.properties` (same folder) and fill in
+# the values from your release keystore. The real `key.properties` is
+# .gitignore'd — never commit passwords or the .jks file.
+#
+# To generate a fresh release keystore (one-time), from the project
+# root run:
+#
+#   keytool -genkey -v ^
+#     -keystore android/saqqar-release.jks ^
+#     -keyalg RSA -keysize 2048 -validity 10000 ^
+#     -alias saqqar
+#
+# Pick strong passwords; you'll be prompted for both the keystore
+# password (storePassword) and the key password (keyPassword). Save
+# both somewhere safe (1Password, Bitwarden, etc.) — losing them
+# means you can NEVER ship an update to a user who installed an APK
+# signed with this key.
+#
+# The `storeFile` path is resolved relative to the `android/` folder.
+
+storePassword=REPLACE_WITH_KEYSTORE_PASSWORD
+keyPassword=REPLACE_WITH_KEY_PASSWORD
+keyAlias=saqqar
+storeFile=saqqar-release.jks

@@ -62,15 +62,78 @@ class ConversationsEmptyState extends StatelessWidget {
           const SizedBox(height: 22),
           SizedBox(
             width: 220,
-            child: PrimaryButton(
-              label: context.tr.newConversation,
-              icon: AppIcons.plus,
-              expand: true,
-              onPressed: onStart,
+            // Breathing cyan glow under the CTA — pulls the user's eye
+            // to the "start a conversation" affordance on the first
+            // launch when the screen is otherwise empty. Slow tempo so
+            // it reads as "available", not "urgent / error".
+            child: _BreathingGlow(
+              color: s.brandCyan,
+              child: PrimaryButton(
+                label: context.tr.newConversation,
+                icon: AppIcons.plus,
+                expand: true,
+                onPressed: onStart,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Wraps [child] with a slow, soft outer glow that breathes between
+/// minimum and maximum opacity. Picks up `MediaQuery.disableAnimations`
+/// (reduce-motion) and freezes at the midpoint — the user still gets
+/// the visual hint of "this is the primary action" without the motion.
+class _BreathingGlow extends StatefulWidget {
+  const _BreathingGlow({required this.child, required this.color});
+
+  final Widget child;
+  final Color color;
+
+  @override
+  State<_BreathingGlow> createState() => _BreathingGlowState();
+}
+
+class _BreathingGlowState extends State<_BreathingGlow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2200),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return AnimatedBuilder(
+      animation: _controller,
+      child: widget.child,
+      builder: (context, child) {
+        final t = reduceMotion
+            ? 0.5
+            : Curves.easeInOut.transform(_controller.value);
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.18 + 0.22 * t),
+                blurRadius: 18 + 10 * t,
+                spreadRadius: 1 + 2 * t,
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
     );
   }
 }

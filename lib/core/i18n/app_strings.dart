@@ -646,6 +646,7 @@ class AppStrings {
   String get removeAttachment => _t('remove_attachment');
   String get offlineTitle => _t('offline_title');
   String get offlineBody => _t('offline_body');
+  String get backOnline => _t('back_online');
   String get askSaqqarAnything => _t('ask_saqqar_anything');
   String get linkCopied => _t('link_copied');
   String get dateToday => _t('date_today');
@@ -1049,6 +1050,7 @@ const Map<String, String> _en = {
   'remove_attachment': 'Remove attachment',
   'offline_title': 'You\'re offline',
   'offline_body': 'Saqqar needs a live connection to act.',
+  'back_online': 'Back online',
   'ask_saqqar_anything': 'Ask Saqqar anything',
   'link_copied': 'Link copied to clipboard.',
   'date_today': 'Today',
@@ -1576,6 +1578,7 @@ const Map<String, String> _ar = {
   'remove_attachment': 'إزالة المرفق',
   'offline_title': 'لا يوجد اتصال',
   'offline_body': 'صقّار يحتاج اتصال مباشر للعمل.',
+  'back_online': 'عاد الاتصال',
   'ask_saqqar_anything': 'اسأل صقّار أي حاجة',
   'link_copied': 'تم نسخ الرابط.',
   'date_today': 'اليوم',

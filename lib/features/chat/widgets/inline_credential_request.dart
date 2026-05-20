@@ -81,12 +81,12 @@ class InlineCredentialRequest extends StatefulWidget {
       barrierColor: Colors.black.withValues(alpha: 0.32),
       builder: (sheetContext) {
         // Keyboard-aware padding — the form is mostly password / multi-line
-        // fields so the keyboard nearly always pops. EdgeInsets viewInsets
-        // makes the sheet float above the keyboard instead of getting
-        // hidden by it.
-        final media = MediaQuery.of(sheetContext);
+        // fields so the keyboard nearly always pops. `viewInsetsOf` makes
+        // the sheet float above the keyboard without rebuilding when
+        // unrelated MediaQuery fields change.
+        final keyboardInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
         return Padding(
-          padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+          padding: EdgeInsets.only(bottom: keyboardInset),
           child: DraggableScrollableSheet(
             expand: false,
             initialChildSize: 0.78,

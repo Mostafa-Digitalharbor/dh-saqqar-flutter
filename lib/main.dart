@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/foundation.dart';
@@ -50,6 +51,40 @@ import 'features/vault/view_model/vault_cubit.dart';
 ///      router's auth gate sees a resolved status and doesn't flash the
 ///      /chats surface before redirecting.
 Future<void> main() async {
+  // Sentry wraps the boot via `appRunner` so any synchronous OR async
+  // crash during startup is captured (including the first frame paint).
+  // The DSN comes from `--dart-define=SAQQAR_SENTRY_DSN=https://…@…/…`
+  // so it never lands in source control. When the define is empty
+  // (local dev), Sentry effectively disables itself — no network calls,
+  // no overhead.
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = const String.fromEnvironment(
+        'SAQQAR_SENTRY_DSN',
+        defaultValue: '',
+      );
+      // Tag every event with the build environment so the dashboard
+      // can split prod crashes from dev / CI noise. `release` matches
+      // the version line in pubspec.yaml — bump both together so the
+      // Sentry UI groups crashes per version correctly.
+      options.environment = kReleaseMode ? 'production' : 'development';
+      options.release = 'saqqar@1.0.0+1';
+      // Drop sample rate for transactions to 10% — chat polling fires
+      // every 1.5 s; tracing every call would burn the free quota in
+      // hours. Errors are always sent (sample rate ignored on those).
+      options.tracesSampleRate = 0.1;
+      // Never ship PII: no email, no IP, no screenshots, no widget
+      // tree dumps. The app touches credentials and Odoo data, so the
+      // payload to Sentry stays strictly to stack traces + breadcrumbs.
+      options.sendDefaultPii = false;
+      options.attachScreenshot = false;
+      options.attachViewHierarchy = false;
+    },
+    appRunner: _bootApp,
+  );
+}
+
+Future<void> _bootApp() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: binding);
 
@@ -58,17 +93,37 @@ Future<void> main() async {
   // cubits. No-op in release builds — see [AppBlocObserver].
   Bloc.observer = AppBlocObserver();
 
+  // Bridge cubit-level warn/error calls (caught inside try/catch
+  // blocks in repositories and cubits) into Sentry. Without this, only
+  // uncaught Flutter errors reach the dashboard — caught exceptions
+  // like "PATCH failed, optimistic update rolled back" stay invisible.
+  AppLogger.setCrashReporter((level, tag, message, {error, stackTrace}) {
+    Sentry.captureException(
+      error ?? message,
+      stackTrace: stackTrace,
+      withScope: (scope) {
+        scope.setTag('source', tag);
+        scope.level = level == LogLevel.error
+            ? SentryLevel.error
+            : SentryLevel.warning;
+      },
+    );
+  });
+
   // Replace Flutter's default red ErrorWidget (which is fine in debug
   // but terrifying in production) with a friendly plate that explains
   // what happened in human terms and exposes the raw exception only in
   // debug builds.
   ErrorWidget.builder = (details) => AppErrorScreen(details: details);
 
-  // Route every uncaught Flutter framework error through AppLogger —
-  // that way a wired crash reporter (Sentry / Crashlytics) catches them
-  // automatically alongside the cubit warnings/errors. Preserve the
-  // default presenter so the debug console still prints the full stack.
-  final defaultOnError = FlutterError.onError;
+  // Chain AppLogger on top of whatever handler Sentry already
+  // installed inside `SentryFlutter.init`. Forwarding to the previous
+  // handler (instead of overwriting it) keeps both surfaces wired:
+  // AppLogger prints to the dev console + bloc observer log, Sentry
+  // captures the error to the dashboard. Same pattern for the
+  // platform dispatcher so async errors outside the framework hit
+  // both pipelines.
+  final sentryFlutterError = FlutterError.onError;
   FlutterError.onError = (details) {
     AppLogger.error(
       'FlutterError',
@@ -76,11 +131,10 @@ Future<void> main() async {
       error: details.exception,
       stackTrace: details.stack,
     );
-    defaultOnError?.call(details);
+    sentryFlutterError?.call(details);
   };
 
-  // Same treatment for errors that escape the framework entirely —
-  // background isolates, async gaps the framework can't catch.
+  final sentryPlatformError = PlatformDispatcher.instance.onError;
   PlatformDispatcher.instance.onError = (error, stackTrace) {
     AppLogger.error(
       'PlatformDispatcher',
@@ -88,7 +142,7 @@ Future<void> main() async {
       error: error,
       stackTrace: stackTrace,
     );
-    return true; // signal handled — otherwise the engine logs again
+    return sentryPlatformError?.call(error, stackTrace) ?? true;
   };
 
   final prefs = await SharedPreferences.getInstance();

@@ -43,3 +43,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Release signing secrets — keep these out of source control. The
+# committed `key.properties.example` documents the expected shape.
+android/key.properties
+android/*.jks
+android/*.keystore
+*.jks
+*.keystore
+
+# Local environment overrides (dart-define bundles, Sentry DSN, etc.)
+.env
+.env.*
+!.env.example

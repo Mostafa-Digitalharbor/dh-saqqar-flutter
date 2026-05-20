@@ -1,4 +1,4 @@
-package com.example.saqqar_app
+package sa.com.digitalharbor.saqqar
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -186,8 +186,11 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(20)),
       ),
+      // Cap the dialog width so it doesn't stretch the full viewport
+      // on landscape phones, foldables, or tablets — the project name
+      // field and env list become hard to scan past ~520 px wide.
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxHeight),
+        constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: 520),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
           child: Column(

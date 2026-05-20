@@ -211,8 +211,16 @@ CustomTransitionPage<void> _transitionPage({
         reverseCurve: Curves.easeInCubic,
       );
 
+      // Detail routes slide in from the trailing edge so the motion
+      // mirrors the user's reading direction — push from right in LTR,
+      // push from left in RTL (Arabic). Without the flip, RTL users
+      // see the new screen come from the "back" side of their visual
+      // flow, which reads as the route-reverse animation and breaks
+      // the affordance "deeper in" = forward motion.
+      final isRtl = Directionality.of(context) == TextDirection.rtl;
+      final detailOffset = isRtl ? const Offset(-0.06, 0) : const Offset(0.06, 0);
       final beginOffset = switch (kind) {
-        _RouteTransitionKind.detail => const Offset(0.06, 0),
+        _RouteTransitionKind.detail => detailOffset,
         _RouteTransitionKind.fade => Offset.zero,
         _RouteTransitionKind.scale => Offset.zero,
         _RouteTransitionKind.tab => const Offset(0, 0.025),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/extensions/responsive_breakpoints.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../vault/data/project_models.dart';
 import '../../vault/view_model/vault_cubit.dart';
@@ -67,55 +69,73 @@ class ChatHeaderControls extends StatelessWidget {
         // ~52 px instead of ~74 px so the chat gets ~22 px more for
         // messages without losing the project/env discoverability.
         padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: _StackedControl(
-                label: context.tr.headerProject,
-                child: _DropdownPill(
-                  enabled: projects.isNotEmpty,
-                  hint: projects.isEmpty
-                      ? context.tr.noProjectsYet
-                      : context.tr.headerNoneOption,
-                  value: projectId,
-                  items: [
-                    for (final p in projects)
-                      _DropdownItem(value: p.id, label: p.name),
-                  ],
-                  onChanged: onProjectChanged,
-                ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final projectControl = _StackedControl(
+              label: context.tr.headerProject,
+              child: _DropdownPill(
+                enabled: projects.isNotEmpty,
+                hint: projects.isEmpty
+                    ? context.tr.noProjectsYet
+                    : context.tr.headerNoneOption,
+                value: projectId,
+                items: [
+                  for (final p in projects)
+                    _DropdownItem(value: p.id, label: p.name),
+                ],
+                onChanged: onProjectChanged,
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _StackedControl(
-                label: context.tr.headerEnvironment,
-                // When the selected project has no envs, swap the
-                // dropdown (which would render empty + non-functional)
-                // for a tappable "+ Add environment" pill that routes
-                // the user to the env creation flow. Dropdown stays for
-                // every other case.
-                child: (projectId != null && envs.isEmpty)
-                    ? _CreateEnvironmentPill(
-                        onTap: () =>
-                            onCreateEnvironmentRequested(projectId!),
-                      )
-                    : _DropdownPill(
-                        enabled: projectId != null,
-                        hint: projectId == null
-                            ? context.tr.pickProjectFirst
-                            : context.tr.headerNoneOption,
-                        value: environmentId,
-                        items: [
-                          for (final e in envs)
-                            _DropdownItem(value: e.id, label: e.name),
-                        ],
-                        onChanged: onEnvironmentChanged,
-                      ),
-              ),
-            ),
-          ],
+            );
+            final envControl = _StackedControl(
+              label: context.tr.headerEnvironment,
+              // When the selected project has no envs, swap the
+              // dropdown (which would render empty + non-functional)
+              // for a tappable "+ Add environment" pill that routes
+              // the user to the env creation flow. Dropdown stays for
+              // every other case.
+              child: (projectId != null && envs.isEmpty)
+                  ? _CreateEnvironmentPill(
+                      onTap: () =>
+                          onCreateEnvironmentRequested(projectId!),
+                    )
+                  : _DropdownPill(
+                      enabled: projectId != null,
+                      hint: projectId == null
+                          ? context.tr.pickProjectFirst
+                          : context.tr.headerNoneOption,
+                      value: environmentId,
+                      items: [
+                        for (final e in envs)
+                          _DropdownItem(value: e.id, label: e.name),
+                      ],
+                      onChanged: onEnvironmentChanged,
+                    ),
+            );
+            // On the `tiny` tier (≤340 px), two 50% dropdowns leave each
+            // side ~155 px — long Arabic project/env names get chopped
+            // aggressively. Stack vertically below the breakpoint so
+            // each control has the full strip width; the resulting
+            // ~22 px of extra header height is acceptable on tiny phones.
+            if (breakpointForWidth(constraints.maxWidth).isTinyOrBelow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  projectControl,
+                  const SizedBox(height: 8),
+                  envControl,
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: projectControl),
+                const SizedBox(width: 8),
+                Expanded(child: envControl),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -199,7 +219,10 @@ class _ChatToggleIcon extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: AppRadius.buttonR,
         child: InkWell(
-          onTap: () => onChanged(!value),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onChanged(!value);
+          },
           borderRadius: AppRadius.buttonR,
           child: Container(
             width: 36,
