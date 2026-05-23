@@ -1,7 +1,24 @@
 name: saqqar_app
-description: "Saqqar — Odoo Operations Copilot (Mobile)."
+description: >
+  Saqqar — Odoo Operations Copilot for mobile. AI-powered chat that
+  reads, reports on, and acts against your live Odoo environments.
+  Built by Digital Harbor (digitalharbor.com.sa).
 publish_to: 'none'
-version: 1.0.0+1
+
+# Version naming: `<semver>+<build-code>`. Play Console requires the
+# build-code (`+N`) to strictly increase on every upload. Bump
+# patch / minor / major following standard semver:
+#   • 1.0.0 → 1.0.1 (bug fix), build code 2
+#   • 1.0.0 → 1.1.0 (new feature, backwards-compatible), build code 2
+#   • 1.0.0 → 2.0.0 (breaking change), build code 2
+# The build code is purely an internal counter for Play Store; it
+# never needs to match the semver — it just needs to keep growing.
+#
+# 1.0.2+3 — Tester feedback (2026-05-23):
+#   • Multi-file attachments in the chat composer.
+#   • Receive ACTION_SEND / ACTION_SEND_MULTIPLE from WhatsApp, Files,
+#     Photos — user picks the target chat instead of auto-opening a new one.
+version: 1.0.7+8
 
 environment:
   sdk: ^3.9.2
@@ -17,6 +34,10 @@ dependencies:
   # State management (Cubit + MVVM)
   flutter_bloc: ^8.1.6
   equatable: ^2.0.7
+  # Already pulled in transitively by flutter_bloc — direct dep so we
+  # can use `ChangeNotifierProvider.value` for non-cubit listenables
+  # (e.g. ShareIntakeService).
+  provider: ^6.1.2
 
   # Routing
   go_router: ^14.6.2
@@ -63,6 +84,37 @@ dependencies:
   # SDK quietly no-ops so we never gate boot on a network call.
   sentry_flutter: ^8.13.0
 
+  # Receives Android ACTION_SEND / ACTION_SEND_MULTIPLE intents (and the
+  # iOS Share Extension once we ship one) so users can hit "Share → Saqqar"
+  # from WhatsApp, Photos, Files, etc. and land in a chat with the file(s)
+  # already staged. Wired in `main.dart` — see `ShareIntentBootstrap`.
+  receive_sharing_intent: ^1.8.0
+
+  # Outbound share: long-press an agent reply → "Share" → system share
+  # sheet (WhatsApp, Mail, Gmail, Files, etc.). Counterpart to
+  # receive_sharing_intent above.
+  share_plus: ^10.1.2
+
+  # Voice input in the chat composer. Records the user's speech to a
+  # short m4a/AAC file (mono, 16 kHz, 32 kbps — see SAQQAR_MOBILE_VOICE.md §3),
+  # then `POST`s the audio to /api/v1/transcribe/ which proxies to
+  # OpenAI Whisper server-side and returns plain transcript text. Replaces
+  # the earlier on-device speech_to_text approach so the mobile + web
+  # client share the same backend recognizer (consistent accuracy on
+  # Arabic / AR↔EN code-switch / dialects).
+  record: ^5.1.2
+  permission_handler: ^11.3.1
+
+# Pub's resolver picks `record_linux 0.7.2` to satisfy `record ^5.1.2`'s
+# constraint, but 0.7.2 predates the `startStream` + `hasPermission(...,
+# request:)` additions to `record_platform_interface 1.6.0`. The mismatch
+# crashes `flutter build appbundle` on Windows hosts because Linux desktop
+# is part of the transitive compile graph even when we only ship Android.
+# Pinning to 1.2.1 (the newest that implements the current interface)
+# unblocks the build without touching upstream.
+dependency_overrides:
+  record_linux: ^1.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -100,18 +152,26 @@ flutter_launcher_icons:
     background_color: '#FFFFFF'
     theme_color: '#06B6D4'
 
-# Splash screen generator config. The splash itself stays on the dark
-# navy backdrop because the in-app theme + status bar match — use the
-# white-on-transparent dark variant of the wordmark there.
+# Splash screen generator config. We don't want ANY static branding on
+# the splash — the in-app `LaunchSplashScreen` owns the zoom animation
+# and should be the first place the wordmark appears.
+#
+# Android <12: easy — no `image:` means a flat navy screen.
+# Android 12+: the OS forces the launcher icon onto the splash (you
+#   can't fully suppress it). To make it invisible we feed it a fully
+#   transparent PNG (`saqqar-splash-blank.png`) and match the
+#   `icon_background_color` to the splash color, so the user sees a
+#   solid navy screen instead of a white wordmark in a circle.
+#
+# Regenerate this asset + the native splash with:
+#   dart run tool/generate_blank_splash_icon.dart
+#   dart run flutter_native_splash:create
 flutter_native_splash:
   color: '#030712'
   color_dark: '#030712'
-  image: 'assets/img/saqqar-logo-dark.png'
-  image_dark: 'assets/img/saqqar-logo-dark.png'
   android_12:
-    image: 'assets/img/saqqar-logo-dark.png'
+    image: 'assets/img/saqqar-splash-blank.png'
+    image_dark: 'assets/img/saqqar-splash-blank.png'
     color: '#030712'
     icon_background_color: '#030712'
   fullscreen: false
-  android_gravity: 'center'
-  ios_content_mode: 'center'

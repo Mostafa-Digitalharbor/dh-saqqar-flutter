@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:provider/provider.dart' show ChangeNotifierProvider, Provider;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,7 @@ import 'core/logging/app_bloc_observer.dart';
 import 'core/logging/app_logger.dart';
 import 'shared/widgets/app_error_screen.dart';
 import 'core/i18n/view_model/locale_cubit.dart';
+import 'core/network/api_exception.dart';
 import 'core/network/dio_client.dart';
 import 'core/network/view_model/connectivity_cubit.dart';
 import 'core/storage/secure_token_store.dart';
@@ -20,6 +22,7 @@ import 'core/theme/view_model/theme_cubit.dart';
 import 'features/auth/data/auth_api.dart';
 import 'features/auth/view_model/auth_cubit.dart';
 import 'features/chat/data/live_env_ack_service.dart';
+import 'features/chat/data/transcribe_api.dart';
 import 'features/chat/view_model/deep_think_cubit.dart';
 import 'features/chat/view_model/running_agents_cubit.dart';
 import 'features/conversations/data/conversations_api.dart';
@@ -30,6 +33,7 @@ import 'features/inbox/data/artifacts_api.dart';
 import 'features/inbox/view_model/approvals_cubit.dart';
 import 'features/push/data/devices_api.dart';
 import 'features/share/data/shares_api.dart';
+import 'features/share/intake/share_intake_service.dart';
 import 'features/vault/data/credentials_api.dart';
 import 'features/vault/data/projects_api.dart';
 import 'features/vault/data/vault_cache.dart';
@@ -51,6 +55,16 @@ import 'features/vault/view_model/vault_cubit.dart';
 ///      router's auth gate sees a resolved status and doesn't flash the
 ///      /chats surface before redirecting.
 Future<void> main() async {
+  // Disable Provider's debug check that flags any Listenable / Stream
+  // value as "you probably want ChangeNotifierProvider instead". We
+  // already use `ChangeNotifierProvider.value` for [ShareIntakeService]
+  // — but flutter_bloc's `MultiRepositoryProvider` re-wraps every
+  // child in an `InheritedProvider` whose value-type check still trips
+  // on Listenable subtypes in some configurations. Silencing the
+  // debug-only check here keeps the share-from-WhatsApp flow working
+  // without making the architecture less explicit.
+  Provider.debugCheckInvalidValueType = null;
+
   // Sentry wraps the boot via `appRunner` so any synchronous OR async
   // crash during startup is captured (including the first frame paint).
   // The DSN comes from `--dart-define=SAQQAR_SENTRY_DSN=https://…@…/…`
@@ -68,7 +82,7 @@ Future<void> main() async {
       // the version line in pubspec.yaml — bump both together so the
       // Sentry UI groups crashes per version correctly.
       options.environment = kReleaseMode ? 'production' : 'development';
-      options.release = 'saqqar@1.0.0+1';
+      options.release = 'saqqar@1.0.7+8';
       // Drop sample rate for transactions to 10% — chat polling fires
       // every 1.5 s; tracing every call would burn the free quota in
       // hours. Errors are always sent (sample rate ignored on those).
@@ -79,6 +93,16 @@ Future<void> main() async {
       options.sendDefaultPii = false;
       options.attachScreenshot = false;
       options.attachViewHierarchy = false;
+      // Final filter before any event leaves the device. Catches the
+      // small percentage of errors that bypass our AppLogger crash
+      // reporter — e.g. uncaught DioException from a future Flutter
+      // engine path, or anything the Sentry integration auto-captures.
+      // `_shouldSkipSentry` is the single source of truth for "is this
+      // a real bug or environmental noise" — see its doc for the rules.
+      options.beforeSend = (event, hint) {
+        if (_shouldSkipSentry(event.throwable)) return null;
+        return event;
+      };
     },
     appRunner: _bootApp,
   );
@@ -98,6 +122,7 @@ Future<void> _bootApp() async {
   // uncaught Flutter errors reach the dashboard — caught exceptions
   // like "PATCH failed, optimistic update rolled back" stay invisible.
   AppLogger.setCrashReporter((level, tag, message, {error, stackTrace}) {
+    if (_shouldSkipSentry(error)) return;
     Sentry.captureException(
       error ?? message,
       stackTrace: stackTrace,
@@ -172,7 +197,12 @@ Future<void> _bootApp() async {
   final sharesApi = SharesApi(dio);
   final remoteI18nApi = RemoteI18nApi(dio);
   final devicesApi = DevicesApi(dio);
+  final transcribeApi = TranscribeApi(dio);
   final liveEnvAckService = LiveEnvAckService(prefs);
+  // In-memory hand-off between Android's ACTION_SEND intent-filter and
+  // the chat screen. Lives at boot scope so files survive the
+  // BlocProvider rebuild that fires when the user picks a destination.
+  final shareIntakeService = ShareIntakeService();
 
   // Feature-level repositories aggregate one-or-more low-level APIs into
   // a single surface the cubit reads against. Add new ones here as you
@@ -202,7 +232,17 @@ Future<void> _bootApp() async {
         RepositoryProvider<SharesApi>.value(value: sharesApi),
         RepositoryProvider<RemoteI18nApi>.value(value: remoteI18nApi),
         RepositoryProvider<DevicesApi>.value(value: devicesApi),
+        RepositoryProvider<TranscribeApi>.value(value: transcribeApi),
         RepositoryProvider<LiveEnvAckService>.value(value: liveEnvAckService),
+        // `ShareIntakeService` extends `ChangeNotifier`, so a plain
+        // `RepositoryProvider`/`Provider` throws — Provider auto-detects
+        // Listenable subtypes and refuses to wrap them (it can't drive
+        // rebuilds on notify). `ChangeNotifierProvider.value` is the
+        // right shape, and consumers that just want `context.read<>()`
+        // still work because it exposes the same Provider API.
+        ChangeNotifierProvider<ShareIntakeService>.value(
+          value: shareIntakeService,
+        ),
         RepositoryProvider<VaultRepository>.value(value: vaultRepository),
         RepositoryProvider<ConversationsRepository>.value(
           value: conversationsRepository,
@@ -249,4 +289,63 @@ Future<void> _bootApp() async {
       ),
     ),
   );
+}
+
+/// Returns `true` for errors we deliberately don't ship to Sentry.
+///
+/// The bar is "would a senior engineer file this as a bug?":
+///
+///   * **Network errors** (Dio timeout / connection / cancel,
+///     `ApiException.network|timeout|cancelled`) — environmental: slow
+///     cellular, captive portal, airplane mode, app backgrounded mid-
+///     request. Already surfaced to the user as a friendly toast via
+///     `ApiErrorMapper`. Forwarding to Sentry just drowns real bugs
+///     in noise and burns the free quota (SAQQAR-1 was the wake-up
+///     call — a single Cairo user on 3G triggered a "production
+///     error" alert for an expected timeout).
+///   * **4xx responses** — expected business-logic failures (401 =
+///     stale token, 403 = no permission, 404 = deleted, 409 = race,
+///     422 = validation). Repositories handle them inline; they're
+///     not crashes.
+///
+/// We DO report:
+///   * 5xx server errors — those are backend bugs worth knowing about.
+///   * `ApiExceptionKind.unknown` — we don't know what it is, so we
+///     want a trace.
+///   * Everything else (StateError, TypeError, parse failures, etc.).
+bool _shouldSkipSentry(Object? error) {
+  if (error is ApiException) {
+    switch (error.kind) {
+      case ApiExceptionKind.network:
+      case ApiExceptionKind.timeout:
+      case ApiExceptionKind.cancelled:
+        return true;
+      case ApiExceptionKind.badResponse:
+        // 4xx = client/business expected; 5xx = backend bug worth shipping.
+        final status = error.statusCode;
+        return status != null && status >= 400 && status < 500;
+      case ApiExceptionKind.unknown:
+        return false;
+    }
+  }
+  // Belt-and-braces: if a raw DioException leaks past the
+  // ErrorInterceptor (unlikely but cheap to guard), apply the same
+  // network-noise filter.
+  if (error is DioException) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.connectionError:
+      case DioExceptionType.cancel:
+        return true;
+      case DioExceptionType.badResponse:
+        final status = error.response?.statusCode;
+        return status != null && status >= 400 && status < 500;
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.unknown:
+        return false;
+    }
+  }
+  return false;
 }

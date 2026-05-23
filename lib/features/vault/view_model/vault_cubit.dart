@@ -35,6 +35,16 @@ class VaultCubit extends Cubit<VaultState> {
 
   final VaultRepository _repo;
 
+  /// Drop any [emit] call that lands after [close]. Same guard pattern
+  /// as [ChatCubit.emit] — load + every mutation here awaits the
+  /// repository, and the cubit can be reset (close + new instance)
+  /// by the auth gate during sign-out mid-fetch.
+  @override
+  void emit(VaultState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
   // ── Loading ─────────────────────────────────────────────────────────
 
   /// Initial load — fetches projects + schemas in parallel and emits a

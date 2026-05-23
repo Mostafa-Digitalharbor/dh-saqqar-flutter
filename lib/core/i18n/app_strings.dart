@@ -644,6 +644,46 @@ class AppStrings {
   String get suggestServerLogsSub => _t('suggest_server_logs_sub');
   String get suggestServerLogsPrompt => _t('suggest_server_logs_prompt');
   String get removeAttachment => _t('remove_attachment');
+
+  // Share intake (incoming Android ACTION_SEND / SEND_MULTIPLE).
+  String get shareSheetTitle => _t('share_sheet_title');
+  String get shareSheetSubtitle => _t('share_sheet_subtitle');
+  String get shareNewChat => _t('share_new_chat');
+  String get shareExistingChats => _t('share_existing_chats');
+  String get shareCountFile => _t('share_count_file');
+  String get shareCountFiles => _t('share_count_files');
+  String get shareNoConversations => _t('share_no_conversations');
+  String get shareCancel => _t('share_cancel');
+
+  // Tester feedback batch (2026-05-23): sent-confirmation toast, voice
+  // input, share-message, quick replies, swipe-archive hints.
+  String get sentToastOneFile => _t('sent_toast_one_file');
+  String get sentToastManyFiles => _t('sent_toast_many_files');
+  String get shareMessage => _t('share_message');
+  String get shareMessageSubject => _t('share_message_subject');
+  String get voiceHoldToTalk => _t('voice_hold_to_talk');
+  String get voiceListening => _t('voice_listening');
+  String get voiceNotAvailable => _t('voice_not_available');
+  String get voicePermissionDenied => _t('voice_permission_denied');
+
+  // Voice transcription (Whisper). Key names mirror the web client's
+  // i18n table (SAQQAR_MOBILE_VOICE.md §5) so backend/web/mobile share
+  // the same vocabulary when reporting issues.
+  String get recordVoice => _t('record_voice');
+  String get stopRecording => _t('stop_recording');
+  String get transcribing => _t('transcribing');
+  String get transcribeFailed => _t('transcribe_failed');
+  String get transcribeEmpty => _t('transcribe_empty');
+  String get micUnavailable => _t('mic_unavailable');
+  String get voiceMaxLength => _t('voice_max_length');
+  String get discardRecording => _t('discard_recording');
+  String get quickReplyMore => _t('quick_reply_more');
+  String get quickReplySummarize => _t('quick_reply_summarize');
+  String get quickReplyExport => _t('quick_reply_export');
+  String get swipeArchive => _t('swipe_archive');
+  String get swipeUnarchive => _t('swipe_unarchive');
+  String get longPressActionsTitle => _t('long_press_actions_title');
+  String get copyAction => _t('copy_action');
   String get offlineTitle => _t('offline_title');
   String get offlineBody => _t('offline_body');
   String get backOnline => _t('back_online');
@@ -1048,6 +1088,38 @@ const Map<String, String> _en = {
   'suggest_server_logs_prompt':
       'Tail the Odoo server log for the last 200 lines and highlight any errors or warnings.',
   'remove_attachment': 'Remove attachment',
+  'share_sheet_title': 'Share with Saqqar',
+  'share_sheet_subtitle': 'Pick a chat to attach to, or start a new one.',
+  'share_new_chat': 'Start a new chat',
+  'share_existing_chats': 'Recent chats',
+  'share_count_file': '1 file from another app',
+  'share_count_files': '{count} files from another app',
+  'share_no_conversations': 'No chats yet — start a new one to attach.',
+  'share_cancel': 'Cancel share',
+  'sent_toast_one_file': 'Sent · 1 file attached',
+  'sent_toast_many_files': 'Sent · {count} files attached',
+  'share_message': 'Share',
+  'share_message_subject': 'From Saqqar',
+  'voice_hold_to_talk': 'Hold the mic to talk',
+  'voice_listening': 'Listening… tap to stop',
+  'voice_not_available': 'Voice input is not available on this device.',
+  'voice_permission_denied':
+      'Microphone permission denied. Enable it from system settings to use voice input.',
+  'record_voice': 'Record voice',
+  'stop_recording': 'Stop recording',
+  'transcribing': 'Transcribing…',
+  'transcribe_failed': 'Transcription failed. Try again.',
+  'transcribe_empty': "Couldn't catch that. Try again.",
+  'mic_unavailable': 'Microphone is unavailable on this device.',
+  'voice_max_length': 'Recording reached the 2-minute limit.',
+  'discard_recording': 'Discard recording',
+  'quick_reply_more': 'Tell me more',
+  'quick_reply_summarize': 'Summarize this',
+  'quick_reply_export': 'Export as Excel',
+  'swipe_archive': 'Archive',
+  'swipe_unarchive': 'Unarchive',
+  'long_press_actions_title': 'Conversation actions',
+  'copy_action': 'Copy',
   'offline_title': 'You\'re offline',
   'offline_body': 'Saqqar needs a live connection to act.',
   'back_online': 'Back online',
@@ -1576,6 +1648,38 @@ const Map<String, String> _ar = {
   'suggest_server_logs_prompt':
       'اعرض آخر 200 سطر من سجل سيرفر أودو وأبرز أي أخطاء أو تحذيرات.',
   'remove_attachment': 'إزالة المرفق',
+  'share_sheet_title': 'مشاركة مع صقّار',
+  'share_sheet_subtitle': 'اختر محادثة لإرفاق الملفات بها، أو ابدأ محادثة جديدة.',
+  'share_new_chat': 'محادثة جديدة',
+  'share_existing_chats': 'المحادثات الأخيرة',
+  'share_count_file': 'ملف واحد من تطبيق آخر',
+  'share_count_files': '{count} ملفات من تطبيق آخر',
+  'share_no_conversations': 'لا توجد محادثات — ابدأ واحدة جديدة لإرفاق الملفات.',
+  'share_cancel': 'إلغاء المشاركة',
+  'sent_toast_one_file': 'تم الإرسال · ملف واحد مرفق',
+  'sent_toast_many_files': 'تم الإرسال · {count} ملفات مرفقة',
+  'share_message': 'مشاركة',
+  'share_message_subject': 'من صقّار',
+  'voice_hold_to_talk': 'اضغط مطوّل على الميكروفون',
+  'voice_listening': 'جارٍ الاستماع… اضغط للإيقاف',
+  'voice_not_available': 'الإدخال الصوتي غير متاح على هذا الجهاز.',
+  'voice_permission_denied':
+      'تم رفض إذن الميكروفون. فعّله من إعدادات النظام لاستخدام الإدخال الصوتي.',
+  'record_voice': 'تسجيل صوتي',
+  'stop_recording': 'إيقاف التسجيل',
+  'transcribing': 'جارٍ تحويل الصوت…',
+  'transcribe_failed': 'تعذّر تحويل الصوت. حاول مرة أخرى.',
+  'transcribe_empty': 'لم نتمكن من سماعك بوضوح، حاول مرة أخرى.',
+  'mic_unavailable': 'الميكروفون غير متاح على هذا الجهاز.',
+  'voice_max_length': 'وصل التسجيل إلى الحد الأقصى (دقيقتان).',
+  'discard_recording': 'إلغاء التسجيل',
+  'quick_reply_more': 'أعطني المزيد',
+  'quick_reply_summarize': 'لخّص ده',
+  'quick_reply_export': 'صدّر كـ Excel',
+  'swipe_archive': 'أرشفة',
+  'swipe_unarchive': 'إلغاء الأرشفة',
+  'long_press_actions_title': 'إجراءات المحادثة',
+  'copy_action': 'نسخ',
   'offline_title': 'لا يوجد اتصال',
   'offline_body': 'صقّار يحتاج اتصال مباشر للعمل.',
   'back_online': 'عاد الاتصال',

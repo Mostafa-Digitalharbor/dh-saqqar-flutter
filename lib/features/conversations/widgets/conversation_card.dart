@@ -12,6 +12,7 @@ import '../../inbox/view_model/approvals_cubit.dart';
 import '../data/conversation_models.dart';
 import '../view_model/conversations_cubit.dart';
 import 'conversation_action.dart';
+import 'conversation_actions_sheet.dart';
 import 'conversation_row_menu.dart';
 import 'meta_dot.dart';
 
@@ -57,6 +58,18 @@ class ConversationCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        // Long-press surfaces the same actions the ⋯ kebab exposes, but
+        // anywhere on the row instead of demanding a precision tap on
+        // the trailing edge — testers (2026-05-23) asked for this to
+        // match the WhatsApp / Gmail muscle memory.
+        onLongPress: () async {
+          final action = await ConversationActionsSheet.show(
+            context,
+            conversation: conversation,
+            isPinned: isPinned,
+          );
+          if (action != null) onAction(action);
+        },
         borderRadius: BorderRadius.circular(18),
         child: Opacity(
           opacity: isArchived ? 0.7 : 1,

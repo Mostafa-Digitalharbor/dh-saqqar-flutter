@@ -39,6 +39,7 @@ export 'inline_credential_request.dart';
 export 'live_env_warning_dialog.dart';
 export 'message_bubble.dart';
 export 'pending_approvals_banner.dart';
+export 'quick_reply_strip.dart';
 export 'message_bubble_skeleton.dart';
 export 'message_row.dart';
 export 'server_activity_card.dart';

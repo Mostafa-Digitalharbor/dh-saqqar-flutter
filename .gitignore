@@ -1,9 +1,27 @@
-# Miscellaneous
+# ──────────────────────────────────────────────────────────────────
+# Root .gitignore for the Saqqar Flutter project.
+#
+# Per-platform ignores live in their own files:
+#   - android/.gitignore  → Gradle artifacts, key.properties, *.jks
+#   - ios/.gitignore      → Pods, Frameworks, xcuserdata
+#
+# This file covers everything else: Flutter caches, IDE state, build
+# outputs across platforms, secrets, and editor / OS junk.
+# ──────────────────────────────────────────────────────────────────
+
+# ── Misc / OS clutter ────────────────────────────────────────────
 *.class
 *.log
 *.pyc
 *.swp
+*.swo
+*.bak
+*~
 .DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
 .atom/
 .build/
 .buildlog/
@@ -12,47 +30,93 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# ── IDE / editor state ──────────────────────────────────────────
+# IntelliJ + Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code — kept commented because `.vscode/launch.json` and
+# `.vscode/settings.json` can be useful to share; uncomment if your
+# team prefers per-developer settings.
 #.vscode/
 
-# Flutter/Dart/Pub related
+# ── Flutter / Dart / Pub ─────────────────────────────────────────
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
+.fvm/
+.packages
+
+# ── Build outputs (every platform) ───────────────────────────────
+# `/build/` catches the root, the `**/build/` glob catches per-
+# platform builds (android/build, ios/build, etc.). Explicit lines
+# for app artifacts so they never leak even if someone moves the
+# build folder.
 /build/
-/coverage/
+**/build/
+**/*.apk
+**/*.aab
+**/*.ipa
+**/*.app
+**/*.dSYM.zip
 
-# Symbolication related
+# ── Crash symbolication files ────────────────────────────────────
+# Flutter generates these for stack-trace symbolication; ship them
+# to Sentry separately, never commit them.
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
+**/*.dSYM/
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ── Test artifacts ───────────────────────────────────────────────
+/coverage/
+**/golden_failures/
 
-# Release signing secrets — keep these out of source control. The
-# committed `key.properties.example` documents the expected shape.
-android/key.properties
-android/*.jks
-android/*.keystore
-*.jks
-*.keystore
+# ── Android-specific (root-level safety net) ─────────────────────
+# `android/.gitignore` already covers local.properties + key.properties
+# + *.jks. The lines below are belt-and-braces in case those files
+# get copied / renamed outside their default locations.
+android/app/debug/
+android/app/profile/
+android/app/release/
+**/key.properties
+**/*.jks
+**/*.keystore
+**/*.p12
+**/*.pem
 
-# Local environment overrides (dart-define bundles, Sentry DSN, etc.)
+# ── Firebase / Google service configs (in case ever added) ───────
+# Belt-and-braces — these files contain API keys and Firebase project
+# identifiers. The `firebase-tools` CLI sometimes drops them at the
+# project root by accident.
+**/google-services.json
+**/GoogleService-Info.plist
+
+# ── Local environment overrides ──────────────────────────────────
+# `.env*` covers any dotenv variants. `.env.example` is whitelisted
+# back in so the committed template stays visible. Same shape for
+# the standalone .secret files some teams use.
 .env
 .env.*
 !.env.example
+*.secret
+*.secrets
+secrets.dart
+sentry.properties
+
+# ── Desktop platform ephemeral build artifacts ───────────────────
+# Linux / macOS / Windows desktop targets generate per-build wrapper
+# files that don't need to be in source control.
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+macos/Flutter/Flutter-Generated.xcconfig
+macos/Podfile.lock
+windows/flutter/ephemeral/
+
+# ── Web build temporary state ────────────────────────────────────
+# `flutter build web` resets these on every run.
+web/canvaskit/

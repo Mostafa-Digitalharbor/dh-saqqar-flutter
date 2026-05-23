@@ -47,5 +47,20 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<!-- speech_to_text on iOS needs both keys: the mic capture is
+		     gated by NSMicrophoneUsageDescription, and the on-device
+		     recognition step is gated by NSSpeechRecognitionUsageDescription.
+		     Strings are user-facing — keep them human and specific.
+		     Defensive add for when iOS ships; currently only Android is
+		     in distribution. -->
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Saqqar uses the microphone for voice input in chat. Audio is processed on-device and never uploaded.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>Saqqar transcribes your voice into chat text using the system speech recognizer. Recognition runs on-device.</string>
+		<!-- file_picker / receive_sharing_intent expose Photos &amp; Files
+		     on iOS — these keys are required even though the picker is
+		     a system-presented UI (Apple still wants the rationale). -->
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Saqqar lets you attach photos to chat messages so the AI assistant can read them.</string>
 	</dict>
 </plist>

@@ -29,6 +29,16 @@ class ConversationsCubit extends Cubit<ConversationsState> {
 
   final ConversationsRepository _repo;
 
+  /// Drop any [emit] call that lands after [close]. Same guard pattern
+  /// as [ChatCubit.emit] — every load / mutation here awaits the
+  /// repository, and the cubit can be reset (and effectively closed)
+  /// by the auth gate during sign-out mid-fetch.
+  @override
+  void emit(ConversationsState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
   // ── Loading ─────────────────────────────────────────────────────────
 
   /// Initial load — fetches the conversation list. Default now

@@ -52,6 +52,26 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   // uploads run independently.
   final _attachmentTimers = <String, Timer>{};
 
+  /// Silently drop any [emit] call that lands after [close] has run.
+  ///
+  /// The chat cubit is heavily async — every `await _repo.X` opens a
+  /// window where the BlocProvider can dispose us (user navigates back
+  /// to Conversations, swaps to another chat, kills the app) before
+  /// the response lands. Without this guard, the resolved future tries
+  /// to `emit(...)` on a closed cubit and Bloc throws
+  /// `StateError: Bad state: Cannot emit new states after calling close`
+  /// — observed in production via Sentry under SAQQAR-2.
+  ///
+  /// Overriding `emit` once is the surgical fix that immunises every
+  /// call site (~25 in this cubit) without scattering `if (!isClosed)`
+  /// guards before each one. Same pattern the bloc docs recommend for
+  /// any cubit doing async work.
+  @override
+  void emit(ChatState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
   // ── Snapshot loading + polling ──────────────────────────────────────
 
   /// Initial load — fetches the full snapshot (no `?since`). Subsequent

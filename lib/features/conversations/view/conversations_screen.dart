@@ -24,6 +24,7 @@ import '../data/conversation_models.dart';
 import '../view_model/conversations_cubit.dart';
 import '../view_model/conversations_state.dart';
 import '../widgets/rename_conversation_dialog.dart';
+import '../widgets/swipe_archive_background.dart';
 import '../widgets/widgets.dart';
 
 /// Conversations list — search + archive filter + paginated rows, with
@@ -274,6 +275,17 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     return context.tr.dateGroupOlder;
   }
 
+  /// Routes a row-level action fired from inside [_buildGroupedRows]
+  /// (swipe gesture, Dismissible callback) through the shared
+  /// [_handleRowAction]. Fire-and-forget — the gesture has already
+  /// resolved by the time the async handler chains.
+  void onRowActionFromBuild(
+    ConversationSummary c,
+    ConversationAction action,
+  ) {
+    _handleRowAction(c, action);
+  }
+
   List<Widget> _buildGroupedRows(List<ConversationSummary> rows) {
     final widgets = <Widget>[];
     String? currentGroup;
@@ -292,12 +304,44 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       }
       widgets.add(
         FadeSlideIn(
-          key: ValueKey(c.id),
+          // Two keys are nested here on purpose. The outer `ValueKey`
+          // identifies the FadeSlideIn slot in its parent Column so the
+          // intro animation only fires for genuinely new rows. The
+          // inner `Dismissible` needs its OWN unique key because the
+          // Dismissible widget tracks gesture state per-key and asserts
+          // on duplicates.
+          key: ValueKey('fade-${c.id}'),
           index: entry.key,
-          child: ConversationCard(
-            conversation: c,
-            onTap: () => context.go(RouteNames.chatPath(c.id)),
-            onAction: (action) => _handleRowAction(c, action),
+          child: Dismissible(
+            key: ValueKey('dismiss-${c.id}'),
+            // Swipe in either horizontal direction archives /
+            // unarchives. We don't want one of the two directions to
+            // accidentally `delete` — that would punish a misread
+            // gesture. Both edges resolve to the same action.
+            direction: DismissDirection.horizontal,
+            background: SwipeArchiveBackground(
+              alignment: AlignmentDirectional.centerStart,
+              archived: c.isArchived,
+            ),
+            secondaryBackground: SwipeArchiveBackground(
+              alignment: AlignmentDirectional.centerEnd,
+              archived: c.isArchived,
+            ),
+            // Return false so Dismissible doesn't actually unmount the
+            // row — the cubit's optimistic update already drives the
+            // visual state (archived rows move to the Archived bucket
+            // or back to the active list). Returning true would cause
+            // a duplicate animation + a "key reused" assert on the next
+            // emit. The action callback fires regardless.
+            confirmDismiss: (_) async {
+              onRowActionFromBuild(c, ConversationAction.archive);
+              return false;
+            },
+            child: ConversationCard(
+              conversation: c,
+              onTap: () => context.go(RouteNames.chatPath(c.id)),
+              onAction: (action) => _handleRowAction(c, action),
+            ),
           ),
         ),
       );

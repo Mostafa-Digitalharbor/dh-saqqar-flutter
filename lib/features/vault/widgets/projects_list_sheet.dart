@@ -106,11 +106,12 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
 
     // Dialog body sits at ~60% of the screen height (slightly past
     // mid-screen so the user can comfortably scroll a handful of
-    // projects). When the keyboard opens (adding a new project), the
-    // `MediaQuery.viewInsets` shifts the dialog up — the inset Padding
-    // below preserves a 16-dp gap above the keyboard.
+    // projects). The Flutter [Dialog] widget already adds
+    // `MediaQuery.viewInsets` to its own padding when the keyboard
+    // opens, so it floats the whole dialog above the keyboard
+    // automatically — no inner AnimatedPadding needed (that was
+    // doubling the offset and overflowing the column by a few px).
     final screenH = MediaQuery.sizeOf(context).height;
-    final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
     final maxHeight = (screenH * 0.6).clamp(380.0, 560.0);
 
     return Dialog(
@@ -120,20 +121,14 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(20)),
       ),
-      child: AnimatedPadding(
-        // Lift above the keyboard with a smooth slide rather than the
-        // default jank-jump Flutter dialogs do.
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(bottom: viewInsets),
-        child: ConstrainedBox(
-          // Match the cap used by ProjectDetailSheet so the dialog
-          // doesn't stretch the full width on foldables / landscape
-          // phones — the project list becomes hard to scan past ~520 px.
-          constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-            child: Column(
+      child: ConstrainedBox(
+        // Match the cap used by ProjectDetailSheet so the dialog
+        // doesn't stretch the full width on foldables / landscape
+        // phones — the project list becomes hard to scan past ~520 px.
+        constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: 520),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -234,7 +229,6 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
               ),
             ],
           ),
-        ),
         ),
       ),
     );

@@ -14,6 +14,7 @@ import 'features/auth/view_model/auth_cubit.dart';
 import 'features/auth/view_model/auth_state.dart';
 import 'features/conversations/view_model/conversations_cubit.dart';
 import 'features/launch/launch_splash_screen.dart';
+import 'features/share/intake/share_intent_bootstrap.dart';
 import 'features/vault/view_model/vault_cubit.dart';
 
 class SaqqarApp extends StatefulWidget {
@@ -140,9 +141,16 @@ class _SaqqarAppState extends State<SaqqarApp> {
             minScaleFactor: 0.85,
             maxScaleFactor: 1.4,
           );
+          // [ShareIntentBootstrap] lives INSIDE the MaterialApp.router
+          // builder so it sits BELOW the Navigator — that's the level at
+          // which `showModalBottomSheet` finds an Overlay to draw on.
+          // Wrapping above the router would yield "No MaterialLocalizations
+          // found" the moment the share sheet tries to render.
           return MediaQuery(
             data: media.copyWith(textScaler: clamped),
-            child: child ?? const SizedBox.shrink(),
+            child: ShareIntentBootstrap(
+              child: child ?? const SizedBox.shrink(),
+            ),
           );
         },
       ),

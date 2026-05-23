@@ -11,6 +11,12 @@
          the dev build worked fine. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Voice input via the composer mic button. The audio is handed
+         to Android's on-device SpeechRecognizer (no audio bytes leave
+         the phone). Declared as a runtime permission — the chat asks
+         the user the first time they tap the mic; subsequent taps reuse
+         the granted permission. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="Saqqar"
         android:name="${applicationName}"
@@ -18,8 +24,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
-            android:taskAffinity=""
+            android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -35,6 +40,42 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- "Share to Saqqar" entry point. Surfaces the app in the
+                 system share sheet (WhatsApp, Photos, Files, etc.). The
+                 mime-types match what the chat composer already accepts:
+                 images for inline preview, PDFs / Office docs / CSVs for
+                 the agent to read. Wildcard image/* + application/* cover
+                 the long tail without enumerating every sub-type. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
+                <data android:mimeType="application/pdf"/>
+                <data android:mimeType="application/msword"/>
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>
+                <data android:mimeType="application/vnd.ms-excel"/>
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>
+                <data android:mimeType="text/csv"/>
+                <data android:mimeType="text/comma-separated-values"/>
+                <data android:mimeType="text/tab-separated-values"/>
+            </intent-filter>
+            <!-- Multi-file share — Photos "Share 4 images" etc. The
+                 receive_sharing_intent plugin demands a separate filter
+                 because Android dispatches multi-payloads through
+                 ACTION_SEND_MULTIPLE, not ACTION_SEND. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
+                <data android:mimeType="application/pdf"/>
+                <data android:mimeType="application/msword"/>
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>
+                <data android:mimeType="application/vnd.ms-excel"/>
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>
+                <data android:mimeType="text/csv"/>
+                <data android:mimeType="text/comma-separated-values"/>
+                <data android:mimeType="text/tab-separated-values"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

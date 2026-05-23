@@ -6,7 +6,6 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/extensions/responsive_breakpoints.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../vault/data/project_models.dart';
 import '../../vault/view_model/vault_cubit.dart';
@@ -65,15 +64,19 @@ class ChatHeaderControls extends StatelessWidget {
       ),
       child: ResponsiveContent(
         maxWidth: 980,
-        // Tighter padding than the original — total strip height is now
-        // ~52 px instead of ~74 px so the chat gets ~22 px more for
-        // messages without losing the project/env discoverability.
+        // Compact strip — eyebrow labels moved inline with the dropdown
+        // (left-side mini caption inside the pill) so the strip height
+        // drops to ~46 px total and the dropdowns stay side-by-side at
+        // every width. Earlier revision stacked them on phones ≤340 px,
+        // which testers (2026-05-23) flagged as eating too much vertical
+        // space — chat surface gets the height back here.
         padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final projectControl = _StackedControl(
-              label: context.tr.headerProject,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
               child: _DropdownPill(
+                caption: context.tr.headerProject,
                 enabled: projects.isNotEmpty,
                 hint: projects.isEmpty
                     ? context.tr.noProjectsYet
@@ -85,20 +88,20 @@ class ChatHeaderControls extends StatelessWidget {
                 ],
                 onChanged: onProjectChanged,
               ),
-            );
-            final envControl = _StackedControl(
-              label: context.tr.headerEnvironment,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
               // When the selected project has no envs, swap the
-              // dropdown (which would render empty + non-functional)
-              // for a tappable "+ Add environment" pill that routes
-              // the user to the env creation flow. Dropdown stays for
-              // every other case.
+              // dropdown for a tappable "+ Add environment" pill so
+              // the user can land in the env creation flow without
+              // backtracking out of the chat.
               child: (projectId != null && envs.isEmpty)
                   ? _CreateEnvironmentPill(
                       onTap: () =>
                           onCreateEnvironmentRequested(projectId!),
                     )
                   : _DropdownPill(
+                      caption: context.tr.headerEnvironment,
                       enabled: projectId != null,
                       hint: projectId == null
                           ? context.tr.pickProjectFirst
@@ -110,32 +113,8 @@ class ChatHeaderControls extends StatelessWidget {
                       ],
                       onChanged: onEnvironmentChanged,
                     ),
-            );
-            // On the `tiny` tier (≤340 px), two 50% dropdowns leave each
-            // side ~155 px — long Arabic project/env names get chopped
-            // aggressively. Stack vertically below the breakpoint so
-            // each control has the full strip width; the resulting
-            // ~22 px of extra header height is acceptable on tiny phones.
-            if (breakpointForWidth(constraints.maxWidth).isTinyOrBelow) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  projectControl,
-                  const SizedBox(height: 8),
-                  envControl,
-                ],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(child: projectControl),
-                const SizedBox(width: 8),
-                Expanded(child: envControl),
-              ],
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -247,37 +226,6 @@ class _ChatToggleIcon extends StatelessWidget {
   }
 }
 
-/// Eyebrow label + control stacked vertically — mirrors the web's
-/// `PROJECT` / `ENVIRONMENT` labels above each dropdown.
-class _StackedControl extends StatelessWidget {
-  const _StackedControl({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: context.text.labelSmall?.copyWith(
-            color: s.muted,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.0,
-            fontSize: 9,
-          ),
-        ),
-        const SizedBox(height: 4),
-        child,
-      ],
-    );
-  }
-}
-
 class _DropdownItem {
   const _DropdownItem({required this.value, required this.label});
   final String value;
@@ -346,8 +294,15 @@ class _CreateEnvironmentPill extends StatelessWidget {
 
 /// Compact pill-styled dropdown — Material's [DropdownButton] under the hood,
 /// reskinned to match the existing chat-header chips.
+///
+/// [caption] renders as a small inline eyebrow at the start of the pill
+/// (e.g. "Project · Mostafa"). It replaces the old stacked "PROJECT" /
+/// "ENVIRONMENT" labels above each dropdown — same information, half the
+/// vertical space, so the two pickers fit side-by-side even on narrow
+/// phones without the header eating into the message list.
 class _DropdownPill extends StatelessWidget {
   const _DropdownPill({
+    required this.caption,
     required this.enabled,
     required this.hint,
     required this.value,
@@ -355,6 +310,7 @@ class _DropdownPill extends StatelessWidget {
     required this.onChanged,
   });
 
+  final String caption;
   final bool enabled;
   final String hint;
   final String? value;
@@ -369,7 +325,7 @@ class _DropdownPill extends StatelessWidget {
     final hasValue = value != null && items.any((i) => i.value == value);
     return Container(
       height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
         borderRadius: AppRadius.buttonR,
@@ -377,40 +333,55 @@ class _DropdownPill extends StatelessWidget {
           color: enabled ? s.cardBorder : s.cardBorder.withValues(alpha: 0.4),
         ),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: hasValue ? value : null,
-          hint: Text(
-            hint,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.text.bodySmall?.copyWith(color: s.muted),
+      child: Row(
+        children: [
+          Text(
+            '$caption · ',
+            style: context.text.labelSmall?.copyWith(
+              color: s.muted,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
           ),
-          icon: Icon(
-            AppIcons.chevronDown,
-            size: 16,
-            color: enabled ? s.text : s.muted,
-          ),
-          style: context.text.bodyMedium?.copyWith(
-            color: enabled ? s.text : s.muted,
-            fontWeight: FontWeight.w600,
-          ),
-          dropdownColor: s.surface,
-          borderRadius: AppRadius.buttonR,
-          onChanged: enabled ? onChanged : null,
-          items: [
-            for (final item in items)
-              DropdownMenuItem<String>(
-                value: item.value,
-                child: Text(
-                  item.label,
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: hasValue ? value : null,
+                hint: Text(
+                  hint,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall?.copyWith(color: s.muted),
                 ),
+                icon: Icon(
+                  AppIcons.chevronDown,
+                  size: 16,
+                  color: enabled ? s.text : s.muted,
+                ),
+                style: context.text.bodyMedium?.copyWith(
+                  color: enabled ? s.text : s.muted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                dropdownColor: s.surface,
+                borderRadius: AppRadius.buttonR,
+                onChanged: enabled ? onChanged : null,
+                items: [
+                  for (final item in items)
+                    DropdownMenuItem<String>(
+                      value: item.value,
+                      child: Text(
+                        item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
               ),
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }

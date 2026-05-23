@@ -9,6 +9,7 @@ import '../../../shared/widgets/responsive_content.dart';
 import '../../demo/saqqar_demo_data.dart';
 import 'attachment_chip.dart';
 import 'chat_send_button.dart';
+import 'voice_input_button.dart';
 
 /// Brief §4.5 composer — two-row layout inside a single rounded pill:
 ///
@@ -25,14 +26,21 @@ class ChatComposer extends StatelessWidget {
   const ChatComposer({
     super.key,
     required this.controller,
-    required this.attachment,
+    required this.attachments,
     required this.onAttach,
     required this.onRemoveAttachment,
+    required this.onPreviewAttachment,
     required this.onSend,
     required this.deepThink,
     required this.autoApprove,
     required this.onDeepThinkChanged,
     required this.onAutoApproveChanged,
+    required this.onStartRecording,
+    required this.onStopRecording,
+    required this.onDiscardRecording,
+    this.recording = false,
+    this.transcribing = false,
+    this.recordingElapsed = Duration.zero,
     this.onStop,
     this.stopping = false,
     this.focusNode,
@@ -45,17 +53,26 @@ class ChatComposer extends StatelessWidget {
   /// the composer with a starter prompt.
   final FocusNode? focusNode;
 
-  /// The currently staged attachment — null when no file is picked.
-  /// Renders the [AttachmentChip] row above the pill when set.
-  final DemoAttachment? attachment;
+  /// Currently staged attachments — empty when nothing is picked. Each
+  /// item renders as its own [AttachmentChip] in a wrap above the pill so
+  /// the user can stage and review several files before sending.
+  final List<DemoAttachment> attachments;
 
   /// Tapped on the paperclip icon. The chat screen opens the native
-  /// file picker rooted at Photos / Files.
+  /// file picker rooted at Photos / Files (multi-select).
   final VoidCallback onAttach;
 
-  /// Tapped on the "x" next to the staged attachment chip. Clears
-  /// [attachment] back to null.
-  final VoidCallback onRemoveAttachment;
+  /// Tapped on the "x" next to a staged attachment chip. Receives the
+  /// index of the chip to remove so the screen can drop just that file
+  /// from its parallel `_attachments` / `_pendingFiles` lists.
+  final ValueChanged<int> onRemoveAttachment;
+
+  /// Tapped on a staged attachment thumbnail (the chip itself, not the
+  /// remove badge). The screen wires this to open the local file —
+  /// fullscreen image dialog for pictures, `OpenFilex` system viewer
+  /// for everything else — so the user can verify they staged the right
+  /// file before sending.
+  final ValueChanged<int> onPreviewAttachment;
 
   final VoidCallback? onSend;
 
@@ -77,6 +94,36 @@ class ChatComposer extends StatelessWidget {
   /// is propagating.
   final bool stopping;
 
+  /// True while the user is actively recording audio (mic open, no
+  /// upload yet). Swaps the text field + action bar for the
+  /// [RecordingOverlay] (timer + waveform + stop / discard). Other
+  /// composer controls (attach, send, toggles) collapse so the user
+  /// can't accidentally fire them mid-capture.
+  final bool recording;
+
+  /// True after the user tapped stop — the audio bytes are being
+  /// uploaded to `/api/v1/transcribe/`. The overlay keeps showing but
+  /// flips from "live capture" affordances to a "Transcribing…" line
+  /// with a spinner. Discard is disabled (the bytes already left).
+  final bool transcribing;
+
+  /// Elapsed recording time fed in from the chat screen. Drives the
+  /// monospace mm:ss readout inside the overlay.
+  final Duration recordingElapsed;
+
+  /// Mic-tap handler. The screen owns the recorder lifecycle so the
+  /// 120 s hard cap, permission flow, and transcribe upload can all
+  /// share the same place; the composer just renders the trigger.
+  final VoidCallback onStartRecording;
+
+  /// Tapped on the stop pill inside [RecordingOverlay]. Triggers the
+  /// transcribe upload flow on the screen.
+  final VoidCallback onStopRecording;
+
+  /// Tapped on the discard X inside [RecordingOverlay]. Drops the audio
+  /// buffer without uploading and returns to idle.
+  final VoidCallback onDiscardRecording;
+
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
@@ -93,23 +140,21 @@ class ChatComposer extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (attachment != null)
+              if (attachments.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.start,
                     children: [
-                      Expanded(
-                        child: Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: AttachmentChip(attachment: attachment!),
+                      for (var i = 0; i < attachments.length; i++)
+                        _StagedAttachment(
+                          attachment: attachments[i],
+                          tooltip: context.tr.removeAttachment,
+                          onRemove: () => onRemoveAttachment(i),
+                          onPreview: () => onPreviewAttachment(i),
                         ),
-                      ),
-                      IconButton(
-                        onPressed: onRemoveAttachment,
-                        icon: Icon(AppIcons.close, color: s.muted, size: 18),
-                        visualDensity: VisualDensity.compact,
-                        tooltip: context.tr.removeAttachment,
-                      ),
                     ],
                   ),
                 ),
@@ -120,7 +165,21 @@ class ChatComposer extends StatelessWidget {
                   borderRadius: const BorderRadius.all(Radius.circular(20)),
                   border: Border.all(color: s.cardBorder),
                 ),
-                child: Column(
+                child: recording || transcribing
+                    // Recording / transcribing fully takes over the
+                    // composer pill — text field hidden, action bar
+                    // hidden, toggles hidden. User has exactly two
+                    // affordances: stop (commit) or discard (cancel).
+                    // Once transcribe lands, the screen flips
+                    // `recording=false` and the text returns with the
+                    // transcript appended.
+                    ? RecordingOverlay(
+                        elapsed: recordingElapsed,
+                        transcribing: transcribing,
+                        onStop: onStopRecording,
+                        onDiscard: onDiscardRecording,
+                      )
+                    : Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -162,6 +221,12 @@ class ChatComposer extends StatelessWidget {
                     // attach/send sit right under the text input, with
                     // the toggle pills underneath them. Keeps the two
                     // primary actions (write + send) visually grouped.
+                    //
+                    // Active-mode badges (deep-think + auto-approve) sit
+                    // just before the Send button when ON — small
+                    // pulsing dots that make the elevated modes
+                    // impossible to forget about (testers asked for an
+                    // animated indicator next to Send on 2026-05-23).
                     Padding(
                       padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
                       child: Row(
@@ -173,7 +238,32 @@ class ChatComposer extends StatelessWidget {
                             tooltip: context.tr.attachFiles,
                             visualDensity: VisualDensity.compact,
                           ),
+                          // Mic — opens the recording overlay. Same
+                          // gating as Send (offline / no env / mid-
+                          // generation) so the user can't start a
+                          // recording at a surface that isn't ready to
+                          // accept the transcript.
+                          VoiceInputButton(
+                            enabled: onSend != null && onStop == null,
+                            onStart: onStartRecording,
+                          ),
                           const Spacer(),
+                          if (deepThink) ...[
+                            _ActiveModeBadge(
+                              icon: AppIcons.lightbulb,
+                              color: s.brandPurple,
+                              tooltip: context.tr.deepThinkOn,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          if (autoApprove) ...[
+                            _ActiveModeBadge(
+                              icon: AppIcons.shieldCheck,
+                              color: s.brandCyan,
+                              tooltip: context.tr.autoApproveOn,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
                           ChatSendButton(
                             onPressed: onSend,
                             onStop: onStop,
@@ -222,6 +312,140 @@ class ChatComposer extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Composer-side staged attachment — the chip itself plus a small `×` button
+/// in the top-right corner. Lets the user drop a single file from a batch
+/// without losing the others (vs. the previous single-file row that had one
+/// remove button at the trailing edge).
+class _StagedAttachment extends StatelessWidget {
+  const _StagedAttachment({
+    required this.attachment,
+    required this.onRemove,
+    required this.onPreview,
+    required this.tooltip,
+  });
+
+  final DemoAttachment attachment;
+  final VoidCallback onRemove;
+  final VoidCallback onPreview;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        AttachmentChip(
+          attachment: attachment,
+          compact: true,
+          onTap: onPreview,
+        ),
+        PositionedDirectional(
+          top: -8,
+          end: -8,
+          child: Material(
+            color: s.surface,
+            shape: const CircleBorder(),
+            elevation: 1,
+            child: InkWell(
+              onTap: onRemove,
+              customBorder: const CircleBorder(),
+              child: Tooltip(
+                message: tooltip,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: s.border),
+                  ),
+                  child: Icon(AppIcons.close, size: 12, color: s.muted),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pulsing inline badge for an active chat-level mode (deep-think,
+/// auto-approve). Sits just before the Send button so the user can't
+/// miss that one of the elevated modes is engaged for this message —
+/// the pulse is intentionally loud (1.0 ↔ 0.6 opacity, 1100 ms cycle)
+/// because "I forgot auto-approve was ON" is a real footgun on a
+/// production Odoo connection.
+class _ActiveModeBadge extends StatefulWidget {
+  const _ActiveModeBadge({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+
+  @override
+  State<_ActiveModeBadge> createState() => _ActiveModeBadgeState();
+}
+
+class _ActiveModeBadgeState extends State<_ActiveModeBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: widget.tooltip,
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, _) {
+          final t = _ctrl.value; // 0 → 1 → 0
+          // Outer ring fades in/out for the "breathing" cue; the inner
+          // chip stays at full opacity so the icon remains legible at
+          // every point in the cycle.
+          final ringAlpha = 0.25 + (0.45 * t);
+          return Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.color.withValues(alpha: 0.14),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: ringAlpha),
+                  blurRadius: 6 + (6 * t),
+                  spreadRadius: 0.5 + (1.5 * t),
+                ),
+              ],
+            ),
+            child: Icon(widget.icon, size: 14, color: widget.color),
+          );
+        },
       ),
     );
   }

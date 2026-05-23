@@ -87,6 +87,12 @@ class ApiEndpoints {
   // ── i18n (§13) — public, no bearer ───────────────────────────────────
   static String i18n(String lang) => '/api/v1/i18n/$lang.json';
 
+  // ── Voice transcription (SAQQAR_MOBILE_VOICE.md §2) ─────────────────
+  // Multipart upload: field `audio` (m4a recommended, ≤25 MB, ≤120 s),
+  // optional `language` ("ar"/"en"/""). Server proxies to OpenAI
+  // Whisper and returns `{ ok: true, text: "..." }`.
+  static const String transcribe = '/api/v1/transcribe/';
+
   // ── Devices / push (§12) ─────────────────────────────────────────────
   static const String devices = '/api/v1/devices/';
   static String deviceDetail(String id) => '/api/v1/devices/$id/';

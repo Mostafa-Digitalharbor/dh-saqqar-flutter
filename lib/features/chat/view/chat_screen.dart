@@ -13,10 +13,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/logging/app_logger.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
@@ -36,6 +41,7 @@ import '../../demo/saqqar_demo_data.dart';
 import '../../inbox/view_model/approvals_cubit.dart';
 import '../view_model/deep_think_cubit.dart';
 import '../data/live_env_ack_service.dart';
+import '../data/transcribe_api.dart';
 import '../view_model/running_agents_cubit.dart';
 import '../data/tool_status.dart';
 import '../widgets/widgets.dart';
@@ -46,6 +52,7 @@ import '../../conversations/view_model/conversations_cubit.dart';
 import '../../conversations/widgets/rename_conversation_dialog.dart';
 import '../../inbox/data/approval_models.dart' as api;
 import '../../inbox/data/approvals_api.dart';
+import '../../share/intake/share_intake_service.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import '../../vault/widgets/project_detail_sheet.dart';
 import '../view_model/chat_cubit.dart';
@@ -111,16 +118,19 @@ class _ChatScreenState extends State<ChatScreen>
   bool _sidebarOpen = false;
   bool _railOpen = false;
 
-  /// The currently staged attachment (single — multi-file shipping isn't
-  /// in scope yet). When non-null the composer renders its chip above
-  /// the pill and Send becomes enabled even on an empty text field.
-  DemoAttachment? _attachment;
-
-  /// The actual file on disk for the currently-staged attachment.
-  /// Separate from [_attachment] (which is just display metadata) so
-  /// `_sendAsNewConversation` can perform the deferred upload after
-  /// it has a `conversation_id` to bind the upload to.
-  File? _pendingFile;
+  /// Currently staged attachments. Non-empty when the user has picked
+  /// one or more files via the paperclip OR received a share-intent
+  /// hand-off from another app. Each entry renders as its own chip in
+  /// the composer and Send becomes enabled even on empty text.
+  ///
+  /// Stays in sync with [_pendingFiles] by index — `_attachments[i]` is
+  /// the display metadata for `_pendingFiles[i]`. The two lists exist
+  /// because chips only need the metadata, but uploads need the actual
+  /// `File` on disk and the deferred-upload path in
+  /// `_sendAsNewConversation` doesn't have the `File` handy from the
+  /// chip alone.
+  final List<DemoAttachment> _attachments = [];
+  final List<File> _pendingFiles = [];
 
   bool _showScrollDown = false;
   bool _isThinking = false;
@@ -131,6 +141,36 @@ class _ChatScreenState extends State<ChatScreen>
   /// renders as a spinner and is non-interactive so the user can't tap it
   /// twice.
   bool _stopping = false;
+
+  /// UI-only "I pressed Stop and I want the chat to LOOK stopped right
+  /// now" override. Stop on the backend is cooperative — the agent
+  /// finishes its current tool round before exiting — so [_effectiveIsThinking]
+  /// would otherwise keep returning true for a couple of polls after the
+  /// tap. Testers (2026-05-23) reported that as "the Stop button does
+  /// nothing", so we flip this flag immediately and ignore the server's
+  /// `isRunning` until either (a) a new snapshot confirms the stop, or
+  /// (b) the user fires another Send.
+  bool _localStopOverride = false;
+
+  // ── Voice recording state ───────────────────────────────────────────
+  // Per SAQQAR_MOBILE_VOICE.md: the composer text field is replaced
+  // with a recording overlay (waveform + timer + stop / discard) while
+  // [_recording] is true. After stop, [_transcribing] is true until
+  // `/api/v1/transcribe/` returns — the overlay shows "Transcribing…"
+  // during that window. Hard-stop after 120 s via [_recordingHardStop].
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  bool _recording = false;
+  bool _transcribing = false;
+  Duration _recordingElapsed = Duration.zero;
+  Timer? _recordingTimer;
+  Timer? _recordingHardStop;
+  String? _recordingPath;
+
+  /// Text of the most recent message sent on this chat. Captured inside
+  /// [_send] *before* the composer is cleared so [_stopGeneration] can
+  /// restore it — testers asked for "if I tap Stop, give me back what I
+  /// just typed so I can edit and resend".
+  String? _lastSentText;
 
   /// True while the chat snapshot is being fetched for the first time
   /// (no previous data to show). New chats never enter this branch —
@@ -272,7 +312,12 @@ class _ChatScreenState extends State<ChatScreen>
   /// True when the server reports the agent is mid-run for this
   /// conversation. For new chats this falls back to the local timer
   /// (kept for the brief window before the create-then-route handoff).
+  ///
+  /// Respects [_localStopOverride] so the UI reads "stopped" the instant
+  /// the user taps Stop, even though the server-side cancel is
+  /// cooperative and may take another poll or two to confirm.
   bool get _effectiveIsThinking {
+    if (_localStopOverride) return false;
     if (_isNewChat) return _isThinking;
     final snapshot =
         context.watch<ChatCubit>().state.data.dataOrNull;
@@ -568,8 +613,77 @@ class _ChatScreenState extends State<ChatScreen>
     // a chat sitting in a paused process keeps firing GET requests
     // every 1.5 s (running) / 15 s (idle), draining battery and data.
     WidgetsBinding.instance.addObserver(this);
+    // If we arrived here via a share-intent hand-off, drain the staged
+    // files into the composer the instant the screen mounts. Deferred to
+    // the first post-frame callback because the upload path (existing
+    // chats) reads from `context.read<ChatCubit>()`, which only resolves
+    // once the BlocProvider above us has built its child.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _consumeShareIntake();
+    });
     // Loading skeleton state now comes from the cubit's DataLoading
     // (see the build method) — no local timer needed.
+  }
+
+  /// Drains [ShareIntakeService] into [_attachments] / [_pendingFiles]
+  /// when the user has just picked this chat as the destination for an
+  /// Android share intent. No-op for the common case where the screen
+  /// was opened normally (paperclip, tab nav, deep link).
+  Future<void> _consumeShareIntake() async {
+    final service = context.read<ShareIntakeService>();
+    if (!service.hasStaged) return;
+    final files = service.take();
+
+    final chips = <DemoAttachment>[];
+    final keptFiles = <File>[];
+    for (final f in files) {
+      final name = f.path.split(RegExp(r'[\\/]')).last;
+      final ext = name.contains('.') ? name.split('.').last : '';
+      int size;
+      try {
+        size = await f.length();
+      } catch (_) {
+        // Some content-URIs don't expose length until they're streamed —
+        // fall back to 0 and let the chip subtitle read "0 B" rather
+        // than blocking the whole batch on one unreadable entry.
+        size = 0;
+      }
+      chips.add(DemoAttachment(
+        name: name,
+        kind: _kindForExtension(ext),
+        size: _formatBytes(size),
+        imageUrl: _isImageExt(ext) ? f.path : null,
+      ));
+      keptFiles.add(f);
+    }
+    if (!mounted || keptFiles.isEmpty) return;
+
+    setState(() {
+      _attachments.addAll(chips);
+      _pendingFiles.addAll(keptFiles);
+    });
+
+    // Mirror the paperclip flow: existing chats eagerly upload so the
+    // attachment ids are on the server by the time the user hits Send.
+    // New chats defer to `_sendAsNewConversation` (no conversation id
+    // exists yet to bind the upload to).
+    if (!_isNewChat) {
+      final cubit = context.read<ChatCubit>();
+      final ok = await cubit.uploadAttachments(keptFiles);
+      if (!mounted) return;
+      if (!ok) {
+        setState(() {
+          for (final f in keptFiles) {
+            final idx = _pendingFiles.indexOf(f);
+            if (idx >= 0) {
+              _pendingFiles.removeAt(idx);
+              if (idx < _attachments.length) _attachments.removeAt(idx);
+            }
+          }
+        });
+        _toast(context.tr.defaultApiError);
+      }
+    }
   }
 
   @override
@@ -578,12 +692,177 @@ class _ChatScreenState extends State<ChatScreen>
     _thinkingTimer?.cancel();
     _loadingTimer?.cancel();
     _progressTimer?.cancel();
+    _recordingTimer?.cancel();
+    _recordingHardStop?.cancel();
+    // Don't await — the recorder's stop() returns a Future but the
+    // State is going away anyway; the temp file will be GC'd by the
+    // OS the next time it cleans the temp dir.
+    unawaited(_audioRecorder.cancel());
+    unawaited(_audioRecorder.dispose());
     _scroll.removeListener(_onScrollChanged);
     _persistScrollOffset();
     _composer.dispose();
     _composerFocus.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  // ── Voice recording lifecycle ───────────────────────────────────────
+
+  /// Mic-tap entry point wired through [ChatComposer.onStartRecording].
+  /// Owns the permission prompt, recorder setup, timer + hard-stop
+  /// scheduling. Bail out if a recording is already in flight (the UI
+  /// disables the mic, but defensive).
+  Future<void> _startRecording() async {
+    if (_recording || _transcribing) return;
+    // Pull the permission prompt up front. permission_handler returns
+    // the *post-prompt* status, so a deny here means the user chose to
+    // deny and we surface a localized toast instead of failing silently.
+    final status = await Permission.microphone.request();
+    if (!mounted) return;
+    if (!status.isGranted) {
+      _toast(context.tr.voicePermissionDenied);
+      return;
+    }
+    // m4a + AAC + mono + 16 kHz + 32 kbps — see SAQQAR_MOBILE_VOICE.md §3.
+    // Output file lives under the OS temp dir; we delete it after the
+    // transcribe upload (or on discard).
+    final tmp = await getTemporaryDirectory();
+    final path =
+        '${tmp.path}/saqqar-voice-${DateTime.now().millisecondsSinceEpoch}.m4a';
+    try {
+      final isSupported = await _audioRecorder.hasPermission();
+      if (!isSupported) {
+        if (!mounted) return;
+        _toast(context.tr.micUnavailable);
+        return;
+      }
+      await _audioRecorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          sampleRate: 16000,
+          numChannels: 1,
+          bitRate: 32000,
+        ),
+        path: path,
+      );
+    } catch (e, st) {
+      AppLogger.warn('VoiceRecording', 'start failed',
+          error: e, stackTrace: st);
+      if (!mounted) return;
+      _toast(context.tr.micUnavailable);
+      return;
+    }
+    if (!mounted) {
+      // Race: widget left the tree mid-permission. Stop + delete.
+      await _audioRecorder.cancel();
+      return;
+    }
+    setState(() {
+      _recording = true;
+      _recordingElapsed = Duration.zero;
+      _recordingPath = path;
+    });
+    // 100 ms tick gives smooth mm:ss readout without burning frames.
+    _recordingTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (!mounted) return;
+      setState(() {
+        _recordingElapsed += const Duration(milliseconds: 100);
+      });
+    });
+    // Hard cap at 120 s per spec. Auto-stop, surface the toast, then
+    // fall through into the same transcribe path the tap-stop uses.
+    _recordingHardStop = Timer(const Duration(seconds: 120), () {
+      if (!mounted || !_recording) return;
+      _toast(context.tr.voiceMaxLength);
+      unawaited(_stopRecording());
+    });
+  }
+
+  /// Tapped on the stop pill (or fired by [_recordingHardStop] at 120 s).
+  /// Stops the recorder, flips to the "transcribing" state, uploads the
+  /// audio file, and appends the returned text to the composer.
+  Future<void> _stopRecording() async {
+    if (!_recording) return;
+    _recordingTimer?.cancel();
+    _recordingHardStop?.cancel();
+    final path = await _audioRecorder.stop();
+    if (!mounted) return;
+    setState(() {
+      _recording = false;
+      _transcribing = true;
+    });
+    final localPath = path ?? _recordingPath;
+    if (localPath == null) {
+      setState(() => _transcribing = false);
+      _toast(context.tr.transcribeFailed);
+      return;
+    }
+    final file = File(localPath);
+    try {
+      final transcript = await context.read<TranscribeApi>().transcribe(
+            audio: file,
+          );
+      if (!mounted) return;
+      if (transcript.isEmpty) {
+        _toast(context.tr.transcribeEmpty);
+      } else {
+        // Append (don't replace) — preserves whatever the user already
+        // typed before tapping mic. Caret jumps to the end so the user
+        // can keep typing if they want.
+        final existing = _composer.text;
+        final joiner = existing.isEmpty || existing.endsWith(' ') ? '' : ' ';
+        final next = '$existing$joiner$transcript';
+        _composer.text = next;
+        _composer.selection = TextSelection.collapsed(offset: next.length);
+        // Restore focus so the keyboard stays up and the user can edit.
+        _composerFocus.requestFocus();
+      }
+    } catch (e, st) {
+      AppLogger.warn('VoiceRecording', 'transcribe failed',
+          error: e, stackTrace: st);
+      if (!mounted) return;
+      _toast(ApiErrorMapper.message(context, e));
+    } finally {
+      // Best-effort cleanup of the temp file (we either consumed it or
+      // the upload failed — either way it's not useful anymore). Sync
+      // check + async delete dodges the `avoid_slow_async_io` lint
+      // without changing the semantics.
+      try {
+        if (file.existsSync()) await file.delete();
+      } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _transcribing = false;
+          _recordingPath = null;
+          _recordingElapsed = Duration.zero;
+        });
+      }
+    }
+  }
+
+  /// Tapped on the discard X. Drops the audio buffer without uploading
+  /// and returns to idle. Disabled inside [RecordingOverlay] once
+  /// transcription has started (the bytes are already in flight).
+  Future<void> _discardRecording() async {
+    if (!_recording) return;
+    _recordingTimer?.cancel();
+    _recordingHardStop?.cancel();
+    await _audioRecorder.cancel();
+    if (!mounted) return;
+    setState(() {
+      _recording = false;
+      _recordingElapsed = Duration.zero;
+      _recordingPath = null;
+    });
+    // Best-effort delete of whatever the recorder may have flushed.
+    final path = _recordingPath;
+    if (path != null) {
+      try {
+        final f = File(path);
+        if (f.existsSync()) await f.delete();
+      } catch (_) {}
+    }
   }
 
   @override
@@ -680,7 +959,7 @@ class _ChatScreenState extends State<ChatScreen>
 
   Future<void> _send() async {
     final text = _composer.text.trim();
-    if (text.isEmpty && _attachment == null) return;
+    if (text.isEmpty && _attachments.isEmpty) return;
 
     // Block sends until the user picks an environment — the agent has no
     // credentials to work against otherwise. Resolves real env first
@@ -762,10 +1041,21 @@ class _ChatScreenState extends State<ChatScreen>
     // ChatCubit owns the snapshot + polling; sendMessage adopts the
     // server's fresh snapshot on success, and the polling loop keeps
     // state alive while the agent processes.
+    // Snapshot the staged batch count BEFORE clearing so the success
+    // toast below can read "Sent · 3 files attached" — testers asked
+    // for explicit feedback that the picker output didn't vanish into
+    // the void when they hit Send (2026-05-23).
+    final stagedCount = _attachments.length;
+    // Stash the outgoing text BEFORE clearing the composer so
+    // [_stopGeneration] can restore it if the user changes their mind
+    // mid-reply. Also clears any stale Stop override from a prior round
+    // — a fresh send means the user is committing again.
+    _lastSentText = text;
+    _localStopOverride = false;
     _composer.clear();
     setState(() {
-      _attachment = null;
-      _pendingFile = null;
+      _attachments.clear();
+      _pendingFiles.clear();
     });
     context.read<RunningAgentsCubit>().markRunning(widget.conversationId);
     final ok = await context.read<ChatCubit>().sendMessage(
@@ -775,6 +1065,9 @@ class _ChatScreenState extends State<ChatScreen>
     if (!mounted) return;
     if (ok) {
       _scrollToBottomSoft();
+      if (stagedCount > 0) {
+        _toast(_sentWithFilesLabel(stagedCount));
+      }
     } else {
       // Roll back the composer so the user doesn't lose their text on a
       // network failure. ChatCubit already populated `actionFailure`
@@ -811,12 +1104,15 @@ class _ChatScreenState extends State<ChatScreen>
     final pendingText = text.isEmpty
         ? context.tr.attachedFilesForReview
         : text;
-    final pendingFile = _pendingFile;
-    final attachmentChip = _attachment;
+    // Snapshot copies — we'll restore them onto the screen state if any of
+    // the create / upload / send steps below blow up, so the user doesn't
+    // lose a multi-file batch they painstakingly attached.
+    final pendingFiles = List<File>.from(_pendingFiles);
+    final attachmentChips = List<DemoAttachment>.from(_attachments);
     _composer.clear();
     setState(() {
-      _attachment = null;
-      _pendingFile = null;
+      _attachments.clear();
+      _pendingFiles.clear();
       _isThinking = true;
     });
     try {
@@ -847,10 +1143,10 @@ class _ChatScreenState extends State<ChatScreen>
       //      something on purpose, silently dropping it is worse than
       //      a clear error.
       final attachmentIds = <String>[];
-      if (pendingFile != null) {
+      if (pendingFiles.isNotEmpty) {
         final uploaded = await repo.uploadAttachments(
           conversationId: newId,
-          files: [pendingFile],
+          files: pendingFiles,
         );
         attachmentIds.addAll(uploaded.map((a) => a.id));
         if (!mounted) return;
@@ -867,6 +1163,12 @@ class _ChatScreenState extends State<ChatScreen>
       //    Fire-and-forget — the list refreshes itself when the user
       //    swipes back to the Chats tab anyway.
       unawaited(conversationsCubit.refresh());
+      // Same "Sent · N files attached" feedback as the existing-chat
+      // path. Fires before the route push so the user sees it on top
+      // of the conversations list while the new chat screen mounts.
+      if (pendingFiles.isNotEmpty) {
+        _toast(_sentWithFilesLabel(pendingFiles.length));
+      }
       // 5) Hand off to the real chat route. The router will build a
       //    ChatCubit for the new id which load()s the fresh snapshot.
       context.go(RouteNames.chatPath(newId));
@@ -874,11 +1176,15 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
       setState(() {
         _isThinking = false;
-        // Restore the picked file + chip so the user doesn't have to
+        // Restore the picked files + chips so the user doesn't have to
         // re-attach after a transient failure (network blip, server
         // 500 between create and send, etc.).
-        _attachment = attachmentChip;
-        _pendingFile = pendingFile;
+        _attachments
+          ..clear()
+          ..addAll(attachmentChips);
+        _pendingFiles
+          ..clear()
+          ..addAll(pendingFiles);
       });
       _composer.text = pendingText == context.tr.attachedFilesForReview
           ? ''
@@ -991,25 +1297,57 @@ class _ChatScreenState extends State<ChatScreen>
   /// (name, size, kind, optional thumbnail path) locally because the
   /// chat surfaces only need that to render the chip. Bytes / actual
   /// upload land when `/api/conversations/{id}/attachments/` ships.
-  /// Drops the currently-staged attachment — clears the composer chip
-  /// AND removes it from the cubit's `stagedAttachments` so the next
-  /// `sendMessage` doesn't ship the orphaned id. New chats never have
-  /// a cubit yet, so we just clear local state in that case.
-  void _removeAttachment() {
+  /// Drops a single staged attachment by index — clears its composer chip
+  /// AND removes the matching cubit-side staged row so the next
+  /// `sendMessage` doesn't ship the orphaned id. The screen-level
+  /// `_attachments` / `_pendingFiles` lists and the cubit's
+  /// `stagedAttachments` are appended to in the same order in
+  /// [_pickAttachment], so positional index → cubit id maps 1:1 for any
+  /// row whose upload has settled. Rows still mid-upload (or whose upload
+  /// failed) haven't reached the cubit yet — we skip the cubit call for
+  /// those and just drop the local row.
+  void _removeAttachmentAt(int index) {
+    if (index < 0 || index >= _attachments.length) return;
     if (!_isNewChat) {
-      // The cubit indexes staged attachments by their server-side id.
-      // We don't carry that id at the screen level (the chip only has
-      // display metadata), so clear the whole staged list — only one
-      // attachment ever rides at a time today.
       final cubit = context.read<ChatCubit>();
-      for (final a in cubit.state.stagedAttachments) {
-        cubit.removeStagedAttachment(a.id);
+      final staged = cubit.state.stagedAttachments;
+      if (index < staged.length) {
+        cubit.removeStagedAttachment(staged[index].id);
       }
     }
     setState(() {
-      _attachment = null;
-      _pendingFile = null;
+      _attachments.removeAt(index);
+      if (index < _pendingFiles.length) {
+        _pendingFiles.removeAt(index);
+      }
     });
+  }
+
+  /// Opens a staged attachment so the user can verify they picked the
+  /// right file before tapping Send. Images get a fullscreen
+  /// [InteractiveViewer] dialog (pinch to zoom, tap outside to close);
+  /// PDFs / Office docs / CSVs hand off to the OS's matching viewer via
+  /// `OpenFilex`. Skips silently for indices that don't map to a real
+  /// on-disk file (a row mid-upload that hasn't reached `_pendingFiles`
+  /// yet — shouldn't happen given our pick flow, but defensive).
+  Future<void> _previewAttachmentAt(int index) async {
+    if (index < 0 || index >= _pendingFiles.length) return;
+    final file = _pendingFiles[index];
+    final chip = (index < _attachments.length) ? _attachments[index] : null;
+    final isImage = chip?.isImage ?? false;
+    if (isImage) {
+      await showDialog<void>(
+        context: context,
+        barrierColor: Colors.black.withValues(alpha: 0.92),
+        builder: (dialogContext) => _LocalImagePreviewDialog(file: file),
+      );
+      return;
+    }
+    final result = await OpenFilex.open(file.path);
+    if (!mounted) return;
+    if (result.type != ResultType.done) {
+      _toast(context.tr.defaultApiError);
+    }
   }
 
   Future<void> _pickAttachment() async {
@@ -1023,40 +1361,55 @@ class _ChatScreenState extends State<ChatScreen>
         'docx', 'doc',
       ],
       withData: false,
-      allowMultiple: false,
+      // Multi-select shipped in 1.0.2 after testers asked for "أرفق أكتر
+      // من ملف لنفس الشات". The composer renders one chip per file and
+      // Send batches them into a single multipart upload.
+      allowMultiple: true,
     );
     if (!mounted || result == null || result.files.isEmpty) return;
-    final picked = result.files.first;
-    final path = picked.path;
-    if (path == null || path.isEmpty) return;
 
-    // UI metadata for the composer chip — keeps the visual confirmation
-    // instant even if the upload below is still in flight.
-    setState(() {
-      _attachment = DemoAttachment(
+    final newChips = <DemoAttachment>[];
+    final newFiles = <File>[];
+    for (final picked in result.files) {
+      final path = picked.path;
+      if (path == null || path.isEmpty) continue;
+      newChips.add(DemoAttachment(
         name: picked.name,
         kind: _kindForExtension(picked.extension),
         size: _formatBytes(picked.size),
         imageUrl: _isImageExt(picked.extension) ? picked.path : null,
-      );
-      _pendingFile = File(path);
+      ));
+      newFiles.add(File(path));
+    }
+    if (newFiles.isEmpty) return;
+
+    // UI metadata for the composer chips — keeps the visual confirmation
+    // instant even if the upload below is still in flight.
+    setState(() {
+      _attachments.addAll(newChips);
+      _pendingFiles.addAll(newFiles);
     });
 
-    // Existing chats own a [ChatCubit] — stage the upload immediately
-    // so the attachment id is already on the server by the time the
+    // Existing chats own a [ChatCubit] — stage the uploads immediately
+    // so the attachment ids are already on the server by the time the
     // user hits Send. New chats can't upload yet (no conversation id)
     // — _sendAsNewConversation does the deferred upload after it
     // creates the conversation.
     if (!_isNewChat) {
       final cubit = context.read<ChatCubit>();
-      final ok = await cubit.uploadAttachments([File(path)]);
+      final ok = await cubit.uploadAttachments(newFiles);
       if (!mounted) return;
       if (!ok) {
-        // Upload failed — clear the local chip so the user knows the
-        // attachment didn't make it onto the message.
+        // Upload failed — drop just the chips we added this round so any
+        // previously-staged batch the user might still want stays put.
         setState(() {
-          _attachment = null;
-          _pendingFile = null;
+          for (final f in newFiles) {
+            final idx = _pendingFiles.indexOf(f);
+            if (idx >= 0) {
+              _pendingFiles.removeAt(idx);
+              if (idx < _attachments.length) _attachments.removeAt(idx);
+            }
+          }
         });
         _toast(context.tr.defaultApiError);
       }
@@ -1180,23 +1533,44 @@ class _ChatScreenState extends State<ChatScreen>
   ///   * **New chat** — there's no server conversation yet, so just
   ///     cancel the local demo timer.
   Future<void> _stopGeneration() async {
+    // ── Optimistic UI flip ──────────────────────────────────────────
+    // Hide the typing row + flip the Send button back from Stop the
+    // INSTANT the user taps, then restore their last message into the
+    // composer so they can edit + resend without retyping. Both happen
+    // synchronously inside setState so the next frame already reads as
+    // "not thinking".
+    final restoreText = _lastSentText;
+    setState(() {
+      _localStopOverride = true;
+      if (restoreText != null && restoreText.isNotEmpty &&
+          _composer.text.isEmpty) {
+        _composer.text = restoreText;
+        _composer.selection = TextSelection.collapsed(
+          offset: restoreText.length,
+        );
+      }
+    });
+    // Keep the running-agents cubit in sync so the conversation list's
+    // pulse dot also clears immediately.
+    context.read<RunningAgentsCubit>().markIdle(widget.conversationId);
+
     if (!_isNewChat) {
-      await context.read<ChatCubit>().stopGeneration();
+      // Fire-and-forget the server cancel — we already showed the UI
+      // as stopped; if the POST fails we surface the error via the
+      // cubit's actionFailure but the user already got their text back.
+      unawaited(context.read<ChatCubit>().stopGeneration());
       if (mounted) _toast(context.tr.generationStopped);
       return;
     }
     // Legacy new-chat path (cancels the local fake timer).
-    if (!_isThinking || _stopping) return;
-    _thinkingTimer?.cancel();
-    _thinkingTimer = null;
-    setState(() => _stopping = true);
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    if (!mounted) return;
-    context.read<RunningAgentsCubit>().markIdle(widget.conversationId);
-    setState(() {
-      _isThinking = false;
-      _stopping = false;
-    });
+    if (_isThinking) {
+      _thinkingTimer?.cancel();
+      _thinkingTimer = null;
+      setState(() {
+        _isThinking = false;
+        _stopping = false;
+      });
+    }
     _toast(context.tr.generationStopped);
   }
 
@@ -1407,7 +1781,18 @@ class _ChatScreenState extends State<ChatScreen>
                   else if (_effectiveMessages.isEmpty)
                     EmptyChatSuggestions(onSuggestionTap: _seedSuggestion)
                   else
-                    _buildMessageList(),
+                    // Pull-down on the message list triggers a fresh
+                    // snapshot fetch + restarts the poll cadence — gives
+                    // the user an explicit "fetch latest now" gesture
+                    // instead of waiting on the 1.5 s / 15 s polling
+                    // tick. Skips for new chats (no cubit) and the
+                    // skeleton / empty branches since there's nothing
+                    // to refresh in those states.
+                    RefreshIndicator(
+                      onRefresh: _refreshSnapshot,
+                      color: context.saqqar.brandCyan,
+                      child: _buildMessageList(),
+                    ),
                   PositionedDirectional(
                     end: 16,
                     bottom: 12,
@@ -1428,10 +1813,19 @@ class _ChatScreenState extends State<ChatScreen>
             ChatComposer(
               controller: _composer,
               focusNode: _composerFocus,
-              attachment: _attachment,
+              attachments: _attachments,
               onAttach: _pickAttachment,
-              onRemoveAttachment: _removeAttachment,
+              onRemoveAttachment: _removeAttachmentAt,
+              onPreviewAttachment: _previewAttachmentAt,
               onSend: online ? _send : null,
+              // Voice recording — overlay replaces the text field while
+              // [_recording] / [_transcribing] is true.
+              recording: _recording,
+              transcribing: _transcribing,
+              recordingElapsed: _recordingElapsed,
+              onStartRecording: _startRecording,
+              onStopRecording: _stopRecording,
+              onDiscardRecording: _discardRecording,
               deepThink: deepThink,
               autoApprove: autoApprove,
               onDeepThinkChanged: (value) {
@@ -2126,6 +2520,27 @@ class _ChatScreenState extends State<ChatScreen>
   void _toast(String text) {
     AppToast.show(context, message: text);
   }
+
+  /// Pull-to-refresh handler bound to the message list. Triggers an
+  /// out-of-band [ChatCubit.load] so the user gets the freshest snapshot
+  /// the instant they ask, instead of waiting on the 1.5 s (running)
+  /// or 15 s (idle) polling tick. Awaits the future so the
+  /// [RefreshIndicator] spinner stays visible until the snapshot lands.
+  /// No-op for new chats — there's no cubit yet to refresh against.
+  Future<void> _refreshSnapshot() async {
+    if (_isNewChat) return;
+    await context.read<ChatCubit>().load();
+  }
+
+  /// "Sent · N file(s) attached" — picks the right pluralized string
+  /// and substitutes the count. Lives next to [_toast] so both
+  /// `_send` and `_sendAsNewConversation` can share it without
+  /// duplicating the localization shape.
+  String _sentWithFilesLabel(int count) {
+    final tr = context.tr;
+    if (count <= 1) return tr.sentToastOneFile;
+    return tr.sentToastManyFiles.replaceFirst('{count}', count.toString());
+  }
 }
 
 /// Bell icon in the chat AppBar's end slot — opens the rail drawer
@@ -2343,5 +2758,68 @@ class _AgentTurnEntry extends _TimelineEntry {
     if (start == null || end == null) return null;
     final delta = end.difference(start);
     return delta.isNegative ? null : delta;
+  }
+}
+
+/// Fullscreen preview for a locally-staged image attachment. Backed by
+/// [InteractiveViewer] so the user can pinch-to-zoom (up to 4×) and
+/// swipe-to-pan the picture. A subtle `×` button in the top-end corner
+/// closes the dialog explicitly; tapping the dim background does the
+/// same. Used by [_ChatScreenState._previewAttachmentAt] for the
+/// "tap a staged image to see what I just attached" feedback testers
+/// asked for on 2026-05-23.
+class _LocalImagePreviewDialog extends StatelessWidget {
+  const _LocalImagePreviewDialog({required this.file});
+
+  final File file;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: InteractiveViewer(
+                maxScale: 4,
+                minScale: 1,
+                child: Center(
+                  child: Image.file(
+                    file,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.broken_image,
+                      color: Colors.white54,
+                      size: 64,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            top: 24,
+            end: 16,
+            child: SafeArea(
+              child: Material(
+                color: Colors.black.withValues(alpha: 0.4),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  onTap: () => Navigator.of(context).pop(),
+                  customBorder: const CircleBorder(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(Icons.close, color: Colors.white, size: 22),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

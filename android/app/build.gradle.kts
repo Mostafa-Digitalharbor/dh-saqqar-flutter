@@ -24,13 +24,19 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+    // Bumped from 11 → 17 (2026-05-23) because the
+    // `receive_sharing_intent` plugin emits Kotlin bytecode targeted at
+    // JVM 21 and Gradle blocks the build when the Java target lags too
+    // far behind ("Inconsistent JVM-target compatibility"). 17 is the
+    // current LTS — close enough that Gradle accepts the pair, and
+    // every Android Studio install since 2022 ships with a usable JDK.
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {

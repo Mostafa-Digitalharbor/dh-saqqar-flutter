@@ -23,6 +23,18 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthApi _api;
   final SecureTokenStore _store;
 
+  /// Drop any [emit] call that lands after [close] has run. AuthCubit
+  /// is app-lifetime so it rarely closes in practice, but bootstrap /
+  /// login / register all do network round-trips — if the user
+  /// background-then-force-kills mid-call the resolved future would
+  /// otherwise crash on `emit`. Matches the guard pattern documented
+  /// in [ChatCubit.emit] and applied to the other async cubits.
+  @override
+  void emit(AuthState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
   // ── Bootstrap ───────────────────────────────────────────────────────
 
   /// Reads any persisted bearer token and validates it via `GET /me/`.
