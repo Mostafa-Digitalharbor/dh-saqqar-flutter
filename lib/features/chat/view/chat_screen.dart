@@ -621,8 +621,38 @@ class _ChatScreenState extends State<ChatScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _consumeShareIntake();
     });
+    // Also subscribe to the service for the **same-chat case**: when
+    // the user is already inside chat A and the destination sheet
+    // routes the share to chat A, `context.go('/chats/A')` is a no-op
+    // (same route → no initState → no post-frame drain). The listener
+    // catches the `deliverTo()` notification the bootstrap fires right
+    // before navigation and we drain inline. `_consumeShareIntake`
+    // gates on `_targetChatId == widget.conversationId` via
+    // [ShareIntakeService.take], so other chat screens that happen to
+    // be listening (e.g. an unmounted-soon previous chat) don't snatch
+    // the batch.
+    _shareIntakeService = context.read<ShareIntakeService>();
+    _shareIntakeService!.addListener(_onShareIntakeChanged);
     // Loading skeleton state now comes from the cubit's DataLoading
     // (see the build method) — no local timer needed.
+  }
+
+  /// Reference held so [dispose] can detach the listener even after
+  /// [context] is gone. `late final` would be nicer but the field is
+  /// nullable so we can use `?.` in dispose without races.
+  ShareIntakeService? _shareIntakeService;
+
+  /// Fires whenever the share intake service mutates. We only care about
+  /// the "files were just committed to THIS chat" event — the gate
+  /// inside [_consumeShareIntake] (`service.take(widget.conversationId)`)
+  /// turns every other notification into a no-op.
+  void _onShareIntakeChanged() {
+    if (!mounted) return;
+    final service = _shareIntakeService;
+    if (service == null) return;
+    if (!service.hasStaged) return;
+    if (service.targetChatId != widget.conversationId) return;
+    _consumeShareIntake();
   }
 
   /// Drains [ShareIntakeService] into [_attachments] / [_pendingFiles]
@@ -632,8 +662,20 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _consumeShareIntake() async {
     final service = context.read<ShareIntakeService>();
     if (!service.hasStaged) return;
-    final files = service.take();
+    // Gate on the bootstrap's `_targetChatId` — when set, only the
+    // chat the user picked drains the batch. When unset (cold-start
+    // path, no destination sheet involved), the first chat to land
+    // gets the files.
+    final files = service.take(widget.conversationId);
+    if (files.isEmpty) return;
 
+    // Build the chips synchronously — `lengthSync` instead of the
+    // async `length()` means the setState below lands in the SAME
+    // microtask as the deliverTo notification, before any rebuild can
+    // intervene. The async version used to lose the setState when the
+    // bootstrap's `context.go` happened to recreate the chat page
+    // mid-await (2026-05-23 tester report: file only showed up after
+    // exiting + re-entering the chat).
     final chips = <DemoAttachment>[];
     final keptFiles = <File>[];
     for (final f in files) {
@@ -641,7 +683,7 @@ class _ChatScreenState extends State<ChatScreen>
       final ext = name.contains('.') ? name.split('.').last : '';
       int size;
       try {
-        size = await f.length();
+        size = f.lengthSync();
       } catch (_) {
         // Some content-URIs don't expose length until they're streamed —
         // fall back to 0 and let the chip subtitle read "0 B" rather
@@ -689,6 +731,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _shareIntakeService?.removeListener(_onShareIntakeChanged);
     _thinkingTimer?.cancel();
     _loadingTimer?.cancel();
     _progressTimer?.cancel();
@@ -1626,6 +1669,23 @@ class _ChatScreenState extends State<ChatScreen>
     // dead. Kept the helper around because legacy code paths still
     // reach for `_conversation.title` in places not yet migrated.
     final online = context.watch<ConnectivityCubit>().state;
+    // Watch the share intake service so this chat rebuilds whenever the
+    // bootstrap notifies (stage / deliverTo / take). When the
+    // bootstrap has just committed a batch to THIS chat — e.g. the
+    // user shared from WhatsApp and picked "current chat" from the
+    // destination sheet — schedule a post-frame consume so the staged
+    // files land in `_attachments` without requiring the user to
+    // leave + re-enter the chat. The post-frame defer is critical:
+    // calling `_consumeShareIntake` inline would cause a setState
+    // during build, which Flutter forbids. `take()` inside the
+    // consumer empties the service so the next build won't re-trigger.
+    final shareIntake = context.watch<ShareIntakeService>();
+    if (shareIntake.hasStaged &&
+        shareIntake.targetChatId == widget.conversationId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _consumeShareIntake();
+      });
+    }
     // Source of truth for the per-conversation toggles:
     //   * Existing chat → live from the snapshot (server is canonical,
     //     so flipping from the web shows up here on the next poll).

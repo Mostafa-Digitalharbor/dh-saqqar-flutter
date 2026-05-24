@@ -21,6 +21,17 @@ class AppStrings {
 
   String _t(String key) => _table[key] ?? _en[key] ?? key;
 
+  /// Public lookup by raw key. Used by schema-driven UIs (e.g. the
+  /// credential form) where the field schema carries the i18n key
+  /// directly instead of mapping through a typed getter. Returns
+  /// [fallback] when neither the active locale nor the English table
+  /// has an entry — never returns the raw key (which would leak the
+  /// underscore_case identifier into the UI).
+  String lookup(String key, {String fallback = ''}) {
+    if (key.isEmpty) return fallback;
+    return _table[key] ?? _en[key] ?? fallback;
+  }
+
   // App
   String get appName => _t('app_name');
   String get productInitial => _t('product_initial');
@@ -189,8 +200,9 @@ class AppStrings {
   }
 
   // Credential form: Test connection
-  String get testConnection => _t('test_connection');
-  String get testingConnection => _t('testing_connection');
+  // (deprecated short labels — replaced by the camelCase keys below
+  // that mirror the server bundle from SAQQAR_MOBILE_API_xmlrpc.md §7.
+  // Kept the call-site name; just changed the lookup key.)
   String get connectionVerified => _t('connection_verified');
   String get connectionFailed => _t('connection_failed');
   String get noFieldsForKind => _t('no_fields_for_kind');
@@ -677,6 +689,23 @@ class AppStrings {
   String get micUnavailable => _t('mic_unavailable');
   String get voiceMaxLength => _t('voice_max_length');
   String get discardRecording => _t('discard_recording');
+  String get shareCurrentChat => _t('share_current_chat');
+  String get shareCurrentChatHint => _t('share_current_chat_hint');
+
+  // Credential test connection + xmlrpc auth-type switcher
+  // (SAQQAR_MOBILE_API_xmlrpc.md §7). Keys named to match the server
+  // bundle (camelCase) so `AppStrings.lookup(field.labelKey!)` resolves
+  // straight against schema responses.
+  String get authType => _t('authType');
+  String get authPassword => _t('authPassword');
+  String get authApiKey => _t('authApiKey');
+  String get apiKey => _t('apiKey');
+  String get apiKeyHelp => _t('apiKeyHelp');
+  String get apiKeyPlaceholder => _t('apiKeyPlaceholder');
+  String get testConnection => _t('testConnection');
+  String get testingConnection => _t('testingConnection');
+  String get testConnectionOk => _t('testConnectionOk');
+  String get testConnectionFailed => _t('testConnectionFailed');
   String get quickReplyMore => _t('quick_reply_more');
   String get quickReplySummarize => _t('quick_reply_summarize');
   String get quickReplyExport => _t('quick_reply_export');
@@ -1113,6 +1142,25 @@ const Map<String, String> _en = {
   'mic_unavailable': 'Microphone is unavailable on this device.',
   'voice_max_length': 'Recording reached the 2-minute limit.',
   'discard_recording': 'Discard recording',
+  'share_current_chat': 'Send to current chat',
+  'share_current_chat_hint':
+      "You're already inside this chat — tap to attach the files here.",
+  // Credentials — xmlrpc auth-type switcher + test connection.
+  // camelCase keys mirror the server bundle exactly so schema fields
+  // (label_key, *_key_by_auth_type) can `AppStrings.lookup()` straight
+  // through.
+  'authType': 'Authentication',
+  'authPassword': 'Password',
+  'authApiKey': 'API Key',
+  'apiKey': 'API Key',
+  'apiKeyHelp':
+      'Generate in Odoo: My Profile → Account Security → New API Key (developer mode required).',
+  'apiKeyPlaceholder': 'e.g. abc123def456…xyz',
+  'testConnection': 'Test connection',
+  'testingConnection': 'Testing…',
+  'testConnectionOk': 'Connection OK',
+  'testConnectionFailed': 'Connection failed',
+  'auth_password': 'password',
   'quick_reply_more': 'Tell me more',
   'quick_reply_summarize': 'Summarize this',
   'quick_reply_export': 'Export as Excel',
@@ -1259,8 +1307,8 @@ const Map<String, String> _en = {
   'delete_credential_body':
       'The agent will need to re-receive this credential the next time it asks.',
   'not_saved_yet': 'Not saved yet.',
-  'test_connection': 'Test',
-  'testing_connection': 'Testing connection…',
+  // (old `test_connection` + `testing_connection` keys retired —
+  // replaced by camelCase server bundle below.)
   'connection_verified': 'Connection verified.',
   'connection_failed': "Couldn't reach the target.",
   'no_fields_for_kind': 'No fields defined for this kind.',
@@ -1673,6 +1721,22 @@ const Map<String, String> _ar = {
   'mic_unavailable': 'الميكروفون غير متاح على هذا الجهاز.',
   'voice_max_length': 'وصل التسجيل إلى الحد الأقصى (دقيقتان).',
   'discard_recording': 'إلغاء التسجيل',
+  'share_current_chat': 'إرسال للمحادثة الحالية',
+  'share_current_chat_hint':
+      'أنت بالفعل داخل هذه المحادثة — اضغط لإرفاق الملفات هنا.',
+  // Credentials — xmlrpc auth-type switcher + test connection.
+  'authType': 'نوع المصادقة',
+  'authPassword': 'كلمة المرور',
+  'authApiKey': 'مفتاح API',
+  'apiKey': 'مفتاح API',
+  'apiKeyHelp':
+      'أنشئه في أودو: ملفي الشخصي ← الأمان ← مفتاح API جديد (يتطلب وضع المطوّر).',
+  'apiKeyPlaceholder': 'مثلاً abc123def456…xyz',
+  'testConnection': 'اختبر الاتصال',
+  'testingConnection': 'جارٍ الاختبار…',
+  'testConnectionOk': 'الاتصال ناجح',
+  'testConnectionFailed': 'فشل الاتصال',
+  'auth_password': 'كلمة المرور',
   'quick_reply_more': 'أعطني المزيد',
   'quick_reply_summarize': 'لخّص ده',
   'quick_reply_export': 'صدّر كـ Excel',
@@ -1816,8 +1880,7 @@ const Map<String, String> _ar = {
   'delete_credential_body':
       'سيحتاج الوكيل لإعادة استلام بيانات الدخول هذه عند طلبها مرة أخرى.',
   'not_saved_yet': 'لم تُحفظ بعد.',
-  'test_connection': 'اختبار',
-  'testing_connection': 'جارٍ اختبار الاتصال…',
+  // (old `test_connection` + `testing_connection` keys retired)
   'connection_verified': 'تم التحقق من الاتصال.',
   'connection_failed': 'تعذّر الوصول للهدف.',
   'no_fields_for_kind': 'لا توجد حقول معرّفة لهذا النوع.',

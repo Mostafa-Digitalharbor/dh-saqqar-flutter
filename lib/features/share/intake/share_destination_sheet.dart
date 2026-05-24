@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../chat/widgets/chat_sheet.dart';
+import '../../../shared/widgets/ambient_background.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../../conversations/view_model/conversations_cubit.dart';
 import '../../conversations/view_model/conversations_state.dart';
@@ -27,42 +27,56 @@ class ShareDestination {
   bool get isNew => id == null;
 }
 
-/// Bottom sheet shown when the system share sheet hands files to Saqqar.
+/// Picker UI rendered as an **inline overlay** by [ShareIntentBootstrap].
 ///
-/// Lists active conversations (newest first) plus a prominent "Start a new
-/// chat" row. The list itself comes from [ConversationsCubit]; if the cubit
-/// hasn't loaded yet the sheet triggers a [ConversationsCubit.load] and
-/// shows a small spinner so the user gets the list as soon as the request
-/// returns.
-class ShareDestinationSheet extends StatefulWidget {
-  const ShareDestinationSheet({
+/// Earlier revisions opened this as a bottom sheet, then as a fullscreen
+/// `MaterialPageRoute`; both let the previously-open chat flash through
+/// during the brief window between the share intent arriving and the
+/// picker mounting (testers, 2026-05-24: "Saqqar opens on the chat I
+/// was in"). The bootstrap now renders this widget directly inside a
+/// `Stack` above `widget.child`, which makes the picker visible on the
+/// SAME frame `ShareIntakeService.stage()` notifies its listeners —
+/// no navigation, no route transition, no async window.
+///
+/// Callbacks instead of `Navigator.pop`:
+///   * [onCancel] — user tapped the ✕ button (drops the staged batch).
+///   * [onPick]   — user tapped a destination row (forwards to the
+///                   bootstrap's deliver + navigate flow).
+///
+/// Layout:
+///   * Title bar with the explicit Cancel button.
+///   * Subtitle: "Pick a chat to attach N file(s) to".
+///   * **Start a new chat** — cyan-tinted CTA row.
+///   * **Existing chats** — full scrollable list, newest first.
+///
+/// The list comes from [ConversationsCubit]; if the cubit hasn't loaded
+/// yet the page triggers a [ConversationsCubit.load] and shows a
+/// spinner so the rows appear as soon as the fetch returns.
+class ShareDestinationOverlayContent extends StatefulWidget {
+  const ShareDestinationOverlayContent({
     super.key,
     required this.fileCount,
+    required this.onCancel,
+    required this.onPick,
   });
 
   /// Used in the subtitle ("3 files from another app") so the user can
   /// double-check they're attaching the right batch before picking.
   final int fileCount;
 
-  static Future<ShareDestination?> show(
-    BuildContext context, {
-    required int fileCount,
-  }) {
-    return showModalBottomSheet<ShareDestination>(
-      context: context,
-      isScrollControlled: true,
-      // Tapping the scrim is "cancel share" — the bootstrap treats a
-      // null return as a deliberate decline and drops the staged files.
-      isDismissible: true,
-      builder: (_) => ShareDestinationSheet(fileCount: fileCount),
-    );
-  }
+  /// Tapped on Cancel / system back. Bootstrap clears the staged files.
+  final VoidCallback onCancel;
+
+  /// Tapped on a row. Bootstrap forwards to `deliverTo()` + navigates.
+  final ValueChanged<ShareDestination> onPick;
 
   @override
-  State<ShareDestinationSheet> createState() => _ShareDestinationSheetState();
+  State<ShareDestinationOverlayContent> createState() =>
+      _ShareDestinationOverlayContentState();
 }
 
-class _ShareDestinationSheetState extends State<ShareDestinationSheet> {
+class _ShareDestinationOverlayContentState
+    extends State<ShareDestinationOverlayContent> {
   @override
   void initState() {
     super.initState();
@@ -87,89 +101,115 @@ class _ShareDestinationSheetState extends State<ShareDestinationSheet> {
             widget.fileCount.toString(),
           );
 
-    return ChatSheet(
-      title: tr.shareSheetTitle,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6, left: 4, right: 4),
-          child: Text(
-            tr.shareSheetSubtitle,
-            style: context.text.bodySmall?.copyWith(color: s.muted, height: 1.4),
+    return Scaffold(
+      backgroundColor: s.bg,
+      appBar: AppBar(
+        backgroundColor: s.bg,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(AppIcons.close, color: s.text),
+          tooltip: tr.cancel,
+          onPressed: widget.onCancel,
+        ),
+        title: Text(
+          tr.shareSheetTitle,
+          style: context.text.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 14, left: 4, right: 4),
-          child: Text(
-            subtitle,
-            style: context.text.labelSmall?.copyWith(
-              color: s.brandCyan,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ),
-        _NewChatRow(
-          onTap: () => Navigator.of(context).pop(const ShareDestination.newChat()),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Divider(color: s.border, height: 1),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
-          child: Text(
-            tr.shareExistingChats.toUpperCase(),
-            style: context.text.labelSmall?.copyWith(
-              color: s.muted,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
-              fontSize: 10,
-            ),
-          ),
-        ),
-        BlocBuilder<ConversationsCubit, ConversationsState>(
-          builder: (context, state) {
-            final data = state.data.dataOrNull;
-            if (data == null) {
-              if (state.data.isLoading) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
-                        color: s.brandCyan,
-                      ),
-                    ),
+      ),
+      body: AmbientBackground(
+        child: SafeArea(
+          top: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  tr.shareSheetSubtitle,
+                  style: context.text.bodyMedium?.copyWith(
+                    color: s.muted,
+                    height: 1.45,
                   ),
-                );
-              }
-              return _EmptyHint(text: tr.shareNoConversations);
-            }
-            final active = data.conversations
-                .where((c) => !c.isArchived)
-                .toList()
-              ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-            if (active.isEmpty) {
-              return _EmptyHint(text: tr.shareNoConversations);
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final conv in active)
-                  _ConversationRow(
-                    conversation: conv,
-                    onTap: () => Navigator.of(context).pop(
-                      ShareDestination.existing(conv.id),
-                    ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  subtitle,
+                  style: context.text.labelSmall?.copyWith(
+                    color: s.brandCyan,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
                   ),
-              ],
-            );
-          },
+                ),
+              ),
+              _NewChatRow(
+                onTap: () =>
+                    widget.onPick(const ShareDestination.newChat()),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+                child: Text(
+                  tr.shareExistingChats.toUpperCase(),
+                  style: context.text.labelSmall?.copyWith(
+                    color: s.muted,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+              BlocBuilder<ConversationsCubit, ConversationsState>(
+                builder: (context, state) {
+                  final data = state.data.dataOrNull;
+                  if (data == null) {
+                    if (state.data.isLoading) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              color: s.brandCyan,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return _EmptyHint(text: tr.shareNoConversations);
+                  }
+                  final active = data.conversations
+                      .where((c) => !c.isArchived)
+                      .toList()
+                    ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                  if (active.isEmpty) {
+                    return _EmptyHint(text: tr.shareNoConversations);
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final conv in active)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _ConversationRow(
+                            conversation: conv,
+                            onTap: () => widget.onPick(
+                              ShareDestination.existing(conv.id),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }

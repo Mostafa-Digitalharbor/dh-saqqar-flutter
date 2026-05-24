@@ -3,6 +3,17 @@ import 'package:dio/dio.dart';
 import '../../../core/network/api_endpoints.dart';
 import 'credential_models.dart';
 
+/// Result of `POST /api/v1/credentials/test/`. Returned by
+/// [CredentialsApi.testConnection]; the UI maps `success` to a green
+/// badge and `error` (non-null) to the red one.
+class CredentialTestResult {
+  const CredentialTestResult.success() : success = true, error = null;
+  const CredentialTestResult.failure(String this.error) : success = false;
+
+  final bool success;
+  final String? error;
+}
+
 /// Repository for the per-user credential vault (SAQQAR_MOBILE_API.md §7).
 ///
 /// The Add Credential UI must render against [getSchemas] — never hard-code
@@ -48,6 +59,46 @@ class CredentialsApi {
     return Credential.fromJson(
       res.data!['credential'] as Map<String, dynamic>,
     );
+  }
+
+  // ── Test connection (read-only validation) ──────────────────────────
+
+  /// `POST /api/v1/credentials/test/` — opens a real connection to the
+  /// target service to validate [payload] without storing it. Backs the
+  /// editor's "Test connection" button. 200 → success; 400/500/502 →
+  /// failure with the server's `error` message surfaced to the user.
+  ///
+  /// Generic across credential kinds — the server inspects `kind` and
+  /// routes to the matching connector. See SAQQAR_MOBILE_API_xmlrpc.md
+  /// §2 for the wire shape.
+  Future<CredentialTestResult> testConnection({
+    required CredentialKind kind,
+    required Map<String, dynamic> payload,
+  }) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        ApiEndpoints.credentialTest,
+        data: {'kind': kind.wire, 'payload': payload},
+      );
+      final body = res.data ?? const <String, dynamic>{};
+      if (body['ok'] == true) return const CredentialTestResult.success();
+      final err = body['error']?.toString() ?? 'Connection failed';
+      return CredentialTestResult.failure(err);
+    } on DioException catch (e) {
+      // 400 / 500 / 502 land here via the error interceptor. Pull the
+      // server's `error` text out of the response body when present so
+      // the user sees a real reason (e.g. "AccessDenied: invalid
+      // password") instead of a generic "Connection failed".
+      final data = e.response?.data;
+      String? err;
+      if (data is Map) {
+        final v = data['error'];
+        if (v is String && v.isNotEmpty) err = v;
+      }
+      return CredentialTestResult.failure(err ?? e.message ?? 'Connection failed');
+    } catch (e) {
+      return CredentialTestResult.failure(e.toString());
+    }
   }
 
   // ── Save / update / delete ──────────────────────────────────────────

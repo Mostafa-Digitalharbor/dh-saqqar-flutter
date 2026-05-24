@@ -59,6 +59,12 @@ class ApiEndpoints {
   static String credentialDetail(String name) =>
       '/api/v1/credentials/$name/';
 
+  /// `POST /api/v1/credentials/test/` — validates a candidate payload
+  /// without storing it. Opens a real connection to the target service
+  /// (XML-RPC, Postgres, GitHub, etc.). Used by the editor's "Test
+  /// connection" button. See SAQQAR_MOBILE_API_xmlrpc.md §2.
+  static const String credentialTest = '/api/v1/credentials/test/';
+
   // ── Projects & Environments (§11) ────────────────────────────────────
   static const String projects = '/api/v1/projects/';
   static String projectDetail(String id) => '/api/v1/projects/$id/';

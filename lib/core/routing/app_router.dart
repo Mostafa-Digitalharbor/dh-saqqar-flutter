@@ -24,6 +24,18 @@ import '../i18n/app_localizations.dart';
 import 'route_names.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+
+/// Public reference to the live [GoRouter] instance. Populated by
+/// [buildAppRouter] at app boot. Callers that live ABOVE the router
+/// in the widget tree (e.g. `ShareIntentBootstrap`, which is mounted
+/// inside `MaterialApp.router`'s `builder:` — outside the
+/// `InheritedGoRouter`) use this to navigate without needing
+/// `context.go(...)`, which would throw "No GoRouter found in context"
+/// at that level.
+///
+/// Never read this before `runApp` — it's null until [buildAppRouter]
+/// returns.
+GoRouter? appRouter;
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
 /// Public routes that don't require an authenticated session. Used by the
@@ -48,7 +60,7 @@ bool _isPublicShare(String location) => location.startsWith('/share/');
 /// The router is rebuilt as a singleton inside `app.dart` (kept in a
 /// `late final` so it survives hot reloads / theme changes).
 GoRouter buildAppRouter(AuthCubit authCubit) {
-  return GoRouter(
+  return appRouter = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: RouteNames.chatsPath,
     debugLogDiagnostics: kDebugMode,

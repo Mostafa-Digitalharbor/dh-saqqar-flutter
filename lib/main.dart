@@ -82,7 +82,7 @@ Future<void> main() async {
       // the version line in pubspec.yaml — bump both together so the
       // Sentry UI groups crashes per version correctly.
       options.environment = kReleaseMode ? 'production' : 'development';
-      options.release = 'saqqar@1.0.7+8';
+      options.release = 'saqqar@1.0.21+22';
       // Drop sample rate for transactions to 10% — chat polling fires
       // every 1.5 s; tracing every call would burn the free quota in
       // hours. Errors are always sent (sample rate ignored on those).
@@ -111,6 +111,11 @@ Future<void> main() async {
 Future<void> _bootApp() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: binding);
+
+  // (google_fonts removed in 1.0.17+18 — `AppTypography` now uses
+  // platform default fonts directly. Keeping the comment so future
+  // refactors don't reintroduce the CDN dependency without a deliberate
+  // discussion about bundling the .ttf files.)
 
   // Globally observe every Cubit lifecycle (create / state change /
   // error / close) so debugging doesn't require manual `print`s inside
@@ -346,6 +351,17 @@ bool _shouldSkipSentry(Object? error) {
       case DioExceptionType.unknown:
         return false;
     }
+  }
+  // google_fonts throws when it tries to fetch a font over the network
+  // and the device is offline. With `GoogleFonts.config.allowRuntimeFetching
+  // = false` (set below) the SDK now falls back to system fonts silently,
+  // but the older builds and any leftover in-flight requests still throw.
+  // Filter those — they're environmental noise, never a real bug we need
+  // to chase in the dashboard.
+  final message = error?.toString() ?? '';
+  if (message.contains('fonts.gstatic.com') ||
+      message.contains('Failed to load font')) {
+    return true;
   }
   return false;
 }

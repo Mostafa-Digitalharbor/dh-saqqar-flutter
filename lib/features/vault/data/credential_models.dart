@@ -44,6 +44,10 @@ enum CredentialFieldType {
 
 /// A single field in a [CredentialSchema] — what label to show, what input
 /// type to use, whether it's required, and (for selects) the allowed values.
+///
+/// New schema fields added on 2026-05-24 to support the xmlrpc auth-type
+/// switcher (api_key vs password). Both are additive; old schemas (and
+/// kinds that don't ship them) continue to render correctly.
 @immutable
 class CredentialField {
   const CredentialField({
@@ -54,6 +58,11 @@ class CredentialField {
     this.placeholder = '',
     this.help = '',
     this.options,
+    this.defaultValue,
+    this.labelKey,
+    this.labelKeyByAuthType,
+    this.placeholderKeyByAuthType,
+    this.helpKeyByAuthType,
   });
 
   final String name;
@@ -66,8 +75,39 @@ class CredentialField {
   /// Only set when [type] is [CredentialFieldType.select].
   final List<String>? options;
 
+  /// Server-provided default value (used for new bundles). For select
+  /// fields this is one of [options]; resolved by the form before the
+  /// user makes a choice.
+  final String? defaultValue;
+
+  /// i18n key for the field's label (overrides [label] when present).
+  /// Used by the auth-type dropdown so the dropdown reads "Authentication"
+  /// in EN / "نوع المصادقة" in AR without baking the translation into
+  /// the schema response.
+  final String? labelKey;
+
+  /// Maps the active value of the schema's sibling `auth_type` field to
+  /// an i18n key for THIS field's label. Today only the `secret` field on
+  /// xmlrpc ships this — "API Key" vs "Password". `null` for fields
+  /// whose label doesn't depend on a sibling.
+  final Map<String, String>? labelKeyByAuthType;
+
+  /// Like [labelKeyByAuthType] but for the placeholder text.
+  final Map<String, String>? placeholderKeyByAuthType;
+
+  /// Like [labelKeyByAuthType] but for the help text shown under the
+  /// field. Empty-string values mean "no help block" for that branch.
+  final Map<String, String>? helpKeyByAuthType;
+
   factory CredentialField.fromJson(Map<String, dynamic> json) {
     final opts = json['options'];
+    Map<String, String>? keyMap(Object? raw) {
+      if (raw is! Map) return null;
+      return raw.map(
+        (key, value) => MapEntry(key.toString(), value.toString()),
+      );
+    }
+
     return CredentialField(
       name: json['name'] as String,
       label: json['label'] as String? ?? json['name'] as String,
@@ -76,6 +116,11 @@ class CredentialField {
       placeholder: json['placeholder'] as String? ?? '',
       help: json['help'] as String? ?? '',
       options: opts is List ? opts.map((e) => e.toString()).toList() : null,
+      defaultValue: json['default']?.toString(),
+      labelKey: json['label_key'] as String?,
+      labelKeyByAuthType: keyMap(json['label_key_by_auth_type']),
+      placeholderKeyByAuthType: keyMap(json['placeholder_key_by_auth_type']),
+      helpKeyByAuthType: keyMap(json['help_key_by_auth_type']),
     );
   }
 
@@ -87,6 +132,14 @@ class CredentialField {
         'placeholder': placeholder,
         'help': help,
         if (options != null) 'options': options,
+        if (defaultValue != null) 'default': defaultValue,
+        if (labelKey != null) 'label_key': labelKey,
+        if (labelKeyByAuthType != null)
+          'label_key_by_auth_type': labelKeyByAuthType,
+        if (placeholderKeyByAuthType != null)
+          'placeholder_key_by_auth_type': placeholderKeyByAuthType,
+        if (helpKeyByAuthType != null)
+          'help_key_by_auth_type': helpKeyByAuthType,
       };
 }
 

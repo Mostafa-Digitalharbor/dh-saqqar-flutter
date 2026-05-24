@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import '../constants/ui_strings.dart';
 
 /// Typography scale from §2.2 of the spec.
 ///
-/// Two font families:
-/// - **Inter** (Latin, default).
-/// - **Tajawal** (Arabic). Activated when `Locale.languageCode == 'ar'`.
+/// **2026-05-24 — `google_fonts` removed.** The runtime CDN fetch
+/// crashed on offline / geo-blocked devices; the `allowRuntimeFetching
+/// = false` fallback then crashed because we don't bundle the .ttf
+/// files. Switching to platform defaults eliminates both failure
+/// modes: Android uses **Roboto** (Latin) + **Noto Sans Arabic**
+/// (Arabic) — both ship with the OS — and iOS uses **San Francisco**
+/// + **SF Arabic**. Both stacks handle our content natively and the
+/// visual difference vs. Inter / Tajawal is minor enough that
+/// production launch wasn't worth blocking on bundling.
 ///
-/// Use `AppTypography.scale(locale)` to get the right [TextTheme] for the
-/// active locale.
+/// If we ever want to bring Inter / Tajawal back, the right path is
+/// to bundle the .ttf files under `assets/fonts/` and declare them in
+/// pubspec.yaml's `fonts:` section — NOT to re-enable the
+/// `google_fonts` CDN fetch.
 class AppTypography {
   AppTypography._();
 
@@ -21,7 +26,6 @@ class AppTypography {
     required Color text,
     required Color muted,
   }) {
-    final isArabic = locale.languageCode == UiStrings.localeArabicCode;
     final base = TextStyle(color: text);
 
     TextStyle styled(
@@ -31,16 +35,13 @@ class AppTypography {
       Color? color,
       double? height,
     }) {
-      final merged = base.copyWith(
+      return base.copyWith(
         fontSize: size,
         fontWeight: weight,
         letterSpacing: letterSpacing,
         color: color ?? text,
         height: height,
       );
-      return isArabic
-          ? GoogleFonts.tajawal(textStyle: merged)
-          : GoogleFonts.inter(textStyle: merged);
     }
 
     return TextTheme(
@@ -74,34 +75,35 @@ class AppTypography {
   /// Eyebrow / micro-caps style — used in panel headers ("MESSAGE", "STATUS").
   /// Spec §2.2: 11pt, weight 700, uppercase, +0.10em tracking.
   static TextStyle eyebrow({required Locale locale, required Color color}) {
-    final base = TextStyle(
+    return TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
       color: color,
     );
-    return locale.languageCode == UiStrings.localeArabicCode
-        ? GoogleFonts.tajawal(textStyle: base)
-        : GoogleFonts.inter(textStyle: base);
   }
 
   /// Status pill text — 10pt weight 700 uppercase +0.10em.
   static TextStyle statusPill({required Locale locale, required Color color}) {
-    final base = TextStyle(
+    return TextStyle(
       fontSize: 10,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
       color: color,
     );
-    return locale.languageCode == UiStrings.localeArabicCode
-        ? GoogleFonts.tajawal(textStyle: base)
-        : GoogleFonts.inter(textStyle: base);
   }
 
   /// Monospace plate — code blocks, inline code, command output.
+  /// Uses the platform default monospace family so we don't pay a
+  /// network round-trip on first render. On Android that's
+  /// "RobotoMono" (always installed); on iOS "Menlo". Both are good
+  /// enough for `<pre>` code blocks in agent replies.
   static TextStyle mono({required Color color, double size = 12}) {
-    return GoogleFonts.jetBrainsMono(
-      textStyle: TextStyle(fontSize: size, color: color, height: 1.45),
+    return TextStyle(
+      fontSize: size,
+      color: color,
+      height: 1.45,
+      fontFamily: 'monospace',
     );
   }
 }
