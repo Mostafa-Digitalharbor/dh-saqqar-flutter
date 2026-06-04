@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مقترحات تحسين تطبيق الموبايل — صقّار</title>
+<style>
+  :root{
+    --navy:#1F3C88; --cyan:#06B6D4; --cyan-strong:#22D3EE; --purple:#8B5CF6;
+    --success:#10B981; --warning:#F59E0B; --danger:#EF4444;
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --soft:#f8fafc;
+    --grad-primary:linear-gradient(135deg,#1F3C88,#06B6D4);
+    --grad-vivid:linear-gradient(135deg,#06B6D4,#8B5CF6);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ font-family:"Segoe UI","Tahoma",sans-serif; color:var(--ink); line-height:1.65; font-size:13px; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  @page{ size:A4; margin:13mm 0; }
+  .wrap{ max-width:185mm; margin:0 auto; padding:0 14mm; }
+
+  .cover{ background:var(--grad-primary); color:#fff; padding:42px 40px 36px; margin:-13mm 0 0; position:relative; overflow:hidden;}
+  .cover::after{ content:""; position:absolute; inset:0; background:radial-gradient(circle at 88% 18%, rgba(139,92,246,.55), transparent 42%),radial-gradient(circle at 12% 92%, rgba(34,211,238,.45), transparent 40%);}
+  .cover > *{ position:relative; z-index:1;}
+  .brandrow{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.5px; opacity:.95; font-size:12px;}
+  .brand-dot{ width:30px;height:30px;border-radius:9px; background:rgba(255,255,255,.18); display:flex;align-items:center;justify-content:center; font-size:16px;}
+  .cover h1{ font-size:26px; margin:20px 0 6px; font-weight:800; line-height:1.4;}
+  .cover .sub{ font-size:14px; opacity:.92; max-width:138mm; line-height:1.7;}
+  .cover .pills{ margin-top:18px; display:flex; gap:7px; flex-wrap:wrap;}
+  .pill{ background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.25); padding:5px 12px; border-radius:999px; font-size:10.5px; font-weight:600;}
+  .meta{ margin-top:20px; display:flex; gap:26px; flex-wrap:wrap; font-size:11px; opacity:.9;}
+  .meta b{ display:block; opacity:.7; font-weight:600; font-size:9.5px; margin-bottom:2px;}
+
+  h2.sec{ font-size:18px; margin:22px 0 11px; padding-bottom:9px; border-bottom:2px solid var(--line); display:flex; align-items:center; gap:10px;}
+  h2.sec .n{ width:29px;height:29px;border-radius:9px; background:var(--grad-vivid); color:#fff; font-size:13px; font-weight:800; display:flex;align-items:center;justify-content:center; flex:none;}
+  .pb{ page-break-before:always;}
+  p{ margin:8px 0;} .muted{ color:var(--muted);} .lead{ font-size:13.5px;}
+
+  .spine{ background:linear-gradient(135deg,#ecfeff,#f5f3ff); border:1px solid #c7d2fe; border-radius:14px; padding:14px 18px; margin:12px 0; font-size:13px;}
+  .spine .big{ font-weight:800; color:var(--navy); font-size:14px;}
+
+  table{ width:100%; border-collapse:collapse; margin:12px 0; font-size:12px; overflow:hidden; border-radius:12px; box-shadow:0 0 0 1px var(--line); page-break-inside:avoid;}
+  th,td{ padding:8px 12px; text-align:right; vertical-align:top; border-bottom:1px solid var(--line);}
+  thead th{ background:var(--navy); color:#fff; font-weight:700; font-size:11.5px;}
+  tbody tr:nth-child(even){ background:var(--soft);}
+  tbody tr:last-child td{ border-bottom:none;}
+  .no{ color:var(--danger); font-weight:700;}
+  .ev{ font-family:"Consolas",monospace; font-size:10.5px; background:#eef2ff; color:#3730a3; padding:1px 5px; border-radius:5px;}
+
+  .feature{ border:1px solid var(--line); border-radius:18px; margin:14px 0; overflow:hidden; box-shadow:0 6px 22px rgba(15,23,42,.05);}
+  .feature.pbf{ page-break-before:always;}
+  .feature .head{ padding:16px 22px; color:#fff; display:flex; align-items:center; gap:14px;}
+  .feature .head .ix{ width:40px;height:40px;border-radius:12px; background:rgba(255,255,255,.2); display:flex;align-items:center;justify-content:center; font-size:19px; font-weight:800; flex:none;}
+  .feature .head h3{ margin:0; font-size:16px; font-weight:800;}
+  .feature .head .en{ display:block; font-size:10.5px; opacity:.85; font-weight:600; margin-top:2px; direction:ltr; text-align:right;}
+  .feature.c1 .head{ background:linear-gradient(135deg,#0e7490,#06B6D4);}
+  .feature.c2 .head{ background:linear-gradient(135deg,#3730a3,#6366f1);}
+  .feature.c3 .head{ background:linear-gradient(135deg,#15803d,#10B981);}
+  .feature.c4 .head{ background:linear-gradient(135deg,#6d28d9,#8B5CF6);}
+  .feature.c5 .head{ background:linear-gradient(135deg,#c2410c,#f97316);}
+  .feature .body{ padding:15px 22px;}
+
+  .ttag{ display:inline-block; font-size:10px; font-weight:800; padding:4px 11px; border-radius:999px; margin-top:6px; background:#dcfce7; color:#166534;}
+
+  .block{ margin:11px 0;}
+  .block .lbl{ font-weight:800; font-size:12px; color:var(--navy); display:flex; align-items:center; gap:7px; margin-bottom:3px;}
+  .block .lbl .ic{ font-size:13px;}
+  ul{ margin:5px 0; padding-inline-start:19px;} li{ margin:3px 0;}
+  code{ background:#eef2ff; color:#3730a3; padding:1px 5px; border-radius:5px; font-size:11px; font-family:"Consolas",monospace;}
+
+  .econ{ background:#f0fdf4; border:1px solid #bbf7d0; border-radius:11px; padding:9px 15px; margin:11px 0; font-size:12px;}
+  .impact{ background:var(--soft); border-radius:11px; padding:5px 16px; margin:11px 0; border-right:4px solid var(--cyan);}
+  .warn{ background:#fffbeb; border:1px solid #fde68a; border-radius:11px; padding:9px 15px; margin:11px 0; font-size:11.5px;}
+  .key{ background:#fef2f2; border:1px solid #fecaca; border-radius:11px; padding:9px 15px; margin:11px 0; font-size:12px;}
+  .key b{ color:#991b1b;}
+
+  .syn{ background:#0f172a; color:#e2e8f0; border-radius:14px; padding:16px 20px; margin:12px 0; page-break-inside:avoid;}
+  .syn h4{ margin:0 0 12px; color:#fff; font-size:13px;}
+  .syn .row{ display:flex; align-items:center; gap:10px; margin:7px 0; font-size:12px;}
+  .syn .approved{ background:#064e3b; color:#6ee7b7; border:1px solid #10b981; padding:4px 10px; border-radius:8px; font-weight:700; font-size:11px; white-space:nowrap;}
+  .syn .arrow{ color:#22d3ee; font-weight:800;}
+  .syn .new{ color:#cbd5e1;}
+
+  .reco{ background:var(--soft); border:1px solid var(--line); border-radius:14px; padding:6px 18px; margin:12px 0;}
+  .reco ol{ padding-inline-start:20px; margin:8px 0;} .reco li{ margin:6px 0; font-size:12.5px;}
+
+  .closing{ background:var(--grad-primary); color:#fff; border-radius:16px; padding:18px 24px; margin:14px 0 6px; font-size:13.5px; line-height:1.75; position:relative; overflow:hidden; page-break-inside:avoid;}
+  .closing::after{ content:""; position:absolute; inset:0; background:radial-gradient(circle at 90% 20%, rgba(139,92,246,.5), transparent 45%);}
+  .closing > *{ position:relative; z-index:1;}
+  .closing .q{ font-weight:800; font-size:15px;}
+
+  .foot{ text-align:center; color:var(--muted); font-size:10px; margin:20px 0 0; padding-top:12px; border-top:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brandrow"><span class="brand-dot">📱</span> SAQQAR MOBILE · DIGITAL HARBOR</div>
+  <h1>خمس تحسينات لتطبيق الموبايل — تخلّيه أقوى من الويب</h1>
+  <div class="sub">شعار التطبيق «قدرات أصلية للموبايل (native superpowers)» — لكن في 4 محاور هو فعلياً <b>أضعف من الويب</b>: offline، التحديث اللحظي، الأمان، والتصوير. المقترحات دي بتقلب الضعفات دي لنقط قوة — و<b>أغلبها محايد للتوكينز</b>، فمفيش حاجة هتتلغي زي #3.</div>
+  <div class="pills">
+    <span class="pill">① يشتغل offline</span>
+    <span class="pill">② بث حي SSE</span>
+    <span class="pill">③ قفل بصمة</span>
+    <span class="pill">④ كاميرا + ماسح</span>
+    <span class="pill">⑤ إشعار الموافقات</span>
+  </div>
+  <div class="meta">
+    <div><b>مقدّم من</b> مصطفى — Mobile Owner</div>
+    <div><b>الحالة</b> مقترح للنقاش</div>
+    <div><b>مبني على</b> فحص الكود الفعلي (lib/)</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <h2 class="sec"><span class="n">٠</span> فين الموبايل أضعف من الويب دلوقتي؟</h2>
+  <div class="spine"><span class="big">الكلام مش تخمين — مبني على فحص الكود الفعلي.</span> كل صف تحت معاه الدليل من الملفات. والخبر الكويس: أغلب الحلول <b>محايدة للتوكينز</b> (UX ونيتيف، مش استدعاءات LLM زيادة).</div>
+  <table>
+    <thead><tr><th>المحور</th><th>الحالة الفعلية</th><th>الدليل من الكود</th></tr></thead>
+    <tbody>
+      <tr><td>يشتغل offline؟</td><td><span class="no">لأ</span> — كل شاشة بتجيب live</td><td>مفيش local DB؛ بس <span class="ev">vault_cache.dart</span> في SharedPreferences</td></tr>
+      <tr><td>تحديث لحظي؟</td><td><span class="no">لأ</span> — polling كل 1.5 ثانية</td><td><span class="ev">chat_cubit.dart</span> (<code>Timer.periodic</code>)</td></tr>
+      <tr><td>إشعارات؟</td><td><span class="no">scaffold فاضي</span></td><td><span class="ev">devices_api.dart</span> — الملف الوحيد في features/push/</td></tr>
+      <tr><td>أمان الجهاز؟</td><td><span class="no">لأ</span> — مفيش قفل</td><td>مفيش <code>local_auth</code> في <span class="ev">pubspec.yaml</span></td></tr>
+      <tr><td>تصوير/مسح؟</td><td><span class="no">لأ</span> — اختيار ملفات بس</td><td><span class="ev">chat_screen.dart</span> <code>_pickAttachment</code> (file_picker)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 1 -->
+  <div class="feature c1 pbf">
+    <div class="head"><span class="ix">①</span><div><h3>صقّار يشتغل من غير نت</h3><span class="en">Offline-First Cache + Outbox</span><span class="ttag">💚 محايد للتوكينز · بيوفّر داتا وبطارية</span></div></div>
+    <div class="body">
+      <div class="block"><div class="lbl"><span class="ic">⚠️</span> المشكلة (مؤكدة من الكود)</div>
+        مفيش أي قاعدة بيانات محلية (لا drift/isar/sqflite/hive). كل شاشة بتجيب من الـ API مباشرة → لو فتحت التطبيق في مخزن/مصنع شبكته ضعيفة = <b>شاشة فاضية</b>. مفارقة: المنتج بيتباع كـ«native superpowers» وهو offline <b>أضعف من المتصفح</b>.</div>
+      <div class="block"><div class="lbl"><span class="ic">💡</span> الفكرة</div>
+        <ul>
+          <li><b>قاعدة بيانات محلية</b> (Drift/Isar) تكاش المحادثات + الرسائل + ميتاداتا الـ artifacts → فتح فوري بدون spinner وقراءة كاملة offline.</li>
+          <li><b>Outbox</b>: الرسائل/الموافقات اللي اتكتبت offline تتصفّ وتتبعت أوتوماتيك أول ما النت يرجع.</li>
+          <li><b>Optimistic UI</b>: رسالتك تظهر فوراً وتتأكّد بعدين.</li>
+        </ul></div>
+      <div class="block"><div class="lbl"><span class="ic">⚙️</span> العمق التقني</div>
+        جداول <code>conversations</code> + <code>messages</code> + <code>outbox</code> في Drift؛ الـ <code>ChatCubit</code> يقرا من الكاش أولاً (instant paint) وبعدين delta-fetch بالـ <code>?since=</code> cursor الموجود أصلاً. مزامنة عند الـ reconnect (نبني على <code>connectivity_cubit.dart</code> بدل الاكتفاء بالـ banner).</div>
+      <div class="impact"><div class="lbl"><span class="ic">📈</span> الأثر</div>
+        فتح فوري · قراءة offline · توفير داتا وبطارية (كاش + deltas) · مرونة في أسوأ شبكة — وده بالظبط جمهور الـ ERP الميداني.</div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="feature c2 pbf">
+    <div class="head"><span class="ix">②</span><div><h3>بث حي بدل السؤال كل ثانية ونص</h3><span class="en">Real-time SSE streaming (replaces polling)</span><span class="ttag">💚 محايد لتوكينز الـ LLM · بيوفّر حِمل سيرفر وبطارية</span></div></div>
+    <div class="body">
+      <div class="block"><div class="lbl"><span class="ic">⚠️</span> المشكلة (مؤكدة)</div>
+        <code>chat_cubit.dart</code> بيعمل <code>Timer.periodic</code> كل <b>1.5 ثانية</b> طول ما الوكيل شغّال = ~40 request/دقيقة بتضرب السيرفر، تستنزف البطارية والداتا، وبتأخّر نص الرد لحد ثانية ونص. وعقد الباك إند <b>أصلاً فيه SSE متعرّف بالكامل (§7)</b> — الموبايل بس لسه مش مطبّقه.</div>
+      <div class="block"><div class="lbl"><span class="ic">💡</span> الفكرة</div>
+        نطبّق <b>SSE client</b> حسب العقد: التوكينز تظهر لحظياً (typing حقيقي)، ونوقف الـ poll وقت البث (نسيب poll خفيف كـ fallback للـ reconnect).</div>
+      <div class="block"><div class="lbl"><span class="ic">⚙️</span> العمق التقني</div>
+        Dio بـ <code>ResponseType.stream</code> + <code>utf8.decoder</code> + <code>LineSplitter</code> (مذكور في العقد §7) → معالجة أحداث <code>token</code>/<code>tool_call</code>/<code>tool_result</code>/<code>approval_required</code>/<code>done</code> + عقد إعادة الاتصال (resume mid-run).</div>
+      <div class="impact"><div class="lbl"><span class="ic">📈</span> الأثر</div>
+        نص فوري وسلس · تقليل ضخم في عدد الـ requests (توفير infra حقيقي) · بطارية وداتا أقل بكتير.</div>
+      <div class="warn">⚠️ <b>ملاحظة صدق للتيم ليد:</b> فيه اعتماد على الباك إند (قرار الـ SSE لسه pending في العقد). شغل العميل جاهز نعمله، بس محتاجين الباك إند يفعّل الـ endpoint.</div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="feature c3 pbf">
+    <div class="head"><span class="ix">③</span><div><h3>قفل بصمة + تأكيد الموافقات الخطيرة</h3><span class="en">Biometric App-Lock + secure approval re-auth</span><span class="ttag">💚 محايد للتوكينز · أمان enterprise · بيكمّل #2 و#3</span></div></div>
+    <div class="body">
+      <div class="block"><div class="lbl"><span class="ic">⚠️</span> المشكلة (مؤكدة)</div>
+        مفيش <code>local_auth</code> ولا أي قفل. التطبيق فيه <b>خزنة بتكتب على Odoo إنتاج وبتشغّل shell</b>. لو حد خطف موبايلك وهو مفتوح → يقدر <b>يوافق على فعل مدمّر</b> أو يبص على الخزنة. ثغرة أمان حقيقية، خصوصاً للمؤسسات.</div>
+      <div class="block"><div class="lbl"><span class="ic">💡</span> الفكرة</div>
+        <ul>
+          <li><b>قفل Face ID / بصمة</b> عند فتح التطبيق (اختياري + قفل تلقائي بعد الـ background).</li>
+          <li><b>إعادة تحقق بيومتري</b> قبل الأفعال عالية الخطورة (<code>odoo_write</code> / <code>server_command</code>) وقبل فتح/تعديل الخزنة.</li>
+        </ul></div>
+      <div class="block"><div class="lbl"><span class="ic">⚙️</span> العمق التقني</div>
+        حزمة <code>local_auth</code> + gate في الـ router/<code>AuthCubit</code>؛ خطّاف قبل <code>POST /approvals/{id}/decision/</code> للأفعال عالية الخطورة (الـ <code>risk</code> field موجود أصلاً من #1 المعتمد).</div>
+      <div class="impact"><div class="lbl"><span class="ic">📈</span> الأثر</div>
+        أمان على مستوى الجهاز · بيربط بقصة #2 (السجل): «مين وافق؟» تبقى «اللي وافق متحقّق ببصمته» · بيكمّل #3 (SoD). عامل بيع قوي للمؤسسات.</div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="feature c4 pbf">
+    <div class="head"><span class="ix">④</span><div><h3>صوّر / امسح وابعت للوكيل</h3><span class="en">In-app Camera + Document Scanner</span><span class="ttag">💚 محايد للتوكينز · قدرة نيتيف الويب مايقدرش يعملها</span></div></div>
+    <div class="body">
+      <div class="block"><div class="lbl"><span class="ic">⚠️</span> المشكلة (مؤكدة)</div>
+        <code>chat_screen.dart</code> بيستخدم <code>file_picker</code> بس — <b>اختيار ملفات موجودة، مفيش كاميرا ولا ماسح</b>. بس استخدام الـ ERP الميداني كله تصوير: أمين المخزن بيصوّر إذن استلام، المحاسب بيصوّر فاتورة مورّد، حد بيمسح ليبل منتج.</div>
+      <div class="block"><div class="lbl"><span class="ic">💡</span> الفكرة</div>
+        <b>كاميرا + ماسح مستندات</b> (كشف حواف، متعدد الصفحات → PDF) جوه الـ composer مباشرة → للوكيل. بعدها الوكيل يقرا الفاتورة (OCR) ويعمل منها vendor bill في Odoo مثلاً.</div>
+      <div class="block"><div class="lbl"><span class="ic">⚙️</span> العمق التقني</div>
+        <code>image_picker</code> (كاميرا) + حزمة document-scanner (نيتيف iOS VisionKit / Android ML Kit). نفس مسار الـ attachments الموجود — بس مصدر جديد للملف.</div>
+      <div class="impact"><div class="lbl"><span class="ic">📈</span> الأثر</div>
+        بيحوّل كاميرا الموبايل لأداة <b>إدخال بيانات ERP</b> — قدرة نيتيف حقيقية الويب عمره ما هيعملها. قيمة هائلة للمخازن واللوجستيك والريتيل.</div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="feature c5 pbf">
+    <div class="head"><span class="ix">⑤</span><div><h3>إشعار للموافقات (مش مراقبة) + Live Activity</h3><span class="en">Approval Push + Live Activity / ongoing notification</span><span class="ttag">💚 محايد للتوكينز تماماً — النص الآمن من فكرة #3</span></div></div>
+    <div class="body">
+      <div class="block"><div class="lbl"><span class="ic">⚠️</span> المشكلة (مؤكدة)</div>
+        <code>devices_api.dart</code> scaffold فاضي، مفيش <code>firebase_messaging</code>. النهاردة الموافقات المعلّقة بتبان بس لما تفتح التطبيق وتـ poll. لو بدأت run وقفلت الموبايل والوكيل وقف مستني موافقتك → ممكن تفضل <b>عالقة ساعات</b>.</div>
+      <div class="block"><div class="lbl"><span class="ic">💡</span> الفكرة</div>
+        Push (FCM/APNs) <b>بس</b> للموافقات وإتمام الـ run <b>اللي إنت بدأته</b> → كبسة تفتحلك كارت الموافقة. + <b>Live Activity (iOS) / إشعار مستمر (Android)</b> بيوريك «الوكيل شغّال…» مع زرار Stop.</div>
+      <div class="key">🔑 <b>الفرق الحاسم عن #3:</b> ده إشعار لـ run <b>إنت بدأته</b> — الشغل اتعمل أصلاً، <b>صفر توكينز زيادة</b>. مش مراقبة استباقية (اللي كانت بتشغّل الوكيل لوحدها وتستهلك). ده <b>النص الآمن</b> من الفكرة — بيحيي الـ scaffold المحجوز من غير أي قلق تكلفة.</div>
+      <div class="impact"><div class="lbl"><span class="ic">📈</span> الأثر</div>
+        الـ runs تبقى async موثوقة (ابدأ، اقفل الموبايل، هتتنبّه لما يحتاجك) · وبيقلّل polling البطارية كمان.</div>
+    </div>
+  </div>
+
+  <!-- summary -->
+  <h2 class="sec pb"><span class="n">★</span> الترابط والترشيح</h2>
+  <div class="syn">
+    <h4>تحسينات الموبايل بتقوّي المعتمد — مش منفصلة عنه:</h4>
+    <div class="row"><span class="approved">✅ #1 محاكاة</span><span class="approved">✅ #2 سجل</span><span class="arrow">←</span><span class="new">الأساس اللي بيتبني عليه</span></div>
+    <div class="row"><span class="arrow">③</span><span class="new">قفل البصمة = «اللي وافق متحقّق ببصمته» → يقوّي audit trail بتاع #2</span></div>
+    <div class="row"><span class="arrow">⑤</span><span class="new">إشعار الموافقات = النص الآمن من #3 الملغاة (صفر توكينز)</span></div>
+    <div class="row"><span class="arrow">④</span><span class="new">الكاميرا = مصدر إدخال جديد بيغذّي الوكيل بداتا الميدان</span></div>
+    <div class="row"><span class="arrow">①②</span><span class="new">Offline + SSE = الأساس اللي بيخلّي كل الشاشات أسرع وأرخص تشغيل</span></div>
+  </div>
+
+  <div class="reco">
+    <div class="block"><div class="lbl" style="margin-top:8px"><b>الترتيب اللي يبهر:</b></div></div>
+    <ol>
+      <li><b>① Offline-First</b> — بيحسّن كل شاشة فوراً، وأكبر فجوة «أضعف من الويب».</li>
+      <li><b>② SSE</b> — أكبر قفزة في الإحساس + توفير infra (بس فيه اعتماد باك إند).</li>
+      <li><b>⑤ Push للموافقات</b> — أعلى أثر مقابل أقل مجهود، token-neutral، وبيحيي scaffold موجود.</li>
+      <li><b>③ Biometric</b> — أمان enterprise، بيكمّل #2/#3.</li>
+      <li><b>④ Camera/Scanner</b> — أقوى native superpower للعرض الميداني.</li>
+    </ol>
+  </div>
+
+  <div class="closing">
+    <div class="q">الخلاصة</div>
+    أقوى ثنائي للعرض: <b>① + ⑤</b> — واحد بيخلّي التطبيق يشتغل في أي شبكة، وواحد بيخلّيه موثوق وانت قافله. الاتنين <b>token-neutral</b>، فمستحيل يتلغوا زي #3 — وكلهم بيحوّلوا الموبايل من «نسخة مرافقة» لـ «السبب اللي تختار صقّار عشانه».
+  </div>
+
+  <div class="foot">Saqqar Mobile · Digital Harbor — مقترح داخلي للنقاش — 2026 · مبني على فحص lib/ الفعلي</div>
+
+</div>
+</body>
+</html>

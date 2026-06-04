@@ -24,7 +24,7 @@ class AuthUser {
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
-      id: (json['id'] as num).toInt(),
+      id: (json['id'] as num?)?.toInt() ?? 0,
       email: json['email'] as String? ?? '',
       username: json['username'] as String? ?? '',
       isStaff: json['is_staff'] as bool? ?? false,

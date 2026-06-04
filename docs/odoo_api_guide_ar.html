@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>دليل التكامل مع Odoo API — شرح مبسّط</title>
+<style>
+  :root{
+    --navy:#1F3C88; --cyan:#06B6D4; --cyan-strong:#22D3EE; --purple:#8B5CF6;
+    --success:#10B981; --warning:#F59E0B; --danger:#EF4444;
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --soft:#f8fafc;
+    --grad-primary:linear-gradient(135deg,#1F3C88,#06B6D4);
+    --grad-vivid:linear-gradient(135deg,#06B6D4,#8B5CF6);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ font-family:"Segoe UI","Tahoma",sans-serif; color:var(--ink); line-height:1.7; font-size:13px; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  @page{ size:A4; margin:13mm 0; }
+  .wrap{ max-width:185mm; margin:0 auto; padding:0 14mm; }
+
+  /* Cover */
+  .cover{ background:var(--grad-primary); color:#fff; padding:46px 40px 40px; margin:-13mm 0 0; position:relative; overflow:hidden;}
+  .cover::after{ content:""; position:absolute; inset:0; background:radial-gradient(circle at 88% 18%, rgba(139,92,246,.55), transparent 42%),radial-gradient(circle at 12% 92%, rgba(34,211,238,.45), transparent 40%);}
+  .cover > *{ position:relative; z-index:1;}
+  .brandrow{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.5px; opacity:.95; font-size:12px;}
+  .brand-dot{ width:32px;height:32px;border-radius:9px; background:rgba(255,255,255,.18); display:flex;align-items:center;justify-content:center; font-size:17px;}
+  .cover h1{ font-size:28px; margin:22px 0 8px; font-weight:800; line-height:1.45;}
+  .cover .sub{ font-size:14px; opacity:.93; max-width:150mm; line-height:1.8;}
+  .cover .pills{ margin-top:20px; display:flex; gap:7px; flex-wrap:wrap;}
+  .pill{ background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.25); padding:6px 13px; border-radius:999px; font-size:11px; font-weight:600;}
+  .meta{ margin-top:22px; display:flex; gap:26px; flex-wrap:wrap; font-size:11px; opacity:.92;}
+  .meta b{ display:block; opacity:.7; font-weight:600; font-size:9.5px; margin-bottom:2px;}
+
+  h2{ font-size:19px; color:var(--navy); margin:30px 0 12px; padding-bottom:8px; border-bottom:2px solid var(--line); display:flex; align-items:center; gap:9px;}
+  h2 .num{ background:var(--grad-primary); color:#fff; width:28px; height:28px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; flex-shrink:0;}
+  h3{ font-size:15px; color:var(--navy); margin:18px 0 8px;}
+  p{ margin:8px 0;}
+  ul,ol{ margin:8px 0; padding-right:22px;}
+  li{ margin:5px 0;}
+  b,strong{ color:var(--ink);}
+  code{ background:#0f172a; color:#7dd3fc; padding:1px 6px; border-radius:5px; font-family:"Consolas","Courier New",monospace; font-size:11.5px; direction:ltr; display:inline-block;}
+
+  .card{ background:var(--soft); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:14px 0;}
+  .card.navy{ border-right:4px solid var(--navy);}
+  .card.cyan{ border-right:4px solid var(--cyan);}
+  .card.purple{ border-right:4px solid var(--purple);}
+
+  .note{ border-radius:10px; padding:12px 16px; margin:12px 0; font-size:12.5px; line-height:1.7;}
+  .note.warn{ background:#fffbeb; border:1px solid #fde68a; border-right:4px solid var(--warning);}
+  .note.danger{ background:#fef2f2; border:1px solid #fecaca; border-right:4px solid var(--danger);}
+  .note.ok{ background:#ecfdf5; border:1px solid #a7f3d0; border-right:4px solid var(--success);}
+  .note.info{ background:#eff6ff; border:1px solid #bfdbfe; border-right:4px solid var(--cyan);}
+  .note .lbl{ font-weight:800; display:block; margin-bottom:3px;}
+
+  table{ width:100%; border-collapse:collapse; margin:14px 0; font-size:12px;}
+  th{ background:var(--navy); color:#fff; padding:9px 11px; text-align:right; font-weight:700; font-size:11.5px;}
+  td{ padding:9px 11px; border-bottom:1px solid var(--line); vertical-align:top;}
+  tr:nth-child(even) td{ background:var(--soft);}
+  .yes{ color:var(--success); font-weight:800;}
+  .no{ color:var(--danger); font-weight:800;}
+
+  pre{ background:#0f172a; color:#e2e8f0; border-radius:10px; padding:14px 16px; overflow-x:auto; direction:ltr; text-align:left; font-family:"Consolas","Courier New",monospace; font-size:11px; line-height:1.6; margin:12px 0;}
+  pre .c{ color:#64748b;} pre .k{ color:#c084fc;} pre .s{ color:#86efac;} pre .f{ color:#7dd3fc;}
+
+  .qa{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:12px 0; box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .qa .q{ font-weight:800; color:var(--navy); margin-bottom:6px; display:flex; gap:8px;}
+  .qa .q::before{ content:"س"; background:var(--navy); color:#fff; width:22px;height:22px;border-radius:6px; display:inline-flex;align-items:center;justify-content:center; font-size:12px; flex-shrink:0;}
+  .qa .a{ font-size:12.5px; color:#1e293b; padding-right:30px; position:relative;}
+  .qa .a::before{ content:"ج"; position:absolute; right:0; top:0; background:var(--cyan); color:#fff; width:22px;height:22px;border-radius:6px; display:inline-flex;align-items:center;justify-content:center; font-size:12px; font-weight:800;}
+
+  .pagebreak{ page-break-before:always;}
+  .tldr{ background:var(--grad-vivid); color:#fff; border-radius:14px; padding:18px 22px; margin:16px 0;}
+  .tldr h3{ color:#fff; margin:0 0 8px;}
+  .tldr ul{ margin:0; padding-right:20px;}
+  .tldr li{ margin:6px 0;}
+
+  .foot{ text-align:center; color:var(--muted); font-size:10.5px; margin-top:30px; padding-top:14px; border-top:1px solid var(--line);}
+  .src{ font-size:10.5px; color:var(--muted); direction:ltr; text-align:left; word-break:break-all;}
+  .src li{ margin:3px 0;}
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="brandrow"><span class="brand-dot">🛰️</span> صقّار · SAQQAR — مذكرة تقنية داخلية</div>
+  <h1>دليل التكامل مع Odoo API<br>شرح مبسّط للمصطلحات الثلاثة</h1>
+  <div class="sub">مرجع سريع يشرح الطرق الرسمية للتكامل مع نظام Odoo من تطبيقات خارجية (زي تطبيق الموبايل)، مع المقارنات والقيود والأسئلة المتوقّعة وإجاباتها — مبني على دوكيومنتيشن Odoo 19 الرسمي.</div>
+  <div class="pills">
+    <span class="pill">External RPC API</span>
+    <span class="pill">External JSON-2 API</span>
+    <span class="pill">Extract API</span>
+    <span class="pill">Odoo 19.0</span>
+  </div>
+  <div class="meta">
+    <div><b>المصدر</b>Odoo 19 Official Docs + بحث ميداني</div>
+    <div><b>الجمهور</b>فريق تطوير الموبايل</div>
+    <div><b>التاريخ</b>يونيو 2026</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ INTRO ============ -->
+<h2><span class="num">0</span> الفكرة في سطرين</h2>
+<p>الـ <b>Odoo API</b> هو الباب الرسمي اللي بيخلّي أي برنامج من بَرّه (تطبيق موبايل، سيرفر، سكريبت) يقدر <b>يقرا ويكتب ويعدّل</b> البيانات اللي جوّه Odoo بدون ما يفتح الواجهة بإيده. التيم ليد بعت 3 صفحات، وهي في الحقيقة <b>موضوعين مختلفين</b>:</p>
+<div class="card navy">
+  <p style="margin:0"><b>① و ② → نفس الهدف (قراءة/كتابة الداتا)</b> بس بطريقتين: واحدة قديمة (<b>RPC</b>) وواحدة جديدة (<b>JSON-2</b>).<br>
+  <b>③ → موضوع منفصل تمامًا</b>: الـ <b>Extract API</b>، خدمة ذكاء اصطناعي بتقرا الفواتير والمستندات (OCR) وتطلّع بياناتها.</p>
+</div>
+<table>
+  <tr><th>المصطلح</th><th>بيعمل إيه</th><th>الحالة</th></tr>
+  <tr><td><b>External RPC API</b></td><td>الطريقة الكلاسيكية للقراءة/الكتابة (XML-RPC و JSON-RPC)</td><td><span class="no">قديمة — هتتشال</span></td></tr>
+  <tr><td><b>External JSON-2 API</b></td><td>نفس الوظيفة بشكل أحدث وأنضف (HTTP + JSON)</td><td><span class="yes">الحالية / المستقبل</span></td></tr>
+  <tr><td><b>Extract API</b></td><td>OCR + AI لاستخراج بيانات المستندات (فواتير، إيصالات، CV…)</td><td>خدمة مدفوعة منفصلة</td></tr>
+</table>
+
+<!-- ============ 1. RPC ============ -->
+<h2><span class="num">1</span> الـ External RPC API (الطريقة الكلاسيكية)</h2>
+<p>دي أقدم وأشهر طريقة. بتشتغل على بروتوكولين: <b>XML-RPC</b> و <b>JSON-RPC</b>. الفكرة إنك بتتكلم مع Odoo على 3 خطوات:</p>
+
+<h3>الخطوة 1 — تجهيز بيانات الدخول</h3>
+<ul>
+  <li><code>url</code> — لينك السيرفر، مثلاً <code>https://mycompany.odoo.com</code></li>
+  <li><code>db</code> — اسم الداتابيز</li>
+  <li><code>username</code> — الإيميل</li>
+  <li><code>password</code> — الباسورد (أو <b>API key</b> أأمن)</li>
+</ul>
+
+<h3>الخطوة 2 — Login عشان تاخد هويتك (uid)</h3>
+<pre><span class="k">import</span> xmlrpc.client
+common = xmlrpc.client.ServerProxy(<span class="s">f'{url}/xmlrpc/2/common'</span>)
+uid = common.<span class="f">authenticate</span>(db, username, password, {})  <span class="c"># بيرجع رقم هويتك</span>
+models = xmlrpc.client.ServerProxy(<span class="s">f'{url}/xmlrpc/2/object'</span>)</pre>
+
+<h3>الخطوة 3 — تشتغل على الداتا عن طريق <code>execute_kw</code></h3>
+<p>كل العمليات بتتعمل بدالة واحدة زي الريموت كنترول: «روح للموديل الفلاني واعمل العملية الفلانية». دي العمليات الأساسية (الـ <b>CRUD</b>):</p>
+<pre><span class="c"># 🔍 search — دوّر (بيرجّع IDs بس)</span>
+ids = models.<span class="f">execute_kw</span>(db, uid, password, <span class="s">'res.partner'</span>,
+    <span class="s">'search'</span>, [[[<span class="s">'name'</span>, <span class="s">'='</span>, <span class="s">'John'</span>]]], {<span class="s">'limit'</span>:10, <span class="s">'offset'</span>:0})
+
+<span class="c"># 📖 read — اقرا بيانات IDs معيّنة</span>
+data = models.<span class="f">execute_kw</span>(db, uid, password, <span class="s">'res.partner'</span>,
+    <span class="s">'read'</span>, [ids], {<span class="s">'fields'</span>:[<span class="s">'name'</span>,<span class="s">'email'</span>,<span class="s">'phone'</span>]})
+
+<span class="c"># ⚡ search_read — دوّر واقرا في خطوة واحدة (الأكثر استخدامًا)</span>
+<span class="c"># ➕ create — اعمل ريكورد جديد</span>
+new_id = models.<span class="f">execute_kw</span>(db, uid, password, <span class="s">'res.partner'</span>,
+    <span class="s">'create'</span>, [{<span class="s">'name'</span>:<span class="s">'Acme'</span>, <span class="s">'email'</span>:<span class="s">'a@acme.com'</span>}])
+
+<span class="c"># ✏️ write — عدّل   |   🗑️ unlink — امسح</span>
+models.<span class="f">execute_kw</span>(db, uid, password, <span class="s">'res.partner'</span>, <span class="s">'write'</span>, [ids, {<span class="s">'phone'</span>:<span class="s">'+20100'</span>}])
+models.<span class="f">execute_kw</span>(db, uid, password, <span class="s">'res.partner'</span>, <span class="s">'unlink'</span>, [ids])</pre>
+
+<div class="card cyan">
+  <h3 style="margin-top:0">حاجتين لازم تفهمهم كويس</h3>
+  <p><b>أ) الـ Domain (الفلتر):</b> بيتكتب <code>['field', 'operator', 'value']</code> — يعني <code>['name','=','John']</code>. ده زي الـ <code>WHERE</code> في SQL بالظبط، وتقدر تجمع أكتر من شرط في ليستة.</p>
+  <p><b>ب) الـ Pagination:</b> متجبش كل الداتا مرة واحدة، استخدم <code>limit</code> و <code>offset</code> عشان تجيبها على دفعات. وفيه كمان <code>search_count</code> للعدّ بس، و <code>fields_get</code> لمعرفة حقول الموديل.</p>
+</div>
+
+<div class="note warn"><span class="lbl">⚠️ تحذير الإهلاك (Deprecation)</span>
+بروتوكولات <code>/xmlrpc</code> و <code>/xmlrpc/2</code> و <code>/jsonrpc</code> <b>هتتشال رسميًا</b>: في Odoo Online شتاء 2027 (نسخة 21.1)، وفي النسخة العادية خريف 2028 (Odoo 22). فالجديد يُبنى على JSON-2.</div>
+
+<!-- ============ 2. JSON-2 ============ -->
+<h2 class="pagebreak"><span class="num">2</span> الـ External JSON-2 API (الطريقة الجديدة = المستقبل)</h2>
+<p>نفس فكرة RPC بالظبط، بس بشكل أحدث وأنضف وأنسب لتطبيقات الموبايل لأنها <b>HTTP + JSON عادي</b>.</p>
+
+<h3>أهم 3 اختلافات</h3>
+<ol>
+  <li><b>لكل عملية URL مباشر</b> بدل <code>execute_kw</code> المعقّدة:<br>
+  <code>POST /json/2/&lt;model&gt;/&lt;method&gt;</code> — مثلاً <code>POST /json/2/res.partner/search_read</code></li>
+  <li><b>مفيش login منفصل</b> — بتبعت الـ API key مباشرة في الهيدر.</li>
+  <li><b>كل المعاملات بالاسم (named)</b> — مفيش ترتيب معاملات يلخبط زي القديم.</li>
+</ol>
+
+<pre>POST /json/2/res.partner/search_read
+<span class="f">Authorization</span>: bearer &lt;api_key&gt;
+<span class="f">Content-Type</span>: application/json
+<span class="f">X-Odoo-Database</span>: mycompany
+
+{
+  <span class="s">"domain"</span>: [[<span class="s">"country_id"</span>, <span class="s">"="</span>, 65]],
+  <span class="s">"fields"</span>: [<span class="s">"name"</span>, <span class="s">"email"</span>],
+  <span class="s">"limit"</span>: 10
+}</pre>
+
+<table>
+  <tr><th>النقطة</th><th>RPC القديمة</th><th>JSON-2 الجديدة</th></tr>
+  <tr><td>الدخول (Login)</td><td>authenticate ← تجيب uid</td><td><span class="yes">API key في الهيدر مباشرة</span></td></tr>
+  <tr><td>صيغة الطلب</td><td>XML معقّد / ترتيب معاملات</td><td><span class="yes">JSON نضيف / معاملات بالاسم</span></td></tr>
+  <tr><td>أكواد الحالة (Status)</td><td><span class="no">دايمًا 200 حتى مع الخطأ</span></td><td><span class="yes">404 / 500 صح</span></td></tr>
+  <tr><td>أرقام 64-bit الكبيرة</td><td><span class="no">مبتشتغلش (مشكلة)</span></td><td><span class="yes">شغّالة عادي</span></td></tr>
+  <tr><td>عمليات بالجملة (Batch)</td><td>محدودة</td><td><span class="yes">create/write لكذا ريكورد بترانزاكشن واحدة</span></td></tr>
+  <tr><td>مناسبة لـ Flutter؟</td><td>شغل زيادة</td><td><span class="yes">مثالية</span></td></tr>
+</table>
+
+<div class="note warn"><span class="lbl">⚠️ عُمر الـ API key في JSON-2</span>
+الـ key الافتراضي للمستخدم العادي بيعيش <b>90 يوم بس</b> وبعدها بيموت ولازم يتجدّد. الـ <b>admin</b> بس هو اللي يقدر يعمل key دائم. لازم نخطط لده عشان التطبيق ميقفش فجأة.</div>
+
+<!-- ============ 3. EXTRACT ============ -->
+<h2><span class="num">3</span> الـ Extract API (موضوع منفصل — OCR للمستندات)</h2>
+<p>دي <b>مالهاش علاقة</b> بقراءة/كتابة الداتا العادية. دي خدمة بتاخد صورة أو PDF لمستند وتطلّع بياناته منظّمة أوتوماتيك باستخدام <b>OCR + AI</b>.</p>
+<table>
+  <tr><th>نوع المستند</th><th>بتستخرج منه</th></tr>
+  <tr><td>الفواتير (Invoices)</td><td>الإجمالي، تاريخ الاستحقاق، الأصناف، بيانات المورّد</td></tr>
+  <tr><td>كشوف الحساب البنكية</td><td>الرصيد الافتتاحي/الختامي، تواريخ المعاملات</td></tr>
+  <tr><td>المصاريف (Expenses)</td><td>المبالغ، التواريخ، التصنيف</td></tr>
+  <tr><td>السير الذاتية (CVs)</td><td>الأسماء، بيانات التواصل، المؤهلات</td></tr>
+</table>
+<div class="card purple">
+  <p style="margin:0"><b>بتشتغل على مرحلتين (Asynchronous):</b></p>
+  <ol style="margin:8px 0 0">
+    <li><code>POST /parse</code> — تبعت المستند، يرجّعلك <code>document_token</code> (زي رقم تذكرة).</li>
+    <li><code>POST /get_result</code> — تسأل بالتوكن «خلص ولا لسه؟» لحد ما تجيب النتيجة (أو بتوصلك على Webhook).</li>
+  </ol>
+  <p style="margin:8px 0 0"><b>Base:</b> <code>https://extract.api.odoo.com</code> · <b>البروتوكول:</b> JSON-RPC 2.0</p>
+</div>
+<div class="note danger"><span class="lbl">💳 خدمة مدفوعة</span>
+الـ Extract API خدمة <b>IAP مدفوعة بالكريدت</b> — كل مستند بيتقرا بياكل كريدت واحد. مش بنستخدمها إلا لو فعلًا عندنا فواتير/إيصالات عايزين نقراها أوتوماتيك.</div>
+
+<!-- ============ 4. LIMITS ============ -->
+<h2 class="pagebreak"><span class="num">4</span> القيود المهمة (لازم تعرفها قبل أي شغل)</h2>
+
+<div class="note danger"><span class="lbl">🔒 الأهم: الـ API مقفول على خطة Custom بس</span>
+الـ External API (بكل أنواعه) متاح <b>فقط</b> على خطة <b>Custom</b>، ومش متاح خالص على <b>One App Free</b> ولا <b>Standard</b>.
+<br><br><b>تفصيلة مهمة:</b> القفل ده على إن «برنامج من بَرّه يكلّم Odoo» — وده بالظبط اللي بنعمله من Flutter. لكن لو Odoo هو اللي بيكلّم خدمة خارجية (Stripe / PayPal / شركات شحن) ده مسموح على Standard. <b>السيناريو بتاعنا محتاج Custom plan أكيد.</b></div>
+
+<div class="note warn"><span class="lbl">🚦 حدود الاستخدام (Rate Limits)</span>
+<ul style="margin:6px 0 0">
+  <li>القاعدة العامة: حوالي <b>طلب واحد في الثانية</b> وبدون طلبات متوازية.</li>
+  <li>على نسخة الـ SaaS: حوالي <b>60 طلب في الدقيقة</b>.</li>
+  <li><b>عمليًا:</b> نتجنّب الـ polling السريع، ونعمل <b>backoff &amp; retry</b>، ونستخدم <b>pagination</b> و <b>bulk fetch</b> بدل طلب لكل ريكورد.</li>
+</ul></div>
+
+<!-- ============ 5. SECURITY ============ -->
+<h2><span class="num">5</span> الأمان وإدارة الـ API Key</h2>
+<h3>إزاي تعمل API Key</h3>
+<p>My Profile (فوق) ← تاب <b>Account Security</b> ← <b>Generate API Key</b> ← تدخل الباسورد ← تكتب وصف. الـ key بيظهر <b>مرة واحدة بس</b> (مفتاح عشوائي 160-bit) ومش هتقدر تشوفه تاني — انسخه فورًا.</p>
+<div class="note ok"><span class="lbl">✅ أفضل الممارسات</span>
+<ul style="margin:6px 0 0">
+  <li>اعمل <b>مستخدم مخصّص للتكامل</b> بأقل صلاحيات يحتاجها (مش admin).</li>
+  <li><b>Key منفصل لكل خدمة</b> عشان لو واحد اتسرّب تلغيه لوحده.</li>
+  <li><b>HTTPS دايمًا</b> + <b>تدوير (rotation) دوري</b> للمفتاح، ولو اتسرّب امسحه فورًا.</li>
+  <li><b>متحطش الـ key في كود الموبايل أبدًا</b> — أي حد يقدر يستخرجه من التطبيق.</li>
+</ul></div>
+<div class="card navy">
+  <p style="margin:0"><b>التصميم الموصى به لتطبيق صقّار:</b> الموبايل يكلّم الـ <b>backend بتاعنا</b>، والـ backend هو اللي يحتفظ بالـ API key ويكلّم Odoo. كده المفتاح ميبانش في التطبيق نهائيًا — وده متوافق مع الـ architecture المتفق عليه.</p>
+</div>
+
+<!-- ============ 6. Q&A ============ -->
+<h2 class="pagebreak"><span class="num">6</span> أسئلة التيم ليد المتوقّعة + الإجابات</h2>
+
+<div class="qa"><div class="q">نستخدم RPC القديمة ولا JSON-2؟</div>
+<div class="a"><b>JSON-2</b> للمشاريع الجديدة على Odoo 19. أنضف، أكواد حالة صح، API key بدل login، ومناسبة لـ Flutter. RPC بس لو محتاجين ندعم نسخ أقدم (14–18). والقديمة هتتشال 2027–2028.</div></div>
+
+<div class="qa"><div class="q">إيه اللي محتاجينه عشان نبدأ التكامل؟</div>
+<div class="a">(1) اشتراك Odoo <b>Custom</b>، (2) لينك السيرفر + اسم الداتابيز، (3) مستخدم تكامل مخصّص بصلاحيات محدودة، (4) <b>API key</b> متخزّن في الـ backend بتاعنا.</div></div>
+
+<div class="qa"><div class="q">إزاي بنقرا ونكتب البيانات؟</div>
+<div class="a">عن طريق العمليات القياسية على الموديلات: <code>search_read</code> للقراءة، <code>create</code> للإضافة، <code>write</code> للتعديل، <code>unlink</code> للحذف — مع فلتر <b>domain</b> و <b>pagination</b>.</div></div>
+
+<div class="qa"><div class="q">فيه حدود على عدد الطلبات؟</div>
+<div class="a">أيوه — حوالي طلب/ثانية (أو 60/دقيقة على SaaS) وبدون طلبات متوازية. بنتعامل معاها بـ backoff/retry + bulk fetch + pagination.</div></div>
+
+<div class="qa"><div class="q">آمن نحط الـ key في تطبيق الموبايل؟</div>
+<div class="a"><b>لأ.</b> الموبايل يكلّم الـ backend، والـ backend يكلّم Odoo بالمفتاح. مستخدم محدود الصلاحيات + HTTPS + تدوير دوري للمفتاح.</div></div>
+
+<div class="qa"><div class="q">الـ API key بيقع لوحده؟</div>
+<div class="a">في JSON-2 المفتاح الافتراضي بيعيش <b>90 يوم</b> ثم يموت؛ الـ admin يقدر يعمل مفتاح دائم. لازم خطة لتجديده.</div></div>
+
+<div class="qa"><div class="q">إيه الـ Extract API وهل نستخدمه؟</div>
+<div class="a">خدمة OCR+AI لاستخراج بيانات الفواتير/الإيصالات/الـ CV، <b>مدفوعة بالكريدت</b>. نستخدمها فقط لو عندنا حالة استخراج مستندات فعلية — مش مطلوبة للتكامل العادي.</div></div>
+
+<!-- ============ TLDR ============ -->
+<div class="tldr">
+  <h3>⭐ الخلاصة في 6 نقط</h3>
+  <ul>
+    <li><b>JSON-2 هو المستقبل</b> — RPC القديمة هتتشال (2027–2028).</li>
+    <li><b>JSON-2 أسهل لـ Flutter</b>: HTTP + JSON + API key بدل login.</li>
+    <li>⚠️ <b>محتاجين خطة Custom</b> — نتأكد منها قبل أي وعود.</li>
+    <li>🚦 <b>في rate limits</b> (~1/ثانية) — نصمّم بـ backoff + pagination.</li>
+    <li>🔐 <b>الـ key في الـ backend مش في الموبايل</b> + مستخدم محدود الصلاحيات.</li>
+    <li>📄 <b>الـ Extract API</b> موضوع منفصل (OCR مدفوع) — مش جزء من التكامل الأساسي.</li>
+  </ul>
+</div>
+
+<h3>المصادر</h3>
+<ul class="src">
+  <li>Odoo 19 — External JSON-2 API: odoo.com/documentation/19.0/developer/reference/external_api.html</li>
+  <li>Odoo 19 — External RPC API: odoo.com/documentation/19.0/developer/reference/external_rpc_api.html</li>
+  <li>Odoo 19 — Extract API: odoo.com/documentation/19.0/developer/reference/extract_api.html</li>
+  <li>“XMLRPC is dead. All Hail JSON-2” — oduist.com</li>
+  <li>Odoo API Integration Guide (XML-RPC / JSON-RPC / REST) — getknit.dev</li>
+  <li>External API limitations &amp; rate limits — Odoo Forum (help-1)</li>
+  <li>Connect Odoo 19 Using API Key — cybrosys.com</li>
+  <li>Securing API Keys in Odoo: Best Practices — braincuber.com</li>
+</ul>
+
+<div class="foot">صقّار · SAQQAR — مذكرة تقنية داخلية · مبنية على دوكيومنتيشن Odoo 19 الرسمي + بحث ميداني · يونيو 2026</div>
+
+</div>
+</body>
+</html>

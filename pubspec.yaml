@@ -18,7 +18,7 @@ publish_to: 'none'
 #   • Multi-file attachments in the chat composer.
 #   • Receive ACTION_SEND / ACTION_SEND_MULTIPLE from WhatsApp, Files,
 #     Photos — user picks the target chat instead of auto-opening a new one.
-version: 1.0.21+22
+version: 1.0.22+100
 
 environment:
   sdk: ^3.9.2

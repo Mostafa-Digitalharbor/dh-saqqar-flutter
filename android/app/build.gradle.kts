@@ -71,6 +71,18 @@ android {
 
     buildTypes {
         release {
+            // Ship the Dart/Flutter code as-is — NO Java/Kotlin R8
+            // shrinking or resource stripping. Flutter already
+            // tree-shakes and AOT-compiles the Dart layer; enabling R8
+            // on the thin Android host without curated keep-rules is the
+            // classic cause of release-only "ClassNotFoundException ➜ app
+            // doesn't open" crashes (reflection-based plugins like
+            // receive_sharing_intent / sentry get stripped). Setting both
+            // explicitly removes any ambiguity about AGP defaults across
+            // version bumps.
+            isMinifyEnabled = false
+            isShrinkResources = false
+
             // Use the release signing config when key.properties is
             // present, otherwise fall back to debug so local
             // `flutter run --release` keeps working for developers

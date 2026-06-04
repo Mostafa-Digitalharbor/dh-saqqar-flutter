@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart' show ChangeNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:saqqar_app/app.dart';
@@ -25,6 +26,7 @@ import 'package:saqqar_app/features/inbox/data/artifacts_api.dart';
 import 'package:saqqar_app/features/inbox/view_model/approvals_cubit.dart';
 import 'package:saqqar_app/features/push/data/devices_api.dart';
 import 'package:saqqar_app/features/share/data/shares_api.dart';
+import 'package:saqqar_app/features/share/intake/share_intake_service.dart';
 import 'package:saqqar_app/features/vault/data/credentials_api.dart';
 import 'package:saqqar_app/features/vault/data/projects_api.dart';
 import 'package:saqqar_app/features/vault/data/vault_repository.dart';
@@ -76,6 +78,7 @@ Future<void> _pumpApp(WidgetTester tester) async {
   final remoteI18nApi = RemoteI18nApi(dio);
   final devicesApi = DevicesApi(dio);
   final liveEnvAckService = LiveEnvAckService(prefs);
+  final shareIntakeService = ShareIntakeService();
   final vaultRepository = VaultRepository(
     projectsApi: projectsApi,
     credentialsApi: credentialsApi,
@@ -98,6 +101,12 @@ Future<void> _pumpApp(WidgetTester tester) async {
         RepositoryProvider<RemoteI18nApi>.value(value: remoteI18nApi),
         RepositoryProvider<DevicesApi>.value(value: devicesApi),
         RepositoryProvider<LiveEnvAckService>.value(value: liveEnvAckService),
+        // Mirror main.dart — ShareIntentBootstrap (mounted inside
+        // MaterialApp.router's builder) reads this via context.watch, so
+        // the widget tree throws ProviderNotFoundException without it.
+        ChangeNotifierProvider<ShareIntakeService>.value(
+          value: shareIntakeService,
+        ),
         RepositoryProvider<VaultRepository>.value(value: vaultRepository),
         RepositoryProvider<ConversationsRepository>.value(
           value: conversationsRepository,

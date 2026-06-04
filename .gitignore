@@ -107,6 +107,8 @@ android/app/release/
 *.secrets
 secrets.dart
 sentry.properties
+# Build-time --dart-define-from-file payloads (carry the Sentry DSN, etc.)
+dart_defines*.json
 
 # ── Desktop platform ephemeral build artifacts ───────────────────
 # Linux / macOS / Windows desktop targets generate per-build wrapper

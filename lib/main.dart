@@ -82,7 +82,7 @@ Future<void> main() async {
       // the version line in pubspec.yaml — bump both together so the
       // Sentry UI groups crashes per version correctly.
       options.environment = kReleaseMode ? 'production' : 'development';
-      options.release = 'saqqar@1.0.21+22';
+      options.release = 'saqqar@1.0.22+100';
       // Drop sample rate for transactions to 10% — chat polling fires
       // every 1.5 s; tracing every call would burn the free quota in
       // hours. Errors are always sent (sample rate ignored on those).
