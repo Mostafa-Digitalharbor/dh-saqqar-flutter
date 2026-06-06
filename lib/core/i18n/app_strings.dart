@@ -706,6 +706,36 @@ class AppStrings {
   String get testingConnection => _t('testingConnection');
   String get testConnectionOk => _t('testConnectionOk');
   String get testConnectionFailed => _t('testConnectionFailed');
+
+  /// Map a raw server-side connection error to a localized message. The
+  /// `/credentials/test/` endpoint returns developer-facing English; this
+  /// matches the common cases (auth failure, bad URL, timeout, unreachable)
+  /// to a clean localized line so an Arabic UI shows no English. Unknown
+  /// errors fall back to [raw] — translating arbitrary server text isn't
+  /// possible, so that's the one allowed English leak.
+  String testConnectionError(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('authentication failed') ||
+        lower.contains('access denied') ||
+        lower.contains('invalid password') ||
+        lower.contains('wrong login')) {
+      return _t('testErrAuthFailed');
+    }
+    if (lower.contains('bad request') || lower.contains('http 400')) {
+      return _t('testErrBadRequest');
+    }
+    if (lower.contains('timed out') || lower.contains('timeout')) {
+      return _t('testErrTimeout');
+    }
+    if (lower.contains('failed to resolve') ||
+        lower.contains('name or service not known') ||
+        lower.contains('getaddrinfo') ||
+        lower.contains('connection refused') ||
+        lower.contains('no route to host')) {
+      return _t('testErrUnreachable');
+    }
+    return raw;
+  }
   String get quickReplyMore => _t('quick_reply_more');
   String get quickReplySummarize => _t('quick_reply_summarize');
   String get quickReplyExport => _t('quick_reply_export');
@@ -1160,6 +1190,30 @@ const Map<String, String> _en = {
   'testingConnection': 'Testing…',
   'testConnectionOk': 'Connection OK',
   'testConnectionFailed': 'Connection failed',
+  // Credential field labels — app-side fallback when the server schema
+  // ships no `label_key`. Resolved by field.name in the credential form.
+  'credUrl': 'URL',
+  'credDb': 'Database',
+  'credUsername': 'Username',
+  'credSecret': 'Secret',
+  'credHost': 'Host',
+  'credPort': 'Port',
+  'credToken': 'Token',
+  // Credential kind / tab labels — proper nouns (PostgreSQL, GitHub,
+  // XML-RPC) stay verbatim; only the descriptive part localizes.
+  'credKindXmlrpc': 'Odoo XML-RPC',
+  'credKindPostgres': 'PostgreSQL',
+  'credKindServerShell': 'Server Shell',
+  'credKindGithub': 'GitHub',
+  // Test-connection error mapping — common server messages localized so
+  // the badge reads in the active locale. Unknown errors fall back to the
+  // raw server text.
+  'testErrAuthFailed':
+      'Authentication failed. Check the URL, database, and credentials.',
+  'testErrBadRequest':
+      'Invalid request. Check the URL format (no “/odoo” at the end).',
+  'testErrTimeout': 'Connection timed out. Make sure the server is reachable.',
+  'testErrUnreachable': "Couldn't reach the server. Check the URL.",
   'auth_password': 'password',
   'quick_reply_more': 'Tell me more',
   'quick_reply_summarize': 'Summarize this',
@@ -1736,6 +1790,29 @@ const Map<String, String> _ar = {
   'testingConnection': 'جارٍ الاختبار…',
   'testConnectionOk': 'الاتصال ناجح',
   'testConnectionFailed': 'فشل الاتصال',
+  // مسميات حقول بيانات الاعتماد — بديل من جهة التطبيق حين لا يرسل
+  // السيرفر مفتاح ترجمة. تُحلّ حسب اسم الحقل في نموذج الاعتماد.
+  'credUrl': 'الرابط',
+  'credDb': 'قاعدة البيانات',
+  'credUsername': 'اسم المستخدم',
+  'credSecret': 'كلمة السر',
+  'credHost': 'المضيف',
+  'credPort': 'المنفذ',
+  'credToken': 'الرمز',
+  // مسميات أنواع الاعتماد / التبويبات — الأسماء التقنية (PostgreSQL،
+  // GitHub، XML-RPC) تبقى كما هي، ويُترجَم الجزء الوصفي فقط.
+  'credKindXmlrpc': 'أودو XML-RPC',
+  'credKindPostgres': 'PostgreSQL',
+  'credKindServerShell': 'طرفية الخادم',
+  'credKindGithub': 'GitHub',
+  // ترجمة أخطاء اختبار الاتصال — رسائل السيرفر الشائعة تُترجَم لتظهر
+  // بلغة الواجهة. الأخطاء غير المعروفة تعود لنص السيرفر الأصلي.
+  'testErrAuthFailed':
+      'فشلت المصادقة. تأكّد من الرابط وقاعدة البيانات وبيانات الدخول.',
+  'testErrBadRequest':
+      'طلب غير صالح. تأكّد من صيغة الرابط (بدون «‎/odoo‎» في آخره).',
+  'testErrTimeout': 'انتهت مهلة الاتصال. تأكّد من أن الخادم متاح.',
+  'testErrUnreachable': 'تعذّر الوصول إلى الخادم. تأكّد من الرابط.',
   'auth_password': 'كلمة المرور',
   'quick_reply_more': 'أعطني المزيد',
   'quick_reply_summarize': 'لخّص ده',

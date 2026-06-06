@@ -64,7 +64,19 @@ class _CredentialFormState extends State<CredentialForm> {
   _TestStatus _testStatus = _TestStatus.idle;
   String? _testError;
 
-  bool _initialised = false;
+  /// True once the controllers have been filled from a known source — a
+  /// new-credential default set, or an existing credential's payload.
+  /// Guards [_seed] so a rebuild never clobbers the user's edits.
+  bool _seeded = false;
+
+  /// Guards the one-shot detail fetch for an existing credential whose
+  /// cached row came from the list endpoint (payload omitted for security).
+  bool _detailRequested = false;
+
+  /// True while [loadEnvironmentCredentialDetail] is in flight. The form
+  /// shows a spinner and withholds seeding until it resolves, so the saved
+  /// values land in the fields instead of being briefly blank.
+  bool _detailLoading = false;
 
   @override
   void initState() {
@@ -81,8 +93,19 @@ class _CredentialFormState extends State<CredentialForm> {
     super.dispose();
   }
 
-  void _ensureControllers(CredentialSchema schema, Credential? saved) {
-    if (_initialised) return;
+  /// Create one controller per schema field exactly once so each input
+  /// keeps a stable identity across rebuilds. Values are filled by [_seed].
+  void _ensureControllers(CredentialSchema schema) {
+    if (_fieldControllers.isNotEmpty) return;
+    for (final field in schema.fields) {
+      _fieldControllers[field.name] = TextEditingController();
+    }
+  }
+
+  /// Fill the controllers from [saved] (or schema defaults when creating).
+  /// Idempotent via [_seeded] — only the first call with usable data wins.
+  void _seed(CredentialSchema schema, Credential? saved) {
+    if (_seeded) return;
     _label.text = saved?.label ?? '';
     final payload = saved?.payload ?? const <String, dynamic>{};
     for (final field in schema.fields) {
@@ -95,7 +118,7 @@ class _CredentialFormState extends State<CredentialForm> {
                   (field.options?.isNotEmpty ?? false)
               ? field.options!.first
               : '');
-      _fieldControllers[field.name] = TextEditingController(text: initial);
+      _fieldControllers[field.name]!.text = initial;
     }
     // Seed the auth-type mirror so dependent fields render with the
     // right initial label/help on the first frame.
@@ -103,7 +126,19 @@ class _CredentialFormState extends State<CredentialForm> {
     if (driver != null && driver.text.isNotEmpty) {
       _activeAuthType = driver.text;
     }
-    _initialised = true;
+    _seeded = true;
+  }
+
+  /// Pull the full bundle (with payload) for an existing credential so the
+  /// form can show its saved values. Resolves whether the fetch succeeds or
+  /// fails; on failure the form seeds empty and the user can re-enter.
+  Future<void> _fetchDetail() async {
+    await context.read<VaultCubit>().loadEnvironmentCredentialDetail(
+          envId: widget.envId,
+          kind: widget.kind,
+        );
+    if (!mounted) return;
+    setState(() => _detailLoading = false);
   }
 
   void _onAuthTypeChanged(CredentialSchema schema, String next) {
@@ -192,7 +227,7 @@ class _CredentialFormState extends State<CredentialForm> {
     final schema = data?.schemaFor(widget.kind);
     final saved = data?.credentialFor(widget.envId, widget.kind);
 
-    if (schema == null) {
+    if (schema == null || data == null) {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Text(
@@ -202,7 +237,40 @@ class _CredentialFormState extends State<CredentialForm> {
       );
     }
 
-    _ensureControllers(schema, saved);
+    _ensureControllers(schema);
+
+    // Has this env's credential list loaded yet? Until it has, a null
+    // `saved` is ambiguous ("no credential" vs "not fetched"), so we wait
+    // rather than seed the form as a blank new-credential.
+    final credsLoaded = data.credentialsByEnv.containsKey(widget.envId);
+    // An existing credential whose payload the list endpoint omitted —
+    // fetch the full row once so the saved values fill the fields.
+    if (credsLoaded &&
+        saved != null &&
+        saved.payload == null &&
+        !_detailRequested) {
+      _detailRequested = true;
+      _detailLoading = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetchDetail();
+      });
+    }
+
+    final loading = !credsLoaded || _detailLoading;
+    if (loading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 56),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
+          ),
+        ),
+      );
+    }
+
+    _seed(schema, saved);
 
     final hasCredential = saved != null;
     String hint;
@@ -323,7 +391,47 @@ class _SchemaField extends StatelessWidget {
     if (field.labelKey != null && field.labelKey!.isNotEmpty) {
       return tr.lookup(field.labelKey!, fallback: field.label);
     }
+    // App-side fallback keyed by field name — covers schemas the server
+    // ships without a `label_key`, so an Arabic UI shows a localized label
+    // instead of the English `field.label`.
+    final byName = _fallbackLabelKey();
+    if (byName != null) {
+      return tr.lookup(byName, fallback: field.label);
+    }
     return field.label;
+  }
+
+  /// Best-effort i18n key for a well-known credential field name. `null`
+  /// for unrecognized fields (the caller then keeps the server's label).
+  String? _fallbackLabelKey() {
+    switch (field.name) {
+      case 'url':
+        return 'credUrl';
+      case 'db':
+      case 'database':
+        return 'credDb';
+      case 'username':
+      case 'user':
+      case 'login':
+        return 'credUsername';
+      case 'secret':
+        // The secret's meaning tracks the auth type when it's known.
+        if (activeAuthType == 'api_key') return 'authApiKey';
+        if (activeAuthType == 'password') return 'authPassword';
+        return 'credSecret';
+      case 'auth_type':
+        return 'authType';
+      case 'host':
+        return 'credHost';
+      case 'port':
+        return 'credPort';
+      case 'password':
+        return 'authPassword';
+      case 'token':
+        return 'credToken';
+      default:
+        return null;
+    }
   }
 
   String _resolvePlaceholder(BuildContext context) {
@@ -485,15 +593,16 @@ class _TestConnectionRow extends StatelessWidget {
           const SizedBox(height: 8),
           _TestBadge(
             status: status,
-            // For `failed`, render "Connection failed: <server reason>".
-            // Server-side `error` messages are English and developer-
-            // facing — surfacing them verbatim is fine per spec §4.
+            // For `failed`, render "Connection failed: <reason>". The
+            // server's `error` is developer-facing English; [testConnectionError]
+            // maps the common cases to the active locale and falls back to
+            // the raw text only for unknown errors.
             text: switch (status) {
               _TestStatus.running => tr.testingConnection,
               _TestStatus.ok => tr.testConnectionOk,
               _TestStatus.failed => error == null
                   ? tr.testConnectionFailed
-                  : '${tr.testConnectionFailed}: $error',
+                  : '${tr.testConnectionFailed}: ${tr.testConnectionError(error!)}',
               _TestStatus.idle => '',
             },
             color: switch (status) {

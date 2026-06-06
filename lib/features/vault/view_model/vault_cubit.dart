@@ -363,6 +363,57 @@ class VaultCubit extends Cubit<VaultState> {
     }
   }
 
+  /// Fetch the full credential bundle (with decrypted payload) for one
+  /// env+kind and merge it into the cache, replacing the payload-less row
+  /// that came from the list endpoint. The credential form calls this when
+  /// it opens an existing credential so its fields show the saved values
+  /// instead of rendering empty — the list response omits `payload` for
+  /// security, so the cache alone can't fill the form.
+  Future<void> loadEnvironmentCredentialDetail({
+    required String envId,
+    required CredentialKind kind,
+  }) async {
+    final current = state.data.dataOrNull;
+    if (current == null) return;
+    try {
+      final full = await _repo.getEnvironmentCredential(
+        environmentId: envId,
+        kind: kind,
+      );
+      // The credential may have been deleted (or the env swapped out)
+      // while the detail fetch was in flight — re-read the latest state.
+      final latest = state.data.dataOrNull;
+      if (latest == null) return;
+      final existing = latest.credentialsByEnv[envId] ?? const <Credential>[];
+      final next = [
+        for (final c in existing)
+          if (c.kind != kind) c,
+        full,
+      ];
+      emit(state.copyWith(
+        data: DataSuccess(latest.copyWith(
+          credentialsByEnv: {...latest.credentialsByEnv, envId: next},
+        )),
+      ));
+    } catch (e, st) {
+      // Non-fatal: the form falls back to empty fields and the user can
+      // still overwrite the credential. Surface a typed failure for the
+      // view's listener, same as the list fetch.
+      AppLogger.warn(
+        _tag,
+        'loadEnvironmentCredentialDetail(env=$envId, kind=${kind.wire}) failed',
+        error: e,
+        stackTrace: st,
+      );
+      emit(state.copyWith(
+        actionFailure: VaultActionFailure(
+          action: VaultAction.loadCredentials,
+          failure: ApiErrorMapper.toFailure(e),
+        ),
+      ));
+    }
+  }
+
   Future<bool> saveEnvironmentCredential({
     required String envId,
     required CredentialKind kind,

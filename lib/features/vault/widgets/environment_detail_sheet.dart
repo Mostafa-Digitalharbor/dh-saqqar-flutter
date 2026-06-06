@@ -209,7 +209,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                     tabAlignment: TabAlignment.start,
                     tabs: [
                       for (final k in _kinds)
-                        Tab(text: _kindLabel(k, schemas)),
+                        Tab(text: _kindLabel(context, k, schemas)),
                     ],
                   ),
                 ),
@@ -233,12 +233,27 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
     );
   }
 
-  /// Resolve the human label for a kind from the loaded schemas, falling
-  /// back to the enum name when the schema endpoint hasn't returned yet.
-  String _kindLabel(CredentialKind kind, List<CredentialSchema> schemas) {
+  /// Resolve the human label for a kind. Prefers a localized app string so
+  /// an Arabic UI doesn't show the server's English `schema.label`; falls
+  /// back to the server label, then the enum name.
+  String _kindLabel(
+    BuildContext context,
+    CredentialKind kind,
+    List<CredentialSchema> schemas,
+  ) {
+    String serverLabel = kind.name;
     for (final s in schemas) {
-      if (s.kind == kind) return s.label;
+      if (s.kind == kind) {
+        serverLabel = s.label;
+        break;
+      }
     }
-    return kind.name;
+    final key = switch (kind) {
+      CredentialKind.xmlrpc => 'credKindXmlrpc',
+      CredentialKind.postgres => 'credKindPostgres',
+      CredentialKind.serverShell => 'credKindServerShell',
+      CredentialKind.github => 'credKindGithub',
+    };
+    return context.tr.lookup(key, fallback: serverLabel);
   }
 }
