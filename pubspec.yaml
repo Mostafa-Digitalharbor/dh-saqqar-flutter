@@ -60,6 +60,11 @@ dependencies:
   connectivity_plus: ^7.1.1
   flutter_markdown: ^0.7.7+1
 
+  # Opens markdown links (Odoo record deep-links in assistant replies) in
+  # the external browser / Odoo app on tap. Copy-to-clipboard stays as the
+  # fallback for non-launchable schemes (Gap G).
+  url_launcher: ^6.3.1
+
   # Runtime API for the native splash. The `:create` generator stays in
   # dev_dependencies; this dep is just for `FlutterNativeSplash.preserve()`
   # and `.remove()` calls inside main.dart / the in-app splash widget.

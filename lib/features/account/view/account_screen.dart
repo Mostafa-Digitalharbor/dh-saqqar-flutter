@@ -14,6 +14,8 @@ import '../../../shared/widgets/page_scaffold.dart';
 import '../../../shared/widgets/sign_out_helper.dart';
 import '../../../shared/widgets/skeleton_block.dart';
 import '../../auth/view_model/auth_cubit.dart';
+import '../../billing/data/plan_models.dart';
+import '../../billing/view_model/plan_cubit.dart';
 import '../widgets/widgets.dart';
 
 /// Account tab — identity hero (with stats line), preferences, change
@@ -57,6 +59,24 @@ class AccountScreen extends StatelessWidget {
                 onLongPress: () => context.pushNamed(RouteNames.storybook),
               ),
               const SizedBox(height: 14),
+              // Plan & usage (Gap A) — self-hides until a conversation
+              // snapshot has populated PlanCubit, so it appears once the
+              // user has opened any chat this session. The BlocBuilder owns
+              // the trailing spacing so there's no empty gap when hidden.
+              BlocBuilder<PlanCubit, PlanSnapshot?>(
+                builder: (context, plan) => plan == null
+                    ? const SizedBox.shrink()
+                    : const Padding(
+                        padding: EdgeInsets.only(bottom: 14),
+                        child: PlanUsageCard(),
+                      ),
+              ),
+              // Personal information (Gap I) — edit first/last name; email
+              // stays read-only. Only shown once the user is hydrated.
+              if (user != null) ...[
+                const PersonalInfoCard(),
+                const SizedBox(height: 14),
+              ],
               PreferencesCard(mode: mode, locale: locale),
               const SizedBox(height: 14),
               const ChangePasswordCard(),

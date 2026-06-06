@@ -44,6 +44,7 @@ class ChatComposer extends StatelessWidget {
     this.onStop,
     this.stopping = false,
     this.focusNode,
+    this.voiceEnabled = true,
   });
 
   final TextEditingController controller;
@@ -123,6 +124,12 @@ class ChatComposer extends StatelessWidget {
   /// Tapped on the discard X inside [RecordingOverlay]. Drops the audio
   /// buffer without uploading and returns to idle.
   final VoidCallback onDiscardRecording;
+
+  /// Whether the voice/mic affordance is available on the caller's plan
+  /// (Gap C). `false` hides the mic entirely for Free users — the server
+  /// 403s `/transcribe/` for them, so showing the button would just be a
+  /// dead end. Defaults to `true` so we never hide it on an unknown plan.
+  final bool voiceEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -242,11 +249,13 @@ class ChatComposer extends StatelessWidget {
                           // gating as Send (offline / no env / mid-
                           // generation) so the user can't start a
                           // recording at a surface that isn't ready to
-                          // accept the transcript.
-                          VoiceInputButton(
-                            enabled: onSend != null && onStop == null,
-                            onStart: onStartRecording,
-                          ),
+                          // accept the transcript. Hidden entirely when
+                          // voice is locked on the plan (Gap C).
+                          if (voiceEnabled)
+                            VoiceInputButton(
+                              enabled: onSend != null && onStop == null,
+                              onStart: onStartRecording,
+                            ),
                           const Spacer(),
                           if (deepThink) ...[
                             _ActiveModeBadge(

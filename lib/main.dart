@@ -21,6 +21,7 @@ import 'core/storage/secure_token_store.dart';
 import 'core/theme/view_model/theme_cubit.dart';
 import 'features/auth/data/auth_api.dart';
 import 'features/auth/view_model/auth_cubit.dart';
+import 'features/billing/view_model/plan_cubit.dart';
 import 'features/chat/data/live_env_ack_service.dart';
 import 'features/chat/data/transcribe_api.dart';
 import 'features/chat/view_model/deep_think_cubit.dart';
@@ -274,6 +275,7 @@ Future<void> _bootApp() async {
             },
           ),
           BlocProvider<DeepThinkCubit>(create: (_) => DeepThinkCubit(prefs)),
+          BlocProvider<PlanCubit>(create: (_) => PlanCubit()),
           BlocProvider<RunningAgentsCubit>(
             create: (_) => RunningAgentsCubit(),
           ),

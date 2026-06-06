@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
@@ -96,8 +97,27 @@ class ChatMarkdown extends StatelessWidget {
       selectable: true,
       softLineBreak: true,
       styleSheet: styleSheet,
-      onTapLink: (text, href, title) => _copyLink(context, href),
+      onTapLink: (text, href, title) => _openLink(context, href),
     );
+  }
+
+  /// Open the link (Gap G). Odoo record deep-links should open in the
+  /// browser / Odoo app, so http(s) URLs launch externally. Anything that
+  /// can't be launched (odd scheme, no handler) falls back to copying the
+  /// URL to the clipboard so the user still gets it.
+  Future<void> _openLink(BuildContext context, String? href) async {
+    if (href == null || href.isEmpty) return;
+    final uri = Uri.tryParse(href);
+    if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      try {
+        final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (ok) return;
+      } catch (_) {
+        // Fall through to copy on any launch failure.
+      }
+    }
+    if (!context.mounted) return;
+    await _copyLink(context, href);
   }
 
   Future<void> _copyLink(BuildContext context, String? href) async {

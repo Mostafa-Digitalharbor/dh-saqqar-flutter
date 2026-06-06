@@ -7,9 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../features/account/view/account_screen.dart';
-import '../../features/auth/view/sign_in_screen.dart';
-import '../../features/auth/view/sign_up_screen.dart';
+import '../../features/auth/view/auth_flow_screen.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
+import '../../features/auth/view_model/auth_flow_cubit.dart';
 import '../../features/auth/view_model/auth_state.dart';
 import '../../features/chat/view/chat_screen.dart';
 import '../../features/chat/view_model/chat_cubit.dart';
@@ -88,7 +88,7 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
         name: RouteNames.signIn,
         pageBuilder: (_, state) => _transitionPage(
           state: state,
-          child: const SignInScreen(),
+          child: const AuthFlowScreen(initial: AuthFlowStep.signInEmail),
           kind: _RouteTransitionKind.fade,
         ),
       ),
@@ -97,7 +97,7 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
         name: RouteNames.signUp,
         pageBuilder: (_, state) => _transitionPage(
           state: state,
-          child: const SignUpScreen(),
+          child: const AuthFlowScreen(initial: AuthFlowStep.signUpEmail),
           kind: _RouteTransitionKind.fade,
         ),
       ),

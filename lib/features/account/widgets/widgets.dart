@@ -2,6 +2,8 @@
 library;
 
 export 'change_password_card.dart';
+export 'personal_info_card.dart';
+export 'plan_usage_card.dart';
 export 'preferences_card.dart';
 export 'profile_hero.dart';
 export 'stats_line.dart';

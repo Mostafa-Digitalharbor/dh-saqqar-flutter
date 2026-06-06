@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../billing/data/plan_models.dart';
 import '../../inbox/data/approval_models.dart';
 import '../../inbox/data/artifact_models.dart';
 import '../../vault/data/credential_models.dart';
@@ -225,6 +226,8 @@ class Conversation {
     this.environment,
     this.project,
     this.isArchived = false,
+    this.plan,
+    this.needsEnvironment = false,
   });
 
   final String id;
@@ -271,6 +274,15 @@ class Conversation {
   final Environment? environment;
   final Project? project;
 
+  /// Plan / quota / feature snapshot for the calling user. Carried on every
+  /// conversation snapshot; surfaced app-wide via `PlanCubit`. `null` only
+  /// on older snapshots that predate the field.
+  final PlanSnapshot? plan;
+
+  /// `true` when this conversation has no environment bound yet — drives the
+  /// "Use My Database" env-hint banner (Gap H).
+  final bool needsEnvironment;
+
   factory Conversation.fromJson(Map<String, dynamic> json) {
     final env = json['environment'];
     final proj = json['project'];
@@ -308,6 +320,10 @@ class Conversation {
               'environments': const <Map<String, dynamic>>[],
             })
           : null,
+      plan: json['plan'] is Map<String, dynamic>
+          ? PlanSnapshot.fromJson(json['plan'] as Map<String, dynamic>)
+          : null,
+      needsEnvironment: json['needs_environment'] as bool? ?? false,
     );
   }
 
@@ -329,6 +345,8 @@ class Conversation {
     String? activeCredential,
     Environment? environment,
     Project? project,
+    PlanSnapshot? plan,
+    bool? needsEnvironment,
   }) {
     return Conversation(
       id: id,
@@ -346,6 +364,8 @@ class Conversation {
       activeCredential: activeCredential ?? this.activeCredential,
       environment: environment ?? this.environment,
       project: project ?? this.project,
+      plan: plan ?? this.plan,
+      needsEnvironment: needsEnvironment ?? this.needsEnvironment,
     );
   }
 }
@@ -372,10 +392,17 @@ class ConversationSnapshot {
     this.availableCredentials = const [],
     this.disabledCredentials = const [],
     this.pendingActions = const [],
+    this.quotaExceeded,
   });
 
   final Conversation conversation;
   final List<Message> messages;
+
+  /// Set to the exceeded window (`day | week | month`) when the server
+  /// blocked the run because the user is over a usage cap. `null` otherwise.
+  /// The assistant message already carries the bilingual limit notice; this
+  /// signal lets the UI add an upgrade CTA and block further sends (Gap B).
+  final QuotaWindow? quotaExceeded;
 
   /// ISO timestamp of the latest message in the conversation. Pass back
   /// as `?since=` on the next poll. `null` when the conversation has no
@@ -422,6 +449,7 @@ class ConversationSnapshot {
           .cast<Map<String, dynamic>>()
           .map(PendingAction.fromJson)
           .toList(),
+      quotaExceeded: QuotaWindow.fromWire(json['quota_exceeded'] as String?),
     );
   }
 
@@ -438,6 +466,7 @@ class ConversationSnapshot {
     List<Credential>? availableCredentials,
     List<String>? disabledCredentials,
     List<PendingAction>? pendingActions,
+    QuotaWindow? quotaExceeded,
   }) {
     return ConversationSnapshot(
       conversation: conversation ?? this.conversation,
@@ -450,6 +479,7 @@ class ConversationSnapshot {
           availableCredentials ?? this.availableCredentials,
       disabledCredentials: disabledCredentials ?? this.disabledCredentials,
       pendingActions: pendingActions ?? this.pendingActions,
+      quotaExceeded: quotaExceeded ?? this.quotaExceeded,
     );
   }
 }

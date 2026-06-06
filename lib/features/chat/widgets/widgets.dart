@@ -20,6 +20,7 @@ export 'chat_date_separator.dart';
 export 'chat_markdown.dart';
 export 'chat_mini_switch.dart';
 export 'chat_header_badges.dart';
+export 'chat_plan_banner.dart';
 export 'chat_rail_drawer.dart';
 export 'chat_run_progress_card.dart';
 export 'chat_sidebar_drawer.dart';

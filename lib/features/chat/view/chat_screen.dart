@@ -37,6 +37,7 @@ import '../../../shared/widgets/fade_slide_in.dart';
 // import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/offline_banner.dart';
 import '../../../shared/widgets/responsive_content.dart';
+import '../../billing/view_model/plan_cubit.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../inbox/view_model/approvals_cubit.dart';
 import '../view_model/deep_think_cubit.dart';
@@ -1402,6 +1403,9 @@ class _ChatScreenState extends State<ChatScreen>
         'csv', 'tsv',
         'xlsx', 'xls', 'xlsm',
         'docx', 'doc',
+        // Archives (Gap F) — Odoo addon bundles. 500 MB cap (vs 25 MB for
+        // the rest), enforced per-file below to match the server.
+        'zip', 'tar', 'gz', 'tgz',
       ],
       withData: false,
       // Multi-select shipped in 1.0.2 after testers asked for "أرفق أكتر
@@ -1413,9 +1417,17 @@ class _ChatScreenState extends State<ChatScreen>
 
     final newChips = <DemoAttachment>[];
     final newFiles = <File>[];
+    final tooLarge = <String>[];
     for (final picked in result.files) {
       final path = picked.path;
       if (path == null || path.isEmpty) continue;
+      // Kind-aware size cap (Gap F): archives up to 500 MB (addon zips),
+      // everything else 25 MB. Matches the server, which 413s over the cap.
+      final capMb = _isArchiveExt(picked.extension) ? 500 : 25;
+      if (picked.size > capMb * 1024 * 1024) {
+        tooLarge.add(picked.name);
+        continue;
+      }
       newChips.add(DemoAttachment(
         name: picked.name,
         kind: _kindForExtension(picked.extension),
@@ -1423,6 +1435,16 @@ class _ChatScreenState extends State<ChatScreen>
         imageUrl: _isImageExt(picked.extension) ? picked.path : null,
       ));
       newFiles.add(File(path));
+    }
+    if (tooLarge.isNotEmpty) {
+      // Name the cap of the first rejected file; the rest were skipped too.
+      final firstExt = result.files
+          .firstWhere((f) => f.name == tooLarge.first)
+          .extension;
+      _toast(context.tr.attachmentTooLarge(
+        tooLarge.first,
+        _isArchiveExt(firstExt) ? 500 : 25,
+      ));
     }
     if (newFiles.isEmpty) return;
 
@@ -1468,12 +1490,18 @@ class _ChatScreenState extends State<ChatScreen>
     if (['xlsx', 'xls', 'xlsm'].contains(e)) return 'XLSX';
     if (['csv', 'tsv'].contains(e)) return 'CSV';
     if (['docx', 'doc'].contains(e)) return 'DOCX';
+    if (['zip', 'tar', 'gz', 'tgz'].contains(e)) return 'ZIP';
     return e.toUpperCase().padRight(3, ' ').trimRight();
   }
 
   bool _isImageExt(String? ext) =>
       ['png', 'jpg', 'jpeg', 'gif', 'webp']
           .contains((ext ?? '').toLowerCase());
+
+  /// Archive extensions get the 500 MB cap (Odoo addon bundles); everything
+  /// else stays at 25 MB. Mirrors the server's per-kind limit (Gap F).
+  bool _isArchiveExt(String? ext) =>
+      ['zip', 'tar', 'gz', 'tgz'].contains((ext ?? '').toLowerCase());
 
   /// Human-readable file size — "184 KB" / "2.4 MB". Used in the
   /// attachment chip subtitle so the user gets a sense of upload cost
@@ -1691,14 +1719,13 @@ class _ChatScreenState extends State<ChatScreen>
     //     so flipping from the web shows up here on the next poll).
     //   * New chat (no cubit yet) → local state until the conversation
     //     gets created; carried forward into the first send.
-    final snapshotConv = _isNewChat
+    final chatSnapshot = _isNewChat
         ? null
-        : context
-            .watch<ChatCubit>()
-            .state
-            .data
-            .dataOrNull
-            ?.conversation;
+        : context.watch<ChatCubit>().state.data.dataOrNull;
+    final snapshotConv = chatSnapshot?.conversation;
+    // Server blocked this turn for being over a usage cap (Gap B). Drives
+    // the quota banner + a disabled composer until the window resets.
+    final quotaWindow = chatSnapshot?.quotaExceeded;
     final deepThink = snapshotConv?.deepThink ??
         context.watch<DeepThinkCubit>().state;
     final autoApprove = snapshotConv?.autoApprove ?? _autoApprove;
@@ -1714,6 +1741,17 @@ class _ChatScreenState extends State<ChatScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         context.read<DeepThinkCubit>().set(serverDeepThink);
+      });
+    }
+
+    // Surface the latest plan / quota / feature snapshot app-wide (Gap A)
+    // so the account usage card, plan badge, and feature gating all read one
+    // source of truth. Deferred a frame for the same reason as deep-think.
+    final planSnapshot = snapshotConv?.plan;
+    if (planSnapshot != null && !_isNewChat) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<PlanCubit>().update(planSnapshot);
       });
     }
 
@@ -1870,6 +1908,15 @@ class _ChatScreenState extends State<ChatScreen>
             // ChatApprovalCard inside the message list (see
             // _buildMessageList), scrolling with the rest of the chat
             // so they no longer hog the composer space.
+            //
+            // Plan/quota banner (Gap A near-limit + Gap B exceeded). Sits
+            // directly above the composer so the upgrade CTA is next to the
+            // (now disabled) send affordance.
+            ChatPlanBanner(
+              plan: context.watch<PlanCubit>().state,
+              exceededWindow: quotaWindow,
+              onUpgrade: _showUpgradeSheet,
+            ),
             ChatComposer(
               controller: _composer,
               focusNode: _composerFocus,
@@ -1877,7 +1924,14 @@ class _ChatScreenState extends State<ChatScreen>
               onAttach: _pickAttachment,
               onRemoveAttachment: _removeAttachmentAt,
               onPreviewAttachment: _previewAttachmentAt,
-              onSend: online ? _send : null,
+              // Block send when offline OR over a usage cap (Gap B). The
+              // quota banner above explains why send is disabled.
+              onSend: (online && quotaWindow == null) ? _send : null,
+              // Hide the mic when voice is locked on the plan (Gap C).
+              // Null plan → permissive (don't hide a feature we haven't
+              // confirmed is locked).
+              voiceEnabled:
+                  context.watch<PlanCubit>().state?.feature('voice') ?? true,
               // Voice recording — overlay replaces the text field while
               // [_recording] / [_transcribing] is true.
               recording: _recording,
@@ -2031,7 +2085,7 @@ class _ChatScreenState extends State<ChatScreen>
   DemoApproval _adaptApiApproval(api.Approval a) {
     return DemoApproval(
       id: a.id,
-      title: _approvalTitleFor(a.actionType),
+      title: _approvalTitleForApi(a),
       prompt: a.prompt,
       actionType: a.actionType.wire,
       risk: _riskFor(a.actionType),
@@ -2047,15 +2101,18 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  String _approvalTitleFor(api.ApprovalActionType t) {
-    return switch (t) {
-      api.ApprovalActionType.credentialStorage => 'Credential storage',
-      api.ApprovalActionType.credentialUsage => 'Credential usage',
-      api.ApprovalActionType.serverCommand => 'Server command',
-      api.ApprovalActionType.odooWrite => 'Odoo write',
-      api.ApprovalActionType.reportExport => 'Report export',
-      api.ApprovalActionType.unknown => 'Approval',
-    };
+  /// Friendly approval title (Gap E). For Odoo writes with a server-resolved
+  /// model label, reads "Create 6 × Manufacturing Order" in the active
+  /// locale; otherwise a localized action-type title. Replaces the old
+  /// English-only [_approvalTitleFor].
+  String _approvalTitleForApi(api.Approval a) {
+    final tr = context.tr;
+    final label = a.modelLabel(isArabic: tr.isArabic);
+    if (label != null) {
+      final verb = tr.approvalOperationVerb(a.payload['operation']?.toString());
+      return tr.approvalModelTitle(verb, a.recordCount, label);
+    }
+    return tr.approvalActionTitle(a.actionType.wire);
   }
 
   String _riskFor(api.ApprovalActionType t) {
@@ -2579,6 +2636,44 @@ class _ChatScreenState extends State<ChatScreen>
 
   void _toast(String text) {
     AppToast.show(context, message: text);
+  }
+
+  /// Upgrade CTA target (Gap B). Self-serve payments aren't built yet
+  /// (Gap L pricing screen is deferred until a payment provider is signed),
+  /// so this shows a "contact us" sheet rather than a checkout. Wire it to
+  /// the pricing screen once that lands.
+  void _showUpgradeSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                sheetCtx.tr.upgradeSheetTitle,
+                style: sheetCtx.text.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                sheetCtx.tr.upgradeSheetBody,
+                style: sheetCtx.text.bodyMedium
+                    ?.copyWith(color: sheetCtx.saqqar.muted, height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              PrimaryButton(
+                label: sheetCtx.tr.close,
+                onPressed: () => Navigator.of(sheetCtx).pop(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Pull-to-refresh handler bound to the message list. Triggers an

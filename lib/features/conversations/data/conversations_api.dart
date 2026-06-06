@@ -247,8 +247,10 @@ class ConversationsApi {
   // ── Attachments ─────────────────────────────────────────────────────
 
   /// `POST /api/v1/conversations/<id>/attachments/` — multipart upload.
-  /// Per-file cap 25 MB; server returns 413 on overrun and 400 if
-  /// `files` is empty.
+  /// Per-file cap is kind-aware: archives (.zip/.tar/.gz/.tgz) up to 500 MB
+  /// for Odoo addon bundles, everything else 25 MB. Server returns 413 on
+  /// overrun and 400 if `files` is empty. The chat picker pre-checks the
+  /// cap so the user gets an instant local notice instead of a round-trip.
   Future<List<Attachment>> uploadAttachments({
     required String conversationId,
     required List<File> files,

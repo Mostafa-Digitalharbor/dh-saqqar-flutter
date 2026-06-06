@@ -152,6 +152,20 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  /// Adopt a session minted by the email-OTP flow (signup complete, email
+  /// login verify, or password-reset complete). Persists the bearer token
+  /// and flips to authenticated — the router gate then routes to /chats.
+  /// Mirrors the tail of [login] without re-hitting a password endpoint.
+  Future<void> adoptSession(AuthSession session) async {
+    await _store.writeAccessToken(session.token);
+    final counts = await _safeCounts();
+    emit(state.copyWith(
+      status: AuthStatus.authenticated,
+      user: session.user,
+      counts: counts,
+    ));
+  }
+
   /// Best-effort POST to /logout/ then clear local state. The server call
   /// is fire-and-forget for UX — if it fails (offline, server down), we
   /// still want the device signed out locally.
@@ -164,6 +178,20 @@ class AuthCubit extends Cubit<AuthState> {
       await _store.clear();
       emit(const AuthState(status: AuthStatus.unauthenticated));
     }
+  }
+
+  /// Update the user's display name (Gap I). Patches `/auth/me/` and swaps
+  /// the refreshed user into state so the hero + chat header update live.
+  /// Re-throws so the form can surface validation errors.
+  Future<void> updateProfile({
+    String? firstName,
+    String? lastName,
+  }) async {
+    final me = await _api.updateProfile(
+      firstName: firstName,
+      lastName: lastName,
+    );
+    emit(state.copyWith(user: me.user, counts: me.counts));
   }
 
   /// Rotates the password and stores the fresh token. The current device

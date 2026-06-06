@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/i18n/app_localizations.dart';
 import '../core/routing/route_names.dart';
 import '../core/theme/app_icons.dart';
+import '../features/billing/view_model/plan_cubit.dart';
 import '../shared/extensions/context_extensions.dart';
 import '../shared/widgets/confirm_dialog.dart';
 
@@ -36,20 +38,21 @@ class HomeShell extends StatelessWidget {
     ),
   ];
 
-  int _indexFor(String location) {
-    for (var i = 0; i < _tabs.length; i++) {
-      if (location == _tabs[i].path ||
-          location.startsWith('${_tabs[i].path}/')) {
+  int _indexFor(String location, List<_TabSpec> tabs) {
+    for (var i = 0; i < tabs.length; i++) {
+      if (location == tabs[i].path || location.startsWith('${tabs[i].path}/')) {
         return i;
       }
     }
     return 0;
   }
 
-  String _labelFor(int i, BuildContext context) {
-    return switch (i) {
-      0 => context.tr.tabChats,
-      1 => context.tr.tabVault,
+  /// Label by route name (not index) so the visible-tab list can be filtered
+  /// per plan without the labels shifting onto the wrong tabs.
+  String _labelForRoute(String routeName, BuildContext context) {
+    return switch (routeName) {
+      RouteNames.chats => context.tr.tabChats,
+      RouteNames.vault => context.tr.tabVault,
       _ => context.tr.tabAccount,
     };
   }
@@ -57,8 +60,18 @@ class HomeShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
-    final selected = _indexFor(location);
     final s = context.saqqar;
+
+    // Vault is hidden for Free users (Gap C) — they can't store credentials
+    // effectively. `exempt` (staff) and any paid plan keep it. Null plan →
+    // show it (don't hide a feature we haven't confirmed is locked).
+    final plan = context.watch<PlanCubit>().state;
+    final showVault = plan == null || plan.exempt || !plan.isFree;
+    final tabs = [
+      for (final t in _tabs)
+        if (t.routeName != RouteNames.vault || showVault) t,
+    ];
+    final selected = _indexFor(location, tabs);
 
     // Per-tab transitions are owned by the GoRouter `CustomTransitionPage`
     // pageBuilders. We MUST NOT wrap `child` in an AnimatedSwitcher here:
@@ -99,13 +112,13 @@ class HomeShell extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               child: Row(
                 children: [
-                  for (var i = 0; i < _tabs.length; i++)
+                  for (var i = 0; i < tabs.length; i++)
                     Expanded(
                       child: _NavTab(
-                        spec: _tabs[i],
-                        label: _labelFor(i, context),
+                        spec: tabs[i],
+                        label: _labelForRoute(tabs[i].routeName, context),
                         selected: i == selected,
-                        onTap: () => context.go(_tabs[i].path),
+                        onTap: () => context.go(tabs[i].path),
                       ),
                     ),
                 ],

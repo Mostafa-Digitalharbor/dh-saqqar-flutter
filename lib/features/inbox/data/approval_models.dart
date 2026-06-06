@@ -70,6 +70,9 @@ class Approval {
     this.createdAt,
     this.resolvedAt,
     this.conversation,
+    this.modelLabelEn,
+    this.modelLabelAr,
+    this.recordCount,
   });
 
   final String id;
@@ -90,7 +93,28 @@ class Approval {
   /// snapshot, the conversation context is implicit.
   final ApprovalConversationRef? conversation;
 
+  /// Human model name resolved server-side (Gap E), e.g. "Manufacturing
+  /// Order" / "أمر التصنيع". Pick by locale via [modelLabel]. `null` on
+  /// legacy approvals or non-Odoo actions.
+  final String? modelLabelEn;
+  final String? modelLabelAr;
+
+  /// Records the write touches (create=1, create_many=len, …). `null` when
+  /// not applicable to the action type.
+  final int? recordCount;
+
+  /// Locale-aware model name — Arabic when [isArabic], else English; falls
+  /// back to the other locale when one side is missing. `null` when neither
+  /// is present (caller then renders the raw payload as before).
+  String? modelLabel({required bool isArabic}) {
+    final primary = isArabic ? modelLabelAr : modelLabelEn;
+    final fallback = isArabic ? modelLabelEn : modelLabelAr;
+    final v = (primary != null && primary.isNotEmpty) ? primary : fallback;
+    return (v != null && v.isNotEmpty) ? v : null;
+  }
+
   factory Approval.fromJson(Map<String, dynamic> json) {
+    final ml = json['model_label'];
     return Approval(
       id: json['id'] as String,
       actionType: ApprovalActionType.fromWire(json['action_type'] as String?),
@@ -105,6 +129,9 @@ class Approval {
               json['conversation'] as Map<String, dynamic>,
             )
           : null,
+      modelLabelEn: ml is Map ? ml['en'] as String? : null,
+      modelLabelAr: ml is Map ? ml['ar'] as String? : null,
+      recordCount: (json['record_count'] as num?)?.toInt(),
     );
   }
 

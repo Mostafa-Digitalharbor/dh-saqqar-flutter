@@ -10,6 +10,9 @@ class AuthUser {
     required this.username,
     required this.isStaff,
     required this.isSuperuser,
+    this.firstName = '',
+    this.lastName = '',
+    this.fullName = '',
     this.dateJoined,
     this.lastLogin,
   });
@@ -19,8 +22,25 @@ class AuthUser {
   final String username;
   final bool isStaff;
   final bool isSuperuser;
+
+  /// Display-name parts (Gap I). `me`, register, and the OTP signup
+  /// completion all return these now; older endpoints omit them (default '').
+  final String firstName;
+  final String lastName;
+  final String fullName;
+
   final DateTime? dateJoined;
   final DateTime? lastLogin;
+
+  /// Best display name: server `full_name` → "first last" → username.
+  String get displayName {
+    if (fullName.trim().isNotEmpty) return fullName.trim();
+    final joined = [firstName, lastName]
+        .where((p) => p.trim().isNotEmpty)
+        .join(' ')
+        .trim();
+    return joined.isNotEmpty ? joined : username;
+  }
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
@@ -29,6 +49,9 @@ class AuthUser {
       username: json['username'] as String? ?? '',
       isStaff: json['is_staff'] as bool? ?? false,
       isSuperuser: json['is_superuser'] as bool? ?? false,
+      firstName: json['first_name'] as String? ?? '',
+      lastName: json['last_name'] as String? ?? '',
+      fullName: json['full_name'] as String? ?? '',
       dateJoined: _parseDate(json['date_joined']),
       lastLogin: _parseDate(json['last_login']),
     );

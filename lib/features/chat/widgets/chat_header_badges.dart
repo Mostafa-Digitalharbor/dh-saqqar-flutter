@@ -95,11 +95,17 @@ class ChatHeaderBadges extends StatelessWidget {
                     ),
                     if (environment != null) ...[
                       if (environment!.isLive)
-                        _Badge(label: 'LIVE', color: s.warning),
+                        _Badge(label: context.tr.liveBadge, color: s.warning),
                       if (environment!.readOnly)
-                        _Badge(label: 'READ-ONLY', color: s.muted),
+                        _Badge(
+                          label: context.tr.readOnlyBadge,
+                          color: s.muted,
+                        ),
                       if (environment!.autoApprove)
-                        _Badge(label: 'AUTO', color: s.brandCyan),
+                        _Badge(
+                          label: context.tr.autoApproveBadge,
+                          color: s.brandCyan,
+                        ),
                     ],
                   ],
                 ),

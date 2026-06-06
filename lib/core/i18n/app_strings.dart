@@ -17,6 +17,10 @@ class AppStrings {
 
   bool get _isArabic => locale.languageCode == UiStrings.localeArabicCode;
 
+  /// Public form of [_isArabic] for callers that need to pick a locale-keyed
+  /// value off a model (e.g. an approval's `{en, ar}` model label).
+  bool get isArabic => _isArabic;
+
   Map<String, String> get _table => _isArabic ? _ar : _en;
 
   String _t(String key) => _table[key] ?? _en[key] ?? key;
@@ -707,19 +711,48 @@ class AppStrings {
   String get testConnectionOk => _t('testConnectionOk');
   String get testConnectionFailed => _t('testConnectionFailed');
 
-  /// Map a raw server-side connection error to a localized message. The
-  /// `/credentials/test/` endpoint returns developer-facing English; this
-  /// matches the common cases (auth failure, bad URL, timeout, unreachable)
-  /// to a clean localized line so an Arabic UI shows no English. Unknown
-  /// errors fall back to [raw] — translating arbitrary server text isn't
-  /// possible, so that's the one allowed English leak.
-  String testConnectionError(String raw) {
+  /// Localize a raw server-side error message. Backend `error` strings are
+  /// developer-facing English; this matches the common cases to a clean
+  /// localized line so an Arabic UI shows no English. Used both by the
+  /// credential test badge and by [ApiErrorMapper] for every API failure
+  /// that carries a server message. Unknown messages fall back to [raw] —
+  /// translating arbitrary server text isn't possible, so that's the one
+  /// allowed (and rare) English leak.
+  String localizeServerMessage(String raw) {
+    if (raw.isEmpty) return raw;
+    // English locale (or any non-Arabic) keeps the server's own wording.
+    if (!_isArabic) return raw;
     final lower = raw.toLowerCase();
     if (lower.contains('authentication failed') ||
         lower.contains('access denied') ||
         lower.contains('invalid password') ||
-        lower.contains('wrong login')) {
+        lower.contains('wrong login') ||
+        lower.contains('invalid credentials')) {
       return _t('testErrAuthFailed');
+    }
+    if ((lower.contains('provide') || lower.contains('required')) &&
+        (lower.contains('url') ||
+            lower.contains('username') ||
+            lower.contains('api key') ||
+            lower.contains('password'))) {
+      return _t('testErrMissingFields');
+    }
+    if (lower.contains('incorrect code') ||
+        lower.contains('invalid code') ||
+        lower.contains('wrong code') ||
+        lower.contains('code is incorrect') ||
+        lower.contains('verification code')) {
+      return _t('errInvalidCode');
+    }
+    if (lower.contains('expired') &&
+        (lower.contains('code') || lower.contains('otp'))) {
+      return _t('errExpiredCode');
+    }
+    if ((lower.contains('password') || lower.contains('new_password')) &&
+        (lower.contains('at least') ||
+            lower.contains('too short') ||
+            lower.contains('8 characters'))) {
+      return _t('password_too_short');
     }
     if (lower.contains('bad request') || lower.contains('http 400')) {
       return _t('testErrBadRequest');
@@ -731,11 +764,27 @@ class AppStrings {
         lower.contains('name or service not known') ||
         lower.contains('getaddrinfo') ||
         lower.contains('connection refused') ||
-        lower.contains('no route to host')) {
+        lower.contains('no route to host') ||
+        lower.contains('could not connect') ||
+        lower.contains('unreachable')) {
       return _t('testErrUnreachable');
+    }
+    if (lower.contains('already exists') || lower.contains('duplicate')) {
+      return _t('testErrDuplicate');
+    }
+    if (lower.contains('not found') || lower.contains('does not exist')) {
+      return _t('testErrNotFound');
+    }
+    if (lower.contains('permission') ||
+        lower.contains('not allowed') ||
+        lower.contains('forbidden')) {
+      return _t('testErrForbidden');
     }
     return raw;
   }
+
+  /// Back-compat alias used by the credential test badge.
+  String testConnectionError(String raw) => localizeServerMessage(raw);
   String get quickReplyMore => _t('quick_reply_more');
   String get quickReplySummarize => _t('quick_reply_summarize');
   String get quickReplyExport => _t('quick_reply_export');
@@ -771,6 +820,144 @@ class AppStrings {
   String get approvalsCoverageBody => _t('approvals_coverage_body');
   String get artifactsCoverageTitle => _t('artifacts_coverage_title');
   String get artifactsCoverageBody => _t('artifacts_coverage_body');
+
+  // Plan / quota / usage (Gap A + B)
+  String get planUsageTitle => _t('plan_usage_title');
+  String get planWindowDay => _t('plan_window_day');
+  String get planWindowWeek => _t('plan_window_week');
+  String get planWindowMonth => _t('plan_window_month');
+  String get planExemptLabel => _t('plan_exempt_label');
+  String get planNearLimitTitle => _t('plan_near_limit_title');
+  String get quotaExceededTitle => _t('quota_exceeded_title');
+  String get quotaUpgradeCta => _t('quota_upgrade_cta');
+  String get upgradeSheetTitle => _t('upgrade_sheet_title');
+  String get upgradeSheetBody => _t('upgrade_sheet_body');
+
+  // Email-OTP auth flow (Gap D)
+  String get authSignUpEmailTitle => _t('auth_signup_email_title');
+  String get authSignUpEmailSubtitle => _t('auth_signup_email_subtitle');
+  String get authCheckEmailTitle => _t('auth_check_email_title');
+  String get authCheckEmailSubtitle => _t('auth_check_email_subtitle');
+  String get authProfileTitle => _t('auth_profile_title');
+  String get authProfileSubtitle => _t('auth_profile_subtitle');
+  String get authWelcomeBackTitle => _t('auth_welcome_back_title');
+  String get authWelcomeBackSubtitle => _t('auth_welcome_back_subtitle');
+  String get authPasswordTitle => _t('auth_password_title');
+  String get authPasswordSubtitle => _t('auth_password_subtitle');
+  String get authResetTitle => _t('auth_reset_title');
+  String get authResetSubtitle => _t('auth_reset_subtitle');
+  String get authNewPasswordTitle => _t('auth_new_password_title');
+  String get authNewPasswordSubtitle => _t('auth_new_password_subtitle');
+
+  String get authFirstName => _t('auth_first_name');
+  String get authLastName => _t('auth_last_name');
+  String get authNewPasswordLabel => _t('auth_new_password_label');
+  String get authConfirmNewPasswordLabel => _t('auth_confirm_new_password');
+  String get authOtpLabel => _t('auth_otp_label');
+  String get authOtpHint => _t('auth_otp_hint');
+  String get authEmailPlaceholder => _t('auth_email_placeholder');
+  String get authPasswordPlaceholder => _t('auth_password_placeholder');
+  String get authPasswordEnterPlaceholder =>
+      _t('auth_password_enter_placeholder');
+  String get authConfirmPlaceholder => _t('auth_confirm_placeholder');
+  String get authConfirmNewPlaceholder => _t('auth_confirm_new_placeholder');
+
+  String get authContinueWithEmail => _t('auth_continue_email');
+  String get authContinueWithPassword => _t('auth_continue_password');
+  String get authContinueWithEmailInstead => _t('auth_continue_email_instead');
+  String get authContinueWithPasswordInstead =>
+      _t('auth_continue_password_instead');
+  String get authVerifyCode => _t('auth_verify_code');
+  String get authVerifyAndSignIn => _t('auth_verify_signin');
+  String get authCreateAccountBtn => _t('auth_create_account_btn');
+  String get authLoginBtn => _t('auth_login_btn');
+  String get authForgotPassword => _t('auth_forgot_password');
+  String get authSendResetCode => _t('auth_send_reset_code');
+  String get authSetNewPasswordBtn => _t('auth_set_new_password_btn');
+  String get authSignInInstead => _t('auth_signin_instead');
+  String get authCreateAnAccount => _t('auth_create_an_account');
+  String get authBackToSignIn => _t('auth_back_to_signin');
+  String get authUseDifferentEmail => _t('auth_use_different_email');
+  String get authDidntGetCode => _t('auth_didnt_get_code');
+  String get authResendNow => _t('auth_resend_now');
+  String get authRememberItNow => _t('auth_remember_it_now');
+  String get authPasswordsMismatch => _t('auth_passwords_mismatch');
+  String get authCodeRequired => _t('auth_code_required');
+  String get authNameRequired => _t('auth_name_required');
+
+  // Personal information card (Gap I)
+  String get personalInfoTitle => _t('personal_info_title');
+  String get personalInfoHint => _t('personal_info_hint');
+  String get emailLoginLabel => _t('email_login_label');
+  String get emailLoginHint => _t('email_login_hint');
+  String get saveChanges => _t('save_changes');
+  String get profileUpdatedToast => _t('profile_updated_toast');
+
+  /// "Resend in 53s" — countdown owned by the view.
+  String authResendIn(int seconds) =>
+      _isArabic ? 'إعادة الإرسال خلال $seconds ث' : 'Resend in $seconds s';
+
+  // Approvals — friendly Odoo model names + operation verbs (Gap E)
+  String approvalActionTitle(String wire) => switch (wire) {
+        'credential_storage' => _t('approval_title_cred_storage'),
+        'credential_usage' => _t('approval_title_cred_usage'),
+        'server_command' => _t('approval_title_server_cmd'),
+        'odoo_write' => _t('approval_title_odoo_write'),
+        'report_export' => _t('approval_title_report_export'),
+        _ => _t('approval_title_generic'),
+      };
+
+  String approvalOperationVerb(String? op) => switch (op) {
+        'create' || 'create_many' => _t('approval_op_create'),
+        'write' => _t('approval_op_write'),
+        'delete' => _t('approval_op_delete'),
+        'call' => _t('approval_op_call'),
+        'load' => _t('approval_op_load'),
+        _ => '',
+      };
+
+  /// Kind-aware "file too large" notice (Gap F). [capMb] is 500 for
+  /// archives, 25 otherwise.
+  String attachmentTooLarge(String name, int capMb) => _isArabic
+      ? '«$name» يتجاوز حد $capMb ميجابايت.'
+      : '"$name" is over the $capMb MB limit.';
+
+  /// "Create 6 × Manufacturing Order" — verb + optional record count + model.
+  String approvalModelTitle(String verb, int? count, String label) {
+    final c = (count != null && count > 0) ? '$count× ' : '';
+    final v = verb.isEmpty ? '' : '$verb ';
+    return '$v$c$label';
+  }
+
+  /// Localized adjective for a usage window, keyed by its wire value
+  /// (`day | week | month`). Used in banner / blocked-send copy.
+  String planWindowWord(String wire) => switch (wire) {
+        'day' => _t('plan_daily'),
+        'week' => _t('plan_weekly'),
+        'month' => _t('plan_monthly'),
+        _ => '',
+      };
+
+  /// "12% used" — pct already computed server-side.
+  String planPctUsed(int pct) =>
+      _isArabic ? 'مُستخدَم $pct٪' : '$pct% used';
+
+  /// "12.3K / 125K" — compact used/cap pair (formatting done by caller).
+  String planUsageLine(String used, String cap) => '$used / $cap';
+
+  /// Near-limit banner body, e.g. "You've used 85% of your daily limit."
+  String planNearLimitBody(String window, int pct) => _isArabic
+      ? 'استخدمت $pct٪ من حدّك $window.'
+      : "You've used $pct% of your $window limit.";
+
+  /// Composer tooltip + quota card body when a window is exhausted.
+  String quotaExceededBody(String window) => _isArabic
+      ? 'لقد بلغت حدّ الاستخدام $window. ستُعاد التهيئة عند انتهاء الفترة، أو رقِّ خطتك.'
+      : "You've reached your $window usage limit. It resets when the window rolls over, or upgrade your plan.";
+
+  String sendBlockedTooltip(String window) => _isArabic
+      ? 'تم بلوغ الحد $window'
+      : '$window limit reached';
 
   // Storybook
   String get storybook => _t('storybook');
@@ -1014,7 +1201,8 @@ const Map<String, String> _en = {
   'error_conflict': 'That action conflicts with current data. Refresh and try again.',
   'error_rate_limited': 'Too many attempts. Please slow down.',
   'error_rate_limited_with_retry': 'Too many attempts. Try again in {seconds}s.',
-  'error_payload_too_large': 'That file is too large. The limit is 25 MB.',
+  'error_payload_too_large':
+      'That file is too large. The limit is 25 MB (500 MB for archives).',
   'error_server': 'The server hit a problem. Please try again in a moment.',
   'error_unknown': 'Something went wrong. Please try again.',
   // ── Vault action labels (prefixes) ──
@@ -1214,6 +1402,93 @@ const Map<String, String> _en = {
       'Invalid request. Check the URL format (no “/odoo” at the end).',
   'testErrTimeout': 'Connection timed out. Make sure the server is reachable.',
   'testErrUnreachable': "Couldn't reach the server. Check the URL.",
+  'testErrMissingFields':
+      'Enter the URL, database, username, and a password or API key.',
+  'testErrDuplicate': 'This entry already exists.',
+  'testErrNotFound': "The requested item wasn't found.",
+  'testErrForbidden': "You don't have permission for this action.",
+  'errInvalidCode': 'Incorrect code. Check it and try again.',
+  'errExpiredCode': 'This code has expired. Request a new one.',
+  // Plan / quota / usage (Gap A + B)
+  'plan_usage_title': 'Plan & usage',
+  'plan_window_day': 'Today',
+  'plan_window_week': 'This week',
+  'plan_window_month': 'This month',
+  'plan_daily': 'daily',
+  'plan_weekly': 'weekly',
+  'plan_monthly': 'monthly',
+  'plan_exempt_label': 'Unlimited',
+  'plan_near_limit_title': 'Approaching your limit',
+  'quota_exceeded_title': 'Usage limit reached',
+  'quota_upgrade_cta': 'See plans',
+  'upgrade_sheet_title': 'Upgrade your plan',
+  'upgrade_sheet_body':
+      'Self-serve upgrades are coming soon. To raise your limits now, contact the Digital Harbor team and we\'ll set you up.',
+  // Email-OTP auth flow (Gap D)
+  'auth_signup_email_title': 'Create your account',
+  'auth_signup_email_subtitle': 'Enter your email to get started.',
+  'auth_check_email_title': 'Check your email',
+  'auth_check_email_subtitle': 'Enter the 6-digit code we just sent.',
+  'auth_profile_title': 'Finish your profile',
+  'auth_profile_subtitle': 'Add your name and choose a password.',
+  'auth_welcome_back_title': 'Welcome back',
+  'auth_welcome_back_subtitle': 'Sign in to continue to your workspace.',
+  'auth_password_title': 'Enter your password',
+  'auth_password_subtitle': 'Sign in with your account password.',
+  'auth_reset_title': 'Reset your password',
+  'auth_reset_subtitle': "Enter your email — we'll send a verification code.",
+  'auth_new_password_title': 'Set a new password',
+  'auth_new_password_subtitle': 'Choose a strong password to finish resetting.',
+  'auth_first_name': 'First name',
+  'auth_last_name': 'Last name',
+  'auth_new_password_label': 'New password',
+  'auth_confirm_new_password': 'Confirm new password',
+  'auth_otp_label': 'Verification code',
+  'auth_otp_hint': 'We sent a 6-digit code to your email. It expires in 10 minutes.',
+  'auth_email_placeholder': 'you@example.com',
+  'auth_password_placeholder': 'At least 8 characters',
+  'auth_password_enter_placeholder': 'Enter your password',
+  'auth_confirm_placeholder': 'Repeat your password',
+  'auth_confirm_new_placeholder': 'Repeat new password',
+  'auth_continue_email': 'Continue with email',
+  'auth_continue_password': 'Continue with password',
+  'auth_continue_email_instead': 'Continue with email instead',
+  'auth_continue_password_instead': 'Continue with password instead',
+  'auth_verify_code': 'Verify code',
+  'auth_verify_signin': 'Verify & sign in',
+  'auth_create_account_btn': 'Create account',
+  'auth_login_btn': 'Login',
+  'auth_forgot_password': 'Forgot password?',
+  'auth_send_reset_code': 'Send reset code',
+  'auth_set_new_password_btn': 'Set new password & sign in',
+  'auth_signin_instead': 'Sign in instead',
+  'auth_create_an_account': 'Create an account',
+  'auth_back_to_signin': 'Back to sign in',
+  'auth_use_different_email': 'Use different email',
+  'auth_didnt_get_code': "Didn't get the code?",
+  'auth_resend_now': 'Resend',
+  'auth_remember_it_now': 'Remember it now?',
+  'auth_passwords_mismatch': "Passwords don't match.",
+  'auth_code_required': 'Enter the 6-digit code.',
+  'auth_name_required': 'Enter your first name.',
+  'auth_password_set': 'Password set. Sign in with your new password.',
+  'personal_info_title': 'Personal information',
+  'personal_info_hint': 'The details you gave when you signed up.',
+  'email_login_label': 'Email (login)',
+  'email_login_hint': "Your email is your login and can't be changed here.",
+  'save_changes': 'Save changes',
+  'profile_updated_toast': 'Your profile was updated.',
+  'approval_title_cred_storage': 'Credential storage',
+  'approval_title_cred_usage': 'Credential usage',
+  'approval_title_server_cmd': 'Server command',
+  'approval_title_odoo_write': 'Odoo write',
+  'approval_title_report_export': 'Report export',
+  'approval_title_generic': 'Approval',
+  'approval_op_create': 'Create',
+  'approval_op_write': 'Update',
+  'approval_op_delete': 'Delete',
+  'approval_op_call': 'Run',
+  'approval_op_load': 'Import',
   'auth_password': 'password',
   'quick_reply_more': 'Tell me more',
   'quick_reply_summarize': 'Summarize this',
@@ -1623,7 +1898,8 @@ const Map<String, String> _ar = {
   'error_conflict': 'هذه العملية تتعارض مع البيانات الحالية. حدّث الصفحة ثم حاول مجدداً.',
   'error_rate_limited': 'محاولات كثيرة. تمهّل قليلاً.',
   'error_rate_limited_with_retry': 'محاولات كثيرة. حاول بعد {seconds} ثانية.',
-  'error_payload_too_large': 'الملف كبير جداً. الحد الأقصى 25 ميجابايت.',
+  'error_payload_too_large':
+      'الملف كبير جداً. الحد الأقصى 25 ميجابايت (500 ميجابايت للأرشيف).',
   'error_server': 'وقعت مشكلة في الخادم. حاول بعد قليل.',
   'error_unknown': 'حدث خطأ. حاول مرة أخرى.',
   // ── Vault action labels (prefixes) ──
@@ -1813,6 +2089,93 @@ const Map<String, String> _ar = {
       'طلب غير صالح. تأكّد من صيغة الرابط (بدون «‎/odoo‎» في آخره).',
   'testErrTimeout': 'انتهت مهلة الاتصال. تأكّد من أن الخادم متاح.',
   'testErrUnreachable': 'تعذّر الوصول إلى الخادم. تأكّد من الرابط.',
+  'testErrMissingFields':
+      'أدخل الرابط وقاعدة البيانات واسم المستخدم وكلمة المرور أو مفتاح API.',
+  'testErrDuplicate': 'هذا العنصر موجود بالفعل.',
+  'testErrNotFound': 'لم يتم العثور على العنصر المطلوب.',
+  'testErrForbidden': 'ليس لديك صلاحية لتنفيذ هذا الإجراء.',
+  'errInvalidCode': 'الرمز غير صحيح. تأكّد منه وحاول مرة أخرى.',
+  'errExpiredCode': 'انتهت صلاحية هذا الرمز. اطلب رمزًا جديدًا.',
+  // الخطة / الحصة / الاستخدام (Gap A + B)
+  'plan_usage_title': 'الخطة والاستخدام',
+  'plan_window_day': 'اليوم',
+  'plan_window_week': 'هذا الأسبوع',
+  'plan_window_month': 'هذا الشهر',
+  'plan_daily': 'اليومي',
+  'plan_weekly': 'الأسبوعي',
+  'plan_monthly': 'الشهري',
+  'plan_exempt_label': 'غير محدود',
+  'plan_near_limit_title': 'اقتربت من الحد',
+  'quota_exceeded_title': 'تم بلوغ حد الاستخدام',
+  'quota_upgrade_cta': 'عرض الباقات',
+  'upgrade_sheet_title': 'ترقية خطتك',
+  'upgrade_sheet_body':
+      'الترقية الذاتية قادمة قريبًا. لرفع حدودك الآن، تواصل مع فريق Digital Harbor وسنقوم بإعدادها لك.',
+  // تدفّق التسجيل عبر رمز البريد (Gap D)
+  'auth_signup_email_title': 'أنشئ حسابك',
+  'auth_signup_email_subtitle': 'أدخل بريدك الإلكتروني للبدء.',
+  'auth_check_email_title': 'تحقّق من بريدك',
+  'auth_check_email_subtitle': 'أدخل الرمز المكوّن من ٦ أرقام الذي أرسلناه.',
+  'auth_profile_title': 'أكمل ملفك الشخصي',
+  'auth_profile_subtitle': 'أضف اسمك واختر كلمة مرور.',
+  'auth_welcome_back_title': 'مرحبًا بعودتك',
+  'auth_welcome_back_subtitle': 'سجّل الدخول للمتابعة إلى مساحة عملك.',
+  'auth_password_title': 'أدخل كلمة المرور',
+  'auth_password_subtitle': 'سجّل الدخول بكلمة مرور حسابك.',
+  'auth_reset_title': 'إعادة تعيين كلمة المرور',
+  'auth_reset_subtitle': 'أدخل بريدك — سنرسل لك رمز تحقق.',
+  'auth_new_password_title': 'تعيين كلمة مرور جديدة',
+  'auth_new_password_subtitle': 'اختر كلمة مرور قوية لإكمال إعادة التعيين.',
+  'auth_first_name': 'الاسم الأول',
+  'auth_last_name': 'الاسم الأخير',
+  'auth_new_password_label': 'كلمة المرور الجديدة',
+  'auth_confirm_new_password': 'تأكيد كلمة المرور الجديدة',
+  'auth_otp_label': 'رمز التحقق',
+  'auth_otp_hint': 'أرسلنا رمزًا من ٦ أرقام إلى بريدك. تنتهي صلاحيته خلال ١٠ دقائق.',
+  'auth_email_placeholder': 'you@example.com',
+  'auth_password_placeholder': '٨ أحرف على الأقل',
+  'auth_password_enter_placeholder': 'أدخل كلمة المرور',
+  'auth_confirm_placeholder': 'أعد إدخال كلمة المرور',
+  'auth_confirm_new_placeholder': 'أعد إدخال كلمة المرور الجديدة',
+  'auth_continue_email': 'المتابعة بالبريد',
+  'auth_continue_password': 'المتابعة بكلمة المرور',
+  'auth_continue_email_instead': 'المتابعة بالبريد بدلاً من ذلك',
+  'auth_continue_password_instead': 'المتابعة بكلمة المرور بدلاً من ذلك',
+  'auth_verify_code': 'تأكيد الرمز',
+  'auth_verify_signin': 'تأكيد وتسجيل الدخول',
+  'auth_create_account_btn': 'إنشاء الحساب',
+  'auth_login_btn': 'تسجيل الدخول',
+  'auth_forgot_password': 'نسيت كلمة المرور؟',
+  'auth_send_reset_code': 'إرسال رمز إعادة التعيين',
+  'auth_set_new_password_btn': 'تعيين كلمة المرور وتسجيل الدخول',
+  'auth_signin_instead': 'تسجيل الدخول بدلاً من ذلك',
+  'auth_create_an_account': 'إنشاء حساب',
+  'auth_back_to_signin': 'العودة لتسجيل الدخول',
+  'auth_use_different_email': 'استخدام بريد آخر',
+  'auth_didnt_get_code': 'لم يصلك الرمز؟',
+  'auth_resend_now': 'إعادة الإرسال',
+  'auth_remember_it_now': 'تذكّرتها الآن؟',
+  'auth_passwords_mismatch': 'كلمتا المرور غير متطابقتين.',
+  'auth_code_required': 'أدخل الرمز المكوّن من ٦ أرقام.',
+  'auth_name_required': 'أدخل اسمك الأول.',
+  'auth_password_set': 'تم تعيين كلمة المرور. سجّل الدخول بكلمتك الجديدة.',
+  'personal_info_title': 'المعلومات الشخصية',
+  'personal_info_hint': 'البيانات التي أدخلتها عند التسجيل.',
+  'email_login_label': 'البريد الإلكتروني (تسجيل الدخول)',
+  'email_login_hint': 'بريدك هو اسم الدخول ولا يمكن تغييره من هنا.',
+  'save_changes': 'حفظ التغييرات',
+  'profile_updated_toast': 'تم تحديث ملفك الشخصي.',
+  'approval_title_cred_storage': 'تخزين بيانات اعتماد',
+  'approval_title_cred_usage': 'استخدام بيانات اعتماد',
+  'approval_title_server_cmd': 'أمر خادم',
+  'approval_title_odoo_write': 'كتابة في أودو',
+  'approval_title_report_export': 'تصدير تقرير',
+  'approval_title_generic': 'موافقة',
+  'approval_op_create': 'إنشاء',
+  'approval_op_write': 'تعديل',
+  'approval_op_delete': 'حذف',
+  'approval_op_call': 'تنفيذ',
+  'approval_op_load': 'استيراد',
   'auth_password': 'كلمة المرور',
   'quick_reply_more': 'أعطني المزيد',
   'quick_reply_summarize': 'لخّص ده',

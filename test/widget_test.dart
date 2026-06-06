@@ -155,11 +155,11 @@ void main() {
     await _pumpApp(tester);
 
     // Auth gate redirects unauthenticated users to /sign-in on cold start.
-    // The sign-in screen renders the "Welcome back" headline + "Sign in"
-    // primary button — assert both so we know the form mounted (not just
-    // the brand panel).
+    // The email-OTP flow (Gap D) enters at the "Welcome back" step with an
+    // email field + "Continue with email" primary button — assert both so
+    // we know the flow's first step mounted.
     expect(find.text('Welcome back'), findsWidgets);
-    expect(find.text('Sign in'), findsWidgets);
+    expect(find.text('Continue with email'), findsWidgets);
   });
 
   test('Approval decision updates pending count', () {

@@ -1,0 +1,164 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../core/i18n/app_localizations.dart';
+import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/glass_card.dart';
+import '../../billing/data/plan_models.dart';
+import '../../billing/view_model/plan_cubit.dart';
+
+/// Account "Plan & usage" card (Gap A) — mirrors the web `/usage/` view:
+/// the plan name as a badge plus three usage bars (day / week / month)
+/// showing `used / cap` and the server-computed percentage.
+///
+/// Reads [PlanCubit]; renders nothing until the first conversation snapshot
+/// has populated a plan (the card simply doesn't appear on a cold account
+/// open before any chat has been viewed).
+class PlanUsageCard extends StatelessWidget {
+  const PlanUsageCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final plan = context.watch<PlanCubit>().state;
+    if (plan == null) return const SizedBox.shrink();
+
+    final s = context.saqqar;
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.tr.planUsageTitle,
+                  style: context.text.titleMedium,
+                ),
+              ),
+              _PlanBadge(name: plan.name.isEmpty ? plan.slug : plan.name),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (plan.exempt)
+            Text(
+              context.tr.planExemptLabel,
+              style: context.text.bodyMedium?.copyWith(color: s.success),
+            )
+          else ...[
+            _UsageRow(label: context.tr.planWindowDay, window: plan.day),
+            const SizedBox(height: 14),
+            _UsageRow(label: context.tr.planWindowWeek, window: plan.week),
+            const SizedBox(height: 14),
+            _UsageRow(label: context.tr.planWindowMonth, window: plan.month),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Plan-name pill shown top-right of the card (and reused beside the user
+/// name elsewhere). Cyan accent matches the web's plan badge.
+class _PlanBadge extends StatelessWidget {
+  const _PlanBadge({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: s.brandCyan.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: s.brandCyan.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        name,
+        style: context.text.labelMedium?.copyWith(
+          color: s.brandCyan,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _UsageRow extends StatelessWidget {
+  const _UsageRow({required this.label, required this.window});
+
+  final String label;
+  final UsageWindow window;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    // Bar tint escalates with pressure: cyan normal → amber near-limit →
+    // red over. Reuses the same thresholds as the chat banner / gating.
+    final Color color = window.exceeded
+        ? s.danger
+        : window.nearLimit
+            ? s.warning
+            : s.brandCyan;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: context.text.labelLarge?.copyWith(color: s.muted),
+              ),
+            ),
+            Text(
+              context.tr.planUsageLine(
+                _compact(window.used),
+                _compact(window.cap),
+              ),
+              style: context.text.labelMedium?.copyWith(
+                color: s.text,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: window.fraction,
+            minHeight: 7,
+            backgroundColor: s.surface2,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          context.tr.planPctUsed(window.pct),
+          style: context.text.labelSmall?.copyWith(color: s.muted),
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact ST count — `950`, `12.3K`, `2.5M`. Keeps the row readable when
+/// caps run into the millions (Pro = 2.5M burst). Western digits in both
+/// locales (matches how the app renders other numerics).
+String _compact(int value) {
+  if (value < 1000) return '$value';
+  if (value < 1000000) {
+    final k = value / 1000;
+    return '${_trim(k)}K';
+  }
+  final m = value / 1000000;
+  return '${_trim(m)}M';
+}
+
+String _trim(double v) {
+  // One decimal, but drop a trailing ".0" so 12.0K renders as 12K.
+  final s = v.toStringAsFixed(1);
+  return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
+}

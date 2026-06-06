@@ -143,6 +143,10 @@ class ApiErrorMapper {
   }
 
   static String _baseMessage(AppStrings tr, AppFailure failure) {
+    // Server-supplied messages are developer-facing English. Route them
+    // through [localizeServerMessage] so an Arabic UI shows a localized
+    // line for the common cases (auth, missing fields, bad request, …)
+    // instead of leaking English. Unknown messages pass through verbatim.
     return switch (failure) {
       NetworkFailure() => tr.errorNetwork,
       TimeoutFailure() => tr.errorTimeout,
@@ -151,16 +155,16 @@ class ApiErrorMapper {
       ForbiddenFailure() => tr.errorForbidden,
       NotFoundFailure() => tr.errorNotFound,
       ValidationFailure(message: final m) =>
-        (m != null && m.isNotEmpty) ? m : tr.errorValidation,
+        (m != null && m.isNotEmpty) ? tr.localizeServerMessage(m) : tr.errorValidation,
       ConflictFailure(serverMessage: final m) =>
-        (m != null && m.isNotEmpty) ? m : tr.errorConflict,
+        (m != null && m.isNotEmpty) ? tr.localizeServerMessage(m) : tr.errorConflict,
       RateLimitFailure(retryAfterSeconds: final s) =>
         s != null && s > 0 ? tr.errorRateLimitedWithRetry(s) : tr.errorRateLimited,
       PayloadTooLargeFailure() => tr.errorPayloadTooLarge,
       ServerFailure(serverMessage: final m) =>
-        (m != null && m.isNotEmpty) ? m : tr.errorServer,
+        (m != null && m.isNotEmpty) ? tr.localizeServerMessage(m) : tr.errorServer,
       UnknownFailure(serverMessage: final m) =>
-        (m != null && m.isNotEmpty) ? m : tr.errorUnknown,
+        (m != null && m.isNotEmpty) ? tr.localizeServerMessage(m) : tr.errorUnknown,
     };
   }
 }

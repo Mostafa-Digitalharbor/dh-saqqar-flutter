@@ -133,12 +133,12 @@ class ProfileHero extends StatelessWidget {
     );
   }
 
-  /// Prefer the human-readable username; fall back to the email local-part
-  /// (everything before `@`) and finally to a localized sample so the card
-  /// never renders empty during bootstrap.
+  /// Prefer the full name (Gap I) → username → email local-part, and finally
+  /// a localized sample so the card never renders empty during bootstrap.
   String _displayName(BuildContext context, AuthUser? user) {
     if (user == null) return context.tr.sampleUsername;
-    if (user.username.isNotEmpty) return user.username;
+    final name = user.displayName;
+    if (name.isNotEmpty) return name;
     if (user.email.isNotEmpty) {
       final at = user.email.indexOf('@');
       return at > 0 ? user.email.substring(0, at) : user.email;

@@ -24,6 +24,26 @@ class ApiEndpoints {
   /// device's token is revoked server-side.
   static const String changePassword = '/api/v1/auth/password/';
 
+  // ── Email-OTP auth (Gap D / API_MOBILE_AUTH.md) ──────────────────────
+  // Stateless OTP flows designed for mobile. NOTE: these live under the
+  // unversioned `/api/auth/` namespace per the binding spec (distinct from
+  // the `/api/v1/auth/` session endpoints above). If the backend serves
+  // them under `/api/v1/auth/…` instead, flip the prefix here in one place.
+  static const String signupStart = '/api/auth/signup/start/';
+  static const String signupVerify = '/api/auth/signup/verify/';
+  static const String signupResend = '/api/auth/signup/resend/';
+  static const String signupComplete = '/api/auth/signup/complete/';
+
+  static const String loginEmailStart = '/api/auth/login/email/start/';
+  static const String loginEmailVerify = '/api/auth/login/email/verify/';
+  static const String loginEmailResend = '/api/auth/login/email/resend/';
+
+  static const String passwordResetStart = '/api/auth/password/reset/start/';
+  static const String passwordResetVerify = '/api/auth/password/reset/verify/';
+  static const String passwordResetResend = '/api/auth/password/reset/resend/';
+  static const String passwordResetComplete =
+      '/api/auth/password/reset/complete/';
+
   // ── Conversations (§2) ────────────────────────────────────────────────
   static const String conversations = '/api/v1/conversations/';
   static String conversationDetail(String id) =>

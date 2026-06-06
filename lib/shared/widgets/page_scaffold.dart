@@ -392,7 +392,7 @@ class _AgentPulseDotState extends State<_AgentPulseDot>
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Semantics(
       liveRegion: true,
-      label: 'Agent working',
+      label: context.tr.agentWorking,
       child: AnimatedBuilder(
         animation: _ctrl,
         builder: (_, __) {

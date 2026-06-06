@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/network/api_error_mapper.dart';
 import '../../core/state/data_state.dart';
 import 'app_error_state.dart';
 import 'app_loading_state.dart';
@@ -127,8 +128,14 @@ class DataStateView<T> extends StatelessWidget {
 
   Widget _buildError(BuildContext context, DataFailure<T> failure) {
     if (onError != null) return onError!(context, failure);
+    // Prefer the typed [error] so the message renders in the active locale.
+    // Cubits set [message] as a non-localized English fallback for logging;
+    // routing through [ApiErrorMapper] keeps an Arabic UI fully Arabic.
+    final message = failure.error != null
+        ? ApiErrorMapper.message(context, failure.error)
+        : failure.message;
     return AppErrorState(
-      message: failure.message,
+      message: message,
       onRetry: onRetry,
     );
   }
