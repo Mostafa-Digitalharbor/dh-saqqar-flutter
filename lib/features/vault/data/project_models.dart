@@ -16,6 +16,7 @@ class Environment {
     required this.readOnly,
     required this.autoApprove,
     required this.projectId,
+    this.hasXmlrpc = false,
   });
 
   final String id;
@@ -35,6 +36,12 @@ class Environment {
 
   final String projectId;
 
+  /// `has_xmlrpc` (Gap H) — whether this env already has Odoo XML-RPC
+  /// credentials set. Drives the "set credentials first" prompt when the
+  /// user binds an env that can't actually connect yet. Not all responses
+  /// annotate this (defaults to false / unknown).
+  final bool hasXmlrpc;
+
   factory Environment.fromJson(Map<String, dynamic> json) {
     return Environment(
       id: json['id'] as String,
@@ -44,6 +51,10 @@ class Environment {
       readOnly: json['read_only'] as bool? ?? false,
       autoApprove: json['auto_approve'] as bool? ?? false,
       projectId: json['project_id'] as String? ?? '',
+      // Server annotates either `has_xmlrpc` (GET /projects/) or
+      // `has_credential` (POST /projects/default/) — accept both.
+      hasXmlrpc: (json['has_xmlrpc'] ?? json['has_credential']) as bool? ??
+          false,
     );
   }
 
@@ -58,6 +69,7 @@ class Environment {
         'read_only': readOnly,
         'auto_approve': autoApprove,
         'project_id': projectId,
+        'has_xmlrpc': hasXmlrpc,
       };
 
   Environment copyWith({
@@ -65,6 +77,7 @@ class Environment {
     bool? isLive,
     bool? readOnly,
     bool? autoApprove,
+    bool? hasXmlrpc,
   }) {
     return Environment(
       id: id,
@@ -74,6 +87,7 @@ class Environment {
       readOnly: readOnly ?? this.readOnly,
       autoApprove: autoApprove ?? this.autoApprove,
       projectId: projectId,
+      hasXmlrpc: hasXmlrpc ?? this.hasXmlrpc,
     );
   }
 }

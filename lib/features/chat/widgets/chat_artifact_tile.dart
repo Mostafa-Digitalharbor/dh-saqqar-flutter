@@ -79,6 +79,16 @@ _ArtifactStyle _styleFor(String name, String kindRaw) {
       accent: AppColors.darkMuted,
     );
   }
+  // Archives (Gap M) — Odoo addon bundles come back as a rebuilt `.zip`.
+  // Give them a distinct package icon so the produced addon stands out in
+  // the artifacts list.
+  if (['zip', 'tar', 'gz', 'tgz'].contains(ext)) {
+    return _ArtifactStyle(
+      label: ext.toUpperCase(),
+      icon: AppIcons.archive,
+      accent: AppColors.brandPurple,
+    );
+  }
   // Fallback — first 5 chars of the extension uppercased, neutral colour.
   final fallback = ext.isEmpty
       ? (kindRaw.isEmpty ? 'FILE' : kindRaw)

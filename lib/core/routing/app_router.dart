@@ -11,6 +11,7 @@ import '../../features/auth/view/auth_flow_screen.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/auth/view_model/auth_flow_cubit.dart';
 import '../../features/auth/view_model/auth_state.dart';
+import '../../features/billing/view/pricing_screen.dart';
 import '../../features/chat/view/chat_screen.dart';
 import '../../features/chat/view_model/chat_cubit.dart';
 import '../../features/conversations/data/conversations_repository.dart';
@@ -108,6 +109,15 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
           state: state,
           child: const StorybookScreen(),
           kind: _RouteTransitionKind.scale,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.pricingPath,
+        name: RouteNames.pricing,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const PricingScreen(),
+          kind: _RouteTransitionKind.detail,
         ),
       ),
       GoRoute(

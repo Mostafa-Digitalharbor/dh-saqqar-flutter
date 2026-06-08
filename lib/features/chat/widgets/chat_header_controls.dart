@@ -34,6 +34,7 @@ class ChatHeaderControls extends StatelessWidget {
     required this.onProjectChanged,
     required this.onEnvironmentChanged,
     required this.onCreateEnvironmentRequested,
+    required this.onCreateProjectRequested,
   });
 
   final String? projectId;
@@ -46,6 +47,13 @@ class ChatHeaderControls extends StatelessWidget {
   /// confirm dialog → ProjectDetailSheet so the user can add an env
   /// without leaving the chat tab.
   final ValueChanged<String> onCreateEnvironmentRequested;
+
+  /// Fired when the user taps the project slot while they have NO projects
+  /// at all (brand-new account). The chat screen wires this to the
+  /// "Use My Database" one-click — it creates a default project + production
+  /// environment server-side and selects it, so the user can start chatting
+  /// without manually building the Vault hierarchy first.
+  final VoidCallback onCreateProjectRequested;
 
   @override
   Widget build(BuildContext context) {
@@ -75,19 +83,28 @@ class ChatHeaderControls extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: _DropdownPill(
-                caption: context.tr.headerProject,
-                enabled: projects.isNotEmpty,
-                hint: projects.isEmpty
-                    ? context.tr.noProjectsYet
-                    : context.tr.headerNoneOption,
-                value: projectId,
-                items: [
-                  for (final p in projects)
-                    _DropdownItem(value: p.id, label: p.name),
-                ],
-                onChanged: onProjectChanged,
-              ),
+              // Brand-new account with zero projects: swap the disabled
+              // "— No projects yet —" dropdown for a "Use My Database" CTA
+              // that creates a default project + prod env in one tap, so the
+              // user is guided into a usable state instead of hitting a dead
+              // end. Mirrors the env slot's create pill below.
+              child: projects.isEmpty
+                  ? _CreateCtaPill(
+                      icon: AppIcons.database,
+                      label: context.tr.envHintUseMyDatabase,
+                      onTap: onCreateProjectRequested,
+                    )
+                  : _DropdownPill(
+                      caption: context.tr.headerProject,
+                      enabled: true,
+                      hint: context.tr.headerNoneOption,
+                      value: projectId,
+                      items: [
+                        for (final p in projects)
+                          _DropdownItem(value: p.id, label: p.name),
+                      ],
+                      onChanged: onProjectChanged,
+                    ),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -96,7 +113,9 @@ class ChatHeaderControls extends StatelessWidget {
               // the user can land in the env creation flow without
               // backtracking out of the chat.
               child: (projectId != null && envs.isEmpty)
-                  ? _CreateEnvironmentPill(
+                  ? _CreateCtaPill(
+                      icon: AppIcons.plus,
+                      label: context.tr.createEnvironmentCta,
                       onTap: () =>
                           onCreateEnvironmentRequested(projectId!),
                     )
@@ -232,18 +251,23 @@ class _DropdownItem {
   final String label;
 }
 
-/// CTA-styled pill rendered in place of the env dropdown when the
-/// selected project has no environments yet. Tapping fires
-/// [ChatHeaderControls.onCreateEnvironmentRequested] — the chat screen
-/// pops a confirm dialog → ProjectDetailSheet so the user can add an
-/// env without losing their place in the chat.
+/// CTA-styled pill rendered in place of a dropdown when the next action is
+/// to *create* something rather than pick it:
+///   * project slot, brand-new account with no projects → "Use My Database"
+///   * env slot, selected project has no environments → "+ Add environment"
 ///
-/// Visually styled to match the dropdown's footprint (same height +
-/// border radius) so the row geometry doesn't jump when the project
-/// picker changes.
-class _CreateEnvironmentPill extends StatelessWidget {
-  const _CreateEnvironmentPill({required this.onTap});
+/// Tapping fires [onTap]. Visually styled to match the dropdown's footprint
+/// (same height + border radius) so the row geometry doesn't jump when the
+/// picker state changes.
+class _CreateCtaPill extends StatelessWidget {
+  const _CreateCtaPill({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
+  final IconData icon;
+  final String label;
   final VoidCallback onTap;
 
   @override
@@ -271,11 +295,11 @@ class _CreateEnvironmentPill extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(AppIcons.plus, size: 16, color: s.brandCyan),
+              Icon(icon, size: 16, color: s.brandCyan),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  context.tr.createEnvironmentCta,
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodySmall?.copyWith(

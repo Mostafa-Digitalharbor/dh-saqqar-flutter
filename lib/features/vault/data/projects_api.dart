@@ -26,6 +26,21 @@ class ProjectsApi {
         .toList();
   }
 
+  /// `POST /api/v1/projects/default/` (Gap H) — ensures the caller has a
+  /// default project + production environment, then returns that environment.
+  /// The env carries a `has_credential` flag (mapped onto
+  /// [Environment.hasXmlrpc]) so the caller can prompt for credentials when
+  /// the new env can't connect to Odoo yet. Idempotent — safe to call on
+  /// every "Use My Database" tap.
+  Future<Environment> defaultProject() async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.projectsDefault,
+    );
+    return Environment.fromJson(
+      res.data!['environment'] as Map<String, dynamic>,
+    );
+  }
+
   /// `POST /api/v1/projects/` — creates a project. Slug derived server-side.
   Future<Project> create({required String name}) async {
     final res = await _dio.post<Map<String, dynamic>>(

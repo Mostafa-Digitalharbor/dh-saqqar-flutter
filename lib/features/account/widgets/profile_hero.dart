@@ -10,6 +10,8 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../auth/data/auth_models.dart';
 import '../../auth/view_model/auth_cubit.dart';
+import '../../billing/view_model/plan_cubit.dart';
+import 'plan_badge.dart';
 import 'stats_line.dart';
 
 /// Identity card at the top of the Account tab — gradient avatar, username
@@ -38,6 +40,11 @@ class ProfileHero extends StatelessWidget {
     final displayName = _displayName(context, user);
     final initial = _initial(displayName);
     final roleLabel = _roleLabel(context, user);
+    // Gap A — paid plan badge beside the name (web shows "Pro" / "Max").
+    // Hidden for Free (and when no snapshot has loaded yet).
+    final plan = context.watch<PlanCubit>().state;
+    final planBadgeName =
+        (plan != null && plan.showBadge) ? plan.name : null;
 
     return GlassCard(
       padding: const EdgeInsets.all(18),
@@ -70,22 +77,32 @@ class ProfileHero extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onLongPress: onLongPress,
-                      behavior: HitTestBehavior.opaque,
-                      // Django often sets `username = email` on register,
-                      // so the headline below is frequently the user's
-                      // full email — which doesn't fit next to the
-                      // 64 px avatar on phones. Marquee so the user
-                      // sees their whole identifier without cropping.
-                      child: MarqueeText(
-                        text: displayName,
-                        alwaysScroll: true,
-                        style: context.text.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.3,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onLongPress: onLongPress,
+                            behavior: HitTestBehavior.opaque,
+                            // Django often sets `username = email` on register,
+                            // so the headline below is frequently the user's
+                            // full email — which doesn't fit next to the
+                            // 64 px avatar on phones. Marquee so the user
+                            // sees their whole identifier without cropping.
+                            child: MarqueeText(
+                              text: displayName,
+                              alwaysScroll: true,
+                              style: context.text.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        if (planBadgeName != null) ...[
+                          const SizedBox(width: 8),
+                          PlanBadge(name: planBadgeName, dense: true),
+                        ],
+                      ],
                     ),
                     if (user != null &&
                         user.email.isNotEmpty &&

@@ -21,6 +21,7 @@ import 'core/storage/secure_token_store.dart';
 import 'core/theme/view_model/theme_cubit.dart';
 import 'features/auth/data/auth_api.dart';
 import 'features/auth/view_model/auth_cubit.dart';
+import 'features/billing/data/plans_api.dart';
 import 'features/billing/view_model/plan_cubit.dart';
 import 'features/chat/data/live_env_ack_service.dart';
 import 'features/chat/data/transcribe_api.dart';
@@ -196,6 +197,7 @@ Future<void> _bootApp() async {
   // here keeps `main` predictable and lets tests override individually.
   final authApi = AuthApi(dio);
   final projectsApi = ProjectsApi(dio);
+  final plansApi = PlansApi(dio);
   final credentialsApi = CredentialsApi(dio);
   final conversationsApi = ConversationsApi(dio);
   final approvalsApi = ApprovalsApi(dio);
@@ -231,6 +233,7 @@ Future<void> _bootApp() async {
         RepositoryProvider<Dio>.value(value: dio),
         RepositoryProvider<AuthApi>.value(value: authApi),
         RepositoryProvider<ProjectsApi>.value(value: projectsApi),
+        RepositoryProvider<PlansApi>.value(value: plansApi),
         RepositoryProvider<CredentialsApi>.value(value: credentialsApi),
         RepositoryProvider<ConversationsApi>.value(value: conversationsApi),
         RepositoryProvider<ApprovalsApi>.value(value: approvalsApi),

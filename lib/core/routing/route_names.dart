@@ -27,6 +27,10 @@ class RouteNames {
   static const credentialAdd = 'credential_add';
   static const credentialAddPath = '/vault/add';
 
+  // Pricing / plans (Gap L). Opened from the quota-exceeded upgrade CTA.
+  static const pricing = 'pricing';
+  static const pricingPath = '/pricing';
+
   // Approval deep links now resolve into the chat that raised them, because
   // approvals live per-conversation (Inbox tab was retired). Format:
   //   /chats/<conversationId>?approval=<approvalId>

@@ -23,6 +23,7 @@ import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/api_error_mapper.dart';
+import '../../../core/error/app_failure.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
@@ -54,6 +55,7 @@ import '../../conversations/widgets/rename_conversation_dialog.dart';
 import '../../inbox/data/approval_models.dart' as api;
 import '../../inbox/data/approvals_api.dart';
 import '../../share/intake/share_intake_service.dart';
+import '../../vault/data/projects_api.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import '../../vault/widgets/project_detail_sheet.dart';
 import '../view_model/chat_cubit.dart';
@@ -135,6 +137,10 @@ class _ChatScreenState extends State<ChatScreen>
 
   bool _showScrollDown = false;
   bool _isThinking = false;
+
+  /// True while the "Use My Database" one-click (Gap H) is in flight —
+  /// drives the spinner on the env-hint banner button.
+  bool _bindingDefaultEnv = false;
 
   /// Optimistic flag flipped the moment the user taps Stop. Cleared once
   /// the cancel propagates (today: end of the thinking timer; later: when
@@ -585,6 +591,50 @@ class _ChatScreenState extends State<ChatScreen>
     await ProjectDetailSheet.show(context, existingProjectId: projectId);
   }
 
+  /// Fired by [ChatHeaderControls] when a brand-new account (zero projects)
+  /// taps the project slot's "Use My Database" CTA.
+  ///
+  /// One-click onboarding: ensure a default project + production environment
+  /// exist server-side (`POST /projects/default/`), refresh the Vault so the
+  /// dropdowns populate, then select the new env locally so the user can
+  /// start chatting immediately. Prompts for credentials when the new env
+  /// can't reach Odoo yet. Reuses the Gap H default-env plumbing.
+  Future<void> _handleCreateProjectRequested() async {
+    if (_bindingDefaultEnv) return;
+    final tr = context.tr;
+    final ok = await ConfirmDialog.show(
+      context,
+      title: tr.useMyDatabaseTitle,
+      body: tr.envHintBody,
+      confirmLabel: tr.envHintUseMyDatabase,
+      icon: AppIcons.database,
+    );
+    if (!ok || !mounted) return;
+    setState(() => _bindingDefaultEnv = true);
+    try {
+      final env = await context.read<ProjectsApi>().defaultProject();
+      if (!mounted) return;
+      // Refresh the Vault so the freshly-created project + env appear in the
+      // header dropdowns (and the rest of the app).
+      await context.read<VaultCubit>().refresh();
+      if (!mounted) return;
+      setState(() {
+        _projectId = env.projectId;
+        _environmentId = env.id;
+      });
+      _toast(
+        env.hasXmlrpc
+            ? tr.envHintBound
+            : tr.envHintNeedsCredentials,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _toast(tr.envHintFailed);
+    } finally {
+      if (mounted) setState(() => _bindingDefaultEnv = false);
+    }
+  }
+
   // -------- Lifecycle --------
 
   @override
@@ -866,7 +916,14 @@ class _ChatScreenState extends State<ChatScreen>
       AppLogger.warn('VoiceRecording', 'transcribe failed',
           error: e, stackTrace: st);
       if (!mounted) return;
-      _toast(ApiErrorMapper.message(context, e));
+      // Gap C — a 403 from /transcribe/ means voice is locked on the
+      // caller's plan (the mic is normally hidden, but a stale snapshot or
+      // a race can still let one request through). Map it to a friendly
+      // "voice is a Pro feature" hint rather than the generic forbidden copy.
+      final failure = ApiErrorMapper.toFailure(e);
+      _toast(failure is ForbiddenFailure
+          ? context.tr.voiceLockedPro
+          : ApiErrorMapper.message(context, e));
     } finally {
       // Best-effort cleanup of the temp file (we either consumed it or
       // the upload failed — either way it's not useful anymore). Sync
@@ -1862,6 +1919,7 @@ class _ChatScreenState extends State<ChatScreen>
               onProjectChanged: _handleProjectChanged,
               onEnvironmentChanged: _handleEnvironmentChanged,
               onCreateEnvironmentRequested: _handleCreateEnvironmentRequested,
+              onCreateProjectRequested: _handleCreateProjectRequested,
             ),
             const OfflineBanner(),
             // Long-running report progress — Excel / PDF / Word generation.
@@ -1909,6 +1967,16 @@ class _ChatScreenState extends State<ChatScreen>
             // _buildMessageList), scrolling with the rest of the chat
             // so they no longer hog the composer space.
             //
+            // Env-hint banner (Gap H) — when the server flags the chat as
+            // needing an environment and none is bound yet, offer the
+            // one-click "Use My Database" default-env bind above the composer.
+            if (!_isNewChat &&
+                (snapshotConv?.needsEnvironment ?? false) &&
+                _resolveEnv() == null)
+              ChatEnvHintBanner(
+                busy: _bindingDefaultEnv,
+                onUseMyDatabase: _useMyDatabase,
+              ),
             // Plan/quota banner (Gap A near-limit + Gap B exceeded). Sits
             // directly above the composer so the upgrade CTA is next to the
             // (now disabled) send affordance.
@@ -2638,42 +2706,11 @@ class _ChatScreenState extends State<ChatScreen>
     AppToast.show(context, message: text);
   }
 
-  /// Upgrade CTA target (Gap B). Self-serve payments aren't built yet
-  /// (Gap L pricing screen is deferred until a payment provider is signed),
-  /// so this shows a "contact us" sheet rather than a checkout. Wire it to
-  /// the pricing screen once that lands.
+  /// Upgrade CTA target (Gap B) — opens the pricing screen (Gap L) with the
+  /// live tiers. Self-serve checkout isn't built yet, so the pricing screen's
+  /// own per-tier CTA is "Contact us" until a payment provider is signed.
   void _showUpgradeSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                sheetCtx.tr.upgradeSheetTitle,
-                style: sheetCtx.text.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                sheetCtx.tr.upgradeSheetBody,
-                style: sheetCtx.text.bodyMedium
-                    ?.copyWith(color: sheetCtx.saqqar.muted, height: 1.4),
-              ),
-              const SizedBox(height: 18),
-              PrimaryButton(
-                label: sheetCtx.tr.close,
-                onPressed: () => Navigator.of(sheetCtx).pop(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    context.pushNamed(RouteNames.pricing);
   }
 
   /// Pull-to-refresh handler bound to the message list. Triggers an
@@ -2685,6 +2722,36 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _refreshSnapshot() async {
     if (_isNewChat) return;
     await context.read<ChatCubit>().load();
+  }
+
+  /// Gap H — "Use My Database" one-click. Ensures a default project +
+  /// production environment exist server-side, binds the env to this
+  /// conversation, then refreshes the snapshot so the hint banner clears.
+  /// Prompts for credentials when the new env can't reach Odoo yet.
+  Future<void> _useMyDatabase() async {
+    if (_isNewChat || _bindingDefaultEnv) return;
+    setState(() => _bindingDefaultEnv = true);
+    try {
+      final env = await context.read<ProjectsApi>().defaultProject();
+      if (!mounted) return;
+      await context.read<ConversationsRepository>().patch(
+            id: widget.conversationId,
+            environmentId: env.id,
+          );
+      if (!mounted) return;
+      await _refreshSnapshot();
+      if (!mounted) return;
+      _toast(
+        env.hasXmlrpc
+            ? context.tr.envHintBound
+            : context.tr.envHintNeedsCredentials,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _toast(context.tr.envHintFailed);
+    } finally {
+      if (mounted) setState(() => _bindingDefaultEnv = false);
+    }
   }
 
   /// "Sent · N file(s) attached" — picks the right pluralized string

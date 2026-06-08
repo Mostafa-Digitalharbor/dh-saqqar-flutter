@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/routing/route_names.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../billing/data/plan_models.dart';
 import '../../billing/view_model/plan_cubit.dart';
+import 'plan_badge.dart';
 
 /// Account "Plan & usage" card (Gap A) — mirrors the web `/usage/` view:
 /// the plan name as a badge plus three usage bars (day / week / month)
@@ -35,7 +40,7 @@ class PlanUsageCard extends StatelessWidget {
                   style: context.text.titleMedium,
                 ),
               ),
-              _PlanBadge(name: plan.name.isEmpty ? plan.slug : plan.name),
+              PlanBadge(name: plan.name.isEmpty ? plan.slug : plan.name),
             ],
           ),
           const SizedBox(height: 16),
@@ -51,34 +56,17 @@ class PlanUsageCard extends StatelessWidget {
             const SizedBox(height: 14),
             _UsageRow(label: context.tr.planWindowMonth, window: plan.month),
           ],
+          const SizedBox(height: 14),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: GhostButton(
+              label: context.tr.quotaUpgradeCta,
+              icon: AppIcons.sparkles,
+              minHeight: 40,
+              onPressed: () => context.pushNamed(RouteNames.pricing),
+            ),
+          ),
         ],
-      ),
-    );
-  }
-}
-
-/// Plan-name pill shown top-right of the card (and reused beside the user
-/// name elsewhere). Cyan accent matches the web's plan badge.
-class _PlanBadge extends StatelessWidget {
-  const _PlanBadge({required this.name});
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: s.brandCyan.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: s.brandCyan.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        name,
-        style: context.text.labelMedium?.copyWith(
-          color: s.brandCyan,
-          fontWeight: FontWeight.w800,
-        ),
       ),
     );
   }

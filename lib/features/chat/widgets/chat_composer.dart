@@ -165,6 +165,28 @@ class ChatComposer extends StatelessWidget {
                     ],
                   ),
                 ),
+              // Addon authoring hint (Gap M) — when an addon `.zip` is staged,
+              // tell the user Saqqar can read/edit/rebuild it. Driven purely
+              // off the staged file names so it appears the moment they attach.
+              if (attachments.any((a) => _isAddonArchive(a.name)))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Icon(AppIcons.archive, size: 15, color: s.brandCyan),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          context.tr.addonHint,
+                          style: context.text.labelMedium?.copyWith(
+                            color: s.muted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               // ── Composer pill (textarea + bar) ─────────────────────
               DecoratedBox(
                 decoration: BoxDecoration(
@@ -626,4 +648,14 @@ class _MiniSwitch extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Whether a staged attachment is an Odoo addon archive (Gap M). Drives the
+/// "Saqqar can read/edit/build this addon" hint above the composer.
+bool _isAddonArchive(String name) {
+  final lower = name.toLowerCase();
+  return lower.endsWith('.zip') ||
+      lower.endsWith('.tar') ||
+      lower.endsWith('.gz') ||
+      lower.endsWith('.tgz');
 }

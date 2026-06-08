@@ -17,6 +17,7 @@ export 'chat_avatar.dart';
 export 'chat_composer.dart';
 export 'chat_header_controls.dart';
 export 'chat_date_separator.dart';
+export 'chat_env_hint_banner.dart';
 export 'chat_markdown.dart';
 export 'chat_mini_switch.dart';
 export 'chat_header_badges.dart';

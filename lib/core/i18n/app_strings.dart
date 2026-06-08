@@ -358,6 +358,8 @@ class AppStrings {
   String get open => _t('open');
   String get approve => _t('approve');
   String get reject => _t('reject');
+  String get showDetails => _t('show_details');
+  String get hideDetails => _t('hide_details');
   String get approved => _t('approved');
   String get rejected => _t('rejected');
   String get history => _t('history');
@@ -783,8 +785,37 @@ class AppStrings {
     return raw;
   }
 
-  /// Back-compat alias used by the credential test badge.
-  String testConnectionError(String raw) => localizeServerMessage(raw);
+  /// Localizes a connection-test error for the credential editor badge.
+  ///
+  /// The server's `error` is developer-facing English and sometimes a raw
+  /// driver/Python exception (e.g. `invalid literal for int()` when the port
+  /// is blank). Map the common credential-test failures to a clear, actionable
+  /// sentence in BOTH locales, then defer anything unrecognised to the shared
+  /// [localizeServerMessage] (which still localizes auth/timeout/etc. for
+  /// Arabic and keeps the server wording otherwise).
+  String testConnectionError(String raw) {
+    if (raw.isEmpty) return raw;
+    final lower = raw.toLowerCase();
+
+    // Empty / invalid Postgres `sslmode` (screen showed `invalid sslmode
+    // value: ''`). Tell the user the accepted values.
+    if (lower.contains('sslmode')) return _t('testErrInvalidSslmode');
+
+    // Non-numeric / empty numeric field — almost always a blank Port that
+    // hits Python's `int()` parse (`invalid literal for int() with base 10`).
+    if (lower.contains('invalid literal for int') ||
+        (lower.contains('invalid literal') && lower.contains('base 10'))) {
+      return _t('testErrInvalidNumber');
+    }
+
+    // "GitHub token is required." and any other "<field> is required".
+    if (lower.contains('token') &&
+        (lower.contains('required') || lower.contains('missing'))) {
+      return _t('testErrTokenRequired');
+    }
+
+    return localizeServerMessage(raw);
+  }
   String get quickReplyMore => _t('quick_reply_more');
   String get quickReplySummarize => _t('quick_reply_summarize');
   String get quickReplyExport => _t('quick_reply_export');
@@ -832,6 +863,47 @@ class AppStrings {
   String get quotaUpgradeCta => _t('quota_upgrade_cta');
   String get upgradeSheetTitle => _t('upgrade_sheet_title');
   String get upgradeSheetBody => _t('upgrade_sheet_body');
+
+  // Pricing screen (Gap L)
+  String get pricingTitle => _t('pricing_title');
+  String get pricingCurrent => _t('pricing_current');
+  String get pricingFree => _t('pricing_free');
+  String get pricingContactCta => _t('pricing_contact_cta');
+  String get pricingLoadError => _t('pricing_load_error');
+  String get pricingStUnit => _t('pricing_st_unit');
+  String get pricingDailyCap => _t('pricing_daily_cap');
+  String get pricingMonthlyCap => _t('pricing_monthly_cap');
+  String get pricingProjectsLabel => _t('pricing_projects_label');
+  String get pricingUnlimited => _t('pricing_unlimited');
+  String get featureVoice => _t('feature_voice');
+  String get featurePostgres => _t('feature_postgres');
+  String get featureGithub => _t('feature_github');
+  String get featureServerShell => _t('feature_server_shell');
+
+  /// "$20 / month" (free plans pass 0 → "Free"). Western digits in both
+  /// locales to match the rest of the numeric UI.
+  String pricePerMonth(int cents) {
+    if (cents <= 0) return pricingFree;
+    final dollars = cents % 100 == 0
+        ? '${cents ~/ 100}'
+        : (cents / 100).toStringAsFixed(2);
+    return _isArabic ? '\$$dollars / شهرياً' : '\$$dollars / month';
+  }
+
+  // Addon authoring hint (Gap M) — shown when a `.zip` addon is staged.
+  String get addonHint => _t('addon_hint');
+
+  // Feature-gating (Gap C) — friendly upgrade hint when a locked tool 403s.
+  String get voiceLockedPro => _t('voice_locked_pro');
+
+  // Env-hint banner (Gap H) — one-click "Use My Database".
+  String get useMyDatabaseTitle => _t('use_my_database_title');
+  String get envHintTitle => _t('env_hint_title');
+  String get envHintBody => _t('env_hint_body');
+  String get envHintUseMyDatabase => _t('env_hint_use_my_database');
+  String get envHintBound => _t('env_hint_bound');
+  String get envHintNeedsCredentials => _t('env_hint_needs_credentials');
+  String get envHintFailed => _t('env_hint_failed');
 
   // Email-OTP auth flow (Gap D)
   String get authSignUpEmailTitle => _t('auth_signup_email_title');
@@ -1088,6 +1160,8 @@ const Map<String, String> _en = {
   'open': 'Open',
   'approve': 'Approve',
   'reject': 'Reject',
+  'show_details': 'Show details',
+  'hide_details': 'Hide details',
   'approved': 'Approved',
   'rejected': 'Rejected',
   'history': 'History',
@@ -1404,6 +1478,12 @@ const Map<String, String> _en = {
   'testErrUnreachable': "Couldn't reach the server. Check the URL.",
   'testErrMissingFields':
       'Enter the URL, database, username, and a password or API key.',
+  'testErrInvalidSslmode':
+      'Invalid SSL mode. Use one of: disable, allow, prefer, require, '
+          'verify-ca, or verify-full.',
+  'testErrInvalidNumber':
+      'A numeric field is empty or invalid — check the Port number.',
+  'testErrTokenRequired': 'An access token is required. Enter it and retry.',
   'testErrDuplicate': 'This entry already exists.',
   'testErrNotFound': "The requested item wasn't found.",
   'testErrForbidden': "You don't have permission for this action.",
@@ -1421,6 +1501,31 @@ const Map<String, String> _en = {
   'plan_near_limit_title': 'Approaching your limit',
   'quota_exceeded_title': 'Usage limit reached',
   'quota_upgrade_cta': 'See plans',
+  'pricing_title': 'Plans & pricing',
+  'pricing_current': 'Current plan',
+  'pricing_free': 'Free',
+  'pricing_contact_cta': 'Contact us to upgrade',
+  'pricing_load_error': "Couldn't load plans.",
+  'pricing_st_unit': 'ST',
+  'pricing_daily_cap': 'Daily',
+  'pricing_monthly_cap': 'Monthly',
+  'pricing_projects_label': 'Projects',
+  'pricing_unlimited': 'Unlimited',
+  'feature_voice': 'Voice input',
+  'feature_postgres': 'Postgres queries',
+  'feature_github': 'GitHub',
+  'feature_server_shell': 'Server shell',
+  'use_my_database_title': 'Set up your database?',
+  'env_hint_title': 'No database connected',
+  'env_hint_body':
+      'Saqqar needs an Odoo environment to act on. Connect your database to start.',
+  'env_hint_use_my_database': 'Use My Database',
+  'env_hint_bound': 'Database connected.',
+  'env_hint_needs_credentials':
+      'Add your Odoo credentials to this environment to connect.',
+  'env_hint_failed': 'Could not set up your database. Try again.',
+  'addon_hint': 'Saqqar can read, edit, and rebuild this Odoo addon.',
+  'voice_locked_pro': 'Voice input is a Pro feature.',
   'upgrade_sheet_title': 'Upgrade your plan',
   'upgrade_sheet_body':
       'Self-serve upgrades are coming soon. To raise your limits now, contact the Digital Harbor team and we\'ll set you up.',
@@ -1786,6 +1891,8 @@ const Map<String, String> _ar = {
   'open': 'فتح',
   'approve': 'موافقة',
   'reject': 'رفض',
+  'show_details': 'عرض التفاصيل',
+  'hide_details': 'إخفاء التفاصيل',
   'approved': 'تمت الموافقة',
   'rejected': 'مرفوض',
   'history': 'السجل',
@@ -2089,6 +2196,12 @@ const Map<String, String> _ar = {
       'طلب غير صالح. تأكّد من صيغة الرابط (بدون «‎/odoo‎» في آخره).',
   'testErrTimeout': 'انتهت مهلة الاتصال. تأكّد من أن الخادم متاح.',
   'testErrUnreachable': 'تعذّر الوصول إلى الخادم. تأكّد من الرابط.',
+  'testErrInvalidSslmode':
+      'وضع SSL غير صالح. استخدم أحد القيم: disable أو allow أو prefer أو '
+          'require أو verify-ca أو verify-full.',
+  'testErrInvalidNumber':
+      'حقل رقمي فارغ أو غير صالح — تحقّق من رقم المنفذ (Port).',
+  'testErrTokenRequired': 'يلزم إدخال رمز وصول (token). أدخله ثم أعد المحاولة.',
   'testErrMissingFields':
       'أدخل الرابط وقاعدة البيانات واسم المستخدم وكلمة المرور أو مفتاح API.',
   'testErrDuplicate': 'هذا العنصر موجود بالفعل.',
@@ -2108,6 +2221,31 @@ const Map<String, String> _ar = {
   'plan_near_limit_title': 'اقتربت من الحد',
   'quota_exceeded_title': 'تم بلوغ حد الاستخدام',
   'quota_upgrade_cta': 'عرض الباقات',
+  'pricing_title': 'الباقات والأسعار',
+  'pricing_current': 'باقتك الحالية',
+  'pricing_free': 'مجاني',
+  'pricing_contact_cta': 'تواصل معنا للترقية',
+  'pricing_load_error': 'تعذّر تحميل الباقات.',
+  'pricing_st_unit': 'وحدة',
+  'pricing_daily_cap': 'يومياً',
+  'pricing_monthly_cap': 'شهرياً',
+  'pricing_projects_label': 'المشاريع',
+  'pricing_unlimited': 'غير محدود',
+  'feature_voice': 'الإدخال الصوتي',
+  'feature_postgres': 'استعلامات Postgres',
+  'feature_github': 'GitHub',
+  'feature_server_shell': 'صدفة الخادم',
+  'use_my_database_title': 'إعداد قاعدة بياناتك؟',
+  'env_hint_title': 'لا توجد قاعدة بيانات متصلة',
+  'env_hint_body':
+      'يحتاج صقّار إلى بيئة Odoo للعمل عليها. اربط قاعدة بياناتك للبدء.',
+  'env_hint_use_my_database': 'استخدم قاعدة بياناتي',
+  'env_hint_bound': 'تم ربط قاعدة البيانات.',
+  'env_hint_needs_credentials':
+      'أضِف بيانات اعتماد Odoo لهذه البيئة للاتصال.',
+  'env_hint_failed': 'تعذّر إعداد قاعدة بياناتك. حاول مرة أخرى.',
+  'addon_hint': 'يستطيع صقّار قراءة وتعديل وإعادة بناء إضافة Odoo هذه.',
+  'voice_locked_pro': 'الإدخال الصوتي ميزة في باقة Pro.',
   'upgrade_sheet_title': 'ترقية خطتك',
   'upgrade_sheet_body':
       'الترقية الذاتية قادمة قريبًا. لرفع حدودك الآن، تواصل مع فريق Digital Harbor وسنقوم بإعدادها لك.',

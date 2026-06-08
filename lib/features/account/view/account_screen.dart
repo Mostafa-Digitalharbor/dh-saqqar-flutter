@@ -59,17 +59,19 @@ class AccountScreen extends StatelessWidget {
                 onLongPress: () => context.pushNamed(RouteNames.storybook),
               ),
               const SizedBox(height: 14),
-              // Plan & usage (Gap A) — self-hides until a conversation
-              // snapshot has populated PlanCubit, so it appears once the
-              // user has opened any chat this session. The BlocBuilder owns
-              // the trailing spacing so there's no empty gap when hidden.
-              BlocBuilder<PlanCubit, PlanSnapshot?>(
-                builder: (context, plan) => plan == null
-                    ? const SizedBox.shrink()
-                    : const Padding(
-                        padding: EdgeInsets.only(bottom: 14),
-                        child: PlanUsageCard(),
-                      ),
+              // Plan & usage (Gap A). When a conversation snapshot has
+              // populated PlanCubit we show the full usage bars
+              // (PlanUsageCard); otherwise — e.g. a fresh Account open before
+              // any chat — we fall back to CurrentPlanCard, which reads the
+              // public /plans/ catalogue so the user's plan + limits + a
+              // pricing path are always visible.
+              Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: BlocBuilder<PlanCubit, PlanSnapshot?>(
+                  builder: (context, plan) => plan == null
+                      ? const CurrentPlanCard()
+                      : const PlanUsageCard(),
+                ),
               ),
               // Personal information (Gap I) — edit first/last name; email
               // stays read-only. Only shown once the user is hydrated.

@@ -87,6 +87,11 @@ class ApiEndpoints {
 
   // ── Projects & Environments (§11) ────────────────────────────────────
   static const String projects = '/api/v1/projects/';
+
+  /// `POST /api/v1/projects/default/` (Gap H) — ensures the caller has a
+  /// default project + production environment and returns that env (plus a
+  /// `has_credential` flag). Powers the chat "Use My Database" one-click.
+  static const String projectsDefault = '/api/v1/projects/default/';
   static String projectDetail(String id) => '/api/v1/projects/$id/';
   static String projectEnvironments(String projectId) =>
       '/api/v1/projects/$projectId/environments/';
@@ -103,6 +108,11 @@ class ApiEndpoints {
   static const String approvals = '/api/v1/approvals/';
   static String approvalDecision(String id) =>
       '/api/v1/approvals/$id/decision/';
+
+  // ── Plans / pricing (Gap L) — public, no bearer required ─────────────
+  // Anonymous callers can browse pricing. When a bearer IS sent, the
+  // response marks the caller's tier via `current_plan`.
+  static const String plans = '/api/v1/plans/';
 
   // ── Artifacts (§9) ───────────────────────────────────────────────────
   static const String artifacts = '/api/v1/artifacts/';

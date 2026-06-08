@@ -11,7 +11,11 @@ import '../../demo/saqqar_demo_data.dart';
 
 /// Approval card shown inside the chat "Pending approvals" sheet.
 /// Neutral surface + 4 px amber start-side stripe + Reject / Approve actions.
-class ChatApprovalCard extends StatelessWidget {
+///
+/// The friendly title ("Create 6 × Manufacturing Order", Gap E) is always
+/// visible; the raw `payload` map stays collapsed behind a "Show details"
+/// toggle so non-technical users aren't faced with a JSON dump by default.
+class ChatApprovalCard extends StatefulWidget {
   const ChatApprovalCard({
     super.key,
     required this.approval,
@@ -24,8 +28,16 @@ class ChatApprovalCard extends StatelessWidget {
   final VoidCallback onReject;
 
   @override
+  State<ChatApprovalCard> createState() => _ChatApprovalCardState();
+}
+
+class _ChatApprovalCardState extends State<ChatApprovalCard> {
+  bool _showDetails = false;
+
+  @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
+    final approval = widget.approval;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
@@ -99,15 +111,49 @@ class ChatApprovalCard extends StatelessWidget {
                     height: 1.5,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final entry in approval.payload.entries)
-                      MiniChip(context.tr.keyValue(entry.key, entry.value)),
+                // Gap E — raw payload collapsed by default behind a
+                // "Show details" disclosure; the friendly title above is
+                // enough for non-technical users.
+                if (approval.payload.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => setState(() => _showDetails = !_showDetails),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _showDetails
+                              ? AppIcons.chevronUp
+                              : AppIcons.chevronDown,
+                          size: 15,
+                          color: s.muted,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _showDetails
+                              ? context.tr.hideDetails
+                              : context.tr.showDetails,
+                          style: context.text.labelMedium?.copyWith(
+                            color: s.muted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_showDetails) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final entry in approval.payload.entries)
+                          MiniChip(context.tr.keyValue(entry.key, entry.value)),
+                      ],
+                    ),
                   ],
-                ),
+                ],
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -117,7 +163,7 @@ class ChatApprovalCard extends StatelessWidget {
                         icon: AppIcons.close,
                         onPressed: () {
                           HapticFeedback.mediumImpact();
-                          onReject();
+                          widget.onReject();
                         },
                       ),
                     ),
@@ -138,7 +184,7 @@ class ChatApprovalCard extends StatelessWidget {
                         icon: AppIcons.check,
                         onPressed: () {
                           HapticFeedback.mediumImpact();
-                          onApprove();
+                          widget.onApprove();
                         },
                       ),
                     ),
