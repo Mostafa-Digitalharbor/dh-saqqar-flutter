@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/i18n/app_localizations.dart';
-import '../../core/routing/route_names.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_gradients.dart';
-import '../../features/auth/view_model/auth_cubit.dart';
+import '../../core/theme/app_icons.dart';
 import '../../features/chat/view_model/running_agents_cubit.dart';
 import '../extensions/context_extensions.dart';
+import 'app_toast.dart';
 import 'offline_banner.dart';
 import 'saqqar_logo.dart';
 import 'saqqar_screen.dart';
@@ -80,7 +78,6 @@ class _PageScaffoldState extends State<PageScaffold> {
         children: [
           _SaqqarBrandHeader(
             title: widget.title,
-            actions: widget.actions,
             elevated: _isScrolled,
           ),
           const OfflineBanner(),
@@ -115,17 +112,16 @@ class _PageScaffoldState extends State<PageScaffold> {
 class _SaqqarBrandHeader extends StatelessWidget {
   const _SaqqarBrandHeader({
     required this.title,
-    required this.actions,
     required this.elevated,
   });
 
   final String title;
-  final List<Widget>? actions;
   final bool elevated;
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
+    final appDir = Directionality.of(context);
     final agentRunning = context.select<RunningAgentsCubit, bool>(
       (cubit) => cubit.state.isNotEmpty,
     );
@@ -141,21 +137,8 @@ class _SaqqarBrandHeader extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
-        // Two-stop vertical gradient — top has a hair of brand-cyan
-        // tint, fades to plain surface by the bottom. Gives the bar
-        // depth without reading as "tinted" or heavy.
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color.alphaBlend(
-              AppColors.brandCyan.withValues(alpha: context.isDark ? 0.05 : 0.025),
-              s.surface,
-            ),
-            s.surface,
-          ],
-          stops: const [0.0, 0.85],
-        ),
+        color: s.surface,
+        border: Border(bottom: BorderSide(color: s.border)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: shadowAlpha),
@@ -166,196 +149,127 @@ class _SaqqarBrandHeader extends StatelessWidget {
       ),
       child: SafeArea(
         bottom: false,
-        // The brand row is locale-locked to LTR so the wordmark always
-        // sits on the visual left and the page label on the right —
-        // matches the desktop site, which keeps "Saqqar" on the left
-        // in both EN and AR. The page label text itself is still
-        // rendered with its natural script direction (Arabic letters
-        // remain RTL inside the LTR container), so localised labels
+        // The chrome row is locale-locked to LTR so the brand logo always
+        // sits on the visual left and the notifications bell on the right,
+        // matching the Saqqar Design System header. The centered page title
+        // is rendered back in its natural script direction so Arabic labels
         // read correctly.
         child: Directionality(
           textDirection: TextDirection.ltr,
-          child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: 64,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 12, 0),
-                child: Row(
+          child: SizedBox(
+            height: 62,
+            child: Stack(
               children: [
-                // Start side: brand wordmark — bumped to 36 dp tall
-                // per user request so the SAQQÂR logo reads as the
-                // dominant element of the brand bar instead of a
-                // background detail. Bar height bumped to 64 to give
-                // the larger logo breathing room.
-                const SaqqarLogo(height: 36),
-                // Cross-tab "agent is working" pulse — slides in next to
-                // the wordmark the moment any conversation pushes itself
-                // into the running set, slides out when the last one
-                // finishes. Keeps the chrome quiet at rest, informative
-                // when busy.
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 240),
-                  transitionBuilder: (child, anim) => FadeTransition(
-                    opacity: anim,
-                    child: SizeTransition(
-                      sizeFactor: anim,
-                      axis: Axis.horizontal,
-                      child: child,
+                // Centered page title — the design's AppHeader pins the
+                // label dead-centre regardless of the side elements.
+                Positioned.fill(
+                  child: Center(
+                    child: Directionality(
+                      textDirection: appDir,
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
-                  child: agentRunning
-                      ? const Padding(
-                          key: ValueKey('agent-pulse'),
-                          padding: EdgeInsetsDirectional.only(start: 8),
-                          child: _AgentPulseDot(),
-                        )
-                      : const SizedBox.shrink(key: ValueKey('idle')),
                 ),
-                const Spacer(),
-                if (actions != null) ...[
-                  ...actions!,
-                  // Thin vertical hairline divider between the action
-                  // icons and the contextual page label — visually
-                  // organises the right side into "what I can do" vs
-                  // "where I am".
-                  const SizedBox(width: 4),
-                  Container(
-                    width: 1,
-                    height: 16,
-                    color: s.cardBorder,
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                // End side: contextual page label as a compact eyebrow
-                // (uppercase + tracking) with a brand-cyan leading dot.
-                // The eyebrow shape reads as "you are on X" without
-                // competing with the wordmark for visual weight.
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.brandCyan,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.brandCyan.withValues(alpha: 0.45),
-                        blurRadius: 6,
-                        spreadRadius: 0.5,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 12, 0),
+                  child: Row(
+                    children: [
+                      // Start side: the brand logo (white on the dark
+                      // surface via SaqqarLogo's own tinting).
+                      const SaqqarLogo(height: 26),
+                      // Cross-tab "agent is working" pulse — slides in next
+                      // to the logo whenever any conversation has the agent
+                      // mid-run, slides out when the last one finishes.
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 240),
+                        transitionBuilder: (child, anim) => FadeTransition(
+                          opacity: anim,
+                          child: SizeTransition(
+                            sizeFactor: anim,
+                            axis: Axis.horizontal,
+                            child: child,
+                          ),
+                        ),
+                        child: agentRunning
+                            ? const Padding(
+                                key: ValueKey('agent-pulse'),
+                                padding: EdgeInsetsDirectional.only(start: 8),
+                                child: _AgentPulseDot(),
+                              )
+                            : const SizedBox.shrink(key: ValueKey('idle')),
                       ),
+                      const Spacer(),
+                      // End side: notifications bell with an unread dot.
+                      const _NotificationsBell(),
                     ],
                   ),
                 ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    title.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.labelMedium?.copyWith(
-                      color: s.text.withValues(alpha: 0.82),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 11,
-                      letterSpacing: 1.6,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // User avatar — taps reveal a small menu with quick
-                // shortcuts (Account, Sign out). Lives on every tab so
-                // the user always has a 2-tap path to sign out without
-                // hunting for the Account screen.
-                const _UserAvatarMenu(),
               ],
             ),
           ),
-        ),
-            // Brand-accent hairline — 1.5 dp gradient strip across the
-            // full width, the signature touch that turns a plain
-            // shadowed bar into a recognisably-Saqqar one. Sits below
-            // the action row so it always reads as "this header is
-            // ours" without screaming for attention.
-            Container(
-              height: 1.5,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    AppColors.brandCyan.withValues(alpha: 0.0),
-                    AppColors.brandCyan.withValues(alpha: 0.55),
-                    AppColors.brandPurple.withValues(alpha: 0.55),
-                    AppColors.brandPurple.withValues(alpha: 0.0),
-                  ],
-                  stops: const [0.0, 0.35, 0.65, 1.0],
-                ),
-              ),
-            ),
-          ],
-        ),
         ),
       ),
     );
   }
 }
 
-/// Circular user avatar in the brand bar's end slot. Tap takes you
-/// straight to the Account tab — the previous popup with an "Account"
-/// item + a destructive "Sign out" item was redundant (Sign out has
-/// its own button inside the Account screen) and the extra hop slowed
-/// the common case down for no benefit.
-class _UserAvatarMenu extends StatelessWidget {
-  const _UserAvatarMenu();
+/// Circular notifications bell in the brand bar's end slot — mirrors the
+/// Saqqar Design System header. A red presence dot signals unread items;
+/// tapping it surfaces a lightweight "no new notifications" toast (the app
+/// has no notifications inbox screen yet).
+class _NotificationsBell extends StatelessWidget {
+  const _NotificationsBell();
 
   @override
   Widget build(BuildContext context) {
-    // Initial is derived from the currently signed-in user — username
-    // first, email local-part as a fallback, then the localized sample
-    // for the brief pre-bootstrap window. The previous version hard-
-    // coded the sample username, so the same letter showed up no
-    // matter who was signed in.
-    final user = context.watch<AuthCubit>().state.user;
-    final identitySource = (() {
-      if (user == null) return context.tr.sampleUsername;
-      if (user.username.trim().isNotEmpty) return user.username.trim();
-      if (user.email.trim().isNotEmpty) {
-        final email = user.email.trim();
-        final at = email.indexOf('@');
-        return at > 0 ? email.substring(0, at) : email;
-      }
-      return context.tr.sampleUsername;
-    })();
-    final initial = identitySource.characters.firstOrNull?.toUpperCase() ?? 'U';
+    final s = context.saqqar;
+    final tr = context.tr;
     return Semantics(
       button: true,
-      label: context.tr.tabAccount,
+      label: tr.notifications,
       child: Tooltip(
-        message: context.tr.tabAccount,
+        message: tr.notifications,
         child: InkWell(
           customBorder: const CircleBorder(),
-          onTap: () => context.go(RouteNames.accountPath),
-          child: Container(
-            width: 32,
-            height: 32,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppGradients.vivid,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
-                width: 0.8,
+          onTap: () => AppToast.show(
+            context,
+            message: tr.noNewNotifications,
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: s.cardBg,
+                  border: Border.all(color: s.cardBorder),
+                ),
+                child: Icon(AppIcons.bell, size: 19, color: s.text),
               ),
-            ),
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                height: 1.0,
+              PositionedDirectional(
+                top: 6,
+                end: 7,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: s.danger,
+                    border: Border.all(color: s.surface, width: 2),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),

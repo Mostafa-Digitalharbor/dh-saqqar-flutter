@@ -150,6 +150,10 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
                   final isNewChat = id == UiStrings.newConversationId;
                   return _transitionPage(
                     state: state,
+                    // Per-conversation page key — without it, switching from
+                    // /chats/A to /chats/B reuses A's page (GoRouter keys by
+                    // route pattern, not param) and the screen never loads B.
+                    key: ValueKey('chat-$id'),
                     // Per-route BlocProvider: ChatCubit instance lives
                     // for the lifetime of one chat route. On pop, close()
                     // fires, cancelling the snapshot poll timer +
@@ -216,9 +220,17 @@ CustomTransitionPage<void> _transitionPage({
   required GoRouterState state,
   required Widget child,
   _RouteTransitionKind kind = _RouteTransitionKind.tab,
+  LocalKey? key,
 }) {
   return CustomTransitionPage<void>(
-    key: state.pageKey,
+    // [key] overrides the default `state.pageKey` when a route needs a key
+    // that varies by path parameter. GoRouter derives `pageKey` from the
+    // route *pattern* (`/chats/:id`), so two different conversations
+    // (`/chats/A` vs `/chats/B`) would otherwise share one page — Flutter
+    // would reuse the same element and the chat screen would stay on the old
+    // conversation instead of loading the picked one. The chat route passes
+    // a per-id key so each conversation gets its own page.
+    key: key ?? state.pageKey,
     child: child,
     transitionDuration: const Duration(milliseconds: 260),
     reverseTransitionDuration: const Duration(milliseconds: 200),

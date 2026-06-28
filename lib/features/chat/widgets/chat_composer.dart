@@ -31,6 +31,7 @@ class ChatComposer extends StatelessWidget {
     required this.onRemoveAttachment,
     required this.onPreviewAttachment,
     required this.onSend,
+    this.onSlash,
     required this.deepThink,
     required this.autoApprove,
     required this.onDeepThinkChanged,
@@ -76,6 +77,11 @@ class ChatComposer extends StatelessWidget {
   final ValueChanged<int> onPreviewAttachment;
 
   final VoidCallback? onSend;
+
+  /// Tapped on the slash (/) command button in the action bar. Opens the
+  /// slash-command menu (representative Odoo quick-ops). Null hides the
+  /// button entirely.
+  final VoidCallback? onSlash;
 
   /// Two persistent chat-level toggles live in the composer bar so the
   /// AppBar can stay focused on identity (Saqqar wordmark + page label
@@ -267,6 +273,17 @@ class ChatComposer extends StatelessWidget {
                             tooltip: context.tr.attachFiles,
                             visualDensity: VisualDensity.compact,
                           ),
+                          // Slash (/) — opens the command menu of common
+                          // Odoo quick-ops. Mirrors the design's composer
+                          // action row (paperclip · slash · mic).
+                          if (onSlash != null)
+                            IconButton(
+                              onPressed: onSlash,
+                              icon: Icon(AppIcons.slash,
+                                  color: s.muted, size: 20),
+                              tooltip: context.tr.commands,
+                              visualDensity: VisualDensity.compact,
+                            ),
                           // Mic — opens the recording overlay. Same
                           // gating as Send (offline / no env / mid-
                           // generation) so the user can't start a

@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
-import '../constants/ui_strings.dart';
 import 'app_localizations.dart';
 
 /// Locale-aware date / time / relative-time formatting.
@@ -49,9 +48,7 @@ class AppDateFormat {
   /// ("at" / "في") instead of the middle-dot — read better when shown
   /// under a chat bubble as the message's authoritative timestamp.
   static String fullDateTime(BuildContext context, DateTime when) {
-    final isAr = Localizations.localeOf(context).languageCode ==
-        UiStrings.localeArabicCode;
-    final connector = isAr ? 'في' : 'at';
+    final connector = context.tr.dateAtConnector;
     return '${date(context, when)} $connector ${time(context, when)}';
   }
 
@@ -68,30 +65,15 @@ class AppDateFormat {
   static String relative(BuildContext context, DateTime when) {
     final now = DateTime.now();
     final delta = now.difference(when.toLocal());
-    final isAr = Localizations.localeOf(context).languageCode ==
-        UiStrings.localeArabicCode;
     final tr = context.tr;
     final loc = _locale(context);
     final n = NumberFormat.decimalPattern(loc);
 
-    if (delta.inSeconds < 60) {
-      return isAr ? tr.now : tr.now;
-    }
-    if (delta.inMinutes < 60) {
-      final m = delta.inMinutes;
-      return isAr ? 'منذ ${n.format(m)} د' : '${n.format(m)} m ago';
-    }
-    if (delta.inHours < 24) {
-      final h = delta.inHours;
-      return isAr ? 'منذ ${n.format(h)} س' : '${n.format(h)} h ago';
-    }
-    if (delta.inHours < 48) {
-      return isAr ? tr.dateYesterday : tr.dateYesterday;
-    }
-    if (delta.inDays < 7) {
-      final d = delta.inDays;
-      return isAr ? 'منذ ${n.format(d)} أيام' : '${n.format(d)} d ago';
-    }
+    if (delta.inSeconds < 60) return tr.now;
+    if (delta.inMinutes < 60) return tr.relativeMinutesAgo(n.format(delta.inMinutes));
+    if (delta.inHours < 24) return tr.relativeHoursAgo(n.format(delta.inHours));
+    if (delta.inHours < 48) return tr.dateYesterday;
+    if (delta.inDays < 7) return tr.relativeDaysAgo(n.format(delta.inDays));
     return date(context, when);
   }
 }

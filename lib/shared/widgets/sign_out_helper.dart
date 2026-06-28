@@ -73,11 +73,15 @@ class _SignOutProgressDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
+    // Cap at 220 but never exceed 80% of the viewport so the pill keeps a
+    // margin on very narrow phones (≤280 px) instead of touching the edges.
+    final screenW = MediaQuery.sizeOf(context).width;
+    final dialogW = screenW * 0.8 < 220 ? screenW * 0.8 : 220.0;
     return PopScope(
       canPop: false,
       child: Center(
         child: Container(
-          width: 220,
+          width: dialogW,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             color: s.surface,

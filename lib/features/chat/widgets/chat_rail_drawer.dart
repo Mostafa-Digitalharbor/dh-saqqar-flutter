@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/view_model/locale_cubit.dart';
+import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/view_model/theme_cubit.dart';
@@ -95,9 +96,17 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
       _toast(
         approved ? tr.approvalGrantedExecuting : tr.approvalRejected,
       );
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      _toast(tr.defaultApiError);
+      // Surface the real, localized cause (e.g. "No internet connection",
+      // "This action needs approval you don't have") instead of a generic
+      // "something went wrong".
+      AppToast.show(
+        context,
+        title: approved ? tr.approve : tr.reject,
+        message: ApiErrorMapper.message(context, e),
+        variant: ToastVariant.error,
+      );
     }
   }
 
@@ -392,7 +401,9 @@ class _LanguageToggleButton extends StatelessWidget {
             border: Border.all(color: s.cardBorder),
           ),
           child: Text(
-            code == 'ar' ? 'EN' : 'ع',
+            code == UiStrings.localeArabicCode
+                ? UiStrings.localeEnglishLabel
+                : UiStrings.localeArabicLabel,
             style: context.text.labelMedium?.copyWith(
               color: s.text,
               fontWeight: FontWeight.w900,

@@ -20,6 +20,13 @@ class UiStrings {
   static const localeEnglishCode = 'en';
   static const localeArabicCode = 'ar';
   static const localeSystemCode = 'system';
+
+  /// Compact toggle glyphs for the language switch — these are language
+  /// identifiers (not translatable copy), so they live here, not in
+  /// `app_strings`. Shown as the target language: 'EN' when currently
+  /// Arabic, 'ع' when currently English.
+  static const localeEnglishLabel = 'EN';
+  static const localeArabicLabel = 'ع';
   static const themePreferenceKey = 'saqqar.theme';
   static const localePreferenceKey = 'saqqar.locale';
   static const deepThinkPreferenceKey = 'saqqar.deepThink';

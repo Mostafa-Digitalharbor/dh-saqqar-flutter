@@ -26,6 +26,7 @@ import '../../../core/network/api_error_mapper.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../core/network/view_model/connectivity_cubit.dart';
 import '../../../shared/widgets/ambient_background.dart';
@@ -59,6 +60,7 @@ import '../../vault/data/projects_api.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import '../../vault/widgets/project_detail_sheet.dart';
 import '../view_model/chat_cubit.dart';
+import '../view_model/chat_state.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 
 /// The chat screen. Owns the conversation state (messages, active credential,
@@ -81,6 +83,11 @@ class _ChatScreenState extends State<ChatScreen>
   final _composerFocus = FocusNode();
   final _scroll = ScrollController();
   late List<DemoMessage> _messages;
+
+  /// Snapshot of the messages currently rendered in the lane — cached each
+  /// build so the AppBar's in-conversation search sheet can read them from
+  /// a button callback (where `context.watch` isn't valid).
+  List<DemoMessage> _searchableMessages = const [];
 
   /// In-memory cache of the last scroll offset per conversation id so
   /// jumping out (Conversations tab, another chat) and back lands the
@@ -774,7 +781,7 @@ class _ChatScreenState extends State<ChatScreen>
             }
           }
         });
-        _toast(context.tr.defaultApiError);
+        _surfaceActionFailure();
       }
     }
   }
@@ -1171,10 +1178,10 @@ class _ChatScreenState extends State<ChatScreen>
       }
     } else {
       // Roll back the composer so the user doesn't lose their text on a
-      // network failure. ChatCubit already populated `actionFailure`
-      // which the (future) BlocListener will surface as a toast.
+      // failure, then surface the real, localized cause (the cubit already
+      // classified it onto `actionFailure`).
       _composer.text = text;
-      _toast(context.tr.defaultApiError);
+      _surfaceActionFailure();
     }
     // Idle marker — polling will keep the real isRunning flag accurate.
     context.read<RunningAgentsCubit>().markIdle(widget.conversationId);
@@ -1389,6 +1396,117 @@ class _ChatScreenState extends State<ChatScreen>
     _composerFocus.requestFocus();
   }
 
+  /// Opens the slash-command menu (design parity: composer "/" button →
+  /// a glass sheet of common Odoo quick-ops). Picking one seeds the
+  /// composer with the command token + a trailing space so the user can
+  /// type the argument inline. Representative until the API exposes a
+  /// real command registry.
+  Future<void> _openSlashCommands() async {
+    final tr = context.tr;
+    final commands = <(IconData, String, String)>[
+      (AppIcons.refresh, '/restart', tr.slashRestartDesc),
+      (AppIcons.fileText, '/report', tr.slashReportDesc),
+      (AppIcons.refresh, '/sync', tr.slashSyncDesc),
+      (AppIcons.terminal, '/logs', tr.slashLogsDesc),
+      (AppIcons.database, '/backup', tr.slashBackupDesc),
+    ];
+    final s = context.saqqar;
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: s.cardBg,
+                borderRadius: AppRadius.cardR,
+                border: Border.all(color: s.cardBorder),
+                boxShadow: s.glassShadow,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: s.border)),
+                    ),
+                    child: Text(
+                      tr.commandsHeader,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        height: 1.2,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: s.muted,
+                      ),
+                    ),
+                  ),
+                  for (final c in commands)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.of(sheetContext).pop(c.$2),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 11),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: s.brandCyan.withValues(alpha: 0.12),
+                                  borderRadius: AppRadius.buttonR,
+                                ),
+                                child: Icon(c.$1,
+                                    size: 15, color: s.brandCyan),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                c.$2,
+                                style: context.text.titleSmall?.copyWith(
+                                  fontFamily: 'JetBrainsMono',
+                                  color: s.brandCyan,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textDirection: TextDirection.ltr,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  c.$3,
+                                  style: context.text.bodySmall
+                                      ?.copyWith(color: s.muted),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (picked == null || !mounted) return;
+    final existing = _composer.text;
+    final joiner =
+        existing.isEmpty || existing.endsWith(' ') ? '' : ' ';
+    final next = '$existing$joiner$picked ';
+    _composer.text = next;
+    _composer.selection = TextSelection.collapsed(offset: next.length);
+    _composerFocus.requestFocus();
+  }
+
   /// Opens the native file picker rooted in the device's Photos / Files
   /// app. Accepts the same set the web composer does — images, PDFs,
   /// Office docs, CSV/TSV — so the agent's later inspection has the
@@ -1533,7 +1651,7 @@ class _ChatScreenState extends State<ChatScreen>
             }
           }
         });
-        _toast(context.tr.defaultApiError);
+        _surfaceActionFailure();
       }
     }
   }
@@ -1882,6 +2000,15 @@ class _ChatScreenState extends State<ChatScreen>
           agentBusy: _effectiveIsThinking,
         ),
         actions: [
+          // Search-in-conversation — the design's header search affordance.
+          // Opens a self-contained search sheet over the loaded messages;
+          // disabled on the brand-new (unsaved) chat where there's nothing
+          // to search yet.
+          IconButton(
+            icon: const Icon(AppIcons.search),
+            tooltip: context.tr.searchInConversation,
+            onPressed: _isNewChat ? null : _openConversationSearch,
+          ),
           // Bell — toggles the custom rail state (Stack-based, not
           // Scaffold.endDrawer). Closes the sidebar if it was open
           // so we never show both drawers at once.
@@ -1921,6 +2048,9 @@ class _ChatScreenState extends State<ChatScreen>
               onCreateEnvironmentRequested: _handleCreateEnvironmentRequested,
               onCreateProjectRequested: _handleCreateProjectRequested,
             ),
+            // (Context/usage meter removed: the snapshot API exposes no token
+            // accounting, so the figures it showed were fabricated. Re-add it
+            // wired to a real usage field when the backend surfaces one.)
             const OfflineBanner(),
             // Long-running report progress — Excel / PDF / Word generation.
             // Rendered above the message list (not inside the typing row)
@@ -1985,11 +2115,21 @@ class _ChatScreenState extends State<ChatScreen>
               exceededWindow: quotaWindow,
               onUpgrade: _showUpgradeSheet,
             ),
+            // Quick-action suggestion chips — seed the composer with a
+            // common Odoo operation. Hidden while recording / transcribing
+            // and on a brand-new empty chat (the welcome grid covers that).
+            ChatSuggestionStrip(
+              visible: !_recording &&
+                  !_transcribing &&
+                  _effectiveMessages.isNotEmpty,
+              onSelect: _seedSuggestion,
+            ),
             ChatComposer(
               controller: _composer,
               focusNode: _composerFocus,
               attachments: _attachments,
               onAttach: _pickAttachment,
+              onSlash: _openSlashCommands,
               onRemoveAttachment: _removeAttachmentAt,
               onPreviewAttachment: _previewAttachmentAt,
               // Block send when offline OR over a usage cap (Gap B). The
@@ -2221,12 +2361,150 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// Opens the in-conversation search sheet (the design's header search
+  /// affordance). Filters the currently-loaded messages by substring match
+  /// and lists the hits with a highlighted snippet. Self-contained — it does
+  /// not touch the fragile message-list rendering.
+  Future<void> _openConversationSearch() async {
+    final messages = _searchableMessages;
+    final s = context.saqqar;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: s.surface,
+      builder: (sheetContext) {
+        final controller = TextEditingController();
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.4,
+            maxChildSize: 0.92,
+            expand: false,
+            builder: (context, scrollController) {
+              return StatefulBuilder(
+                builder: (context, setSheetState) {
+                  final q = controller.text.trim().toLowerCase();
+                  final hits = q.isEmpty
+                      ? const <DemoMessage>[]
+                      : messages
+                          .where((m) => m.content.toLowerCase().contains(q))
+                          .toList()
+                          .reversed
+                          .toList();
+                  return Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: s.surface3,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                        child: Row(
+                          children: [
+                            Icon(AppIcons.search, size: 18, color: s.muted),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                controller: controller,
+                                autofocus: true,
+                                onChanged: (_) => setSheetState(() {}),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  filled: false,
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  hintText: context.tr.searchInConversation,
+                                ),
+                              ),
+                            ),
+                            if (q.isNotEmpty)
+                              Text(
+                                '${hits.length}',
+                                style: context.text.labelMedium
+                                    ?.copyWith(color: s.muted),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Divider(color: s.border, height: 1),
+                      Expanded(
+                        child: q.isEmpty
+                            ? Center(
+                                child: Text(
+                                  context.tr.searchMessagesHint,
+                                  style: context.text.bodyMedium
+                                      ?.copyWith(color: s.muted),
+                                ),
+                              )
+                            : hits.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      context.tr.noResults,
+                                      style: context.text.bodyMedium
+                                          ?.copyWith(color: s.muted),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    controller: scrollController,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8),
+                                    itemCount: hits.length,
+                                    separatorBuilder: (_, __) => Divider(
+                                      color: s.border,
+                                      height: 1,
+                                      indent: 16,
+                                      endIndent: 16,
+                                    ),
+                                    itemBuilder: (context, i) {
+                                      final m = hits[i];
+                                      return ListTile(
+                                        leading: Icon(AppIcons.message,
+                                            size: 18, color: s.brandCyan),
+                                        title: Text(
+                                          m.content.trim(),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: context.text.bodyMedium,
+                                        ),
+                                        subtitle: Text(
+                                          m.time,
+                                          style: context.text.labelSmall
+                                              ?.copyWith(color: s.muted),
+                                        ),
+                                        onTap: () =>
+                                            Navigator.of(context).pop(),
+                                      );
+                                    },
+                                  ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildMessageList() {
     // Snapshot the message list ONCE per build — `_effectiveMessages`
     // subscribes via `context.watch`, so cubit ticks rebuild the
     // screen; we want a single stable list for index math inside the
     // itemBuilder closure below.
     final messages = _effectiveMessages;
+    // Cache for the AppBar search sheet (read outside build).
+    _searchableMessages = messages;
     final hasThinking = _effectiveIsThinking;
     // Group consecutive assistant messages into "turns" so we can show
     // a single collapsed "Saqqar thinking · N steps · Xs" pill instead
@@ -2704,6 +2982,48 @@ class _ChatScreenState extends State<ChatScreen>
 
   void _toast(String text) {
     AppToast.show(context, message: text);
+  }
+
+  /// Surfaces a failed chat mutation as a two-line error toast — the action
+  /// label ("Couldn't send your message") over the mapped, localized cause
+  /// ("No internet connection") — then consumes the one-shot failure so it
+  /// never re-fires on a later rebuild. Falls back to the generic message
+  /// only when there's no classified failure on the cubit (or no cubit yet,
+  /// for a brand-new chat).
+  void _surfaceActionFailure() {
+    if (_isNewChat) {
+      _toast(context.tr.defaultApiError);
+      return;
+    }
+    final cubit = context.read<ChatCubit>();
+    final failure = cubit.state.actionFailure;
+    if (failure == null) {
+      _toast(context.tr.defaultApiError);
+      return;
+    }
+    AppToast.show(
+      context,
+      title: _chatActionLabel(failure.action),
+      message: ApiErrorMapper.message(context, failure.failure),
+      variant: ToastVariant.error,
+    );
+    cubit.consumeActionFailure();
+  }
+
+  /// Localized "what failed" label per [ChatAction].
+  String _chatActionLabel(ChatAction action) {
+    final tr = context.tr;
+    return switch (action) {
+      ChatAction.send => tr.chatActionSendFailed,
+      ChatAction.uploadAttachment => tr.chatActionUploadFailed,
+      ChatAction.stop => tr.chatActionStopFailed,
+      ChatAction.share => tr.chatActionShareFailed,
+      ChatAction.setActiveCredential ||
+      ChatAction.toggleCredential =>
+        tr.chatActionCredentialFailed,
+      ChatAction.dismissPendingAction => tr.chatActionDismissFailed,
+      ChatAction.load || ChatAction.patch => tr.defaultApiError,
+    };
   }
 
   /// Upgrade CTA target (Gap B) — opens the pricing screen (Gap L) with the

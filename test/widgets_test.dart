@@ -17,6 +17,7 @@ import 'package:saqqar_app/features/chat/widgets/message_bubble.dart';
 import 'package:saqqar_app/features/conversations/data/attachment_models.dart';
 import 'package:saqqar_app/features/conversations/data/conversation_models.dart';
 import 'package:saqqar_app/features/conversations/data/conversations_repository.dart';
+import 'package:saqqar_app/features/chat/view_model/running_agents_cubit.dart';
 import 'package:saqqar_app/features/conversations/view_model/conversations_cubit.dart';
 import 'package:saqqar_app/features/conversations/widgets/conversation_card.dart';
 import 'package:saqqar_app/features/conversations/widgets/meta_dot.dart';
@@ -33,6 +34,20 @@ class _StubConversationsRepository implements ConversationsRepository {
     bool includeArchived = false,
   }) async =>
       (conversations: const <ConversationSummary>[], total: 0);
+
+  @override
+  Future<({Map<String, int> pendingByConv, Map<String, int> filesByConv})>
+      conversationMeta() async => (
+            pendingByConv: const <String, int>{},
+            filesByConv: const <String, int>{},
+          );
+
+  @override
+  Future<({Map<String, String> projectByConv, Map<String, String> envByConv})>
+      conversationContext(List<String> ids, {int concurrency = 6}) async => (
+            projectByConv: const <String, String>{},
+            envByConv: const <String, String>{},
+          );
 
   @override
   Future<String> create({String? title}) async => 'stub-id';
@@ -141,6 +156,9 @@ Widget _harness(Widget child, {Locale locale = const Locale('en')}) {
         ),
       ),
       BlocProvider<ApprovalsCubit>(create: (_) => ApprovalsCubit()),
+      // The conversation row reads the running-agent set for its "thinking"
+      // status ring, so the harness must provide it too.
+      BlocProvider<RunningAgentsCubit>(create: (_) => RunningAgentsCubit()),
     ],
     child: MaterialApp(
       locale: locale,
@@ -293,13 +311,12 @@ void main() {
       expect(find.byIcon(Icons.message), findsOneWidget);
     });
 
-    testWidgets('ConversationCard renders title and message count', (
+    testWidgets('ConversationCard renders title, preview and message count', (
       tester,
     ) async {
-      // The card was changed on user request (2026-05-18) to show
-      // ONLY title + relative time + message count — the
-      // `lastMessagePreview` line was removed because the assistant's
-      // reply text was visually noisy and often redundant with the title.
+      // The row shows title + relative time + last-message preview + the
+      // real meta run (message count, and project · environment / file count
+      // when present). Mirrors the current Chats design.
       final conversation = ConversationSummary(
         id: 'test-conv-1',
         title: 'GAC production audit',
@@ -319,8 +336,7 @@ void main() {
         ),
       );
       expect(find.text(conversation.title), findsOneWidget);
-      // Preview should NOT render anymore — explicit regression guard.
-      expect(find.text(conversation.lastMessagePreview), findsNothing);
+      expect(find.text(conversation.lastMessagePreview), findsOneWidget);
       expect(find.text('${conversation.messageCount}'), findsOneWidget);
     });
   });
