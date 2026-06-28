@@ -21,12 +21,20 @@ class AppTypography {
 
   /// Returns the right [TextTheme] for the given locale, applied on top of
   /// the platform's default [TextTheme] so platform-specific tuning is kept.
+  /// The bundled UI face — unified Arabic + Latin identity (RTL-first),
+  /// mirrors the Saqqar Design System's `--font-sans: Tajawal`.
+  static const String fontSans = 'Tajawal';
+
+  /// Bundled monospace face for code blocks / inline code / hosts —
+  /// mirrors the design system's `--font-mono: JetBrains Mono`.
+  static const String fontMono = 'JetBrainsMono';
+
   static TextTheme scale({
     required Locale locale,
     required Color text,
     required Color muted,
   }) {
-    final base = TextStyle(color: text);
+    final base = TextStyle(color: text, fontFamily: fontSans);
 
     TextStyle styled(
       double size,
@@ -76,6 +84,7 @@ class AppTypography {
   /// Spec §2.2: 11pt, weight 700, uppercase, +0.10em tracking.
   static TextStyle eyebrow({required Locale locale, required Color color}) {
     return TextStyle(
+      fontFamily: fontSans,
       fontSize: 11,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
@@ -86,6 +95,7 @@ class AppTypography {
   /// Status pill text — 10pt weight 700 uppercase +0.10em.
   static TextStyle statusPill({required Locale locale, required Color color}) {
     return TextStyle(
+      fontFamily: fontSans,
       fontSize: 10,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
@@ -103,7 +113,7 @@ class AppTypography {
       fontSize: size,
       color: color,
       height: 1.45,
-      fontFamily: 'monospace',
+      fontFamily: fontMono,
     );
   }
 }

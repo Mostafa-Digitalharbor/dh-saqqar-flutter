@@ -80,7 +80,15 @@ class ChatHeaderBadges extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 260),
+                      // Cap the label so badges keep room, but scale the cap
+                      // down on narrow phones (≤~430 px) so a long project·env
+                      // name can't overflow the row before it ellipsizes.
+                      constraints: BoxConstraints(
+                        maxWidth:
+                            MediaQuery.sizeOf(context).width * 0.6 < 260
+                                ? MediaQuery.sizeOf(context).width * 0.6
+                                : 260,
+                      ),
                       child: Text(
                         hasSelection
                             ? '${project!.name} · ${environment!.name}'

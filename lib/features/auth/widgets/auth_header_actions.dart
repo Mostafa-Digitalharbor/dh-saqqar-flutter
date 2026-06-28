@@ -46,11 +46,13 @@ class AuthHeaderActions extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           _HeaderIconButton(
-            icon: isArabic ? AppIcons.globe : AppIcons.globe,
+            icon: AppIcons.globe,
             tooltip: isArabic
                 ? context.tr.switchLanguageToEnglish
                 : context.tr.switchLanguageToArabic,
-            label: isArabic ? 'EN' : 'ع',
+            label: isArabic
+                ? UiStrings.localeEnglishLabel
+                : UiStrings.localeArabicLabel,
             color: s.brandCyan,
             onTap: () {
               HapticFeedback.selectionClick();

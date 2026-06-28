@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
+import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -18,14 +21,26 @@ import '../../../shared/widgets/fade_slide_in.dart';
 import '../../../shared/widgets/page_scaffold.dart';
 import '../../../shared/widgets/pagination_bar.dart';
 import '../../../shared/widgets/search_and_filters_bar.dart';
-import '../../../shared/widgets/section_header.dart';
-import '../../inbox/view_model/approvals_cubit.dart';
 import '../data/conversation_models.dart';
 import '../view_model/conversations_cubit.dart';
 import '../view_model/conversations_state.dart';
 import '../widgets/rename_conversation_dialog.dart';
 import '../widgets/swipe_archive_background.dart';
 import '../widgets/widgets.dart';
+
+/// Triage segments for the Chats list, mirroring the Saqqar Design System.
+/// `all` shows everything; `pending` keeps only conversations with pending
+/// approvals (real signal from [ApprovalsCubit]); `live` keeps recently-active
+/// conversations (representative — derived from `updatedAt` recency).
+enum ChatsFilterMode { all, pending, live }
+
+/// A conversation counts as "live" for the triage filter / status ring when it
+/// was last active within this window. Representative signal (the summary API
+/// doesn't carry a per-conversation live flag yet).
+const Duration kLiveWindow = Duration(hours: 2);
+
+bool conversationIsLive(ConversationSummary c) =>
+    DateTime.now().difference(c.updatedAt) <= kLiveWindow;
 
 /// Conversations list — search + archive filter + paginated rows, with
 /// a gradient FAB to start a fresh chat. Pinned conversations float to
@@ -48,6 +63,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   final _searchController = TextEditingController();
 
   String _query = '';
+  ChatsFilterMode _filterMode = ChatsFilterMode.all;
   /// Whether the "Archived conversations" collapsible card is open.
   /// Reset to false after every archive/unarchive action so the user
   /// always lands back on the active list — the archived section is a
@@ -131,9 +147,21 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final q = _query.trim().toLowerCase();
     return data.ordered.where((c) {
       if (c.isArchived) return false;
-      if (q.isEmpty) return true;
-      return c.title.toLowerCase().contains(q) ||
-          c.lastMessagePreview.toLowerCase().contains(q);
+      if (q.isNotEmpty &&
+          !(c.title.toLowerCase().contains(q) ||
+              c.lastMessagePreview.toLowerCase().contains(q))) {
+        return false;
+      }
+      switch (_filterMode) {
+        case ChatsFilterMode.all:
+          return true;
+        case ChatsFilterMode.pending:
+          // REAL needs-approval signal — the conversation has at least one
+          // pending approval in the flat `/approvals/?status=pending` feed.
+          return data.needsApproval(c.id);
+        case ChatsFilterMode.live:
+          return conversationIsLive(c);
+      }
     }).toList();
   }
 
@@ -289,6 +317,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   List<Widget> _buildGroupedRows(List<ConversationSummary> rows) {
     final widgets = <Widget>[];
     String? currentGroup;
+    // Real per-conversation meta (pending approvals + files) from the loaded
+    // data — passed into each card so the counts are never fabricated.
+    final data = context.read<ConversationsCubit>().state.data.dataOrNull;
     for (final entry in rows.asMap().entries) {
       final c = entry.value;
       final group = _dateGroupKey(context, c);
@@ -296,8 +327,13 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         if (currentGroup != null) widgets.add(const SizedBox(height: 16));
         widgets.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SectionHeader(title: group),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              group,
+              style: context.text.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         );
         currentGroup = group;
@@ -339,6 +375,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
             },
             child: ConversationCard(
               conversation: c,
+              pendingApprovals: data?.pendingApprovalsFor(c.id) ?? 0,
+              filesCount: data?.filesFor(c.id) ?? 0,
               onTap: () => context.go(RouteNames.chatPath(c.id)),
               onAction: (action) => _handleRowAction(c, action),
             ),
@@ -360,10 +398,16 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           a.actionToast != b.actionToast,
       listener: _onCubitChange,
       builder: (context, state) {
-        final pendingCount = context.select<ApprovalsCubit, int>(
-          (cubit) => cubit.state.pendingCount,
-        );
         final data = state.data.dataOrNull;
+        // REAL "needs approval" total — the number of conversations with at
+        // least one pending approval (same source as the filter chip badge,
+        // the filter, and the per-row pill). Never the demo-backed
+        // `ApprovalsCubit.pendingCount`.
+        final pendingCount = data == null
+            ? 0
+            : data.conversations
+                .where((c) => !c.isArchived && data.needsApproval(c.id))
+                .length;
         final totalCount = data == null ? 0 : _filter(data).length;
         final subtitleText = pendingCount > 0
             ? '$totalCount ${context.tr.conversations} · '
@@ -415,6 +459,11 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               onData: (context, data) => _ConversationsBody(
                 data: data,
                 query: _query,
+                filterMode: _filterMode,
+                onFilterModeChanged: (mode) => setState(() {
+                  _filterMode = mode;
+                  _resetPagination();
+                }),
                 archivedExpanded: _archivedExpanded,
                 pageIndex: _pageIndex,
                 pageSize: _pageSize,
@@ -451,6 +500,8 @@ class _ConversationsBody extends StatelessWidget {
   const _ConversationsBody({
     required this.data,
     required this.query,
+    required this.filterMode,
+    required this.onFilterModeChanged,
     required this.archivedExpanded,
     required this.pageIndex,
     required this.pageSize,
@@ -468,6 +519,8 @@ class _ConversationsBody extends StatelessWidget {
 
   final ConversationsData data;
   final String query;
+  final ChatsFilterMode filterMode;
+  final ValueChanged<ChatsFilterMode> onFilterModeChanged;
   final bool archivedExpanded;
   final int pageIndex;
   final int pageSize;
@@ -492,6 +545,13 @@ class _ConversationsBody extends StatelessWidget {
     final pageCount = pageCountFor(filtered.length);
     final paged = filtered.skip(pageIndex * pageSize).take(pageSize).toList();
 
+    // REAL "needs approval" total — the number of conversations that have at
+    // least one pending approval (same source as the filter + the per-row
+    // pill), so the badge always equals what tapping "Needs approval" reveals.
+    final pendingTotal = data.conversations
+        .where((c) => !c.isArchived && data.needsApproval(c.id))
+        .length;
+
     return Column(
       children: [
         SearchAndFiltersBar<Never>(
@@ -500,7 +560,13 @@ class _ConversationsBody extends StatelessWidget {
           query: query,
           onQueryChanged: onSearchChanged,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
+        _ChatsFilterChips(
+          mode: filterMode,
+          onChanged: onFilterModeChanged,
+          pendingCount: pendingTotal,
+        ),
+        const SizedBox(height: 16),
         // Archived collapsible card. Only mounted when there's at least
         // one archived conversation — otherwise the word "Archived"
         // doesn't appear in the UI at all.
@@ -541,12 +607,154 @@ class _ConversationsBody extends StatelessWidget {
             title: context.tr.clearSearch,
             body: query,
           )
+        else if (filtered.isEmpty)
+          // A filter (e.g. "Needs approval") is active but no conversation
+          // matches it. Without this branch the list area would render blank.
+          EmptyState(
+            key: const ValueKey('empty-filter'),
+            icon: AppIcons.shieldAlert,
+            title: context.tr.noMatches,
+          )
         else if (filtered.isNotEmpty)
           Column(
             key: ValueKey('conversation-list-$query-${paged.length}'),
             children: buildGroupedRows(paged),
           ),
       ],
+    );
+  }
+}
+
+/// Triage filter chips — All / Needs approval — mirroring the Saqqar Design
+/// System's Chats `FilterChips`. Left-aligned pills (not a stretched
+/// segmented control): the active chip fills with the primary gradient +
+/// cyan-pop glow; "Needs approval" carries a live amber count badge.
+class _ChatsFilterChips extends StatelessWidget {
+  const _ChatsFilterChips({
+    required this.mode,
+    required this.onChanged,
+    required this.pendingCount,
+  });
+
+  final ChatsFilterMode mode;
+  final ValueChanged<ChatsFilterMode> onChanged;
+
+  /// Coherent total of conversations-with-pending-approvals (same source as
+  /// the rows) so the badge always matches the filtered list.
+  final int pendingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = context.tr;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _FilterChip(
+            icon: LucideIcons.layoutGrid,
+            label: tr.filterAll,
+            badge: 0,
+            warn: false,
+            active: mode == ChatsFilterMode.all,
+            onTap: () => onChanged(ChatsFilterMode.all),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            icon: AppIcons.shieldAlert,
+            label: tr.filterNeedsApproval,
+            badge: pendingCount,
+            warn: true,
+            active: mode == ChatsFilterMode.pending,
+            onTap: () => onChanged(ChatsFilterMode.pending),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.icon,
+    required this.label,
+    required this.badge,
+    required this.warn,
+    required this.active,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final int badge;
+  final bool warn;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    final fg = active ? Colors.white : s.muted;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppRadius.pillR,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.pillR,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: active ? AppGradients.primaryCta : null,
+            color: active ? null : s.cardBg,
+            borderRadius: AppRadius.pillR,
+            border: Border.all(
+              color: active ? Colors.transparent : s.border,
+            ),
+            boxShadow: active ? s.cyanPopShadow : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: fg),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: context.text.titleSmall?.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (badge > 0) ...[
+                const SizedBox(width: 7),
+                Container(
+                  constraints: const BoxConstraints(minWidth: 18),
+                  height: 18,
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: active
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : (warn
+                            ? s.warning.withValues(alpha: 0.20)
+                            : s.surface3),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$badge',
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.2,
+                      fontWeight: FontWeight.w700,
+                      color: active
+                          ? Colors.white
+                          : (warn ? s.warning : s.muted),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -67,6 +67,51 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
   // Code / monospace plate background.
   final Color codePlate;
 
+  // ── Computed effect tokens (mirror the design system's effects.css) ──
+  // These are derived getters, so they stay out of the constructor / copyWith
+  // / lerp boilerplate.
+
+  bool get _isDark => bg.computeLuminance() < 0.5;
+
+  /// Soft float shadow for glass cards/rows — `--shadow-glass`.
+  List<BoxShadow> get glassShadow => _isDark
+      ? const [
+          BoxShadow(
+            color: Color(0x66020617), // rgba(2,6,23,0.40)
+            blurRadius: 28,
+            offset: Offset(0, 8),
+          ),
+        ]
+      : const [
+          BoxShadow(
+            color: Color(0x170F172A), // rgba(15,23,42,0.09)
+            blurRadius: 30,
+            offset: Offset(0, 10),
+          ),
+        ];
+
+  /// Signature cyan glow on primary CTAs / FABs — `--shadow-cyan-pop`.
+  List<BoxShadow> get cyanPopShadow => [
+    BoxShadow(
+      color: brandCyan.withValues(alpha: 0.18),
+      blurRadius: 30,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
+  /// Standard glass surface decoration: frosted fill + hairline + float shadow.
+  BoxDecoration glassDecoration({
+    BorderRadiusGeometry? borderRadius,
+    Color? background,
+    Color? border,
+    bool shadow = true,
+  }) => BoxDecoration(
+    color: background ?? cardBg,
+    border: Border.all(color: border ?? cardBorder),
+    borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(12)),
+    boxShadow: shadow ? glassShadow : null,
+  );
+
   @override
   SaqqarThemeExtension copyWith({
     Color? bg,

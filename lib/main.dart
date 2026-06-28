@@ -223,7 +223,11 @@ Future<void> _bootApp() async {
     // cold start while a fresh fetch runs in the background.
     cache: VaultCache(prefs),
   );
-  final conversationsRepository = ConversationsRepository(conversationsApi);
+  final conversationsRepository = ConversationsRepository(
+    conversationsApi,
+    approvalsApi: approvalsApi,
+    artifactsApi: artifactsApi,
+  );
 
   runApp(
     MultiRepositoryProvider(

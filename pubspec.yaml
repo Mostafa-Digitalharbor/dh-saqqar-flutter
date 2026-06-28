@@ -18,7 +18,7 @@ publish_to: 'none'
 #   • Multi-file attachments in the chat composer.
 #   • Receive ACTION_SEND / ACTION_SEND_MULTIPLE from WhatsApp, Files,
 #     Photos — user picks the target chat instead of auto-opening a new one.
-version: 1.0.22+100
+version: 1.0.22+101
 
 environment:
   sdk: ^3.9.2
@@ -123,6 +123,11 @@ dependency_overrides:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Drives the in-app screenshot harness (tool/screenshots) on a real
+  # device/emulator so glassmorphic blur + gradients render at full
+  # fidelity (golden tests can't render BackdropFilter). Dev-only.
+  integration_test:
+    sdk: flutter
   flutter_lints: ^5.0.0
 
   # Asset generation. Run, in order:
@@ -138,6 +143,27 @@ flutter:
   assets:
     - assets/img/
 
+  # Bundled UI faces — the Saqqar Design System uses a single unified
+  # Tajawal identity (Arabic + Latin, RTL-first) + JetBrains Mono for code.
+  # Bundled (not google_fonts CDN) so they render offline / geo-blocked.
+  fonts:
+    - family: Tajawal
+      fonts:
+        - asset: assets/fonts/Tajawal-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Tajawal-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Tajawal-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Tajawal-ExtraBold.ttf
+          weight: 800
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
+
 # App-icon generator config — points at the composed SAQQÂR wordmark
 # (navy on a white rounded square, padded inside the tile so it isn't
 # crowding the edges). Regenerate with:
@@ -146,15 +172,17 @@ flutter:
 flutter_launcher_icons:
   android: 'launcher_icon'
   ios: true
-  image_path: 'assets/img/saqqar-launcher.png'
-  adaptive_icon_background: '#FFFFFF'
-  adaptive_icon_foreground: 'assets/img/saqqar-launcher-foreground.png'
+  # Full-bleed dark tile + large symbol (1024²). Adaptive fills the whole
+  # launcher shape (no white circle) with the symbol scaled up.
+  image_path: 'assets/img/app-icon-full.png'
+  adaptive_icon_background: 'assets/img/app-icon-bg.png'
+  adaptive_icon_foreground: 'assets/img/app-icon-foreground.png'
   remove_alpha_ios: true
   min_sdk_android: 21
   web:
     generate: true
-    image_path: 'assets/img/saqqar-launcher.png'
-    background_color: '#FFFFFF'
+    image_path: 'assets/img/app-icon-full.png'
+    background_color: '#0b1a38'
     theme_color: '#06B6D4'
 
 # Splash screen generator config. We don't want ANY static branding on

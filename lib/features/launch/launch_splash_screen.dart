@@ -199,15 +199,19 @@ class _Wordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The brand lockup is a wide (~3.9:1) hexagon-mark + wordmark, so size
+    // it by available width — cap the height at 96 dp but shrink it so the
+    // lockup never runs past ~78 % of the screen on narrow phones.
+    final maxW = MediaQuery.sizeOf(context).width * 0.78;
+    final logoHeight = (maxW / 3.9).clamp(48.0, 96.0);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // SAQQÂR wordmark — bumped to 96 dp so the zoom-in lands on a
-        // genuinely large hero. Force the variant that contrasts with
-        // the splash backdrop: navy + cyan strokes on the light/white
-        // backdrop, white strokes on the dark navy one.
+        // Brand lockup — force the variant that contrasts with the splash
+        // backdrop: navy + cyan strokes on the light/white backdrop, white
+        // strokes on the dark navy one.
         SaqqarLogo(
-          height: 96,
+          height: logoHeight,
           forceVariant: isLight ? Brightness.light : Brightness.dark,
         ),
         const SizedBox(height: 10),

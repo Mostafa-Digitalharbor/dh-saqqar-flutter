@@ -48,6 +48,8 @@ class ConversationsData extends Equatable {
     required this.conversations,
     this.pinnedIds = const {},
     this.total,
+    this.pendingByConv = const {},
+    this.filesByConv = const {},
   });
 
   final List<ConversationSummary> conversations;
@@ -60,6 +62,26 @@ class ConversationsData extends Equatable {
   /// Total count from the paginated response (when supplied). Use for
   /// the "M conversations" label without iterating the list.
   final int? total;
+
+  /// REAL per-conversation pending-approval counts, grouped from the flat
+  /// `/approvals/?status=pending` feed. Drives the row's "N to approve"
+  /// pill, the "Needs approval" filter, and the filter badge. Missing key =
+  /// no pending approvals for that conversation.
+  final Map<String, int> pendingByConv;
+
+  /// REAL per-conversation file counts, grouped from the flat `/artifacts/`
+  /// feed. Drives the row's file count. Missing key = no files.
+  final Map<String, int> filesByConv;
+
+  /// Real pending-approval count for [id] (0 when none).
+  int pendingApprovalsFor(String id) => pendingByConv[id] ?? 0;
+
+  /// Real produced-file count for [id] (0 when none).
+  int filesFor(String id) => filesByConv[id] ?? 0;
+
+  /// Whether the conversation has at least one pending approval — the real
+  /// signal behind the "Needs approval" filter.
+  bool needsApproval(String id) => pendingApprovalsFor(id) > 0;
 
   /// Sorted view: pinned first (preserving original order), the rest
   /// in API order. The original [conversations] field stays unsorted
@@ -94,16 +116,21 @@ class ConversationsData extends Equatable {
     List<ConversationSummary>? conversations,
     Set<String>? pinnedIds,
     int? total,
+    Map<String, int>? pendingByConv,
+    Map<String, int>? filesByConv,
   }) {
     return ConversationsData(
       conversations: conversations ?? this.conversations,
       pinnedIds: pinnedIds ?? this.pinnedIds,
       total: total ?? this.total,
+      pendingByConv: pendingByConv ?? this.pendingByConv,
+      filesByConv: filesByConv ?? this.filesByConv,
     );
   }
 
   @override
-  List<Object?> get props => [conversations, pinnedIds, total];
+  List<Object?> get props =>
+      [conversations, pinnedIds, total, pendingByConv, filesByConv];
 }
 
 /// Top-level state. Same shape as VaultState — same `data` /

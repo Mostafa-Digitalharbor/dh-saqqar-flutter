@@ -62,5 +62,17 @@
 		     a system-presented UI (Apple still wants the rationale). -->
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Saqqar lets you attach photos to chat messages so the AI assistant can read them.</string>
+		<!-- permission_handler links the Camera &amp; Location APIs into the
+		     binary even though the app does not actively use them, so Apple's
+		     static check (ITMS-90683) requires these purpose strings to exist.
+		     The app never prompts for these at runtime. -->
+		<key>NSCameraUsageDescription</key>
+		<string>Saqqar can use the camera to capture a photo to attach to a chat message so the AI assistant can read it.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Saqqar does not use your location. This entry is required by a system library and is never accessed.</string>
+		<!-- Standard HTTPS encryption only — exempts the build from the
+		     export-compliance prompt so it processes without "Missing Compliance". -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 	</dict>
 </plist>

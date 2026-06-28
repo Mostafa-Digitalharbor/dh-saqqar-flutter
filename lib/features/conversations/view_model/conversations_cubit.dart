@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/app_failure.dart';
@@ -29,6 +31,10 @@ class ConversationsCubit extends Cubit<ConversationsState> {
 
   final ConversationsRepository _repo;
 
+  /// Guards against overlapping project/environment enrichment passes when
+  /// loads fire in quick succession (mount + pull-to-refresh).
+  bool _enriching = false;
+
   /// Drop any [emit] call that lands after [close]. Same guard pattern
   /// as [ChatCubit.emit] — every load / mutation here awaits the
   /// repository, and the cubit can be reset (and effectively closed)
@@ -52,17 +58,44 @@ class ConversationsCubit extends Cubit<ConversationsState> {
       data: DataLoading<ConversationsData>(previous: state.data.dataOrNull),
     ));
     try {
-      final res = await _repo.list(includeArchived: includeArchived);
-      final pinned = state.data.dataOrNull?.pinnedIds ?? const <String>{};
+      // Kick off the list and the real per-conversation meta (pending
+      // approvals + files) concurrently — the meta comes from the flat
+      // cross-conversation feeds and is best-effort (never blocks/fails the
+      // list; yields empty maps on error). No fabricated counts.
+      final listFuture = _repo.list(includeArchived: includeArchived);
+      final metaFuture = _repo.conversationMeta();
+      final res = await listFuture;
+      final meta = await metaFuture;
+      final previous = state.data.dataOrNull;
+      final pinned = previous?.pinnedIds ?? const <String>{};
+      // Carry over any project/environment context already resolved for a
+      // row so a refresh doesn't blank the tag out before the next
+      // enrichment pass lands (the list endpoint never carries it).
+      final prevById = <String, ConversationSummary>{
+        for (final c in previous?.conversations ?? const <ConversationSummary>[])
+          c.id: c,
+      };
+      final conversations = [
+        for (final c in res.conversations)
+          c.copyWith(
+            projectName: prevById[c.id]?.projectName,
+            environmentName: prevById[c.id]?.environmentName,
+          ),
+      ];
       emit(state.copyWith(
         data: DataSuccess(
           ConversationsData(
-            conversations: res.conversations,
+            conversations: conversations,
             pinnedIds: pinned,
             total: res.total,
+            pendingByConv: meta.pendingByConv,
+            filesByConv: meta.filesByConv,
           ),
         ),
       ));
+      // Fill in project · environment per row in the background — the list
+      // is already on screen; the tags fade in as snapshots resolve.
+      unawaited(_enrichContext());
     } catch (e, st) {
       AppLogger.error(_tag, 'load() failed', error: e, stackTrace: st);
       final failure = ApiErrorMapper.toFailure(e);
@@ -81,6 +114,46 @@ class ConversationsCubit extends Cubit<ConversationsState> {
   }
 
   Future<void> refresh() => load();
+
+  /// Resolves the real project · environment for each row from its snapshot
+  /// (the list endpoint doesn't carry them) and folds the names back into the
+  /// summaries. Runs in the background so it never delays the list, only
+  /// fetches rows that don't already have context (so refreshes are cheap),
+  /// and is best-effort — a row that fails or has no bound environment simply
+  /// keeps its tag hidden rather than showing a fabricated value.
+  Future<void> _enrichContext() async {
+    if (_enriching) return;
+    final current = state.data.dataOrNull;
+    if (current == null) return;
+    final missing = [
+      for (final c in current.conversations)
+        if ((c.projectName == null || c.projectName!.isEmpty) &&
+            (c.environmentName == null || c.environmentName!.isEmpty))
+          c.id,
+    ];
+    if (missing.isEmpty) return;
+    _enriching = true;
+    try {
+      final ctx = await _repo.conversationContext(missing);
+      if (ctx.projectByConv.isEmpty && ctx.envByConv.isEmpty) return;
+      final cur = state.data.dataOrNull;
+      if (cur == null) return;
+      final enriched = [
+        for (final c in cur.conversations)
+          c.copyWith(
+            projectName: ctx.projectByConv[c.id],
+            environmentName: ctx.envByConv[c.id],
+          ),
+      ];
+      emit(state.copyWith(
+        data: DataSuccess(cur.copyWith(conversations: enriched)),
+      ));
+    } catch (e, st) {
+      AppLogger.warn(_tag, 'context enrichment failed', error: e, stackTrace: st);
+    } finally {
+      _enriching = false;
+    }
+  }
 
   /// Drops the in-memory conversation list back to the idle state.
   /// Called from the auth boundary when the signed-in user changes
@@ -281,6 +354,8 @@ class ConversationsCubit extends Cubit<ConversationsState> {
       isArchived: c.isArchived,
       messageCount: c.messageCount,
       lastMessagePreview: c.lastMessagePreview,
+      projectName: c.projectName,
+      environmentName: c.environmentName,
     );
   }
 
@@ -296,6 +371,8 @@ class ConversationsCubit extends Cubit<ConversationsState> {
       isArchived: archived,
       messageCount: c.messageCount,
       lastMessagePreview: c.lastMessagePreview,
+      projectName: c.projectName,
+      environmentName: c.environmentName,
     );
   }
 }

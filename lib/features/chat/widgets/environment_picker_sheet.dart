@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/mini_chip.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../../vault/data/project_models.dart';
+import '../../vault/view_model/vault_cubit.dart';
 import 'chat_sheet.dart';
 
 /// Bottom sheet that lists every project and its environments. Tapping an
@@ -37,6 +39,11 @@ class EnvironmentPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
+    // Real projects (with their nested environments) from the Vault feed —
+    // the same source the Projects tab renders. Empty until the first load.
+    final projects =
+        context.watch<VaultCubit>().state.data.dataOrNull?.projects ??
+            const <Project>[];
 
     return ChatSheet(
       title: context.tr.pickEnvironment,
@@ -58,27 +65,27 @@ class EnvironmentPickerSheet extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Divider(color: s.border, height: 1),
         ),
-        for (final project in demoProjects) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
-            child: Text(
-              project.name.toUpperCase(),
-              style: context.text.labelSmall?.copyWith(
-                color: s.muted,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.0,
-                fontSize: 10,
+        for (final project in projects)
+          if (project.environments.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+              child: Text(
+                project.name.toUpperCase(),
+                style: context.text.labelSmall?.copyWith(
+                  color: s.muted,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                  fontSize: 10,
+                ),
               ),
             ),
-          ),
-          for (final env in demoEnvironmentsForProject(project.id))
-            _EnvRow(
-              env: env,
-              project: project,
-              selected: env.id == selectedEnvironmentId,
-              onTap: () => Navigator.of(context).pop(env.id),
-            ),
-        ],
+            for (final env in project.environments)
+              _EnvRow(
+                env: env,
+                selected: env.id == selectedEnvironmentId,
+                onTap: () => Navigator.of(context).pop(env.id),
+              ),
+          ],
         const SizedBox(height: 8),
       ],
     );
@@ -142,13 +149,11 @@ class _NoneRow extends StatelessWidget {
 class _EnvRow extends StatelessWidget {
   const _EnvRow({
     required this.env,
-    required this.project,
     required this.selected,
     required this.onTap,
   });
 
-  final DemoEnvironment env;
-  final DemoProject project;
+  final Environment env;
   final bool selected;
   final VoidCallback onTap;
 
@@ -197,10 +202,13 @@ class _EnvRow extends StatelessWidget {
                           MiniChip(context.tr.readOnlyBadge, color: s.muted),
                         if (env.autoApprove)
                           MiniChip(context.tr.autoApproveBadge, color: s.warning),
-                        Text(
-                          '${env.credentialNames.length} ${context.tr.credentials}',
-                          style: context.text.bodySmall?.copyWith(color: s.muted),
-                        ),
+                        if (env.slug.isNotEmpty)
+                          Text(
+                            env.slug,
+                            textDirection: TextDirection.ltr,
+                            style:
+                                context.text.bodySmall?.copyWith(color: s.muted),
+                          ),
                       ],
                     ),
                   ],

@@ -30,6 +30,8 @@ class AppIcons {
   static const IconData account = LucideIcons.circleUserRound;
   static const IconData key = LucideIcons.key;
   static const IconData terminal = LucideIcons.terminal;
+  static const IconData slash = LucideIcons.slash;
+  static const IconData cpu = LucideIcons.cpu;
   static const IconData database = LucideIcons.database;
   static const IconData github = LucideIcons.gitBranch;
   static const IconData sparkles = LucideIcons.sparkles;

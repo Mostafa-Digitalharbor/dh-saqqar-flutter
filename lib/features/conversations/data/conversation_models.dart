@@ -181,6 +181,8 @@ class ConversationSummary {
     required this.isArchived,
     required this.messageCount,
     this.lastMessagePreview = '',
+    this.projectName,
+    this.environmentName,
   });
 
   final String id;
@@ -191,6 +193,14 @@ class ConversationSummary {
   final int messageCount;
   final String lastMessagePreview;
 
+  /// Real project / environment context when the list endpoint includes it.
+  /// The documented `GET /conversations/` summary (SAQQAR_MOBILE_API.md §2)
+  /// doesn't carry these, so they're parsed defensively and stay `null` when
+  /// absent — the row simply omits the project · environment line rather
+  /// than ever showing a fabricated value.
+  final String? projectName;
+  final String? environmentName;
+
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     return ConversationSummary(
       id: json['id'] as String,
@@ -200,8 +210,50 @@ class ConversationSummary {
       isArchived: json['is_archived'] as bool? ?? false,
       messageCount: (json['message_count'] as num?)?.toInt() ?? 0,
       lastMessagePreview: json['last_message_preview'] as String? ?? '',
+      projectName:
+          _nameOf(json['project']) ?? json['project_name'] as String?,
+      environmentName: _nameOf(json['environment']) ??
+          json['environment_name'] as String?,
     );
   }
+
+  /// The list endpoint doesn't carry project / environment, so the cubit
+  /// enriches each row from its snapshot and rebuilds the summary with this.
+  /// Only the two context fields are overridable — everything else is the
+  /// server's list truth.
+  ConversationSummary copyWith({
+    String? projectName,
+    String? environmentName,
+  }) {
+    return ConversationSummary(
+      id: id,
+      title: title,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      isArchived: isArchived,
+      messageCount: messageCount,
+      lastMessagePreview: lastMessagePreview,
+      projectName: projectName ?? this.projectName,
+      environmentName: environmentName ?? this.environmentName,
+    );
+  }
+}
+
+/// Pulls a human label out of a project / environment field, tolerating the
+/// three shapes a backend might use: a bare string, a nested
+/// `{id, name, …}` object, or `{slug, …}` when no display name is set.
+/// Returns `null` when absent so the row omits the tag rather than ever
+/// showing a fabricated value.
+String? _nameOf(Object? value) {
+  if (value is String) {
+    final t = value.trim();
+    return t.isEmpty ? null : t;
+  }
+  if (value is Map) {
+    final n = value['name'] ?? value['slug'];
+    return n is String && n.trim().isNotEmpty ? n.trim() : null;
+  }
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

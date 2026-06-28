@@ -567,6 +567,77 @@ class AppStrings {
   String get conversationsActionStopFailed =>
       _t('conversations_action_stop_failed');
 
+  // Chat action-failure labels — the "what failed" line a failed chat
+  // mutation surfaces (paired with the mapped "why" from ApiErrorMapper).
+  String get chatActionSendFailed => _t('chat_action_send_failed');
+  String get chatActionUploadFailed => _t('chat_action_upload_failed');
+  String get chatActionStopFailed => _t('chat_action_stop_failed');
+  String get chatActionShareFailed => _t('chat_action_share_failed');
+  String get chatActionCredentialFailed =>
+      _t('chat_action_credential_failed');
+  String get chatActionDismissFailed => _t('chat_action_dismiss_failed');
+
+  // Chats list filter chips
+  String get filterAll => _t('filter_all');
+  String get filterNeedsApproval => _t('filter_needs_approval');
+
+  // Notifications bell (page scaffold)
+  String get notifications => _t('notifications');
+  String get noNewNotifications => _t('no_new_notifications');
+
+  // Slash-command sheet (composer "/" menu)
+  String get commandsHeader => _t('commands_header');
+  String get commands => _t('commands');
+  String get noResults => _t('no_results');
+  String get searchMessagesHint => _t('search_messages_hint');
+  String get searchInConversation => _t('search_in_conversation');
+
+  /// Pending-approval safety pill on a conversation row — "2 TO APPROVE" /
+  /// "٢ للموافقة".
+  String toApprove(int n) => _isArabic ? '$n للموافقة' : '$n TO APPROVE';
+  String get slashRestartDesc => _t('slash_restart_desc');
+  String get slashReportDesc => _t('slash_report_desc');
+  String get slashSyncDesc => _t('slash_sync_desc');
+  String get slashLogsDesc => _t('slash_logs_desc');
+  String get slashBackupDesc => _t('slash_backup_desc');
+
+  // Composer quick-suggestion chips
+  String get suggestRestartWorker => _t('suggest_restart_worker');
+  String get suggestReconciliationReport =>
+      _t('suggest_reconciliation_report');
+  String get suggestPendingInvoices => _t('suggest_pending_invoices');
+  String get suggestSyncInventory => _t('suggest_sync_inventory');
+
+  // Vault / project card
+  String get idleBadge => _t('idle_badge');
+  String get envNoCredentials => _t('env_no_credentials');
+
+  // Relative-time phrasing (the numeric part is pre-formatted by the caller
+  // through NumberFormat so AR sees Arabic-Indic digits). "at"/"في" joins a
+  // full date + time.
+  String get dateAtConnector => _t('date_at_connector');
+  String relativeMinutesAgo(String n) => _isArabic ? 'منذ $n د' : '$n m ago';
+  String relativeHoursAgo(String n) => _isArabic ? 'منذ $n س' : '$n h ago';
+  String relativeDaysAgo(String n) => _isArabic ? 'منذ $n أيام' : '$n d ago';
+
+  /// Project header stats line — "3 environments · 1 live · 2 credentials"
+  /// (pluralized for EN, RTL-natural for AR). Segments after the count are
+  /// dropped when zero.
+  String projectStats(int envs, int live, int connected) {
+    if (_isArabic) {
+      final b = StringBuffer('$envs بيئة');
+      if (live > 0) b.write(' · $live مباشرة');
+      if (connected > 0) b.write(' · $connected بيانات اعتماد');
+      return b.toString();
+    }
+    final b = StringBuffer('$envs ${envs == 1 ? 'environment' : 'environments'}');
+    if (live > 0) b.write(' · $live live');
+    if (connected > 0) {
+      b.write(' · $connected ${connected == 1 ? 'credential' : 'credentials'}');
+    }
+    return b.toString();
+  }
+
   String get conversationCreatedToast => _t('conversation_created_toast');
   String get conversationArchivedToast => _t('conversation_archived_toast');
   String get conversationUnarchivedToast =>
@@ -1306,6 +1377,33 @@ const Map<String, String> _en = {
       "Couldn't restore the conversation",
   'conversations_action_delete_failed': "Couldn't delete the conversation",
   'conversations_action_stop_failed': "Couldn't stop the conversation",
+  'chat_action_send_failed': "Couldn't send your message",
+  'chat_action_upload_failed': "Couldn't upload the attachment",
+  'chat_action_stop_failed': "Couldn't stop the agent",
+  'chat_action_share_failed': "Couldn't share the conversation",
+  'chat_action_credential_failed': "Couldn't update the credential",
+  'chat_action_dismiss_failed': "Couldn't dismiss the request",
+  'filter_all': 'All',
+  'filter_needs_approval': 'Needs approval',
+  'notifications': 'Notifications',
+  'no_new_notifications': 'No new notifications',
+  'commands_header': 'COMMANDS',
+  'commands': 'Commands',
+  'no_results': 'No results',
+  'search_messages_hint': 'Type to search messages',
+  'search_in_conversation': 'Search in conversation',
+  'slash_restart_desc': 'Restart an Odoo worker',
+  'slash_report_desc': 'Generate a report',
+  'slash_sync_desc': 'Sync inventory or data',
+  'slash_logs_desc': 'Fetch recent server logs',
+  'slash_backup_desc': 'Snapshot the environment',
+  'suggest_restart_worker': 'Restart Odoo worker',
+  'suggest_reconciliation_report': 'Reconciliation report',
+  'suggest_pending_invoices': 'Pending invoices',
+  'suggest_sync_inventory': 'Sync inventory',
+  'idle_badge': 'Idle',
+  'env_no_credentials': 'No credentials',
+  'date_at_connector': 'at',
   'conversation_created_toast': 'Conversation started.',
   'conversation_archived_toast': 'Conversation archived.',
   'conversation_unarchived_toast': 'Conversation restored.',
@@ -2035,6 +2133,33 @@ const Map<String, String> _ar = {
   'conversations_action_unarchive_failed': 'تعذّر استعادة المحادثة',
   'conversations_action_delete_failed': 'تعذّر حذف المحادثة',
   'conversations_action_stop_failed': 'تعذّر إيقاف المحادثة',
+  'chat_action_send_failed': 'تعذّر إرسال رسالتك',
+  'chat_action_upload_failed': 'تعذّر رفع المرفق',
+  'chat_action_stop_failed': 'تعذّر إيقاف الوكيل',
+  'chat_action_share_failed': 'تعذّر مشاركة المحادثة',
+  'chat_action_credential_failed': 'تعذّر تحديث بيانات الاعتماد',
+  'chat_action_dismiss_failed': 'تعذّر تجاهل الطلب',
+  'filter_all': 'الكل',
+  'filter_needs_approval': 'بحاجة موافقة',
+  'notifications': 'الإشعارات',
+  'no_new_notifications': 'لا توجد إشعارات جديدة',
+  'commands_header': 'الأوامر',
+  'commands': 'الأوامر',
+  'no_results': 'لا نتائج',
+  'search_messages_hint': 'اكتب للبحث في الرسائل',
+  'search_in_conversation': 'بحث في المحادثة',
+  'slash_restart_desc': 'إعادة تشغيل عامل Odoo',
+  'slash_report_desc': 'توليد تقرير',
+  'slash_sync_desc': 'مزامنة المخزون أو البيانات',
+  'slash_logs_desc': 'جلب سجلّات الخادم الأخيرة',
+  'slash_backup_desc': 'لقطة من البيئة',
+  'suggest_restart_worker': 'إعادة تشغيل عامل Odoo',
+  'suggest_reconciliation_report': 'تقرير التسويات',
+  'suggest_pending_invoices': 'الفواتير المعلّقة',
+  'suggest_sync_inventory': 'مزامنة المخزون',
+  'idle_badge': 'خامل',
+  'env_no_credentials': 'لا توجد بيانات اعتماد',
+  'date_at_connector': 'في',
   'conversation_created_toast': 'بدأت المحادثة.',
   'conversation_archived_toast': 'تمت أرشفة المحادثة.',
   'conversation_unarchived_toast': 'تمت استعادة المحادثة.',

@@ -3,24 +3,21 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
 
-/// Brand wordmark image — the SAQQÂR logo with the cyan accents on the
-/// Q-tails and the Â circumflex. Two assets ship side-by-side so the
-/// logo is always legible against whichever surface it lands on:
+/// The single Saqqar brand logo — the hexagonal mark + "SAQQAR" lockup
+/// shipped at `assets/img/logo-light.png`. This is the canonical app logo;
+/// every in-app logo surface (header, splash, auth, drawer) renders it via
+/// this widget so there is exactly one source of truth.
 ///
-///   * **Light mode** → `assets/img/saqqar-logo-light.png` (navy strokes
-///     readable on light backgrounds).
-///   * **Dark mode** → `assets/img/saqqar-logo-dark.png` (white strokes
-///     readable on dark navy backgrounds).
-///
-/// Picking the right asset directly beats the old ColorFilter hack
-/// (`ColorFilter.mode(white, srcATop)` blanched the cyan accents on
-/// some Android renderers).
+/// The asset itself is the navy/cyan lockup tuned for **light** backgrounds.
+/// On **dark** surfaces it's tinted solid white (`BlendMode.srcIn`) so the
+/// lockup stays legible — the same monochrome-white treatment the Saqqar
+/// Design System's header uses (`brightness(0) invert(1)`).
 ///
 /// Renders at a given [height]; aspect ratio preserved automatically.
 ///
 /// Falls back to a gradient-text "SAQQAR" via [ShaderMask] when the
 /// asset isn't on disk yet — keeps the build green during the handover
-/// window before the user drops the image files in.
+/// window before the user drops the image file in.
 class SaqqarLogo extends StatelessWidget {
   const SaqqarLogo({
     super.key,
@@ -31,26 +28,34 @@ class SaqqarLogo extends StatelessWidget {
   final double height;
 
   /// Optional override — pin the variant regardless of the active
-  /// theme. Useful when the wordmark sits on a surface that doesn't
-  /// follow the app theme (e.g. a permanently-dark splash screen
-  /// shown over a light system theme).
+  /// theme. Useful when the logo sits on a surface that doesn't follow
+  /// the app theme (e.g. a permanently-dark splash screen shown over a
+  /// light system theme).
   final Brightness? forceVariant;
+
+  static const String asset = 'assets/img/logo-light.png';
 
   @override
   Widget build(BuildContext context) {
-    final brightness =
-        forceVariant ?? Theme.of(context).brightness;
-    final asset = brightness == Brightness.dark
-        ? 'assets/img/saqqar-logo-dark.png'
-        : 'assets/img/saqqar-logo-light.png';
+    final brightness = forceVariant ?? Theme.of(context).brightness;
+    final onDark = brightness == Brightness.dark;
 
-    return Image.asset(
+    Widget image = Image.asset(
       asset,
       height: height,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.medium,
       errorBuilder: (_, __, ___) => _FallbackWordmark(height: height),
     );
+
+    // On dark surfaces the navy lockup would vanish — tint it solid white.
+    if (onDark) {
+      image = ColorFiltered(
+        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+        child: image,
+      );
+    }
+    return image;
   }
 }
 

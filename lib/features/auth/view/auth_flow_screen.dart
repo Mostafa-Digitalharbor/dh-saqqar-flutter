@@ -683,20 +683,32 @@ class _PasswordBodyState extends State<_PasswordBody> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              tr.password.toUpperCase(),
-              style: context.text.labelSmall?.copyWith(
-                color: context.saqqar.muted,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.6,
+            Flexible(
+              child: Text(
+                tr.password.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.labelSmall?.copyWith(
+                  color: context.saqqar.muted,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
               ),
             ),
-            TextButton(
-              onPressed: () {
-                context.read<AuthFlowCubit>().rememberEmail(_email.text.trim());
-                context.read<AuthFlowCubit>().goTo(AuthFlowStep.resetEmail);
-              },
-              child: Text(tr.authForgotPassword.toUpperCase()),
+            Flexible(
+              child: TextButton(
+                onPressed: () {
+                  context
+                      .read<AuthFlowCubit>()
+                      .rememberEmail(_email.text.trim());
+                  context.read<AuthFlowCubit>().goTo(AuthFlowStep.resetEmail);
+                },
+                child: Text(
+                  tr.authForgotPassword.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ),
           ],
         ),
