@@ -35,6 +35,12 @@ class ConversationsCubit extends Cubit<ConversationsState> {
   /// loads fire in quick succession (mount + pull-to-refresh).
   bool _enriching = false;
 
+  /// Guards against overlapping [load] passes. Replaces the old
+  /// `state.data is DataLoading` guard: once the offline cache is hydrated
+  /// the state is `DataSuccess`, so a bare DataLoading check would let
+  /// mount + refresh overlap. A plain in-flight flag is unambiguous.
+  bool _loading = false;
+
   /// Drop any [emit] call that lands after [close]. Same guard pattern
   /// as [ChatCubit.emit] — every load / mutation here awaits the
   /// repository, and the cubit can be reset (and effectively closed)
@@ -47,16 +53,53 @@ class ConversationsCubit extends Cubit<ConversationsState> {
 
   // ── Loading ─────────────────────────────────────────────────────────
 
+  /// Paints the last-persisted Chats list instantly on cold start
+  /// (stale-while-revalidate), before the live [load] lands. No-op when
+  /// there's already data on state or nothing cached. Mirrors
+  /// `VaultCubit.hydrateFromCache`; call once at construction in `main.dart`.
+  void hydrateFromCache() {
+    if (state.data.dataOrNull != null) return;
+    final cached = _repo.readCachedList();
+    if (cached == null || cached.conversations.isEmpty) return;
+    emit(state.copyWith(
+      data: DataSuccess(ConversationsData(
+        conversations: cached.conversations,
+        pinnedIds: const <String>{},
+        total: cached.conversations.length,
+        pendingByConv: cached.pendingByConv,
+        filesByConv: cached.filesByConv,
+      )),
+    ));
+  }
+
+  /// Best-effort write of the current list + counts to the offline cache so
+  /// the next cold start paints instantly. Fire-and-forget.
+  void _persistCache() {
+    final data = state.data.dataOrNull;
+    if (data == null || data.conversations.isEmpty) return;
+    unawaited(_repo.writeCachedList(
+      conversations: data.conversations,
+      pendingByConv: data.pendingByConv,
+      filesByConv: data.filesByConv,
+    ));
+  }
+
   /// Initial load — fetches the conversation list. Default now
   /// includes archived rows so the "Archived" filter on the screen
   /// has something to show; the screen still filters locally to
   /// decide whether to display them. Pull-to-refresh hits the same
   /// path via [refresh].
   Future<void> load({bool includeArchived = true}) async {
-    if (state.data is DataLoading<ConversationsData>) return;
-    emit(state.copyWith(
-      data: DataLoading<ConversationsData>(previous: state.data.dataOrNull),
-    ));
+    if (_loading) return;
+    _loading = true;
+    // Stale-while-revalidate: only show the loading skeleton on a truly
+    // cold open (no cache, no prior data). When we already have rows — the
+    // hydrated offline cache or a previous fetch — keep them on screen and
+    // revalidate silently underneath, so opening Chats never blanks to
+    // shimmers when we have something real to show.
+    if (state.data.dataOrNull == null) {
+      emit(state.copyWith(data: const DataLoading<ConversationsData>()));
+    }
     try {
       // Kick off the list and the real per-conversation meta (pending
       // approvals + files) concurrently — the meta comes from the flat
@@ -93,6 +136,15 @@ class ConversationsCubit extends Cubit<ConversationsState> {
           ),
         ),
       ));
+      // Persist the fresh list for instant cold-start paint next time.
+      _persistCache();
+      // Warm every conversation's transcript on disk in the background so
+      // tapping any row opens instantly (no request on open). Gentle by
+      // design — see ConversationsRepository.prefetchSnapshots — so this
+      // never makes the app feel heavy after launch.
+      unawaited(_repo.prefetchSnapshots(
+        [for (final c in conversations) c.id],
+      ));
       // Fill in project · environment per row in the background — the list
       // is already on screen; the tags fade in as snapshots resolve.
       unawaited(_enrichContext());
@@ -110,10 +162,24 @@ class ConversationsCubit extends Cubit<ConversationsState> {
           failure: failure,
         ),
       ));
+    } finally {
+      _loading = false;
     }
   }
 
-  Future<void> refresh() => load();
+  /// Pull-to-refresh / refresh-button — forces a fresh network fetch with
+  /// VISIBLE feedback. Unlike the silent stale-while-revalidate [load] used
+  /// on mount (which keeps the cached list on screen), this blanks to the
+  /// loading skeleton first so the user actually sees the refresh happen,
+  /// then repaints with the freshly fetched list. The cold-start / cache
+  /// open behaviour is left exactly as-is.
+  Future<void> refresh() async {
+    // Drop the guard so an explicit refresh is never swallowed by an
+    // in-flight background load, then blank to the skeleton.
+    _loading = false;
+    emit(state.copyWith(data: const DataLoading<ConversationsData>()));
+    await load();
+  }
 
   /// Resolves the real project · environment for each row from its snapshot
   /// (the list endpoint doesn't carry them) and folds the names back into the
@@ -121,6 +187,18 @@ class ConversationsCubit extends Cubit<ConversationsState> {
   /// fetches rows that don't already have context (so refreshes are cheap),
   /// and is best-effort — a row that fails or has no bound environment simply
   /// keeps its tag hidden rather than showing a fabricated value.
+  /// Rows enriched per pass. Bounds the per-conversation snapshot N+1 to a
+  /// screenful instead of firing one request for EVERY conversation on
+  /// open — the rest enrich on demand as the user pages down ([enrichMore]).
+  /// (The real fix is the backend embedding project/env in the list — see
+  /// docs/backend-requests.md §6 — at which point this whole pass is retired.)
+  static const _enrichBatch = 12;
+
+  /// Enriches the next batch of rows that still lack project·env tags.
+  /// Called by the screen's pagination handler so context is only fetched
+  /// for rows the user actually scrolls to.
+  Future<void> enrichMore() => _enrichContext();
+
   Future<void> _enrichContext() async {
     if (_enriching) return;
     final current = state.data.dataOrNull;
@@ -132,9 +210,11 @@ class ConversationsCubit extends Cubit<ConversationsState> {
           c.id,
     ];
     if (missing.isEmpty) return;
+    // Only this pass's batch — the next batch waits for the user to page on.
+    final batch = missing.take(_enrichBatch).toList();
     _enriching = true;
     try {
-      final ctx = await _repo.conversationContext(missing);
+      final ctx = await _repo.conversationContext(batch);
       if (ctx.projectByConv.isEmpty && ctx.envByConv.isEmpty) return;
       final cur = state.data.dataOrNull;
       if (cur == null) return;
@@ -148,6 +228,8 @@ class ConversationsCubit extends Cubit<ConversationsState> {
       emit(state.copyWith(
         data: DataSuccess(cur.copyWith(conversations: enriched)),
       ));
+      // Re-persist so the cached rows carry the resolved project · env tags.
+      _persistCache();
     } catch (e, st) {
       AppLogger.warn(_tag, 'context enrichment failed', error: e, stackTrace: st);
     } finally {

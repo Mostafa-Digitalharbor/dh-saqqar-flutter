@@ -10,6 +10,14 @@
          server" on every device the team installed the APK on while
          the dev build worked fine. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Biometric app lock (local_auth). USE_BIOMETRIC is the modern
+         permission; the device-credential (PIN/pattern) fallback needs no
+         extra permission. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- Push notifications (FCM). POST_NOTIFICATIONS is the runtime permission
+         required from Android 13 (API 33); older versions grant it implicitly.
+         The client requests it at runtime via FirebaseMessaging. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- Voice input via the composer mic button. The audio is handed
          to Android's on-device SpeechRecognizer (no audio bytes leave

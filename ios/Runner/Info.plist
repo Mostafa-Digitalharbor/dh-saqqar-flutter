@@ -62,6 +62,10 @@
 		     a system-presented UI (Apple still wants the rationale). -->
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Saqqar lets you attach photos to chat messages so the AI assistant can read them.</string>
+		<!-- Biometric app lock (local_auth). Required for Face ID; Touch ID
+		     and the device passcode fallback need no extra key. -->
+		<key>NSFaceIDUsageDescription</key>
+		<string>Saqqar uses Face ID to unlock the app and protect your saved Odoo credentials.</string>
 		<!-- permission_handler links the Camera &amp; Location APIs into the
 		     binary even though the app does not actively use them, so Apple's
 		     static check (ITMS-90683) requires these purpose strings to exist.
@@ -74,5 +78,36 @@
 		     export-compliance prompt so it processes without "Missing Compliance". -->
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
+		<!-- URL schemes the app answers to.
+		     * ShareMedia-<bundle id>: the redirect scheme receive_sharing_intent
+		       uses to bring Saqqar forward AFTER the Share Extension has staged
+		       the shared files into the App Group. REQUIRED for "Share → Saqqar"
+		       to work on iOS — without it the extension can't hand off and the
+		       app never appears / never receives the files.
+		     * saqqar: the app's own deep-link scheme (saqqar://share/<token>),
+		       handled by DeepLinks — registered here so iOS routes it to us. -->
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>sa.com.digitalharbor.saqqar.sharemedia</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>ShareMedia-$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+				</array>
+			</dict>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>sa.com.digitalharbor.saqqar.deeplink</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>saqqar</string>
+				</array>
+			</dict>
+		</array>
 	</dict>
 </plist>

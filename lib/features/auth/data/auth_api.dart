@@ -220,6 +220,18 @@ class AuthApi {
     return res.data?['revoked'] as bool? ?? false;
   }
 
+  /// `POST /api/v1/account/delete/` — irreversibly deletes the account and
+  /// all its data (conversations, credentials, projects, artifacts). The
+  /// server revokes the token as part of the delete, so the caller must
+  /// clear local state + route to the auth gate afterwards exactly like
+  /// [logout]. App/Play Store policy requires this in-app deletion path.
+  Future<bool> deleteAccount() async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.accountDelete,
+    );
+    return res.data?['ok'] as bool? ?? true;
+  }
+
   /// `GET /api/v1/auth/me/` — identity + per-user counts. Used on cold
   /// start to validate a stored token and hydrate the auth controller.
   Future<({AuthUser user, AuthCounts counts})> me() async {

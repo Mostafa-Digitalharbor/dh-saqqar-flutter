@@ -211,38 +211,59 @@ class ConversationCard extends StatelessWidget {
                               ),
                             ],
                             const SizedBox(height: 10),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                // Pending-approval safety badge (real).
-                                if (pendingApprovals > 0)
-                                  _WarnPill(
-                                    label: context.tr.toApprove(pendingApprovals),
-                                  ),
-                                // Project · environment (only when real).
-                                // Flexible so a long tag ellipsizes to the
-                                // available width instead of forcing a fixed
-                                // 170px row that overflows on narrow screens.
-                                if (envLabel != null)
+                            // Line 1 — pending-approval badge + project ·
+                            // environment. Counts moved to their own line
+                            // below (design request 2026-06-29) so this row
+                            // reads purely as "where this conversation runs".
+                            if (pendingApprovals > 0 || envLabel != null)
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  // Pending-approval safety badge (real).
+                                  if (pendingApprovals > 0)
+                                    _WarnPill(
+                                      label:
+                                          context.tr.toApprove(pendingApprovals),
+                                    ),
+                                  // Project · environment (only when real).
+                                  // Flexible so a long tag ellipsizes to the
+                                  // available width instead of forcing a fixed
+                                  // 170px row that overflows on narrow screens.
+                                  if (envLabel != null)
+                                    _MetaInline(
+                                      icon: AppIcons.github,
+                                      label: envLabel,
+                                      flexible: true,
+                                    ),
+                                ],
+                              ),
+                            // Line 2 — counts: messages + produced files, on a
+                            // dedicated row beneath the project/environment.
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: (pendingApprovals > 0 || envLabel != null)
+                                    ? 6
+                                    : 0,
+                              ),
+                              child: Row(
+                                children: [
+                                  // Message count (real).
                                   _MetaInline(
-                                    icon: AppIcons.github,
-                                    label: envLabel,
-                                    flexible: true,
+                                    icon: AppIcons.chats,
+                                    label: '${conversation.messageCount}',
                                   ),
-                                // Message count (real).
-                                _MetaInline(
-                                  icon: AppIcons.chats,
-                                  label: '${conversation.messageCount}',
-                                ),
-                                // File count (real) — hidden when none.
-                                if (filesCount > 0)
-                                  _MetaInline(
-                                    icon: AppIcons.fileText,
-                                    label: '$filesCount',
-                                  ),
-                              ],
+                                  // File count (real) — hidden when none.
+                                  if (filesCount > 0) ...[
+                                    const SizedBox(width: 14),
+                                    _MetaInline(
+                                      icon: AppIcons.fileText,
+                                      label: '$filesCount',
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ],
                         ),

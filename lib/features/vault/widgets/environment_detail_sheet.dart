@@ -44,7 +44,13 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
   late final TextEditingController _name;
   bool _initialised = false;
 
+  /// Audience mode (web parity). Defaults to the simple "I'm a user" view,
+  /// which exposes only the Odoo connection; "I'm a developer" reveals the
+  /// technical kinds (PostgreSQL / Server shell / GitHub).
+  bool _developerMode = false;
+
   static const _kinds = CredentialKind.values;
+  static const _userKinds = [CredentialKind.xmlrpc];
 
   @override
   void initState() {
@@ -103,8 +109,14 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
     _ensureName(env);
     final projectName = project?.name ?? '—';
 
+    // User mode shows only the Odoo connection; developer mode reveals all
+    // kinds. Keyed below so the TabController remounts with the right length
+    // when the mode flips (avoids an index-out-of-range on 4→1 tabs).
+    final visibleKinds = _developerMode ? _kinds : _userKinds;
+
     return DefaultTabController(
-      length: _kinds.length,
+      key: ValueKey(_developerMode),
+      length: visibleKinds.length,
       child: SafeArea(
         top: false,
         child: ConstrainedBox(
@@ -190,6 +202,16 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                   onSubmitted: _commitRename,
                 ),
                 const SizedBox(height: 14),
+                // Audience toggle (web parity): "I'm a user" shows only the
+                // Odoo connection; "I'm a developer" reveals every kind.
+                _AudienceToggle(
+                  developerMode: _developerMode,
+                  onChanged: (dev) {
+                    if (dev == _developerMode) return;
+                    setState(() => _developerMode = dev);
+                  },
+                ),
+                const SizedBox(height: 14),
                 // Per-kind credential tabs — XML-RPC / PostgreSQL /
                 // Server shell / GitHub. Each tab's form is schema-driven
                 // from the loaded credential schemas.
@@ -208,7 +230,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                     indicatorColor: s.brandCyan,
                     tabAlignment: TabAlignment.start,
                     tabs: [
-                      for (final k in _kinds)
+                      for (final k in visibleKinds)
                         Tab(text: _kindLabel(context, k, schemas)),
                     ],
                   ),
@@ -216,7 +238,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                 Flexible(
                   child: TabBarView(
                     children: [
-                      for (final k in _kinds)
+                      for (final k in visibleKinds)
                         CredentialForm(
                           key: ValueKey('${env.id}-${k.name}'),
                           envId: env.id,
@@ -255,5 +277,71 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
       CredentialKind.github => 'credKindGithub',
     };
     return context.tr.lookup(key, fallback: serverLabel);
+  }
+}
+
+/// Two-segment pill toggle: "I'm a user" / "I'm a developer". Mirrors the
+/// web's audience switch above the credential tabs — user mode hides the
+/// technical kinds, developer mode reveals them.
+class _AudienceToggle extends StatelessWidget {
+  const _AudienceToggle({
+    required this.developerMode,
+    required this.onChanged,
+  });
+
+  final bool developerMode;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+        borderRadius: AppRadius.pillR,
+        border: Border.all(color: s.cardBorder),
+      ),
+      child: Row(
+        children: [
+          _segment(context, label: context.tr.credModeUser, selected: !developerMode, onTap: () => onChanged(false)),
+          _segment(context, label: context.tr.credModeDeveloper, selected: developerMode, onTap: () => onChanged(true)),
+        ],
+      ),
+    );
+  }
+
+  Widget _segment(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final s = context.saqqar;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: selected ? AppGradients.primaryCta : null,
+            borderRadius: AppRadius.pillR,
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.labelMedium?.copyWith(
+              color: selected ? Colors.white : s.muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

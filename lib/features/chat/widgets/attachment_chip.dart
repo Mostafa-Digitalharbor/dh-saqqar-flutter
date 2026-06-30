@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/saqqar_theme_extension.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 import '../../demo/saqqar_demo_data.dart';
 
 /// Attachment row used both inside chat bubbles and in the composer preview
@@ -277,15 +278,13 @@ class _FileAttachment extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: s.brandCyan.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: Icon(AppIcons.attach, size: 14, color: s.brandCyan),
+          ColoredIconBox(
+            icon: AppIcons.attach,
+            color: s.brandCyan,
+            size: 28,
+            radius: 7,
+            iconSize: 14,
+            borderAlpha: null,
           ),
           const SizedBox(width: 8),
           Flexible(

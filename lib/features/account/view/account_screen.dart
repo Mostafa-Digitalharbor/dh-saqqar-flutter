@@ -11,10 +11,12 @@ import '../../../core/theme/view_model/theme_cubit.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/page_scaffold.dart';
+import '../../../shared/widgets/delete_account_helper.dart';
 import '../../../shared/widgets/sign_out_helper.dart';
 import '../../../shared/widgets/skeleton_block.dart';
 import '../../auth/view_model/auth_cubit.dart';
 import '../../billing/data/plan_models.dart';
+import '../../billing/data/usage_api.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../widgets/widgets.dart';
 
@@ -25,8 +27,36 @@ import '../widgets/widgets.dart';
 ///
 /// The Storybook entry is hidden behind a long-press on the username
 /// inside [ProfileHero] (it's a dev surface, not a user feature).
-class AccountScreen extends StatelessWidget {
+class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
+
+  @override
+  State<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends State<AccountScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Pull real token usage on open so the usage bars populate WITHOUT the
+    // user having to open a chat first (the snapshot path only fills
+    // PlanCubit once a conversation polls). Best-effort — a failure leaves
+    // the CurrentPlanCard /plans/ fallback in place.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchUsage());
+  }
+
+  /// Best-effort `GET /usage/` → feed [PlanCubit]. Silent on failure; the
+  /// Account screen already degrades to the public /plans/ catalogue.
+  Future<void> _fetchUsage() async {
+    if (!mounted) return;
+    final usageApi = context.read<UsageApi>();
+    final planCubit = context.read<PlanCubit>();
+    try {
+      planCubit.update(await usageApi.fetch());
+    } catch (_) {
+      // Leave the existing PlanCubit state (snapshot-derived or null).
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +81,7 @@ class AccountScreen extends StatelessWidget {
       // the cards for skeleton placeholders.
       onRefresh: () async {
         await context.read<AuthCubit>().bootstrap();
+        await _fetchUsage();
       },
       children: isReloading
           ? _accountSkeletonChildren()
@@ -93,6 +124,24 @@ class AccountScreen extends StatelessWidget {
                 // Auth-gate redirect routes to /sign-in afterwards.
                 onPressed: () => showSignOutFlow(context),
               ),
+              // Account deletion — App/Play Store policy requires an in-app
+              // path to permanently delete the account and all its data.
+              // Only shown once the user is hydrated (no point offering it
+              // before we know who's signed in). Visually subordinate to
+              // sign-out: a plain text-weight danger action, not a filled
+              // button, so it doesn't compete with the primary affordances.
+              if (user != null) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => showDeleteAccountFlow(context),
+                  icon: Icon(AppIcons.trash,
+                      size: 16, color: context.saqqar.danger),
+                  label: Text(
+                    context.tr.deleteAccount,
+                    style: TextStyle(color: context.saqqar.danger),
+                  ),
+                ),
+              ],
             ],
     );
   }

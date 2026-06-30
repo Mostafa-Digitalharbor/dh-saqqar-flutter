@@ -55,24 +55,76 @@ class ConversationsApi {
 
   // ── Snapshot (poll) ─────────────────────────────────────────────────
 
-  /// `GET /api/v1/conversations/<id>/?since=<iso>` — the chat-screen
-  /// snapshot.
+  /// `GET /api/v1/conversations/<id>/?since=<iso>&before=<ts|id>&limit=<n>`
+  /// — the chat-screen snapshot.
   ///
   /// Pass [since] to receive only messages newer than that cursor (other
   /// fields are always returned in full per §4.2). The `+` in the
   /// timezone offset must be URL-encoded; Dio handles that for us via
   /// `queryParameters`.
+  ///
+  /// Pass [limit] to bound the message page the server returns. The
+  /// **initial** chat load uses this so we paint a recent window fast
+  /// instead of deserialising the entire transcript on the UI isolate
+  /// (the root cause of the "open chat → freeze while everything lands
+  /// at once" lag). Older history is fetched lazily via [before].
+  ///
+  /// Pass [before] (a message id or ISO timestamp) to page **backwards** —
+  /// the server returns the page of messages older than that anchor.
+  /// Used by the chat's "load earlier" scroll-to-top path.
   Future<ConversationSnapshot> getSnapshot(
     String id, {
     DateTime? since,
+    int? limit,
+    String? before,
+  }) async {
+    return ConversationSnapshot.fromJson(
+      await getSnapshotRaw(id, since: since, limit: limit, before: before),
+    );
+  }
+
+  /// Same request as [getSnapshot] but returns the **decoded raw map**
+  /// instead of the parsed model. The repository uses this so it can both
+  /// parse the model AND persist the verbatim JSON to the on-disk cache in
+  /// one round-trip.
+  Future<Map<String, dynamic>> getSnapshotRaw(
+    String id, {
+    DateTime? since,
+    int? limit,
+    String? before,
   }) async {
     final res = await _dio.get<Map<String, dynamic>>(
       ApiEndpoints.conversationDetail(id),
       queryParameters: {
         if (since != null) 'since': since.toUtc().toIso8601String(),
+        if (before != null && before.isNotEmpty) 'before': before,
+        if (limit != null) 'limit': limit,
       },
     );
-    return ConversationSnapshot.fromJson(res.data!);
+    return res.data!;
+  }
+
+  /// Fetches the snapshot as the **raw JSON string** without Dio decoding
+  /// it (`ResponseType.plain`). The background prefetch uses this to warm
+  /// the on-disk cache for every conversation WITHOUT spending any JSON
+  /// parse time on the UI isolate — decoding is deferred to chat-open, off
+  /// the main isolate. Returns an empty string on a missing body.
+  Future<String> fetchSnapshotBody(
+    String id, {
+    int? limit,
+    DateTime? since,
+    String? before,
+  }) async {
+    final res = await _dio.get<String>(
+      ApiEndpoints.conversationDetail(id),
+      queryParameters: {
+        if (since != null) 'since': since.toUtc().toIso8601String(),
+        if (before != null && before.isNotEmpty) 'before': before,
+        if (limit != null) 'limit': limit,
+      },
+      options: Options(responseType: ResponseType.plain),
+    );
+    return res.data ?? '';
   }
 
   // ── Metadata ────────────────────────────────────────────────────────

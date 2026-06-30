@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 
 /// Compact card used inside the chat Action Center sheet. Distinct from the
 /// shared [ActionCard] used on the Inbox screen — this one is denser, single
@@ -33,17 +34,7 @@ class ChatActionCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(11),
-              border: Border.all(color: color.withValues(alpha: 0.30)),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
+          ColoredIconBox(icon: icon, color: color),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

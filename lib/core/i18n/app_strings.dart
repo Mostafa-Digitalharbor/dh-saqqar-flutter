@@ -652,6 +652,13 @@ class AppStrings {
   String get signOutConfirmTitle => _t('sign_out_confirm_title');
   String get signOutConfirmBody => _t('sign_out_confirm_body');
   String get signingOut => _t('signing_out');
+  // Account deletion (App/Play Store requirement)
+  String get deleteAccount => _t('delete_account');
+  String get deleteAccountConfirmTitle => _t('delete_account_confirm_title');
+  String get deleteAccountConfirmBody => _t('delete_account_confirm_body');
+  String get deletingAccount => _t('deleting_account');
+  String get accountDeletedToast => _t('account_deleted_toast');
+  String get deleteAccountFailed => _t('delete_account_failed');
   String get exitAppConfirmTitle => _t('exit_app_confirm_title');
   String get exitAppConfirmBody => _t('exit_app_confirm_body');
   String get authInvalidCredentials => _t('auth_invalid_credentials');
@@ -783,6 +790,30 @@ class AppStrings {
   String get testingConnection => _t('testingConnection');
   String get testConnectionOk => _t('testConnectionOk');
   String get testConnectionFailed => _t('testConnectionFailed');
+  // Odoo database discovery (POST /credentials/databases/)
+  String get detectDatabases => _t('detectDatabases');
+  String get detectingDatabases => _t('detectingDatabases');
+  String get detectDatabasesEmpty => _t('detectDatabasesEmpty');
+  String get detectDatabasesNeedsUrl => _t('detectDatabasesNeedsUrl');
+  String get detectDatabasesFailed => _t('detectDatabasesFailed');
+  // Credential editor audience mode (web parity: "I'm a user" hides the
+  // technical kinds and shows only the Odoo connection).
+  String get credModeUser => _t('credModeUser');
+  String get credModeDeveloper => _t('credModeDeveloper');
+  // Chat history pagination — "Load earlier messages" button at the top of
+  // the message list.
+  String get chatLoadEarlier => _t('chatLoadEarlier');
+  String get chatLoadingEarlier => _t('chatLoadingEarlier');
+  // Biometric / device-credential app lock.
+  String get security => _t('security');
+  String get appLockTitle => _t('appLockTitle');
+  String get appLockSubtitle => _t('appLockSubtitle');
+  String get appLockUnlock => _t('appLockUnlock');
+  String get appLockReason => _t('appLockReason');
+  String get appLockSettingTitle => _t('appLockSettingTitle');
+  String get appLockSettingSubtitle => _t('appLockSettingSubtitle');
+  String get appLockUnavailable => _t('appLockUnavailable');
+  String get appLockEnableFailed => _t('appLockEnableFailed');
 
   /// Localize a raw server-side error message. Backend `error` strings are
   /// developer-facing English; this matches the common cases to a clean
@@ -1416,6 +1447,16 @@ const Map<String, String> _en = {
   'sign_out_confirm_body':
       'You will need to sign in again to access your projects and chats.',
   'signing_out': 'Signing out…',
+  'delete_account': 'Delete account',
+  'delete_account_confirm_title': 'Delete account?',
+  'delete_account_confirm_body':
+      'This permanently deletes your account and all of its data — '
+          'conversations, credentials, projects, and files. This cannot be '
+          'undone.',
+  'deleting_account': 'Deleting account…',
+  'account_deleted_toast': 'Your account has been deleted.',
+  'delete_account_failed':
+      "Couldn't delete your account. Please try again.",
   'exit_app_confirm_title': 'Exit Saqqar',
   'exit_app_confirm_body': 'Are you sure you want to close the app?',
   'auth_invalid_credentials': 'Invalid email or password.',
@@ -1554,6 +1595,28 @@ const Map<String, String> _en = {
   // ships no `label_key`. Resolved by field.name in the credential form.
   'credUrl': 'URL',
   'credDb': 'Database',
+  'detectDatabases': 'Detect databases',
+  'detectingDatabases': 'Detecting…',
+  'detectDatabasesEmpty':
+      'This server doesn\'t expose its database list — enter the name '
+          'manually.',
+  'detectDatabasesNeedsUrl': 'Enter the server URL first.',
+  'detectDatabasesFailed':
+      'Couldn\'t reach that server to list its databases.',
+  'credModeUser': 'I\'m a user',
+  'credModeDeveloper': 'I\'m a developer',
+  'chatLoadEarlier': 'Load earlier messages',
+  'chatLoadingEarlier': 'Loading earlier messages…',
+  'security': 'Security',
+  'appLockTitle': 'Saqqar is locked',
+  'appLockSubtitle': 'Authenticate to continue.',
+  'appLockUnlock': 'Unlock',
+  'appLockReason': 'Unlock Saqqar',
+  'appLockSettingTitle': 'App lock',
+  'appLockSettingSubtitle':
+      'Require Face ID / fingerprint to open Saqqar.',
+  'appLockUnavailable': 'Not available on this device',
+  'appLockEnableFailed': "Couldn't turn on the app lock. Please try again.",
   'credUsername': 'Username',
   'credSecret': 'Secret',
   'credHost': 'Host',
@@ -1561,7 +1624,7 @@ const Map<String, String> _en = {
   'credToken': 'Token',
   // Credential kind / tab labels — proper nouns (PostgreSQL, GitHub,
   // XML-RPC) stay verbatim; only the descriptive part localizes.
-  'credKindXmlrpc': 'Odoo XML-RPC',
+  'credKindXmlrpc': 'Odoo Connection',
   'credKindPostgres': 'PostgreSQL',
   'credKindServerShell': 'Server Shell',
   'credKindGithub': 'GitHub',
@@ -2172,6 +2235,14 @@ const Map<String, String> _ar = {
   'sign_out_confirm_body':
       'هتحتاج تسجّل الدخول من جديد عشان توصل لمشاريعك ومحادثاتك.',
   'signing_out': 'جاري تسجيل الخروج…',
+  'delete_account': 'حذف الحساب',
+  'delete_account_confirm_title': 'حذف الحساب؟',
+  'delete_account_confirm_body':
+      'هيتم حذف حسابك وكل بياناته نهائيًا — المحادثات وبيانات الاعتماد '
+          'والمشاريع والملفات. الإجراء ده مالوش رجعة.',
+  'deleting_account': 'جاري حذف الحساب…',
+  'account_deleted_toast': 'تم حذف حسابك.',
+  'delete_account_failed': 'تعذّر حذف الحساب. حاول تاني.',
   'exit_app_confirm_title': 'الخروج من صقّار',
   'exit_app_confirm_body': 'هل أنت متأكد من إغلاق التطبيق؟',
   'auth_invalid_credentials': 'البريد أو كلمة المرور غير صحيحة.',
@@ -2302,6 +2373,25 @@ const Map<String, String> _ar = {
   // السيرفر مفتاح ترجمة. تُحلّ حسب اسم الحقل في نموذج الاعتماد.
   'credUrl': 'الرابط',
   'credDb': 'قاعدة البيانات',
+  'detectDatabases': 'اكتشاف قواعد البيانات',
+  'detectingDatabases': 'جاري الاكتشاف…',
+  'detectDatabasesEmpty':
+      'السيرفر ده مش بيعرض قائمة قواعد البيانات — اكتب الاسم يدويًا.',
+  'detectDatabasesNeedsUrl': 'اكتب رابط السيرفر الأول.',
+  'detectDatabasesFailed': 'تعذّر الوصول للسيرفر لجلب قواعد البيانات.',
+  'credModeUser': 'أنا مستخدم',
+  'credModeDeveloper': 'أنا مطوّر',
+  'chatLoadEarlier': 'تحميل الرسائل الأقدم',
+  'chatLoadingEarlier': 'جاري تحميل الرسائل الأقدم…',
+  'security': 'الأمان',
+  'appLockTitle': 'صقّار مقفول',
+  'appLockSubtitle': 'تحقّق من هويتك للمتابعة.',
+  'appLockUnlock': 'فتح القفل',
+  'appLockReason': 'افتح صقّار',
+  'appLockSettingTitle': 'قفل التطبيق',
+  'appLockSettingSubtitle': 'اطلب البصمة أو بصمة الوجه لفتح صقّار.',
+  'appLockUnavailable': 'غير متاح على هذا الجهاز',
+  'appLockEnableFailed': 'تعذّر تفعيل قفل التطبيق. حاول مرة أخرى.',
   'credUsername': 'اسم المستخدم',
   'credSecret': 'كلمة السر',
   'credHost': 'المضيف',
@@ -2309,7 +2399,7 @@ const Map<String, String> _ar = {
   'credToken': 'الرمز',
   // مسميات أنواع الاعتماد / التبويبات — الأسماء التقنية (PostgreSQL،
   // GitHub، XML-RPC) تبقى كما هي، ويُترجَم الجزء الوصفي فقط.
-  'credKindXmlrpc': 'أودو XML-RPC',
+  'credKindXmlrpc': 'اتصال أودو',
   'credKindPostgres': 'PostgreSQL',
   'credKindServerShell': 'طرفية الخادم',
   'credKindGithub': 'GitHub',
