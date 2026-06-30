@@ -24,6 +24,11 @@ class ApiEndpoints {
   /// device's token is revoked server-side.
   static const String changePassword = '/api/v1/auth/password/';
 
+  /// `DELETE | POST /api/v1/account/delete/` — irreversibly deletes the
+  /// account and all its data. App/Play Store policy requires an in-app
+  /// account-deletion path; this is it. Revokes the token server-side.
+  static const String accountDelete = '/api/v1/account/delete/';
+
   // ── Email-OTP auth (Gap D / API_MOBILE_AUTH.md) ──────────────────────
   // Stateless OTP flows designed for mobile. NOTE: these live under the
   // unversioned `/api/auth/` namespace per the binding spec (distinct from
@@ -85,6 +90,12 @@ class ApiEndpoints {
   /// connection" button. See SAQQAR_MOBILE_API_xmlrpc.md §2.
   static const String credentialTest = '/api/v1/credentials/test/';
 
+  /// `POST /api/v1/credentials/databases/` — lists the Odoo databases
+  /// reachable at a given URL (`{url}` → `{databases:[…], method}`). Powers
+  /// the xmlrpc credential form's database picker so the user selects from
+  /// a real list instead of typing the db name blind.
+  static const String credentialDatabases = '/api/v1/credentials/databases/';
+
   // ── Projects & Environments (§11) ────────────────────────────────────
   static const String projects = '/api/v1/projects/';
 
@@ -114,6 +125,12 @@ class ApiEndpoints {
   // response marks the caller's tier via `current_plan`.
   static const String plans = '/api/v1/plans/';
 
+  // ── Usage (§9) ───────────────────────────────────────────────────────
+  /// `GET /api/v1/usage/` — token usage + caps for day / week / month plus
+  /// the current plan. Lets the Account screen show usage WITHOUT opening a
+  /// conversation (the snapshot-derived plan only lands once a chat polls).
+  static const String usage = '/api/v1/usage/';
+
   // ── Artifacts (§9) ───────────────────────────────────────────────────
   static const String artifacts = '/api/v1/artifacts/';
 
@@ -132,4 +149,10 @@ class ApiEndpoints {
   // ── Devices / push (§12) ─────────────────────────────────────────────
   static const String devices = '/api/v1/devices/';
   static String deviceDetail(String id) => '/api/v1/devices/$id/';
+
+  // ── Health (§10) — public, no bearer ─────────────────────────────────
+  /// `GET /api/v1/health/` — liveness/version probe → `{ ok, service, time,
+  /// api }`. Useful as a connectivity pre-flight before the splash hands
+  /// off to the auth gate.
+  static const String health = '/api/v1/health/';
 }

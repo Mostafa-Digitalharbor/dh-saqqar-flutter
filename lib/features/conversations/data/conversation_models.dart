@@ -217,6 +217,23 @@ class ConversationSummary {
     );
   }
 
+  /// Serializes the row for the offline list cache (stale-while-revalidate
+  /// on the Chats tab). Keeps the enriched `project` / `environment` names
+  /// so a cold start paints the full row, tags included, before the live
+  /// fetch lands. Round-trips through [fromJson] — the `*_name` keys are the
+  /// flat shape that factory already reads.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'created_at': createdAt.toUtc().toIso8601String(),
+        'updated_at': updatedAt.toUtc().toIso8601String(),
+        'is_archived': isArchived,
+        'message_count': messageCount,
+        'last_message_preview': lastMessagePreview,
+        if (projectName != null) 'project_name': projectName,
+        if (environmentName != null) 'environment_name': environmentName,
+      };
+
   /// The list endpoint doesn't carry project / environment, so the cubit
   /// enriches each row from its snapshot and rebuilds the summary with this.
   /// Only the two context fields are overridable — everything else is the

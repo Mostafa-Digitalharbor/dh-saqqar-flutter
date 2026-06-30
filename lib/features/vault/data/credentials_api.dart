@@ -101,6 +101,27 @@ class CredentialsApi {
     }
   }
 
+  // ── Odoo database discovery ─────────────────────────────────────────
+
+  /// `POST /api/v1/credentials/databases/` — lists the Odoo databases
+  /// reachable at [url] so the xmlrpc form can offer a real picker instead
+  /// of a free-text db field (where a typo silently fails to connect).
+  ///
+  /// Returns an empty list when the server can reach the host but db
+  /// listing is disabled (`list_db=False`, common on production Odoo) —
+  /// the caller falls back to the manual text field in that case. Throws
+  /// on transport/auth errors so the form can surface the reason.
+  Future<List<String>> listDatabases(String url) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.credentialDatabases,
+      data: {'url': url},
+    );
+    final body = res.data ?? const <String, dynamic>{};
+    return (body['databases'] as List? ?? [])
+        .map((e) => e.toString())
+        .toList();
+  }
+
   // ── Save / update / delete ──────────────────────────────────────────
 
   /// `POST /api/v1/credentials/` — create or update (idempotent by name).

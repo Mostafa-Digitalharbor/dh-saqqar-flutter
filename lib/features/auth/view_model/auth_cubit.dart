@@ -180,6 +180,18 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  /// Irreversibly deletes the account (App/Play Store requirement), then
+  /// clears local state and flips to unauthenticated — same teardown as
+  /// [logout]. Unlike logout, the server call must SUCCEED before we wipe
+  /// anything: if it throws (offline, server error) we re-throw and keep
+  /// the user signed in so the confirm sheet can surface the failure —
+  /// silently "signing out" would wrongly imply the account was deleted.
+  Future<void> deleteAccount() async {
+    await _api.deleteAccount();
+    await _store.clear();
+    emit(const AuthState(status: AuthStatus.unauthenticated));
+  }
+
   /// Update the user's display name (Gap I). Patches `/auth/me/` and swaps
   /// the refreshed user into state so the hero + chat header update live.
   /// Re-throws so the form can surface validation errors.

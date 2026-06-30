@@ -64,6 +64,15 @@ class _CredentialFormState extends State<CredentialForm> {
   _TestStatus _testStatus = _TestStatus.idle;
   String? _testError;
 
+  /// Odoo database discovery (POST /credentials/databases/). `null` means
+  /// "not detected yet" → the db field stays a free-text input. A non-null
+  /// list (even empty) means we've asked the server: a populated list turns
+  /// the db field into a picker; an empty list means the host disables db
+  /// listing (`list_db=False`) and the user types it manually.
+  List<String>? _databases;
+  bool _detectingDatabases = false;
+  String? _detectError;
+
   /// True once the controllers have been filled from a known source — a
   /// new-credential default set, or an existing credential's payload.
   /// Guards [_seed] so a rebuild never clobbers the user's edits.
@@ -203,6 +212,76 @@ class _CredentialFormState extends State<CredentialForm> {
     });
   }
 
+  /// Field names that hold the Odoo server URL / database, across the
+  /// slight naming variants different schemas ship.
+  static const _urlFieldNames = {'url', 'host'};
+  static const _dbFieldNames = {'db', 'database'};
+
+  /// The schema's database field, if any. Detection only applies when the
+  /// schema also exposes a URL field to detect against.
+  CredentialField? _databaseField(CredentialSchema schema) {
+    CredentialField? db;
+    var hasUrl = false;
+    for (final f in schema.fields) {
+      if (_dbFieldNames.contains(f.name)) db = f;
+      if (_urlFieldNames.contains(f.name)) hasUrl = true;
+    }
+    return hasUrl ? db : null;
+  }
+
+  /// The current URL value from whichever url-shaped field the schema ships.
+  String _currentUrl() {
+    for (final name in _urlFieldNames) {
+      final c = _fieldControllers[name];
+      if (c != null && c.text.trim().isNotEmpty) return c.text.trim();
+    }
+    return '';
+  }
+
+  /// Calls `POST /credentials/databases/` for the typed URL and turns the
+  /// db field into a picker. Mirrors the web's "fetch databases" affordance
+  /// so a typo in the db name stops silently failing the connection.
+  Future<void> _detectDatabases() async {
+    final url = _currentUrl();
+    if (url.isEmpty) {
+      setState(() {
+        _detectError = context.tr.detectDatabasesNeedsUrl;
+        _databases = null;
+      });
+      return;
+    }
+    setState(() {
+      _detectingDatabases = true;
+      _detectError = null;
+    });
+    try {
+      final dbs = await context.read<CredentialsApi>().listDatabases(url);
+      if (!mounted) return;
+      setState(() {
+        _databases = dbs;
+        _detectingDatabases = false;
+        // If the saved/typed db isn't in the discovered list, default to the
+        // first one so the picker shows a valid selection immediately.
+        final dbField = _fieldControllers.entries
+            .where((e) => _dbFieldNames.contains(e.key))
+            .map((e) => e.value)
+            .firstOrNull;
+        if (dbField != null &&
+            dbs.isNotEmpty &&
+            !dbs.contains(dbField.text.trim())) {
+          dbField.text = dbs.first;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _detectingDatabases = false;
+        _detectError = context.tr.detectDatabasesFailed;
+        _databases = null;
+      });
+    }
+  }
+
   Future<void> _delete() async {
     final ok = await ConfirmDialog.show(
       context,
@@ -301,6 +380,17 @@ class _CredentialFormState extends State<CredentialForm> {
               onSelectChanged: field.name == _authDriverField
                   ? (next) => _onAuthTypeChanged(schema, next)
                   : null,
+              // Wire DB detection onto the schema's database field (only
+              // when the schema also exposes a URL to detect against). The
+              // field stays schema-driven — this just augments the input
+              // with a picker + "Detect databases" button.
+              onDetectDatabases:
+                  identical(field, _databaseField(schema)) ? _detectDatabases : null,
+              detectedDatabases:
+                  identical(field, _databaseField(schema)) ? _databases : null,
+              detectingDatabases: _detectingDatabases,
+              detectDatabasesError:
+                  identical(field, _databaseField(schema)) ? _detectError : null,
             ),
             const SizedBox(height: 10),
           ],
@@ -364,10 +454,29 @@ class _SchemaField extends StatelessWidget {
     required this.controller,
     required this.activeAuthType,
     this.onSelectChanged,
+    this.onDetectDatabases,
+    this.detectedDatabases,
+    this.detectingDatabases = false,
+    this.detectDatabasesError,
   });
 
   final CredentialField field;
   final TextEditingController controller;
+
+  /// Non-null only on the schema's database field (when the schema also
+  /// ships a URL field). Fires `POST /credentials/databases/` to discover
+  /// the reachable Odoo databases and switch this input to a picker.
+  final Future<void> Function()? onDetectDatabases;
+
+  /// Discovered databases: `null` = not detected yet (free-text), empty =
+  /// host disables listing (manual entry), non-empty = render a picker.
+  final List<String>? detectedDatabases;
+
+  /// True while [onDetectDatabases] is in flight — drives the button spinner.
+  final bool detectingDatabases;
+
+  /// Localized detection error (bad URL, transport failure), or null.
+  final String? detectDatabasesError;
 
   /// Currently-active value of the schema's `auth_type` driver field.
   /// Drives label / placeholder / help lookups for any field that ships
@@ -498,9 +607,90 @@ class _SchemaField extends StatelessWidget {
     );
   }
 
+  /// The database field's input: a discovered-databases picker (or a
+  /// free-text field before detection / when listing is disabled), with a
+  /// "Detect databases" button and inline status below.
+  Widget _buildDatabaseInput(
+    BuildContext context,
+    String label,
+    String placeholder,
+  ) {
+    final tr = context.tr;
+    final s = context.saqqar;
+    final dbs = detectedDatabases;
+    final hasList = dbs != null && dbs.isNotEmpty;
+
+    final Widget field;
+    if (hasList) {
+      final current = controller.text.isNotEmpty && dbs.contains(controller.text)
+          ? controller.text
+          : null;
+      field = DropdownButtonFormField<String>(
+        initialValue: current,
+        decoration: InputDecoration(labelText: label),
+        items: [
+          for (final db in dbs)
+            DropdownMenuItem(value: db, child: Text(db)),
+        ],
+        onChanged: (value) {
+          if (value != null) controller.text = value;
+        },
+      );
+    } else {
+      field = AppTextField(
+        label: label,
+        hint: placeholder.isEmpty ? null : placeholder,
+        controller: controller,
+      );
+    }
+
+    // Status line under the button: error wins, else the "listing disabled,
+    // type manually" hint when detection came back empty.
+    String? status;
+    Color statusColor = s.muted;
+    if (detectDatabasesError != null) {
+      status = detectDatabasesError;
+      statusColor = s.danger;
+    } else if (dbs != null && dbs.isEmpty) {
+      status = tr.detectDatabasesEmpty;
+      statusColor = s.muted;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        field,
+        const SizedBox(height: 8),
+        GhostButton(
+          label: detectingDatabases
+              ? tr.detectingDatabases
+              : tr.detectDatabases,
+          icon: AppIcons.database,
+          onPressed: detectingDatabases ? null : () => onDetectDatabases?.call(),
+        ),
+        if (status != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            status,
+            style: context.text.labelSmall?.copyWith(
+              color: statusColor,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildInput(BuildContext context) {
     final label = _resolveLabel(context);
     final placeholder = _resolvePlaceholder(context);
+    // Database field with detection wired — render a picker (once detected)
+    // plus a "Detect databases" button, instead of a plain text field.
+    if (onDetectDatabases != null) {
+      return _buildDatabaseInput(context, label, placeholder);
+    }
     switch (field.type) {
       case CredentialFieldType.select:
         final options = field.options ?? const <String>[];

@@ -217,58 +217,65 @@ class _ChatScreenState extends State<ChatScreen>
   // surface as a 404 from the snapshot API now — DataStateView handles
   // the error rendering uniformly.
 
-  /// Source of truth for the rendered message list.
+  /// How many visible messages the lane currently shows. The chat opens on
+  /// the most-recent [_visibleStep]; the "Load earlier" button grows this by
+  /// [_visibleStep] each tap (revealing 10 older messages at a time) until
+  /// the whole transcript is on screen. Display-only — the cubit still holds
+  /// every loaded message; this just windows what we render.
+  static const _visibleStep = 10;
+  int _visibleLimit = _visibleStep;
+
+  /// Predicate for "this server message is shown to the user" — drops the
+  /// agent's internal plumbing (tool outputs, empty tool-call invocations,
+  /// system-injected user payloads, `[agent-control]` directives). Shared by
+  /// [_allVisibleMessages] (render) and [_loadedVisibleCount] (paging math)
+  /// so the two never disagree on what counts as a visible message.
+  bool _isVisibleMessage(api.Message m) {
+    if (m.role == api.MessageRole.tool) return false;
+    if (m.role == api.MessageRole.assistant && m.content.trim().isEmpty) {
+      return false;
+    }
+    if (m.role == api.MessageRole.user && _isSystemUserPayload(m.content)) {
+      return false;
+    }
+    if (_isAgentControlPayload(m.content)) return false;
+    return true;
+  }
+
+  /// Count of currently-LOADED visible messages (whole loaded snapshot, not
+  /// the rendered window). Uses `context.read` so it's safe to call from
+  /// event handlers like [_loadEarlier].
+  int _loadedVisibleCount() {
+    if (_isNewChat) return _messages.length;
+    final snapshot = context.read<ChatCubit>().state.data.dataOrNull;
+    if (snapshot == null) return 0;
+    return snapshot.messages.where(_isVisibleMessage).length;
+  }
+
+  /// EVERY loaded visible message (no display window), adapted to the
+  /// demo-shaped widgets. Source of truth for the count + in-chat search.
   ///
-  /// * **Existing chats** (real UUID) — read from the `ChatCubit`
-  ///   snapshot via `context.watch`, adapted to the demo-shaped widgets.
-  ///   Subscribing here means the screen rebuilds automatically on
-  ///   every snapshot tick from the polling loop.
-  ///
-  /// * **New chats** (sentinel id) — there's no cubit yet, fall back
-  ///   to the local optimistic list. Only used briefly before the
-  ///   create-then-route handoff in `_send()`.
-  List<DemoMessage> get _effectiveMessages {
+  /// * **Existing chats** — read from the `ChatCubit` snapshot via
+  ///   `context.watch`, so the screen rebuilds on each polling tick.
+  /// * **New chats** — the local optimistic list (no cubit yet).
+  List<DemoMessage> get _allVisibleMessages {
     if (_isNewChat) return _messages;
-    final snapshot =
-        context.watch<ChatCubit>().state.data.dataOrNull;
+    final snapshot = context.watch<ChatCubit>().state.data.dataOrNull;
     if (snapshot == null) return const [];
-    // Filter what the chat lane actually shows the user:
-    //
-    //   * Drop `tool` messages — raw JSON outputs the agent consumed
-    //     internally (describe_odoo_model results, SQL rows, etc.).
-    //     The adjacent `assistant` message already explains what the
-    //     tool returned in plain language.
-    //   * Drop `assistant` messages with empty content — those are
-    //     pure tool-call invocations (the agent is just dispatching a
-    //     tool, no human-readable reply yet). Rendering them shows up
-    //     as a blank bubble with just a timestamp.
-    //   * Drop `user` messages whose content is clearly a system
-    //     payload, not human typing — approval acknowledgements
-    //     ("approve" / "approved" / "reject" / "rejected"), raw JSON
-    //     blobs the server persists when a button-tap is logged as a
-    //     turn, etc. The end user didn't type these and shouldn't see
-    //     them surface as their own messages.
-    //   * Drop any message whose content carries the `[agent-control]`
-    //     marker — server-side directives that drive the agent to
-    //     execute an approved action (e.g. "Approval '<id>'
-    //     [agent-control] ... is approved. Execute the approved Odoo
-    //     write..."). On the web these stay hidden; we match that.
-    final visible = snapshot.messages.where((m) {
-      if (m.role == api.MessageRole.tool) return false;
-      if (m.role == api.MessageRole.assistant &&
-          m.content.trim().isEmpty) {
-        return false;
-      }
-      if (m.role == api.MessageRole.user &&
-          _isSystemUserPayload(m.content)) {
-        return false;
-      }
-      if (_isAgentControlPayload(m.content)) return false;
-      return true;
-    });
-    // Closure capture: pass `context` into the adapter so the
-    // timestamp resolves through the current locale.
-    return visible.map((m) => _adaptApiMessage(m, context)).toList();
+    // Closure capture: pass `context` into the adapter so the timestamp
+    // resolves through the current locale.
+    return snapshot.messages
+        .where(_isVisibleMessage)
+        .map((m) => _adaptApiMessage(m, context))
+        .toList();
+  }
+
+  /// The windowed slice actually rendered in the lane — the most-recent
+  /// [_visibleLimit] visible messages. "Load earlier" grows the window.
+  List<DemoMessage> get _effectiveMessages {
+    final all = _allVisibleMessages;
+    if (_isNewChat || all.length <= _visibleLimit) return all;
+    return all.sublist(all.length - _visibleLimit);
   }
 
   /// Heuristic for "this user message wasn't actually typed by the
@@ -634,9 +641,12 @@ class _ChatScreenState extends State<ChatScreen>
             ? tr.envHintBound
             : tr.envHintNeedsCredentials,
       );
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      _toast(tr.envHintFailed);
+      // Surface the server's actual reason (e.g. "Odoo connection failed:
+      // invalid credentials") after the friendly action label, instead of a
+      // bare "couldn't set up" — so the user knows WHAT to fix.
+      _toast(ApiErrorMapper.message(context, e, actionContext: tr.envHintFailed));
     } finally {
       if (mounted) setState(() => _bindingDefaultEnv = false);
     }
@@ -1040,6 +1050,32 @@ class _ChatScreenState extends State<ChatScreen>
     if (shouldShow != _showScrollDown) {
       setState(() => _showScrollDown = shouldShow);
     }
+  }
+
+  /// Reveals the previous [_visibleStep] (10) messages, driven by the
+  /// explicit "Load earlier messages" header button.
+  ///
+  /// Two-tier so it's instant AND reliable:
+  ///   * If the loaded snapshot still has older messages we haven't shown
+  ///     yet, just grow the render window — instant, no network.
+  ///   * Otherwise (window has caught up to everything loaded) pull the FULL
+  ///     transcript once via [ChatCubit.loadOlder] (decoded off the UI
+  ///     isolate), then reveal the next 10. After that every tap is instant.
+  ///
+  /// Always advances by exactly [_visibleStep] visible messages — the list
+  /// keeps offset 0 so the button stays at the top for the next tap.
+  Future<void> _loadEarlier() async {
+    if (_isNewChat) return;
+    final cubit = context.read<ChatCubit>();
+    final loadedBefore = _loadedVisibleCount();
+    final shownBefore =
+        loadedBefore < _visibleLimit ? loadedBefore : _visibleLimit;
+    // Everything loaded is already on screen — fetch more from the server.
+    if (shownBefore >= loadedBefore && cubit.state.hasMoreOlder) {
+      await cubit.loadOlder();
+      if (!mounted) return;
+    }
+    setState(() => _visibleLimit = shownBefore + _visibleStep);
   }
 
   void _scrollToBottom() {
@@ -2498,20 +2534,35 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget _buildMessageList() {
-    // Snapshot the message list ONCE per build — `_effectiveMessages`
-    // subscribes via `context.watch`, so cubit ticks rebuild the
-    // screen; we want a single stable list for index math inside the
-    // itemBuilder closure below.
-    final messages = _effectiveMessages;
-    // Cache for the AppBar search sheet (read outside build).
-    _searchableMessages = messages;
+    // Compute the full visible list ONCE (it subscribes via `context.watch`,
+    // so cubit ticks rebuild the screen), then window it to the most-recent
+    // [_visibleLimit] for rendering. `all.length` drives whether the "Load
+    // earlier" button still has buffered messages to reveal.
+    final all = _allVisibleMessages;
+    final messages = all.length <= _visibleLimit
+        ? all
+        : all.sublist(all.length - _visibleLimit);
+    // Cache for the AppBar search sheet (read outside build) — searches the
+    // WHOLE loaded transcript, not just the rendered window.
+    _searchableMessages = all;
     final hasThinking = _effectiveIsThinking;
     // Group consecutive assistant messages into "turns" so we can show
     // a single collapsed "Saqqar thinking · N steps · Xs" pill instead
     // of N separate intermediate bubbles. Final reply in each turn
     // stays expanded as a normal message. Web parity per user request.
     final timeline = _buildTimeline(messages);
-    final thinkingIndex = timeline.length;
+
+    // "Load earlier messages" header — the FIRST list item, shown whenever
+    // there are older messages to reveal: either still buffered in the
+    // loaded snapshot (`_visibleLimit < all.length`) or fetchable from the
+    // server (`hasMoreOlder`). A real list item (not a scroll trigger) so
+    // it's reachable even when the rendered window is too short to scroll.
+    final showLoadEarlier = !_isNewChat &&
+        timeline.isNotEmpty &&
+        (_visibleLimit < all.length ||
+            context.watch<ChatCubit>().state.hasMoreOlder);
+    final headerCount = showLoadEarlier ? 1 : 0;
+    final thinkingIndex = headerCount + timeline.length;
 
     // Pending approvals render inline at the tail of the message list —
     // moved out of the above-composer banner on 2026-05-17 so they
@@ -2533,8 +2584,10 @@ class _ChatScreenState extends State<ChatScreen>
                 .where((a) => a.status == api.ApprovalStatus.pending)
                 .toList() ??
             const []);
-    final firstApprovalIndex = timeline.length + (hasThinking ? 1 : 0);
-    final totalCount = timeline.length +
+    final firstApprovalIndex =
+        headerCount + timeline.length + (hasThinking ? 1 : 0);
+    final totalCount = headerCount +
+        timeline.length +
         (hasThinking ? 1 : 0) +
         pendingApprovals.length +
         1;
@@ -2570,6 +2623,16 @@ class _ChatScreenState extends State<ChatScreen>
       // average list rows because of the markdown body.
       cacheExtent: 1500,
       itemBuilder: (context, index) {
+        // "Load earlier messages" header — the first item when there's
+        // older history to page in.
+        if (headerCount == 1 && index == 0) {
+          return ResponsiveContent(
+            maxWidth: 760,
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+            child: _LoadEarlierButton(onLoad: _loadEarlier),
+          );
+        }
+
         // Trailing spacer.
         if (index == totalCount - 1) return const SizedBox(height: 16);
 
@@ -2621,9 +2684,11 @@ class _ChatScreenState extends State<ChatScreen>
         }
 
         // Timeline entry — either a single message bubble or a
-        // grouped agent turn (thinking pill + final reply).
-        final entry = timeline[index];
-        final previousEntry = index == 0 ? null : timeline[index - 1];
+        // grouped agent turn (thinking pill + final reply). Subtract the
+        // header offset so the index maps back onto the timeline list.
+        final entryIdx = index - headerCount;
+        final entry = timeline[entryIdx];
+        final previousEntry = entryIdx == 0 ? null : timeline[entryIdx - 1];
         final entryAnchor = entry.firstMessage;
         final previousLast = previousEntry?.lastMessage;
 
@@ -2634,21 +2699,25 @@ class _ChatScreenState extends State<ChatScreen>
               entryAnchor.createdAt!,
             );
 
-        final animated = FadeSlideIn(
-          duration: const Duration(milliseconds: 220),
-          offset: const Offset(0, 6),
-          child: _buildTimelineEntry(
-            entry,
-            showDateSeparator: showDateSeparator,
-            previousLast: previousLast,
-          ),
+        // No per-bubble entrance animation here. Wrapping every row in
+        // FadeSlideIn meant an `Opacity` (which forces an offscreen
+        // `saveLayer`) + two `Transform`s + an AnimationController got
+        // re-created and replayed for EVERY message as it scrolled into
+        // view — that's what made the lane feel "stiff / frozen" on
+        // flick-scroll. Rendering the bubble directly keeps scrolling
+        // buttery; the typing row + approval cards still animate (they're
+        // few and at the tail, so they don't touch scroll performance).
+        final entryWidget = _buildTimelineEntry(
+          entry,
+          showDateSeparator: showDateSeparator,
+          previousLast: previousLast,
         );
 
-        if (!showDateSeparator) return animated;
+        if (!showDateSeparator) return entryWidget;
         return Column(
           children: [
             ChatDateSeparator(date: entryAnchor.createdAt!),
-            animated,
+            entryWidget,
           ],
         );
       },
@@ -3149,6 +3218,77 @@ class _InboxBellTrigger extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "Load earlier messages" header pill at the top of the message list.
+///
+/// A real list item (not a scroll trigger / overlay) so it's reachable even
+/// when the loaded slice is too short to scroll — the case that left a long
+/// chat stuck on its last few visible bubbles. Tapping it pages in the
+/// previous batch via [ChatCubit.loadOlder]; while a page is in flight it
+/// swaps to a spinner. Rebuilds only on the `isLoadingOlder` flag so the
+/// 1.5 s poll cadence doesn't churn it.
+class _LoadEarlierButton extends StatelessWidget {
+  const _LoadEarlierButton({required this.onLoad});
+
+  final Future<void> Function() onLoad;
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = context.tr;
+    return BlocBuilder<ChatCubit, ChatState>(
+      buildWhen: (prev, next) => prev.isLoadingOlder != next.isLoadingOlder,
+      builder: (context, state) {
+        final s = context.saqqar;
+        final loading = state.isLoadingOlder;
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: AppRadius.pillR,
+              onTap: loading ? null : onLoad,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                decoration: BoxDecoration(
+                  color: s.cardBg,
+                  borderRadius: AppRadius.pillR,
+                  border: Border.all(color: s.cardBorder),
+                  boxShadow: s.glassShadow,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (loading)
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(s.brandCyan),
+                        ),
+                      )
+                    else
+                      Icon(Icons.keyboard_arrow_up_rounded,
+                          size: 18, color: s.brandCyan),
+                    const SizedBox(width: 8),
+                    Text(
+                      loading ? tr.chatLoadingEarlier : tr.chatLoadEarlier,
+                      style: context.text.labelMedium?.copyWith(
+                        color: loading ? s.muted : s.brandCyan,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

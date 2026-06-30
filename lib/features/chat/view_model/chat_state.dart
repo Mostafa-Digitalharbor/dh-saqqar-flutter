@@ -59,6 +59,8 @@ class ChatState extends Equatable {
     this.isSending = false,
     this.isStopping = false,
     this.isUploading = false,
+    this.isLoadingOlder = false,
+    this.hasMoreOlder = true,
     this.lastShareUrl,
     this.actionFailure,
     this.actionToast,
@@ -76,6 +78,17 @@ class ChatState extends Equatable {
   final bool isSending;
   final bool isStopping;
   final bool isUploading;
+
+  /// True while a backward page (`?before=`) is in flight — drives the
+  /// small loader pinned at the top of the message list when the user
+  /// scrolls up to reach older history.
+  final bool isLoadingOlder;
+
+  /// False once a backward page comes back empty — i.e. we've reached the
+  /// start of the transcript. Stops the scroll-to-top trigger from firing
+  /// fruitless requests. Starts `true` (assume there's history to load
+  /// until proven otherwise).
+  final bool hasMoreOlder;
 
   /// Populated after a successful [ChatCubit.shareConversation]. The
   /// view reads + clears this to copy-to-clipboard / open the share
@@ -99,6 +112,8 @@ class ChatState extends Equatable {
     bool? isSending,
     bool? isStopping,
     bool? isUploading,
+    bool? isLoadingOlder,
+    bool? hasMoreOlder,
     String? lastShareUrl,
     ChatActionFailure? actionFailure,
     ChatToast? actionToast,
@@ -115,6 +130,8 @@ class ChatState extends Equatable {
       isSending: isSending ?? this.isSending,
       isStopping: isStopping ?? this.isStopping,
       isUploading: isUploading ?? this.isUploading,
+      isLoadingOlder: isLoadingOlder ?? this.isLoadingOlder,
+      hasMoreOlder: hasMoreOlder ?? this.hasMoreOlder,
       lastShareUrl:
           clearShareUrl ? null : (lastShareUrl ?? this.lastShareUrl),
       actionFailure:
@@ -131,6 +148,8 @@ class ChatState extends Equatable {
         isSending,
         isStopping,
         isUploading,
+        isLoadingOlder,
+        hasMoreOlder,
         lastShareUrl,
         actionFailure,
         actionToast,

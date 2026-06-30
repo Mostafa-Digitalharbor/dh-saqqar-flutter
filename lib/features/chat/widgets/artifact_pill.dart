@@ -4,6 +4,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 import '../../demo/saqqar_demo_data.dart';
 
 /// Spec / web parity widget for agent-generated outputs that appear inline
@@ -72,18 +73,11 @@ class ArtifactPill extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: s.brandCyan.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: s.brandCyan.withValues(alpha: 0.28),
-                      ),
-                    ),
-                    child: Icon(_icon, size: 18, color: s.brandCyan),
+                  ColoredIconBox(
+                    icon: _icon,
+                    color: s.brandCyan,
+                    radius: 10,
+                    borderAlpha: 0.28,
                   ),
                   const SizedBox(width: 12),
                   Expanded(

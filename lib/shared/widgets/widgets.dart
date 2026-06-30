@@ -17,6 +17,7 @@ export 'app_loading_state.dart';
 export 'app_text_field.dart';
 export 'app_toast.dart';
 export 'async_submit_button.dart';
+export 'colored_icon_box.dart';
 export 'confirm_dialog.dart';
 export 'credential_card.dart';
 export 'data_state_refreshable_view.dart';

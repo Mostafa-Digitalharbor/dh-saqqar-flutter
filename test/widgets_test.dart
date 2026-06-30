@@ -16,6 +16,7 @@ import 'package:saqqar_app/features/chat/widgets/credential_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/message_bubble.dart';
 import 'package:saqqar_app/features/conversations/data/attachment_models.dart';
 import 'package:saqqar_app/features/conversations/data/conversation_models.dart';
+import 'package:saqqar_app/features/conversations/data/conversations_cache.dart';
 import 'package:saqqar_app/features/conversations/data/conversations_repository.dart';
 import 'package:saqqar_app/features/chat/view_model/running_agents_cubit.dart';
 import 'package:saqqar_app/features/conversations/view_model/conversations_cubit.dart';
@@ -53,9 +54,55 @@ class _StubConversationsRepository implements ConversationsRepository {
   Future<String> create({String? title}) async => 'stub-id';
 
   @override
-  Future<ConversationSnapshot> getSnapshot(String id, {DateTime? since}) {
+  Future<ConversationSnapshot> getSnapshot(
+    String id, {
+    DateTime? since,
+    int? limit,
+    String? before,
+  }) {
     throw UnimplementedError();
   }
+
+  @override
+  ConversationSnapshot? cachedSnapshot(String id) => null;
+
+  @override
+  void cacheSnapshot(String id, ConversationSnapshot snapshot) {}
+
+  @override
+  void clearSnapshotCache() {}
+
+  @override
+  ConversationsCacheEntry? readCachedList() => null;
+
+  @override
+  Future<void> writeCachedList({
+    required List<ConversationSummary> conversations,
+    required Map<String, int> pendingByConv,
+    required Map<String, int> filesByConv,
+  }) async {}
+
+  @override
+  Future<void> clearListCache() async {}
+
+  @override
+  Future<ConversationSnapshot> getSnapshotOffIsolate(
+    String id, {
+    DateTime? since,
+    int? limit,
+    String? before,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ConversationSnapshot?> diskCachedSnapshot(String id) async => null;
+
+  @override
+  Future<void> prefetchSnapshots(List<String> ids) async {}
+
+  @override
+  Future<void> clearDiskCache() async {}
 
   @override
   Future<Conversation> patch({

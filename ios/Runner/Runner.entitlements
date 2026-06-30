@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Group shared with the Share Extension. MUST exactly match the
+	     group in ios/Share Extension/ShareExtension.entitlements and the
+	     group registered on the Apple Developer portal.
+	     receive_sharing_intent derives it from the host bundle id:
+	     group.<bundle id> = group.sa.com.digitalharbor.saqqar -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.sa.com.digitalharbor.saqqar</string>
+	</array>
+</dict>
+</plist>

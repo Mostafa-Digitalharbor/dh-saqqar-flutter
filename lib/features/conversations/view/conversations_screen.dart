@@ -75,8 +75,12 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    final cubit = context.read<ConversationsCubit>();
-    if (cubit.state.data.isIdle) cubit.load();
+    // Always revalidate on mount — NOT gated on `isIdle`, because
+    // `hydrateFromCache` leaves the cubit in DataSuccess (the cached list)
+    // before the screen ever builds, so an idle-gate would skip the live
+    // fetch and the rows would stay stale. `load()` dedupes internally and
+    // keeps the cached rows visible while it refreshes. Mirrors VaultScreen.
+    context.read<ConversationsCubit>().load();
   }
 
   @override
@@ -111,6 +115,10 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     final next = pageIndex.clamp(0, pageCount - 1);
     if (next == _pageIndex) return;
     setState(() => _pageIndex = next);
+    // Paging down reveals more rows — fetch project·env tags for the next
+    // batch now (the initial load only enriched a screenful to bound the
+    // per-conversation N+1).
+    context.read<ConversationsCubit>().enrichMore();
     if (!_scrollController.hasClients) return;
     // Soft haptic + a slower-than-default ease so the page swap reads
     // as an intentional "you moved to a new page" rather than the list

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
+import '../../features/conversations/data/conversations_repository.dart';
 import '../../features/vault/data/vault_repository.dart';
 import '../extensions/context_extensions.dart';
 import 'app_toast.dart';
@@ -33,6 +34,7 @@ Future<bool> showSignOutFlow(BuildContext context) async {
   // Capture references before any awaits — after logout the widget tree
   // is rebuilt by the auth-gate redirect and `context.read` would throw.
   final vaultRepo = context.read<VaultRepository>();
+  final conversationsRepo = context.read<ConversationsRepository>();
   final authCubit = context.read<AuthCubit>();
   final navigator = Navigator.of(context, rootNavigator: true);
 
@@ -49,6 +51,11 @@ Future<bool> showSignOutFlow(BuildContext context) async {
     // previous user's projects flash on screen while the live fetch
     // runs. Repositories that don't have an offline cache wired no-op.
     await vaultRepo.clearOfflineCache();
+    // Drop in-memory chat transcripts + the offline Chats list so the next
+    // user doesn't briefly inherit the previous user's messages or rows.
+    conversationsRepo.clearSnapshotCache();
+    await conversationsRepo.clearListCache();
+    await conversationsRepo.clearDiskCache();
     await authCubit.logout();
   } finally {
     if (navigator.canPop()) navigator.pop();

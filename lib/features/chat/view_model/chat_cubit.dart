@@ -41,6 +41,24 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   static const _attachmentPollInterval = Duration(seconds: 1);
   static const _attachmentPollTimeout = Duration(seconds: 30);
 
+  /// Messages fetched on the first paint. A bounded window keeps the
+  /// open-chat path fast — we deserialise + lay out ~40 recent rows
+  /// instead of the entire transcript on the UI isolate. Older history
+  /// loads on demand via [loadOlder] (the "Load earlier" button).
+  static const _initialLimit = 40;
+
+  /// How many MORE raw rows each "Load earlier" fetch pulls. We grow the
+  /// `limit` instead of relying on `?before=` (unreliable on the backend)
+  /// or a no-`limit` "fetch everything" (the server caps that to a default
+  /// page, so it loaded nothing past the cap). A bounded step keeps each
+  /// fetch reasonable while still reliably revealing older history.
+  static const _olderRawStep = 80;
+
+  /// How many raw rows we've asked the server for so far — grows by
+  /// [_olderRawStep] each [loadOlder]. Reset to [_initialLimit] on every
+  /// fresh [load].
+  int _loadedLimit = _initialLimit;
+
   final String conversationId;
   final ConversationsRepository _repo;
 
@@ -74,18 +92,52 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
 
   // ── Snapshot loading + polling ──────────────────────────────────────
 
-  /// Initial load — fetches the full snapshot (no `?since`). Subsequent
-  /// polls use the delta path via [_pollOnce].
+  /// Initial load — paints the cached transcript instantly (if any),
+  /// then fetches a **bounded** recent window so the open-chat path never
+  /// blocks on deserialising the entire history. Subsequent polls use the
+  /// delta path via [_pollOnce]; older history loads via [loadOlder].
   Future<void> load() async {
     if (state.data is DataLoading<ConversationSnapshot>) return;
-    emit(state.copyWith(
-      data: DataLoading<ConversationSnapshot>(
-        previous: state.data.dataOrNull,
-      ),
-    ));
+    // Stale-while-revalidate: paint whatever we can show RIGHT NOW — the
+    // live snapshot if this is a refresh, else the session cache if we've
+    // opened this chat before — and keep it on screen while the fetch
+    // runs. Only a truly cold open (nothing to show) falls through to the
+    // loading skeleton. This is what kills the "tap a chat → blank
+    // skeleton → everything floods in at once" lag: the user reads
+    // immediately and the bounded fetch reconciles underneath.
+    final existing =
+        state.data.dataOrNull ?? _repo.cachedSnapshot(conversationId);
+    if (existing != null) {
+      emit(state.copyWith(
+        data: DataSuccess(existing),
+        hasMoreOlder: _hasMoreFrom(existing),
+      ));
+    } else {
+      // Show the loading skeleton IMMEDIATELY (synchronously), BEFORE the
+      // disk read — otherwise the screen sits on `DataIdle` during the
+      // (fast, off-isolate) read and flashes the empty "What should we work
+      // on?" welcome. Then swap in the on-disk transcript the moment it
+      // decodes; if there's nothing cached, the skeleton just stays until
+      // the network lands.
+      emit(state.copyWith(data: const DataLoading<ConversationSnapshot>()));
+      final disk = await _repo.diskCachedSnapshot(conversationId);
+      if (disk != null && state.data.dataOrNull == null) {
+        emit(state.copyWith(
+          data: DataSuccess(disk),
+          hasMoreOlder: _hasMoreFrom(disk),
+        ));
+      }
+    }
     try {
-      final snapshot = await _repo.getSnapshot(conversationId);
-      emit(state.copyWith(data: DataSuccess(snapshot)));
+      final snapshot =
+          await _repo.getSnapshot(conversationId, limit: _initialLimit);
+      // Fresh bounded load — pagination restarts from this window.
+      _loadedLimit = _initialLimit;
+      emit(state.copyWith(
+        data: DataSuccess(snapshot),
+        hasMoreOlder: _hasMoreFrom(snapshot),
+      ));
+      _repo.cacheSnapshot(conversationId, snapshot);
       _schedulePoll();
     } catch (e, st) {
       AppLogger.error(_tag, 'load() failed', error: e, stackTrace: st);
@@ -102,6 +154,14 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       ));
     }
   }
+
+  /// Whether there's likely older history to page in: a snapshot whose
+  /// message list came back SHORTER than the page we asked for means the
+  /// whole transcript fit in one window — so the "Load earlier" button is
+  /// hidden. A full page implies there may be more. `loadOlder` refines this
+  /// once the user actually pages (an empty/duplicate page flips it false).
+  bool _hasMoreFrom(ConversationSnapshot snapshot) =>
+      snapshot.messages.length >= _initialLimit;
 
   /// Manual refresh — same code path as the polling tick.
   Future<void> refresh() => _pollOnce();
@@ -253,8 +313,33 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   void _mergeSnapshot(ConversationSnapshot incoming) {
     final current = state.data.dataOrNull;
     if (current == null || !incoming.delta) {
+      // Defensive: a NON-delta poll response that carries FEWER messages
+      // than we've already loaded must not shrink the transcript back to a
+      // server default page — that would silently throw away the older
+      // history the user just paged in (a cause of "Load earlier" seeming
+      // to do nothing / needing a refresh). Keep our messages + cursor,
+      // adopt the fresh conversation/approvals/etc. from the poll.
+      if (current != null &&
+          !incoming.delta &&
+          incoming.messages.length < current.messages.length) {
+        final preserved = ConversationSnapshot(
+          conversation: incoming.conversation,
+          messages: current.messages,
+          cursor: current.cursor,
+          delta: false,
+          approvals: incoming.approvals,
+          artifacts: incoming.artifacts,
+          availableCredentials: incoming.availableCredentials,
+          disabledCredentials: incoming.disabledCredentials,
+          pendingActions: incoming.pendingActions,
+        );
+        emit(state.copyWith(data: DataSuccess(preserved)));
+        _repo.cacheSnapshot(conversationId, preserved);
+        return;
+      }
       // First snapshot or full refresh — adopt verbatim.
       emit(state.copyWith(data: DataSuccess(incoming)));
+      _repo.cacheSnapshot(conversationId, incoming);
       return;
     }
     final merged = ConversationSnapshot(
@@ -272,6 +357,50 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       pendingActions: incoming.pendingActions,
     );
     emit(state.copyWith(data: DataSuccess(merged)));
+    // Keep the cache current so re-opening this chat paints the appended
+    // rows too, not just the first page from initial load.
+    _repo.cacheSnapshot(conversationId, merged);
+  }
+
+  /// Pulls the next chunk of OLDER messages by RE-FETCHING the conversation
+  /// with a larger `limit` ([_loadedLimit] + [_olderRawStep]) and replacing
+  /// the snapshot with that bigger window. The screen then reveals the new
+  /// rows 10 visible at a time.
+  ///
+  /// Why growing-`limit` instead of `?before=` or a no-`limit` full fetch:
+  /// both proved unreliable on the backend (`before` echoed the latest
+  /// page; no-`limit` got capped to a default page) — so "Load earlier"
+  /// sometimes loaded nothing and needed a manual refresh. `limit` is the
+  /// one paging knob the initial load already proves works, so growing it
+  /// reliably surfaces older history. The decode runs OFF the UI isolate so
+  /// even a large window doesn't jank.
+  ///
+  /// `hasMoreOlder` flips false only when the server returns FEWER rows than
+  /// we asked for — i.e. we've genuinely reached the start of the
+  /// transcript — so the button never gets stuck "loading nothing".
+  ///
+  /// No-op while a fetch is already in flight or once the start is reached.
+  Future<void> loadOlder() async {
+    if (state.isLoadingOlder || !state.hasMoreOlder) return;
+    if (state.data.dataOrNull == null) return;
+    emit(state.copyWith(isLoadingOlder: true));
+    final nextLimit = _loadedLimit + _olderRawStep;
+    try {
+      final snapshot = await _repo.getSnapshotOffIsolate(
+        conversationId,
+        limit: nextLimit,
+      );
+      _loadedLimit = nextLimit;
+      emit(state.copyWith(
+        data: DataSuccess(snapshot),
+        isLoadingOlder: false,
+        hasMoreOlder: snapshot.messages.length >= nextLimit,
+      ));
+      _repo.cacheSnapshot(conversationId, snapshot);
+    } catch (e, st) {
+      AppLogger.warn(_tag, 'loadOlder failed', error: e, stackTrace: st);
+      emit(state.copyWith(isLoadingOlder: false));
+    }
   }
 
   // ── Sending ─────────────────────────────────────────────────────────
@@ -309,6 +438,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
         isSending: false,
         actionToast: ChatToast.messageSent,
       ));
+      _repo.cacheSnapshot(conversationId, snapshot);
       // Immediately bump the polling cadence to "running" speed since
       // the agent is now processing the message we just sent.
       _schedulePoll();

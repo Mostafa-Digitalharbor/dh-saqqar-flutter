@@ -8,6 +8,8 @@ import 'core/i18n/app_localizations.dart';
 import 'core/i18n/app_strings.dart';
 import 'core/i18n/view_model/locale_cubit.dart';
 import 'core/routing/app_router.dart';
+import 'features/push/data/push_notifications_service.dart';
+import 'features/security/view/app_lock_gate.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/view_model/theme_cubit.dart';
 import 'features/auth/view_model/auth_cubit.dart';
@@ -105,9 +107,16 @@ class _SaqqarAppState extends State<SaqqarApp> {
         return prev.user?.id != curr.user?.id;
       },
       listener: (context, authState) {
-        if (authState.status == AuthStatus.unauthenticated) {
+        final push = context.read<PushNotificationsService>();
+        if (authState.status == AuthStatus.authenticated) {
+          // Register the FCM token + start listening once we know who's
+          // signed in (idempotent — safe on every authenticated emit).
+          push.start();
+        } else if (authState.status == AuthStatus.unauthenticated) {
           context.read<ConversationsCubit>().reset();
           context.read<VaultCubit>().reset();
+          // Unregister this device so a signed-out phone gets no pushes.
+          push.stop();
         }
       },
       child: MaterialApp.router(
@@ -148,8 +157,14 @@ class _SaqqarAppState extends State<SaqqarApp> {
           // found" the moment the share sheet tries to render.
           return MediaQuery(
             data: media.copyWith(textScaler: clamped),
-            child: ShareIntentBootstrap(
-              child: child ?? const SizedBox.shrink(),
+            // AppLockGate overlays the biometric lock above EVERYTHING
+            // (including the share sheet + any open dialog) and re-locks on
+            // background. Sits inside the builder so it's below the root
+            // Navigator — the lock screen's sign-out dialog still resolves.
+            child: AppLockGate(
+              child: ShareIntentBootstrap(
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           );
         },

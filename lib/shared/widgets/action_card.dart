@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../extensions/context_extensions.dart';
+import 'colored_icon_box.dart';
 import '../extensions/responsive_breakpoints.dart';
 
 class ActionCard extends StatelessWidget {
@@ -68,17 +69,12 @@ class ActionCard extends StatelessWidget {
                 Row(
                   children: [
                     if (icon != null) ...[
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: accent.withValues(alpha: 0.30),
-                          ),
-                        ),
-                        child: Icon(icon, color: accent, size: 17),
+                      ColoredIconBox(
+                        icon: icon!,
+                        color: accent,
+                        size: 34,
+                        radius: 10,
+                        iconSize: 17,
                       ),
                       const SizedBox(width: 12),
                     ],
