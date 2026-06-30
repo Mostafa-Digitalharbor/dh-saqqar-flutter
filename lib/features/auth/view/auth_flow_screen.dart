@@ -13,6 +13,7 @@ import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/saqqar_logo.dart';
 import '../data/auth_api.dart';
 import '../view_model/auth_cubit.dart';
 import '../view_model/auth_flow_cubit.dart';
@@ -94,11 +95,24 @@ class _AuthFlowView extends StatelessWidget {
                         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 440),
-                          // Key by step so each step's StatefulWidget body
-                          // gets a fresh element (controllers reset) on
-                          // navigation, but is preserved across loading
-                          // rebuilds within a step.
-                          child: _bodyFor(state.step),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // App brand logo above the form — shown on every
+                              // auth step. SaqqarLogo tints itself (white on the
+                              // dark auth backdrop, navy on light).
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 28),
+                                child: Center(child: SaqqarLogo(height: 40)),
+                              ),
+                              // Key by step so each step's StatefulWidget body
+                              // gets a fresh element (controllers reset) on
+                              // navigation, but is preserved across loading
+                              // rebuilds within a step.
+                              _bodyFor(state.step),
+                            ],
+                          ),
                         ),
                       ),
                     ),

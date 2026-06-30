@@ -222,11 +222,14 @@ class ConversationCard extends StatelessWidget {
                                     label: context.tr.toApprove(pendingApprovals),
                                   ),
                                 // Project · environment (only when real).
+                                // Flexible so a long tag ellipsizes to the
+                                // available width instead of forcing a fixed
+                                // 170px row that overflows on narrow screens.
                                 if (envLabel != null)
                                   _MetaInline(
                                     icon: AppIcons.github,
                                     label: envLabel,
-                                    maxWidth: 170,
+                                    flexible: true,
                                   ),
                                 // Message count (real).
                                 _MetaInline(
@@ -399,41 +402,39 @@ class _WarnPill extends StatelessWidget {
 
 /// Plain inline meta item — bare icon + value, no chip fill. Mirrors the
 /// design's ConversationRow meta row, which uses unfilled inline runs rather
-/// than filled chips. [maxWidth] caps the (potentially long) project ·
-/// environment tag so it ellipsizes instead of pushing the row.
+/// than filled chips. When [flexible] is true the (potentially long) project ·
+/// environment tag ellipsizes to whatever width is actually available instead
+/// of forcing a fixed-width row — keeping the meta line overflow-proof on any
+/// screen size.
 class _MetaInline extends StatelessWidget {
   const _MetaInline({
     required this.icon,
     required this.label,
-    this.maxWidth,
+    this.flexible = false,
   });
 
   final IconData icon;
   final String label;
-  final double? maxWidth;
+  final bool flexible;
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    Widget text = Text(
+    final text = Text(
       label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       softWrap: false,
       style: context.text.labelMedium?.copyWith(color: s.muted),
     );
-    if (maxWidth != null) {
-      text = ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth!),
-        child: text,
-      );
-    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 13, color: s.muted),
         const SizedBox(width: 5),
-        text,
+        // Flexible lets a long label shrink/ellipsize within the Wrap line's
+        // available width; short labels (counts) keep their natural size.
+        if (flexible) Flexible(child: text) else text,
       ],
     );
   }
