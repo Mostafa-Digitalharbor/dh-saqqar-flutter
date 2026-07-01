@@ -1,0 +1,209 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/i18n/app_date_format.dart';
+import '../../../core/i18n/app_localizations.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/confirm_dialog.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../data/devices_api.dart';
+
+/// Lists the devices registered to receive this account's push notifications
+/// (`GET /devices/`) and lets the user sign any of them out
+/// (`DELETE /devices/<id>/`) — useful after losing a phone.
+class DevicesScreen extends StatefulWidget {
+  const DevicesScreen({super.key});
+
+  @override
+  State<DevicesScreen> createState() => _DevicesScreenState();
+}
+
+class _DevicesScreenState extends State<DevicesScreen> {
+  late Future<List<DeviceRow>> _future;
+  final _revoking = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _future = context.read<DevicesApi>().list();
+  }
+
+  Future<void> _reload() async {
+    final f = context.read<DevicesApi>().list();
+    setState(() => _future = f);
+    await f;
+  }
+
+  Future<void> _revoke(DeviceRow device) async {
+    final tr = context.tr;
+    final ok = await ConfirmDialog.show(
+      context,
+      title: tr.deviceRevoke,
+      body: '${device.tokenPreview} · ${device.platform.wire}',
+      confirmLabel: tr.deviceRevoke,
+      destructive: true,
+      icon: AppIcons.trash,
+    );
+    if (!ok || !mounted) return;
+    setState(() => _revoking.add(device.id));
+    try {
+      await context.read<DevicesApi>().revoke(device.id);
+      if (!mounted) return;
+      AppToast.show(context, message: tr.deviceRevoked,
+          variant: ToastVariant.success);
+      await _reload();
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.show(context, message: tr.deviceRevokeFailed,
+          variant: ToastVariant.error);
+    } finally {
+      if (mounted) setState(() => _revoking.remove(device.id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Scaffold(
+      backgroundColor: s.bg,
+      appBar: AppBar(title: Text(context.tr.devicesTitle)),
+      body: AmbientBackground(
+        child: RefreshIndicator(
+          color: s.brandCyan,
+          backgroundColor: s.surface,
+          onRefresh: _reload,
+          child: FutureBuilder<List<DeviceRow>>(
+            future: _future,
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.4, color: s.muted),
+                );
+              }
+              final devices = snap.data ?? const <DeviceRow>[];
+              if (devices.isEmpty) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    const SizedBox(height: 80),
+                    Center(
+                      child: EmptyState(
+                        icon: AppIcons.bell,
+                        title: context.tr.devicesEmptyTitle,
+                        body: context.tr.devicesEmptyBody,
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: devices.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, i) => _DeviceRowTile(
+                  device: devices[i],
+                  revoking: _revoking.contains(devices[i].id),
+                  onRevoke: () => _revoke(devices[i]),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeviceRowTile extends StatelessWidget {
+  const _DeviceRowTile({
+    required this.device,
+    required this.revoking,
+    required this.onRevoke,
+  });
+
+  final DeviceRow device;
+  final bool revoking;
+  final VoidCallback onRevoke;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    final isIos = device.platform == DevicePlatform.ios;
+    final lastSeen = device.lastSeenAt;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: s.cardBg,
+        borderRadius: AppRadius.cardR,
+        border: Border.all(color: s.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: s.brandCyan.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: s.brandCyan.withValues(alpha: 0.30)),
+            ),
+            child: Icon(
+              isIos ? Icons.phone_iphone : Icons.phone_android,
+              size: 19,
+              color: s.brandCyan,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${isIos ? 'iOS' : 'Android'}'
+                  '${device.appVersion != null ? ' · v${device.appVersion}' : ''}',
+                  style: context.text.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  device.tokenPreview,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall?.copyWith(color: s.muted),
+                ),
+                if (lastSeen != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    context.tr
+                        .deviceLastSeen(AppDateFormat.relative(context, lastSeen)),
+                    style: context.text.labelSmall?.copyWith(color: s.muted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (revoking)
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: s.muted),
+            )
+          else
+            IconButton(
+              tooltip: context.tr.deviceRevoke,
+              icon: Icon(AppIcons.trash, color: s.danger, size: 20),
+              onPressed: onRevoke,
+            ),
+        ],
+      ),
+    );
+  }
+}

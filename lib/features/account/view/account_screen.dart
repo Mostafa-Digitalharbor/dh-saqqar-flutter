@@ -15,7 +15,6 @@ import '../../../shared/widgets/delete_account_helper.dart';
 import '../../../shared/widgets/sign_out_helper.dart';
 import '../../../shared/widgets/skeleton_block.dart';
 import '../../auth/view_model/auth_cubit.dart';
-import '../../billing/data/plan_models.dart';
 import '../../billing/data/usage_api.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../widgets/widgets.dart';
@@ -90,18 +89,33 @@ class _AccountScreenState extends State<AccountScreen> {
                 onLongPress: () => context.pushNamed(RouteNames.storybook),
               ),
               const SizedBox(height: 14),
-              // Plan & usage (Gap A). When a conversation snapshot has
-              // populated PlanCubit we show the full usage bars
-              // (PlanUsageCard); otherwise — e.g. a fresh Account open before
-              // any chat — we fall back to CurrentPlanCard, which reads the
-              // public /plans/ catalogue so the user's plan + limits + a
-              // pricing path are always visible.
+              // Plan & usage — split into two entry points (moved off the
+              // profile so Account stays scannable): "See plans" → the
+              // pricing catalogue, "Usage" → the per-window usage bars on
+              // their own screen.
               Padding(
                 padding: const EdgeInsets.only(bottom: 14),
-                child: BlocBuilder<PlanCubit, PlanSnapshot?>(
-                  builder: (context, plan) => plan == null
-                      ? const CurrentPlanCard()
-                      : const PlanUsageCard(),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GhostButton(
+                        label: context.tr.accountSeePlans,
+                        icon: Icons.workspace_premium_outlined,
+                        expand: true,
+                        onPressed: () =>
+                            context.pushNamed(RouteNames.pricing),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GhostButton(
+                        label: context.tr.accountUsage,
+                        icon: Icons.bar_chart_rounded,
+                        expand: true,
+                        onPressed: () => context.pushNamed(RouteNames.usage),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               // Personal information (Gap I) — edit first/last name; email
@@ -113,6 +127,14 @@ class _AccountScreenState extends State<AccountScreen> {
               PreferencesCard(mode: mode, locale: locale),
               const SizedBox(height: 14),
               const ChangePasswordCard(),
+              const SizedBox(height: 14),
+              // Registered push devices — review + sign out a lost phone.
+              GhostButton(
+                label: context.tr.devicesManage,
+                icon: Icons.devices_other_outlined,
+                expand: true,
+                onPressed: () => context.pushNamed(RouteNames.devices),
+              ),
               const SizedBox(height: 14),
               GhostButton(
                 label: context.tr.signOut,

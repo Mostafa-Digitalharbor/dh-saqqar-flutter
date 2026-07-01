@@ -182,9 +182,18 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  PrimaryButton(
-                    label: context.tr.addProject,
-                    onPressed: state.actionInFlight ? null : _addProject,
+                  // Disabled until a name is typed (and no write in flight) —
+                  // the empty-tap no-op used to look like a broken button.
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _newName,
+                    builder: (context, value, _) {
+                      final canAdd = value.text.trim().isNotEmpty &&
+                          !state.actionInFlight;
+                      return PrimaryButton(
+                        label: context.tr.addProject,
+                        onPressed: canAdd ? _addProject : null,
+                      );
+                    },
                   ),
                 ],
               ),

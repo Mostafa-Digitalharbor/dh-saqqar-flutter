@@ -304,10 +304,18 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            PrimaryButton(
-                              label: context.tr.addEnvironment,
-                              onPressed:
-                                  state.actionInFlight ? null : _addEnv,
+                            // Disabled until an env name is typed (and no
+                            // write in flight) — no empty-tap no-op.
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _newEnv,
+                              builder: (context, value, _) {
+                                final canAdd = value.text.trim().isNotEmpty &&
+                                    !state.actionInFlight;
+                                return PrimaryButton(
+                                  label: context.tr.addEnvironment,
+                                  onPressed: canAdd ? _addEnv : null,
+                                );
+                              },
                             ),
                           ],
                         ),

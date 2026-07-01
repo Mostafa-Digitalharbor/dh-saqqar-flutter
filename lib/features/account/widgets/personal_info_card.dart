@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/save_status_hint.dart';
 import '../../auth/view_model/auth_cubit.dart';
 
 /// Personal-information card (Gap I) — mirrors the web `/profile/` form:
@@ -31,8 +32,38 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
   String? _firstError;
   bool _seeded = false;
 
+  /// True right after a successful save, until the user edits again. Drives
+  /// the "Saved" status chip next to the button.
+  bool _justSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild as the user types so "Save changes" can flip enabled/disabled
+    // against the stored profile — no point PATCHing an unchanged name.
+    _first.addListener(_onFieldChanged);
+    _last.addListener(_onFieldChanged);
+  }
+
+  void _onFieldChanged() {
+    // Any edit invalidates a prior "Saved" confirmation.
+    if (_justSaved) _justSaved = false;
+    if (mounted) setState(() {});
+  }
+
+  /// True when either field differs from the stored user, i.e. there's a
+  /// real change worth sending. False while unhydrated (nothing to compare).
+  bool get _isDirty {
+    final user = context.read<AuthCubit>().state.user;
+    if (user == null) return false;
+    return _first.text.trim() != user.firstName ||
+        _last.text.trim() != user.lastName;
+  }
+
   @override
   void dispose() {
+    _first.removeListener(_onFieldChanged);
+    _last.removeListener(_onFieldChanged);
     _first.dispose();
     _last.dispose();
     super.dispose();
@@ -66,6 +97,7 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
             lastName: _last.text.trim(),
           );
       if (!mounted) return;
+      setState(() => _justSaved = true);
       AppToast.show(
         context,
         message: tr.profileUpdatedToast,
@@ -149,12 +181,32 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
             helper: tr.emailLoginHint,
           ),
           const SizedBox(height: 16),
+          // Status chip — explains a disabled Save: "Saved" right after a
+          // successful write, "No changes" when the form matches the stored
+          // profile. Nothing while there's a real pending edit (the enabled
+          // button speaks for itself).
+          if (_justSaved || (_seeded && !_isDirty)) ...[
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: SaveStatusHint(
+                label: _justSaved ? tr.statusSaved : tr.statusNoChanges,
+                tone:
+                    _justSaved ? SaveStatusTone.saved : SaveStatusTone.neutral,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           PrimaryButton(
             label: tr.saveChanges,
             icon: AppIcons.save,
             loading: _loading,
             expand: true,
-            onPressed: _loading ? null : _submit,
+            // Disabled unless there's an actual edit (and a non-empty first
+            // name) — an unchanged form would just cost a redundant PATCH.
+            onPressed:
+                (_loading || !_isDirty || _first.text.trim().isEmpty)
+                    ? null
+                    : _submit,
           ),
         ],
       ),

@@ -108,12 +108,25 @@ class SignUpForm extends StatelessWidget {
                   onSubmitted: (_) => onSubmit(),
                 ),
                 const SizedBox(height: 22),
-                PrimaryButton(
-                  label: context.tr.createAccountButton,
-                  icon: AppIcons.userPlus,
-                  loading: loading,
-                  expand: true,
-                  onPressed: loading ? null : onSubmit,
+                // Disabled until all three fields have content — the screen
+                // still owns the ≥8-chars / passwords-match validation, but
+                // there's no point letting an empty form fire a request.
+                AnimatedBuilder(
+                  animation: Listenable.merge(
+                    [email, password, confirmPassword],
+                  ),
+                  builder: (context, _) {
+                    final canSubmit = email.text.trim().isNotEmpty &&
+                        password.text.isNotEmpty &&
+                        confirmPassword.text.isNotEmpty;
+                    return PrimaryButton(
+                      label: context.tr.createAccountButton,
+                      icon: AppIcons.userPlus,
+                      loading: loading,
+                      expand: true,
+                      onPressed: (loading || !canSubmit) ? null : onSubmit,
+                    );
+                  },
                 ),
               ],
             ),

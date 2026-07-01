@@ -92,12 +92,21 @@ class SignInForm extends StatelessWidget {
                   errorText: passwordError,
                 ),
                 const SizedBox(height: 22),
-                PrimaryButton(
-                  label: context.tr.signIn,
-                  icon: AppIcons.signIn,
-                  loading: loading,
-                  expand: true,
-                  onPressed: loading ? null : onSubmit,
+                // Disabled until both fields have content — an empty sign-in
+                // just bounces a 400, so don't spend the request.
+                AnimatedBuilder(
+                  animation: Listenable.merge([username, password]),
+                  builder: (context, _) {
+                    final canSubmit = username.text.trim().isNotEmpty &&
+                        password.text.isNotEmpty;
+                    return PrimaryButton(
+                      label: context.tr.signIn,
+                      icon: AppIcons.signIn,
+                      loading: loading,
+                      expand: true,
+                      onPressed: (loading || !canSubmit) ? null : onSubmit,
+                    );
+                  },
                 ),
               ],
             ),

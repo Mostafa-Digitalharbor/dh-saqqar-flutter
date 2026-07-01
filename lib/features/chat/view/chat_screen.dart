@@ -114,6 +114,13 @@ class _ChatScreenState extends State<ChatScreen>
   /// web's `state.conversation.environment === null` guard.
   String? _environmentId;
 
+  /// Full set of environments bound to this conversation (primary included).
+  /// A conversation can carry more than one — mirrors the web's multi-select
+  /// environment dropdown. For existing chats the server snapshot is the
+  /// source of truth (see [_activeEnvironmentIds]); this local copy holds the
+  /// new-chat selection until the first send binds it server-side.
+  List<String> _environmentIds = const <String>[];
+
   /// Header project selection. Independent of `_environmentId` so the
   /// dropdown can show "Pick a project first" before the user has chosen
   /// either. Derived from the env's `projectId` on init; cleared when the
@@ -489,6 +496,29 @@ class _ChatScreenState extends State<ChatScreen>
     return _environmentId;
   }
 
+  /// Full set of environment ids bound to this conversation, feeding the
+  /// header's multi-select pill (primary + "+N"). For existing chats the
+  /// server snapshot's `environments` list wins; for new chats the local
+  /// selection stands in until the first send binds it.
+  ///
+  /// Falls back to the singular primary when the server hasn't yet echoed a
+  /// plural list (older backends / first render) so the pill never loses the
+  /// one env the gate already knows about.
+  List<String> get _activeEnvironmentIds {
+    if (!_isNewChat) {
+      final snapshot = context.watch<ChatCubit>().state.data.dataOrNull;
+      final conv = snapshot?.conversation;
+      if (conv != null) {
+        if (conv.environments.isNotEmpty) {
+          return conv.environments.map((e) => e.id).toList();
+        }
+        final primary = conv.environment?.id;
+        if (primary != null) return [primary];
+      }
+    }
+    return _environmentIds;
+  }
+
   /// Currently-bound project id — derived from the same source the env
   /// resolves to, so the two dropdowns stay coherent (picking a project
   /// without an env in it is meaningless).
@@ -522,11 +552,13 @@ class _ChatScreenState extends State<ChatScreen>
     setState(() {
       _projectId = value;
       _environmentId = null;
+      _environmentIds = const <String>[];
     });
     try {
       await context.read<ConversationsRepository>().patch(
             id: widget.conversationId,
             environmentId: '',
+            environmentIds: const <String>[],
           );
       if (!mounted) return;
       // Refresh the snapshot so the new env=null surfaces immediately.
@@ -537,47 +569,71 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// Handler for the environment dropdown.
+  /// Handler for the environment multi-select pill.
   ///
-  /// New chat → stash locally; the first send creates the conv with
-  /// this env bound.
+  /// Receives the full set of checked environment ids from
+  /// [EnvironmentMultiSelectSheet]. An empty list clears all bindings.
   ///
-  /// Existing chat → PATCH `environment_id` on the server. The chat
-  /// cubit's polling picks up the new env via snapshot — the dropdown
-  /// updates from there, not from this local write.
-  Future<void> _handleEnvironmentChanged(String? value) async {
+  /// A "primary" env is still needed — it drives project coherence and the
+  /// send-gate ([_activeEnvironmentId]). We keep the current primary if it's
+  /// still in the set, otherwise fall back to the first selected env.
+  ///
+  /// New chat → stash locally; the first send creates the conv with this set
+  /// bound. Existing chat → PATCH `environment_id` (primary) +
+  /// `environment_ids` (full set); the snapshot refresh reconciles.
+  Future<void> _handleEnvironmentsChanged(List<String> ids) async {
     final vault = context.read<VaultCubit>().state.data.dataOrNull;
-    final env = value == null ? null : vault?.environmentById(value);
-    if (_isNewChat) {
+    // Read (never watch) the current primary here — this runs from a tap
+    // handler, outside build, where `context.watch` throws. Mirrors the
+    // snapshot-then-local fallback of [_activeEnvironmentId].
+    String? currentPrimary;
+    if (!_isNewChat) {
+      currentPrimary = context
+          .read<ChatCubit>()
+          .state
+          .data
+          .dataOrNull
+          ?.conversation
+          .environment
+          ?.id;
+    }
+    currentPrimary ??= _environmentId;
+    final String primary = ids.isEmpty
+        ? ''
+        : (currentPrimary != null && ids.contains(currentPrimary)
+            ? currentPrimary
+            : ids.first);
+    final primaryEnv = primary.isEmpty ? null : vault?.environmentById(primary);
+
+    void applyLocal() {
       setState(() {
-        _environmentId = value;
-        if (env != null) {
-          _projectId = env.projectId;
-          if (env.autoApprove) _autoApprove = true;
+        _environmentIds = List<String>.from(ids);
+        _environmentId = primary.isEmpty ? null : primary;
+        if (primaryEnv != null) {
+          _projectId = primaryEnv.projectId;
+          if (primaryEnv.autoApprove) _autoApprove = true;
         }
       });
-      if (value != null) _toast(context.tr.environmentSetForChat);
+    }
+
+    if (_isNewChat) {
+      applyLocal();
+      if (ids.isNotEmpty) _toast(context.tr.envMultiUpdated);
       return;
     }
-    // Existing chat — PATCH on the server. Update local state as well
-    // so the dropdown reflects the change instantly; the snapshot
-    // refresh will reconcile if the server rejected.
-    setState(() {
-      _environmentId = value;
-      if (env != null) {
-        _projectId = env.projectId;
-        if (env.autoApprove) _autoApprove = true;
-      }
-    });
+    // Existing chat — reflect locally for instant feedback, then PATCH the
+    // server. The snapshot refresh reconciles if the server rejected.
+    applyLocal();
     try {
       await context.read<ConversationsRepository>().patch(
             id: widget.conversationId,
-            environmentId: value ?? '',
+            environmentId: primary,
+            environmentIds: ids,
           );
       if (!mounted) return;
       await context.read<ChatCubit>().refresh();
       if (!mounted) return;
-      if (value != null) _toast(context.tr.environmentSetForChat);
+      _toast(context.tr.envMultiUpdated);
     } catch (e) {
       if (!mounted) return;
       _toast(ApiErrorMapper.message(context, e));
@@ -1101,7 +1157,23 @@ class _ChatScreenState extends State<ChatScreen>
 
   // -------- Sending --------
 
+  /// Re-entrancy guard for [_send]. A fast double-tap (or Enter + tap) can
+  /// fire the handler twice before the first pass clears the composer /
+  /// morphs Send into Stop — which would POST the same message twice. Set
+  /// synchronously at the top of [_send] so the second call bails instantly.
+  bool _sending = false;
+
   Future<void> _send() async {
+    if (_sending) return;
+    _sending = true;
+    try {
+      await _sendInternal();
+    } finally {
+      _sending = false;
+    }
+  }
+
+  Future<void> _sendInternal() async {
     final text = _composer.text.trim();
     if (text.isEmpty && _attachments.isEmpty) return;
 
@@ -1278,6 +1350,10 @@ class _ChatScreenState extends State<ChatScreen>
       await repo.patch(
         id: newId,
         environmentId: env.id,
+        // Bind the full multi-env set when the user checked more than the
+        // primary in the header pill; null (single-env path) leaves just
+        // env.id bound, matching the prior behavior.
+        environmentIds: _environmentIds.length > 1 ? _environmentIds : null,
         deepThink: deepThink ? true : null,
       );
       if (!mounted) return;
@@ -2079,8 +2155,9 @@ class _ChatScreenState extends State<ChatScreen>
               // to the local picker selection.
               projectId: _activeProjectId,
               environmentId: _activeEnvironmentId,
+              selectedEnvironmentIds: _activeEnvironmentIds,
               onProjectChanged: _handleProjectChanged,
-              onEnvironmentChanged: _handleEnvironmentChanged,
+              onEnvironmentsChanged: _handleEnvironmentsChanged,
               onCreateEnvironmentRequested: _handleCreateEnvironmentRequested,
               onCreateProjectRequested: _handleCreateProjectRequested,
             ),
@@ -2169,7 +2246,11 @@ class _ChatScreenState extends State<ChatScreen>
               onRemoveAttachment: _removeAttachmentAt,
               onPreviewAttachment: _previewAttachmentAt,
               // Block send when offline OR over a usage cap (Gap B). The
-              // quota banner above explains why send is disabled.
+              // quota banner above explains why send is disabled. The
+              // *empty-composer* gate (disable Send until there's text or an
+              // attachment) lives inside ChatComposer so it can watch the
+              // controller without rebuilding the whole screen — and so the
+              // mic stays enabled while the field is empty.
               onSend: (online && quotaWindow == null) ? _send : null,
               // Hide the mic when voice is locked on the plan (Gap C).
               // Null plan → permissive (don't hide a feature we haven't

@@ -9,6 +9,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../vault/data/project_models.dart';
 import '../../vault/view_model/vault_cubit.dart';
+import 'environment_multi_select_sheet.dart';
 
 /// Two-dropdown header strip — Project + Environment pickers only.
 ///
@@ -31,16 +32,31 @@ class ChatHeaderControls extends StatelessWidget {
     super.key,
     required this.projectId,
     required this.environmentId,
+    required this.selectedEnvironmentIds,
     required this.onProjectChanged,
-    required this.onEnvironmentChanged,
+    required this.onEnvironmentsChanged,
     required this.onCreateEnvironmentRequested,
     required this.onCreateProjectRequested,
   });
 
   final String? projectId;
+
+  /// Primary bound environment — drives the pill label and project
+  /// coherence. Its project is the one whose envs the sheet groups under
+  /// first, and it's the env the send-gate reads.
   final String? environmentId;
+
+  /// Full set of environments bound to the conversation (primary included).
+  /// A conversation can carry more than one, mirroring the web's multi-select
+  /// environment dropdown. The pill shows the primary + "+N more".
+  final List<String> selectedEnvironmentIds;
+
   final ValueChanged<String?> onProjectChanged;
-  final ValueChanged<String?> onEnvironmentChanged;
+
+  /// Fired with the full set of checked environment ids when the user
+  /// applies a selection in [EnvironmentMultiSelectSheet]. An empty list
+  /// clears all bindings.
+  final ValueChanged<List<String>> onEnvironmentsChanged;
 
   /// Fired when the user taps the environment slot while the selected
   /// project has no environments yet. The chat screen wires this to a
@@ -119,18 +135,27 @@ class ChatHeaderControls extends StatelessWidget {
                       onTap: () =>
                           onCreateEnvironmentRequested(projectId!),
                     )
-                  : _DropdownPill(
+                  : _MultiEnvPill(
                       caption: context.tr.headerEnvironment,
                       enabled: projectId != null,
                       hint: projectId == null
                           ? context.tr.pickProjectFirst
                           : context.tr.headerNoneOption,
-                      value: environmentId,
-                      items: [
-                        for (final e in envs)
-                          _DropdownItem(value: e.id, label: e.name),
-                      ],
-                      onChanged: onEnvironmentChanged,
+                      primaryLabel: environmentId == null
+                          ? null
+                          : data?.environmentById(environmentId!)?.name,
+                      extraCount: selectedEnvironmentIds
+                          .where((id) => id != environmentId)
+                          .length,
+                      onTap: () async {
+                        final result =
+                            await EnvironmentMultiSelectSheet.show(
+                          context,
+                          projectId: projectId,
+                          selectedEnvironmentIds: selectedEnvironmentIds,
+                        );
+                        if (result != null) onEnvironmentsChanged(result);
+                      },
                     ),
             ),
           ],
@@ -307,6 +332,108 @@ class _CreateCtaPill extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Environment slot rendered as a multi-select trigger (not a dropdown):
+/// tapping opens [EnvironmentMultiSelectSheet] so the conversation can bind
+/// to several environments at once. Matches the dropdown's footprint (same
+/// height + radius) so the row geometry stays put.
+///
+/// The label reads "Environment · primary-name" plus a "+N" chip when extra
+/// environments are bound, or the [hint] when nothing is selected.
+class _MultiEnvPill extends StatelessWidget {
+  const _MultiEnvPill({
+    required this.caption,
+    required this.enabled,
+    required this.hint,
+    required this.primaryLabel,
+    required this.extraCount,
+    required this.onTap,
+  });
+
+  final String caption;
+  final bool enabled;
+  final String hint;
+  final String? primaryLabel;
+  final int extraCount;
+  final Future<void> Function() onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    final hasSelection = primaryLabel != null && primaryLabel!.isNotEmpty;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppRadius.buttonR,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: AppRadius.buttonR,
+        child: Container(
+          height: 40,
+          padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
+          decoration: BoxDecoration(
+            color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
+            borderRadius: AppRadius.buttonR,
+            border: Border.all(
+              color:
+                  enabled ? s.cardBorder : s.cardBorder.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Row(
+            children: [
+              Text(
+                '$caption · ',
+                style: context.text.labelSmall?.copyWith(
+                  color: s.muted,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  hasSelection ? primaryLabel! : hint,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodyMedium?.copyWith(
+                    color: hasSelection
+                        ? (enabled ? s.text : s.muted)
+                        : s.muted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (extraCount > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: s.brandCyan.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '+$extraCount',
+                    style: context.text.labelSmall?.copyWith(
+                      color: s.brandCyan,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(width: 4),
+              Icon(
+                AppIcons.chevronDown,
+                size: 16,
+                color: enabled ? s.text : s.muted,
               ),
             ],
           ),

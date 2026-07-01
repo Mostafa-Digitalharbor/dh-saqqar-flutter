@@ -9,6 +9,8 @@ import '../../../core/theme/view_model/theme_cubit.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../notifications/view_model/notifications_settings_cubit.dart';
+import '../../push/data/push_notifications_service.dart';
 import '../../security/view_model/app_lock_cubit.dart';
 
 /// Theme + language preferences card. Reads/writes the two top-level
@@ -118,9 +120,42 @@ class PreferencesCard extends StatelessWidget {
               );
             },
           ),
+          // Push notifications on/off. Turning OFF unregisters the device so
+          // the backend stops sending; ON re-registers it.
+          BlocBuilder<NotificationsSettingsCubit, bool>(
+            builder: (context, enabled) {
+              return SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                secondary: Icon(AppIcons.bell, color: s.brandCyan),
+                title: Text(context.tr.notificationsSettingTitle),
+                subtitle: Text(
+                  context.tr.notificationsSettingSubtitle,
+                  style: context.text.bodySmall?.copyWith(color: s.muted),
+                ),
+                value: enabled,
+                onChanged: (value) => _toggleNotifications(context, value),
+              );
+            },
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _toggleNotifications(BuildContext context, bool value) async {
+    await context.read<NotificationsSettingsCubit>().setEnabled(value);
+    if (!context.mounted) return;
+    final push = context.read<PushNotificationsService>();
+    if (value) {
+      final code =
+          context.read<LocaleCubit>().state?.languageCode ==
+                  UiStrings.localeArabicCode
+              ? UiStrings.localeArabicCode
+              : UiStrings.localeEnglishCode;
+      await push.start(localeCode: code);
+    } else {
+      await push.stop();
+    }
   }
 
   Future<void> _toggleLock(BuildContext context, bool value) async {

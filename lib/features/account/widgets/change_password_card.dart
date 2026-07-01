@@ -41,7 +41,34 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
   String? _confirmError;
 
   @override
+  void initState() {
+    super.initState();
+    // Rebuild as the user types so the button can flip enabled/disabled
+    // against the fields-filled + new==confirm rule below.
+    _current.addListener(_onFieldChanged);
+    _next.addListener(_onFieldChanged);
+    _confirm.addListener(_onFieldChanged);
+  }
+
+  void _onFieldChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// Enough is entered to be worth a request: all three fields filled and
+  /// the new password matches its confirmation. The ≥8-chars rule stays in
+  /// [_validate] (shown as an inline error on submit) so the user learns why
+  /// a too-short password bounces rather than facing a silently-dead button.
+  bool get _canSubmit =>
+      _current.text.isNotEmpty &&
+      _next.text.isNotEmpty &&
+      _confirm.text.isNotEmpty &&
+      _next.text == _confirm.text;
+
+  @override
   void dispose() {
+    _current.removeListener(_onFieldChanged);
+    _next.removeListener(_onFieldChanged);
+    _confirm.removeListener(_onFieldChanged);
     _current.dispose();
     _next.dispose();
     _confirm.dispose();
@@ -229,7 +256,8 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                       icon: AppIcons.lock,
                       loading: _loading,
                       expand: true,
-                      onPressed: _loading ? null : _submit,
+                      onPressed:
+                          (_loading || !_canSubmit) ? null : _submit,
                     ),
                   ],
                 ),

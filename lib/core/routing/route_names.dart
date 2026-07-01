@@ -31,6 +31,18 @@ class RouteNames {
   static const pricing = 'pricing';
   static const pricingPath = '/pricing';
 
+  // Token usage detail — opened from the Account "Usage" button.
+  static const usage = 'usage';
+  static const usagePath = '/usage';
+
+  // In-app notifications inbox — opened from the header bell.
+  static const notifications = 'notifications';
+  static const notificationsPath = '/notifications';
+
+  // Registered push devices — opened from Account.
+  static const devices = 'devices';
+  static const devicesPath = '/devices';
+
   // Approval deep links now resolve into the chat that raised them, because
   // approvals live per-conversation (Inbox tab was retired). Format:
   //   /chats/<conversationId>?approval=<approvalId>

@@ -312,10 +312,27 @@ class ChatComposer extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                           ],
-                          ChatSendButton(
-                            onPressed: onSend,
-                            onStop: onStop,
-                            stopping: stopping,
+                          // Send stays disabled until there's something to
+                          // send — typed text or a staged attachment — so an
+                          // empty tap never costs a wasted round-trip. The
+                          // ValueListenableBuilder watches only the text
+                          // controller, so keystrokes rebuild just this
+                          // button, not the whole screen. `onStop` (mid-
+                          // generation) always wins — the Stop control must
+                          // stay live regardless of composer content.
+                          ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: controller,
+                            builder: (context, value, _) {
+                              final hasContent =
+                                  value.text.trim().isNotEmpty ||
+                                      attachments.isNotEmpty;
+                              return ChatSendButton(
+                                onPressed:
+                                    hasContent ? onSend : null,
+                                onStop: onStop,
+                                stopping: stopping,
+                              );
+                            },
                           ),
                         ],
                       ),

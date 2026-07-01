@@ -132,10 +132,21 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     const SizedBox(width: 8),
-                    PrimaryButton(
-                      label: context.tr.save,
-                      icon: AppIcons.save,
-                      onPressed: _save,
+                    // Save stays disabled until the title is non-empty AND
+                    // actually different from the current one — renaming to
+                    // the same value is a wasted PATCH.
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _controller,
+                      builder: (context, value, _) {
+                        final next = value.text.trim();
+                        final canSave =
+                            next.isNotEmpty && next != widget.initial.trim();
+                        return PrimaryButton(
+                          label: context.tr.save,
+                          icon: AppIcons.save,
+                          onPressed: canSave ? _save : null,
+                        );
+                      },
                     ),
                   ],
                 ),

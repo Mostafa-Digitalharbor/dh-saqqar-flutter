@@ -34,6 +34,8 @@ import 'features/chat/view_model/deep_think_cubit.dart';
 import 'features/chat/view_model/running_agents_cubit.dart';
 import 'features/conversations/data/conversations_api.dart';
 import 'features/chat/data/chat_snapshot_disk_cache.dart';
+import 'features/notifications/data/notifications_store.dart';
+import 'features/notifications/view_model/notifications_settings_cubit.dart';
 import 'features/push/data/push_notifications_service.dart';
 import 'features/security/data/biometric_auth.dart';
 import 'features/security/view_model/app_lock_cubit.dart';
@@ -230,9 +232,13 @@ Future<void> _bootApp() async {
   final sharesApi = SharesApi(dio);
   final remoteI18nApi = RemoteI18nApi(dio);
   final devicesApi = DevicesApi(dio);
-  // FCM push: registers the device token, displays foreground messages, and
-  // routes notification taps. Started/stopped by the auth listener in app.dart.
-  final pushService = PushNotificationsService(devicesApi);
+  // In-app inbox of received notifications (persisted); the header bell reads
+  // it, the push service + background isolate write to it.
+  final notificationsStore = NotificationsStore(prefs);
+  // FCM push: registers the device token, displays foreground messages,
+  // records them to the inbox, and routes notification taps. Started/stopped
+  // by the auth listener in app.dart.
+  final pushService = PushNotificationsService(devicesApi, notificationsStore);
   final transcribeApi = TranscribeApi(dio);
   final liveEnvAckService = LiveEnvAckService(prefs);
   // In-memory hand-off between Android's ACTION_SEND intent-filter and
@@ -293,6 +299,9 @@ Future<void> _bootApp() async {
         ChangeNotifierProvider<ShareIntakeService>.value(
           value: shareIntakeService,
         ),
+        ChangeNotifierProvider<NotificationsStore>.value(
+          value: notificationsStore,
+        ),
         RepositoryProvider<VaultRepository>.value(value: vaultRepository),
         RepositoryProvider<ConversationsRepository>.value(
           value: conversationsRepository,
@@ -326,6 +335,11 @@ Future<void> _bootApp() async {
             lazy: false,
             create: (_) =>
                 AppLockCubit(prefs: prefs, auth: BiometricAuth()),
+          ),
+          // User's push on/off preference (defaults on). Gates the push
+          // service in app.dart and drives device (un)registration.
+          BlocProvider<NotificationsSettingsCubit>(
+            create: (_) => NotificationsSettingsCubit(prefs),
           ),
           BlocProvider<PlanCubit>(create: (_) => PlanCubit()),
           BlocProvider<RunningAgentsCubit>(

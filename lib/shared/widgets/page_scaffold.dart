@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/i18n/app_localizations.dart';
+import '../../core/routing/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../features/chat/view_model/running_agents_cubit.dart';
+import '../../features/notifications/data/notifications_store.dart';
 import '../extensions/context_extensions.dart';
-import 'app_toast.dart';
 import 'offline_banner.dart';
 import 'saqqar_logo.dart';
 import 'saqqar_screen.dart';
@@ -221,9 +224,8 @@ class _SaqqarBrandHeader extends StatelessWidget {
 }
 
 /// Circular notifications bell in the brand bar's end slot — mirrors the
-/// Saqqar Design System header. A red presence dot signals unread items;
-/// tapping it surfaces a lightweight "no new notifications" toast (the app
-/// has no notifications inbox screen yet).
+/// Saqqar Design System header. Shows a red presence dot ONLY when the inbox
+/// has unread items; tapping it opens the in-app notifications inbox.
 class _NotificationsBell extends StatelessWidget {
   const _NotificationsBell();
 
@@ -231,6 +233,7 @@ class _NotificationsBell extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final tr = context.tr;
+    final unread = context.watch<NotificationsStore>().unreadCount;
     return Semantics(
       button: true,
       label: tr.notifications,
@@ -238,10 +241,7 @@ class _NotificationsBell extends StatelessWidget {
         message: tr.notifications,
         child: InkWell(
           customBorder: const CircleBorder(),
-          onTap: () => AppToast.show(
-            context,
-            message: tr.noNewNotifications,
-          ),
+          onTap: () => context.pushNamed(RouteNames.notifications),
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -256,19 +256,32 @@ class _NotificationsBell extends StatelessWidget {
                 ),
                 child: Icon(AppIcons.bell, size: 19, color: s.text),
               ),
-              PositionedDirectional(
-                top: 6,
-                end: 7,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: s.danger,
-                    border: Border.all(color: s.surface, width: 2),
+              // Unread COUNT badge (caps at "9+"). Hidden at zero.
+              if (unread > 0)
+                PositionedDirectional(
+                  top: -2,
+                  end: -2,
+                  child: Container(
+                    constraints:
+                        const BoxConstraints(minWidth: 16, minHeight: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: s.danger,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: s.surface, width: 1.5),
+                    ),
+                    child: Text(
+                      unread > 9 ? '9+' : '$unread',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

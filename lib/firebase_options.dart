@@ -41,46 +41,48 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCo71GemDQQazF42nL5wxvtFYlTuzNCdds',
-    appId: '1:499214012499:web:360b9e1a2397fb40a8f6a6',
-    messagingSenderId: '499214012499',
-    projectId: 'saqqar-app1',
-    authDomain: 'saqqar-app1.firebaseapp.com',
-    storageBucket: 'saqqar-app1.firebasestorage.app',
+    apiKey: 'AIzaSyAnbGVKpTAq8wk5IagehjymNE6qBvW4jbk',
+    appId: '1:55105284059:web:34ddba51bb07677f6ca9fe',
+    messagingSenderId: '55105284059',
+    projectId: 'saqqar-ai',
+    authDomain: 'saqqar-ai.firebaseapp.com',
+    storageBucket: 'saqqar-ai.firebasestorage.app',
+    measurementId: 'G-7YEXF96V1B',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDR94HV33UNdKc8sku_JQLdH6qEtVGpk04',
-    appId: '1:499214012499:android:ebc8df5013040fafa8f6a6',
-    messagingSenderId: '499214012499',
-    projectId: 'saqqar-app1',
-    storageBucket: 'saqqar-app1.firebasestorage.app',
+    apiKey: 'AIzaSyCeZn-bPWFV2yAPNgRHhP1ihDiefPO5wr8',
+    appId: '1:55105284059:android:933c90ca8b6868e36ca9fe',
+    messagingSenderId: '55105284059',
+    projectId: 'saqqar-ai',
+    storageBucket: 'saqqar-ai.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB88eSmg6x5HgT8fvnrc9qqvY4G48H2I9E',
-    appId: '1:499214012499:ios:d5c769d87a92df7ea8f6a6',
-    messagingSenderId: '499214012499',
-    projectId: 'saqqar-app1',
-    storageBucket: 'saqqar-app1.firebasestorage.app',
+    apiKey: 'AIzaSyDsdNBFZOvCdWxZ1JW1p2cxuVI8zltRsRA',
+    appId: '1:55105284059:ios:8518bc677c9023356ca9fe',
+    messagingSenderId: '55105284059',
+    projectId: 'saqqar-ai',
+    storageBucket: 'saqqar-ai.firebasestorage.app',
     iosBundleId: 'sa.com.digitalharbor.saqqar',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyB88eSmg6x5HgT8fvnrc9qqvY4G48H2I9E',
-    appId: '1:499214012499:ios:d343b88dbb8793fba8f6a6',
-    messagingSenderId: '499214012499',
-    projectId: 'saqqar-app1',
-    storageBucket: 'saqqar-app1.firebasestorage.app',
+    apiKey: 'AIzaSyDsdNBFZOvCdWxZ1JW1p2cxuVI8zltRsRA',
+    appId: '1:55105284059:ios:e2d8bbac5cc682b66ca9fe',
+    messagingSenderId: '55105284059',
+    projectId: 'saqqar-ai',
+    storageBucket: 'saqqar-ai.firebasestorage.app',
     iosBundleId: 'com.example.saqqarApp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCo71GemDQQazF42nL5wxvtFYlTuzNCdds',
-    appId: '1:499214012499:web:b3b5d2404bfea17fa8f6a6',
-    messagingSenderId: '499214012499',
-    projectId: 'saqqar-app1',
-    authDomain: 'saqqar-app1.firebaseapp.com',
-    storageBucket: 'saqqar-app1.firebasestorage.app',
+    apiKey: 'AIzaSyAnbGVKpTAq8wk5IagehjymNE6qBvW4jbk',
+    appId: '1:55105284059:web:bc30c9ec51dd164f6ca9fe',
+    messagingSenderId: '55105284059',
+    projectId: 'saqqar-ai',
+    authDomain: 'saqqar-ai.firebaseapp.com',
+    storageBucket: 'saqqar-ai.firebasestorage.app',
+    measurementId: 'G-KSRLH5JFD8',
   );
 }
