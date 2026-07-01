@@ -23,9 +23,9 @@
 |---|---|
 | Host app bundle id | `sa.com.digitalharbor.saqqar` |
 | iOS deployment target | `13.0` (already set in the Xcode project) |
-| Firebase project id | `saqqar-app1` |
-| Firebase iOS app id | `1:499214012499:ios:d5c769d87a92df7ea8f6a6` |
-| FCM sender id | `499214012499` |
+| Firebase project id | `saqqar-ai` |
+| Firebase iOS app id | `1:55105284059:ios:8518bc677c9023356ca9fe` |
+| FCM sender id | `55105284059` |
 | App Group id (Share Extension) | `group.sa.com.digitalharbor.saqqar` |
 | Deep-link URL scheme | `saqqar` (e.g. `saqqar://chats/<id>`) |
 | Share redirect URL scheme | `ShareMedia-sa.com.digitalharbor.saqqar` |
@@ -69,9 +69,9 @@ substitute for any of them.
 **This file is NOT in the repo** (it's per-Firebase-app and was never
 downloaded for iOS). Without it `Firebase.initializeApp()` throws on iOS.
 
-1. Firebase Console → project **`saqqar-app1`** → Project settings → your apps
+1. Firebase Console → project **`saqqar-ai`** → Project settings → your apps
    → the **iOS app** with bundle id `sa.com.digitalharbor.saqqar`
-   (app id `1:499214012499:ios:d5c769d87a92df7ea8f6a6`). If the iOS app
+   (app id `1:55105284059:ios:8518bc677c9023356ca9fe`). If the iOS app
    doesn't exist yet, **Add app → iOS** with that exact bundle id.
 2. **Download `GoogleService-Info.plist`.**
 3. In Xcode, drag it into the **`Runner`** group (next to `Info.plist`) →
@@ -99,7 +99,7 @@ This is what bridges FCM → Apple's push service. Skipping it is the #1 reason
    +** → enable **Apple Push Notifications service (APNs)** → download the
    **`.p8`** (you can only download it once — keep it safe). Note the **Key
    ID** and your **Team ID**.
-2. Firebase Console → project `saqqar-app1` → **Project settings → Cloud
+2. Firebase Console → project `saqqar-ai` → **Project settings → Cloud
    Messaging → Apple app configuration → APNs Authentication Key → Upload**.
    Provide the `.p8`, Key ID, and Team ID.
 

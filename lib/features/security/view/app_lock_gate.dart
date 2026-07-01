@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../auth/view_model/auth_cubit.dart';
+import '../../notifications/data/notifications_store.dart';
 import '../view_model/app_lock_cubit.dart';
 import 'app_lock_screen.dart';
 
@@ -39,15 +40,22 @@ class _AppLockGateState extends State<AppLockGate>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Re-engage the lock the moment the app is no longer in the foreground —
-    // on `inactive`/`hidden`/`paused`, BEFORE the OS captures the app-switcher
-    // snapshot — so the snapshot shows the lock, not the user's data.
+    // Re-engage the lock ONLY when the app is actually backgrounded — the
+    // user pressed home or switched to another app (`paused`). We
+    // deliberately do NOT lock on `inactive` / `hidden`: those fire for
+    // transient interruptions that keep the app in the foreground (pulling
+    // down the notification shade, the control center, an incoming-call
+    // overlay, the app-switcher peek). Locking on those made the app demand
+    // a fingerprint every time the user glanced at their notifications.
     switch (state) {
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
         context.read<AppLockCubit>().lock();
       case AppLifecycleState.resumed:
+        // Pick up any notifications the FCM background isolate wrote while
+        // we were away, so the header bell's unread dot is accurate.
+        context.read<NotificationsStore>().reload();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
         break;
     }

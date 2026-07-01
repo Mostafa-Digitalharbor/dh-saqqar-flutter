@@ -111,6 +111,16 @@ class AppStrings {
   String get environment => _t('environment');
   String get changeEnvironment => _t('change_environment');
 
+  // Multi-environment selection (mirrors web's multi-select env dropdown)
+  String get envMultiTitle => _t('env_multi_title');
+  String get envMultiSubtitle => _t('env_multi_subtitle');
+  String get envMultiApply => _t('env_multi_apply');
+  String get envMultiUpdated => _t('env_multi_updated');
+  String get envMultiNone => _t('env_multi_none');
+  String envMultiSelectedCount(int n) =>
+      _isArabic ? '$n بيئة مختارة' : '$n selected';
+  String envMultiExtra(int n) => _isArabic ? '+$n أخرى' : '+$n more';
+
   // Inline pending approvals banner (above composer)
   String get reviewApproval => _t('review_approval');
   String morePendingApprovals(int n) =>
@@ -584,6 +594,31 @@ class AppStrings {
   // Notifications bell (page scaffold)
   String get notifications => _t('notifications');
   String get noNewNotifications => _t('no_new_notifications');
+  String get notificationsClear => _t('notifications_clear');
+  String get notificationsEmptyTitle => _t('notifications_empty_title');
+  String get notificationsEmptyBody => _t('notifications_empty_body');
+  String get notifFilterAll => _t('notif_filter_all');
+  String get notifFilterApprovals => _t('notif_filter_approvals');
+  String get notifFilterTasks => _t('notif_filter_tasks');
+  String get notifFilterReports => _t('notif_filter_reports');
+  String get notifGroupToday => _t('notif_group_today');
+  String get notifGroupYesterday => _t('notif_group_yesterday');
+  String get notifGroupEarlier => _t('notif_group_earlier');
+  String get notificationsSettingTitle => _t('notifications_setting_title');
+  String get notificationsSettingSubtitle =>
+      _t('notifications_setting_subtitle');
+  String get accountUsage => _t('account_usage');
+  String get accountSeePlans => _t('account_see_plans');
+  String get usageTitle => _t('usage_title');
+  String get devicesTitle => _t('devices_title');
+  String get devicesManage => _t('devices_manage');
+  String get devicesEmptyTitle => _t('devices_empty_title');
+  String get devicesEmptyBody => _t('devices_empty_body');
+  String get deviceRevoke => _t('device_revoke');
+  String get deviceRevoked => _t('device_revoked');
+  String get deviceRevokeFailed => _t('device_revoke_failed');
+  String deviceLastSeen(String when) =>
+      _t('device_last_seen').replaceFirst('{when}', when);
 
   // Slash-command sheet (composer "/" menu)
   String get commandsHeader => _t('commands_header');
@@ -1066,6 +1101,10 @@ class AppStrings {
   String get emailLoginHint => _t('email_login_hint');
   String get saveChanges => _t('save_changes');
   String get profileUpdatedToast => _t('profile_updated_toast');
+  // Inline status shown next to a save button so the disabled state reads
+  // as intentional ("nothing changed") rather than broken.
+  String get statusSaved => _t('status_saved');
+  String get statusNoChanges => _t('status_no_changes');
 
   /// "Resend in 53s" — countdown owned by the view.
   String authResendIn(int seconds) =>
@@ -1418,6 +1457,32 @@ const Map<String, String> _en = {
   'filter_needs_approval': 'Needs approval',
   'notifications': 'Notifications',
   'no_new_notifications': 'No new notifications',
+  'notifications_clear': 'Clear all',
+  'notif_filter_all': 'All',
+  'notif_filter_approvals': 'Approvals',
+  'notif_filter_tasks': 'Tasks',
+  'notif_filter_reports': 'Reports',
+  'notif_group_today': 'Today',
+  'notif_group_yesterday': 'Yesterday',
+  'notif_group_earlier': 'Earlier',
+  'notifications_empty_title': 'No notifications yet',
+  'notifications_empty_body':
+      'Approvals, finished tasks, and ready reports will show up here.',
+  'notifications_setting_title': 'Notifications',
+  'notifications_setting_subtitle':
+      'Get notified about approvals, finished tasks, and ready reports.',
+  'account_usage': 'Usage',
+  'account_see_plans': 'See plans',
+  'usage_title': 'Usage',
+  'devices_title': 'Devices',
+  'devices_manage': 'Manage devices',
+  'devices_empty_title': 'No registered devices',
+  'devices_empty_body':
+      'Devices that receive your notifications will appear here.',
+  'device_revoke': 'Sign out device',
+  'device_revoked': 'Device removed.',
+  'device_revoke_failed': "Couldn't remove that device. Please try again.",
+  'device_last_seen': 'Last active {when}',
   'commands_header': 'COMMANDS',
   'commands': 'Commands',
   'no_results': 'No results',
@@ -1744,6 +1809,8 @@ const Map<String, String> _en = {
   'email_login_hint': "Your email is your login and can't be changed here.",
   'save_changes': 'Save changes',
   'profile_updated_toast': 'Your profile was updated.',
+  'status_saved': 'Saved',
+  'status_no_changes': 'No changes',
   'approval_title_cred_storage': 'Credential storage',
   'approval_title_cred_usage': 'Credential usage',
   'approval_title_server_cmd': 'Server command',
@@ -1929,6 +1996,12 @@ const Map<String, String> _en = {
   'project': 'Project',
   'environment': 'Environment',
   'change_environment': 'Change environment',
+  'env_multi_title': 'Environments',
+  'env_multi_subtitle':
+      'Pick one or more environments the agent can use in this conversation.',
+  'env_multi_apply': 'Apply',
+  'env_multi_updated': 'Environments updated.',
+  'env_multi_none': 'No environments selected',
 
   // Live environment confirmation
   'send_to_live': 'Send to live',
@@ -2206,6 +2279,31 @@ const Map<String, String> _ar = {
   'filter_needs_approval': 'بحاجة موافقة',
   'notifications': 'الإشعارات',
   'no_new_notifications': 'لا توجد إشعارات جديدة',
+  'notifications_clear': 'مسح الكل',
+  'notif_filter_all': 'الكل',
+  'notif_filter_approvals': 'موافقات',
+  'notif_filter_tasks': 'مهام',
+  'notif_filter_reports': 'تقارير',
+  'notif_group_today': 'اليوم',
+  'notif_group_yesterday': 'أمس',
+  'notif_group_earlier': 'أقدم',
+  'notifications_empty_title': 'لا توجد إشعارات بعد',
+  'notifications_empty_body':
+      'الموافقات والمهام المكتملة والتقارير الجاهزة هتظهر هنا.',
+  'notifications_setting_title': 'الإشعارات',
+  'notifications_setting_subtitle':
+      'استقبل تنبيهات الموافقات والمهام المكتملة والتقارير الجاهزة.',
+  'account_usage': 'الاستخدام',
+  'account_see_plans': 'عرض الخطط',
+  'usage_title': 'الاستخدام',
+  'devices_title': 'الأجهزة',
+  'devices_manage': 'إدارة الأجهزة',
+  'devices_empty_title': 'لا توجد أجهزة مسجّلة',
+  'devices_empty_body': 'الأجهزة اللي بتستقبل إشعاراتك هتظهر هنا.',
+  'device_revoke': 'تسجيل خروج الجهاز',
+  'device_revoked': 'تم حذف الجهاز.',
+  'device_revoke_failed': 'تعذّر حذف الجهاز. حاول مرة أخرى.',
+  'device_last_seen': 'آخر نشاط {when}',
   'commands_header': 'الأوامر',
   'commands': 'الأوامر',
   'no_results': 'لا نتائج',
@@ -2518,6 +2616,8 @@ const Map<String, String> _ar = {
   'email_login_hint': 'بريدك هو اسم الدخول ولا يمكن تغييره من هنا.',
   'save_changes': 'حفظ التغييرات',
   'profile_updated_toast': 'تم تحديث ملفك الشخصي.',
+  'status_saved': 'تم الحفظ',
+  'status_no_changes': 'لا توجد تغييرات',
   'approval_title_cred_storage': 'تخزين بيانات اعتماد',
   'approval_title_cred_usage': 'استخدام بيانات اعتماد',
   'approval_title_server_cmd': 'أمر خادم',
@@ -2698,6 +2798,11 @@ const Map<String, String> _ar = {
   'project': 'المشروع',
   'environment': 'البيئة',
   'change_environment': 'تغيير البيئة',
+  'env_multi_title': 'البيئات',
+  'env_multi_subtitle': 'اختر بيئة واحدة أو أكثر يمكن للوكيل استخدامها في هذه المحادثة.',
+  'env_multi_apply': 'تطبيق',
+  'env_multi_updated': 'تم تحديث البيئات.',
+  'env_multi_none': 'لم يتم اختيار أي بيئة',
 
   // Live environment confirmation
   'send_to_live': 'إرسال للمباشر',

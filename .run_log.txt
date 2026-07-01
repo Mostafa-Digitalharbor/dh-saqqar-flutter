@@ -1,0 +1,22 @@
+Launching lib\main.dart on sdk gphone64 x86 64 in debug mode...
+Running Gradle task 'assembleDebug'...                            300.1s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...           6.1s
+Error: ADB exited with exit code 1
+Performing Streamed Install
+
+adb.exe: failed to install E:\mostafa\Companies\Digital_Harbor\Saqqar\saqqar_app\build\app\outputs\flutter-apk\app-debug.apk: Failure [INSTALL_FAILED_INSUFFICIENT_STORAGE: Failed to override installation location]
+Uninstalling old version...
+Installing build\app\outputs\flutter-apk\app-debug.apk...        1,074ms
+Error: ADB exited with exit code 1
+Performing Streamed Install
+
+adb.exe: failed to install E:\mostafa\Companies\Digital_Harbor\Saqqar\saqqar_app\build\app\outputs\flutter-apk\app-debug.apk: 
+Exception occurred while executing 'install':
+android.os.ParcelableException: java.io.IOException: Requested internal only, but not enough space
+	at android.util.ExceptionUtils.wrap(ExceptionUtils.java:34)
+	at com.android.server.pm.PackageInstallerService.createSession(PackageInstallerService.java:629)
+	at com.android.server.pm.PackageManagerShellCommand.doCreateSession(PackageManagerShellCommand.java:3691)
+	at com.android.server.pm.PackageManagerShellCommand.doRunInstall(PackageManagerShellCommand.java:1
+Error: Failed to install APK again.
+Error launching application on sdk gphone64 x86 64.

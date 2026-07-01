@@ -113,6 +113,7 @@ class _StubConversationsRepository implements ConversationsRepository {
     bool? deepThink,
     Map<String, dynamic>? context,
     String? environmentId,
+    List<String>? environmentIds,
   }) {
     throw UnimplementedError();
   }

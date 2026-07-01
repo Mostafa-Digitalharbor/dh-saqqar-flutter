@@ -7,6 +7,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/conversations/data/conversations_repository.dart';
+import '../../features/notifications/data/notifications_store.dart';
 import '../../features/vault/data/vault_repository.dart';
 import '../extensions/context_extensions.dart';
 import 'app_toast.dart';
@@ -35,6 +36,7 @@ Future<bool> showSignOutFlow(BuildContext context) async {
   // is rebuilt by the auth-gate redirect and `context.read` would throw.
   final vaultRepo = context.read<VaultRepository>();
   final conversationsRepo = context.read<ConversationsRepository>();
+  final notificationsStore = context.read<NotificationsStore>();
   final authCubit = context.read<AuthCubit>();
   final navigator = Navigator.of(context, rootNavigator: true);
 
@@ -56,6 +58,7 @@ Future<bool> showSignOutFlow(BuildContext context) async {
     conversationsRepo.clearSnapshotCache();
     await conversationsRepo.clearListCache();
     await conversationsRepo.clearDiskCache();
+    await notificationsStore.clearPersisted();
     await authCubit.logout();
   } finally {
     if (navigator.canPop()) navigator.pop();

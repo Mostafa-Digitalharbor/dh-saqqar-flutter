@@ -47,6 +47,17 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<!-- Remote push wake-up. This is exactly what Xcode's
+		     "Background Modes → Remote notifications" capability writes; adding
+		     it here as a plain plist key pre-satisfies that step so the
+		     backend's `content-available` pushes can wake the app in the
+		     background. The Push Notifications *capability* (aps-environment,
+		     in Runner.entitlements) still needs Xcode to wire the entitlements
+		     file into the target — see docs/IOS_FIREBASE_HANDOFF.md. -->
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
 		<!-- speech_to_text on iOS needs both keys: the mic capture is
 		     gated by NSMicrophoneUsageDescription, and the on-device
 		     recognition step is gated by NSSpeechRecognitionUsageDescription.

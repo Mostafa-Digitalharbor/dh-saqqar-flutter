@@ -8,6 +8,7 @@ import 'core/i18n/app_localizations.dart';
 import 'core/i18n/app_strings.dart';
 import 'core/i18n/view_model/locale_cubit.dart';
 import 'core/routing/app_router.dart';
+import 'features/notifications/view_model/notifications_settings_cubit.dart';
 import 'features/push/data/push_notifications_service.dart';
 import 'features/security/view/app_lock_gate.dart';
 import 'core/theme/app_theme.dart';
@@ -110,8 +111,12 @@ class _SaqqarAppState extends State<SaqqarApp> {
         final push = context.read<PushNotificationsService>();
         if (authState.status == AuthStatus.authenticated) {
           // Register the FCM token + start listening once we know who's
-          // signed in (idempotent — safe on every authenticated emit).
-          push.start();
+          // signed in (idempotent — safe on every authenticated emit) — but
+          // only if the user hasn't turned notifications off. The locale
+          // rides along so the backend localizes the text (API_MOBILE_PUSH §9).
+          if (context.read<NotificationsSettingsCubit>().state) {
+            push.start(localeCode: supportedLocale.languageCode);
+          }
         } else if (authState.status == AuthStatus.unauthenticated) {
           context.read<ConversationsCubit>().reset();
           context.read<VaultCubit>().reset();
@@ -119,7 +124,20 @@ class _SaqqarAppState extends State<SaqqarApp> {
           push.stop();
         }
       },
-      child: MaterialApp.router(
+      child: BlocListener<LocaleCubit, Locale?>(
+        // Re-register the push token when the UI language changes so the
+        // backend localizes future notifications to the new language.
+        listenWhen: (prev, curr) => prev?.languageCode != curr?.languageCode,
+        listener: (context, loc) {
+          final code = (loc?.languageCode ??
+                      WidgetsBinding
+                          .instance.platformDispatcher.locale.languageCode) ==
+                  UiStrings.localeArabicCode
+              ? UiStrings.localeArabicCode
+              : UiStrings.localeEnglishCode;
+          context.read<PushNotificationsService>().updateLocale(code);
+        },
+        child: MaterialApp.router(
         title: AppStrings(supportedLocale).appName,
         debugShowCheckedModeBanner: false,
         themeMode: mode.materialMode,
@@ -168,6 +186,7 @@ class _SaqqarAppState extends State<SaqqarApp> {
             ),
           );
         },
+        ),
       ),
     );
   }

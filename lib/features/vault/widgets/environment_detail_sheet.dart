@@ -82,6 +82,16 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
   void _commitRename(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
+    // Skip the PATCH when the name didn't actually change (blur fires even
+    // when the user just tapped in and out) — no point spending the request.
+    final current = context
+        .read<VaultCubit>()
+        .state
+        .data
+        .dataOrNull
+        ?.environmentById(widget.environmentId)
+        ?.name;
+    if (current != null && trimmed == current) return;
     context
         .read<VaultCubit>()
         .updateEnvironment(id: widget.environmentId, name: trimmed);

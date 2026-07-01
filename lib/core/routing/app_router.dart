@@ -12,10 +12,13 @@ import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/auth/view_model/auth_flow_cubit.dart';
 import '../../features/auth/view_model/auth_state.dart';
 import '../../features/billing/view/pricing_screen.dart';
+import '../../features/billing/view/usage_screen.dart';
 import '../../features/chat/view/chat_screen.dart';
 import '../../features/chat/view_model/chat_cubit.dart';
 import '../../features/conversations/data/conversations_repository.dart';
 import '../../features/conversations/view/conversations_screen.dart';
+import '../../features/notifications/view/notifications_inbox_screen.dart';
+import '../../features/push/view/devices_screen.dart';
 import '../../features/share/view/shared_transcript_screen.dart';
 import '../../features/storybook/storybook_screen.dart';
 import '../../features/vault/view/vault_screen.dart';
@@ -117,6 +120,33 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
         pageBuilder: (_, state) => _transitionPage(
           state: state,
           child: const PricingScreen(),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.usagePath,
+        name: RouteNames.usage,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const UsageScreen(),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.notificationsPath,
+        name: RouteNames.notifications,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const NotificationsInboxScreen(),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.devicesPath,
+        name: RouteNames.devices,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const DevicesScreen(),
           kind: _RouteTransitionKind.detail,
         ),
       ),

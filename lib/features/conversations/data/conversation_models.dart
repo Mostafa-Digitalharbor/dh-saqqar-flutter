@@ -293,6 +293,7 @@ class Conversation {
     this.runError,
     this.activeCredential,
     this.environment,
+    this.environments = const <Environment>[],
     this.project,
     this.isArchived = false,
     this.plan,
@@ -341,6 +342,11 @@ class Conversation {
   final String? activeCredential;
 
   final Environment? environment;
+
+  /// All environments bound to this conversation (web allows several).
+  /// [environment] is the primary; this is the full set. Empty when none.
+  final List<Environment> environments;
+
   final Project? project;
 
   /// Plan / quota / feature snapshot for the calling user. Carried on every
@@ -383,6 +389,12 @@ class Conversation {
       environment: env is Map<String, dynamic>
           ? Environment.fromJson(env)
           : null,
+      // ALL bound environments (web supports binding several to one chat).
+      // `environment` above is the primary; this is the full set.
+      environments: (json['environments'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(Environment.fromJson)
+          .toList(),
       project: proj is Map<String, dynamic>
           ? Project.fromJson({
               ...proj,
@@ -432,6 +444,8 @@ class Conversation {
       runError: runError ?? this.runError,
       activeCredential: activeCredential ?? this.activeCredential,
       environment: environment ?? this.environment,
+      // Server-driven — preserved across optimistic copyWith flips.
+      environments: environments,
       project: project ?? this.project,
       plan: plan ?? this.plan,
       needsEnvironment: needsEnvironment ?? this.needsEnvironment,

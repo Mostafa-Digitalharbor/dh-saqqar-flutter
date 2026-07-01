@@ -223,6 +223,19 @@ class _InlineCredentialRequestState extends State<InlineCredentialRequest> {
         .contains(siblingValue);
   }
 
+  /// True when every currently-visible required field carries a value.
+  /// Hidden fields (gated out by [_shouldShow]) and optional fields don't
+  /// block submission. Drives the enabled state of the two submit buttons.
+  bool _requiredFilled(DemoCredentialSchema schema) {
+    for (final field in schema.fields) {
+      if (!field.required) continue;
+      if (!_shouldShow(schema, field)) continue;
+      final c = _controllers['${schema.kind.name}.${field.name}'];
+      if ((c?.text ?? '').trim().isEmpty) return false;
+    }
+    return true;
+  }
+
   @override
   void dispose() {
     for (final c in _controllers.values) {
@@ -312,38 +325,56 @@ class _InlineCredentialRequestState extends State<InlineCredentialRequest> {
             onChanged: (v) => setState(() => _memorize = v),
           ),
           const SizedBox(height: 10),
-          // Secondary row — "Use saved" + "Save and continue". Both ghost
-          // buttons so the primary action (provide + dismiss) stays the
-          // most visually prominent below.
-          Row(
-            children: [
-              Expanded(
-                child: GhostButton(
-                  label: context.tr.useExistingCredential,
-                  icon: AppIcons.archive,
-                  minHeight: 42,
-                  onPressed: widget.onPickSaved,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: GhostButton(
-                  label: context.tr.saveAndContinue,
-                  icon: AppIcons.bolt,
-                  minHeight: 42,
-                  onPressed: () => _submit(continuing: true),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Primary action — full-width Provide credential. Mirrors the
-          // web's "Save Credential" green CTA placement.
-          PrimaryButton(
-            label: context.tr.provideCredential,
-            icon: AppIcons.check,
-            minHeight: 46,
-            onPressed: _submit,
+          // The two submit actions stay disabled until every VISIBLE
+          // required field is filled — submitting blanks would just spend a
+          // credential round-trip (and its approval handshake) for nothing.
+          // "Use saved" is exempt: it doesn't consume the form.
+          AnimatedBuilder(
+            animation: Listenable.merge(_controllers.values.toList()),
+            builder: (context, _) {
+              final canSubmit = _requiredFilled(schema);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Secondary row — "Use saved" + "Save and continue". Both
+                  // ghost buttons so the primary action (provide + dismiss)
+                  // stays the most visually prominent below.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GhostButton(
+                          label: context.tr.useExistingCredential,
+                          icon: AppIcons.archive,
+                          minHeight: 42,
+                          onPressed: widget.onPickSaved,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: GhostButton(
+                          label: context.tr.saveAndContinue,
+                          icon: AppIcons.bolt,
+                          minHeight: 42,
+                          onPressed: canSubmit
+                              ? () => _submit(continuing: true)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Primary action — full-width Provide credential. Mirrors
+                  // the web's "Save Credential" green CTA placement.
+                  PrimaryButton(
+                    label: context.tr.provideCredential,
+                    icon: AppIcons.check,
+                    minHeight: 46,
+                    onPressed: canSubmit ? _submit : null,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

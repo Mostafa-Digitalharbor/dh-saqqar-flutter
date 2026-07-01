@@ -229,6 +229,12 @@ class _CredentialFormState extends State<CredentialForm> {
     return hasUrl ? db : null;
   }
 
+  /// Whether the schema ships a URL/host field at all. When it does, Test
+  /// connection stays disabled until that field has a value — testing
+  /// against a blank endpoint can only fail.
+  bool _hasUrlField(CredentialSchema schema) =>
+      schema.fields.any((f) => _urlFieldNames.contains(f.name));
+
   /// The current URL value from whichever url-shaped field the schema ships.
   String _currentUrl() {
     for (final name in _urlFieldNames) {
@@ -411,22 +417,49 @@ class _CredentialFormState extends State<CredentialForm> {
           // Test connection — opens a real connection to the target
           // service via POST /api/v1/credentials/test/. Lives ABOVE
           // Save so the user can sanity-check before committing.
-          _TestConnectionRow(
-            status: _testStatus,
-            error: _testError,
-            onPressed: (state.actionInFlight ||
-                    _testStatus == _TestStatus.running)
-                ? null
-                : _test,
+          // Rebuild on field edits so Test flips enabled the moment a URL is
+          // typed. Disabled while a write/test is in flight, or when the
+          // schema has a URL field that's still blank.
+          AnimatedBuilder(
+            animation: Listenable.merge(_fieldControllers.values.toList()),
+            builder: (context, _) {
+              final canTest = !(state.actionInFlight ||
+                      _testStatus == _TestStatus.running) &&
+                  (!_hasUrlField(schema) || _currentUrl().isNotEmpty);
+              return _TestConnectionRow(
+                status: _testStatus,
+                error: _testError,
+                onPressed: canTest ? _test : null,
+              );
+            },
           ),
           const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
-                child: PrimaryButton(
-                  label: context.tr.saveCredentialButton,
-                  icon: AppIcons.save,
-                  onPressed: state.actionInFlight ? null : _save,
+                // Save disabled until every required field is filled — a
+                // submit missing a required value just bounces back a 400,
+                // so we don't spend the round-trip. (We deliberately DON'T
+                // diff against the saved payload: secret fields come back
+                // masked, so a value-changed check would wrongly lock the
+                // user out of re-entering a password.)
+                child: AnimatedBuilder(
+                  animation: Listenable.merge(
+                    _fieldControllers.values.toList(),
+                  ),
+                  builder: (context, _) {
+                    final requiredFilled = schema.fields
+                        .where((f) => f.required)
+                        .every((f) =>
+                            _fieldControllers[f.name]!.text.trim().isNotEmpty);
+                    return PrimaryButton(
+                      label: context.tr.saveCredentialButton,
+                      icon: AppIcons.save,
+                      onPressed: (state.actionInFlight || !requiredFilled)
+                          ? null
+                          : _save,
+                    );
+                  },
                 ),
               ),
               if (hasCredential) ...[

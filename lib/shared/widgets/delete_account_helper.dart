@@ -8,6 +8,7 @@ import '../../core/network/api_error_mapper.dart';
 import '../../core/theme/app_icons.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/conversations/data/conversations_repository.dart';
+import '../../features/notifications/data/notifications_store.dart';
 import '../../features/vault/data/vault_repository.dart';
 import '../extensions/context_extensions.dart';
 import 'app_toast.dart';
@@ -41,6 +42,7 @@ Future<bool> showDeleteAccountFlow(BuildContext context) async {
   // the tree on success and `context.read` would throw afterwards.
   final vaultRepo = context.read<VaultRepository>();
   final conversationsRepo = context.read<ConversationsRepository>();
+  final notificationsStore = context.read<NotificationsStore>();
   final authCubit = context.read<AuthCubit>();
   final messenger = ScaffoldMessenger.maybeOf(context);
   final navigator = Navigator.of(context, rootNavigator: true);
@@ -62,6 +64,7 @@ Future<bool> showDeleteAccountFlow(BuildContext context) async {
     conversationsRepo.clearSnapshotCache();
     await conversationsRepo.clearListCache();
     await conversationsRepo.clearDiskCache();
+    await notificationsStore.clearPersisted();
   } catch (e) {
     error = e;
   } finally {

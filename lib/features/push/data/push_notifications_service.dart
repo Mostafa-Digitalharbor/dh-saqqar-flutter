@@ -7,7 +7,22 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/routing/route_names.dart';
+import '../../notifications/data/notifications_store.dart';
 import 'devices_api.dart';
+
+/// Maps an FCM message into the inbox record shape. Top-level so the
+/// background isolate handler can reuse it.
+AppNotification appNotificationFrom(RemoteMessage m) {
+  final n = m.notification;
+  return AppNotification(
+    id: m.messageId ?? '${DateTime.now().microsecondsSinceEpoch}',
+    type: (m.data['type'] as String?) ?? '',
+    title: n?.title ?? '',
+    body: n?.body ?? '',
+    receivedAt: DateTime.now(),
+    conversationId: m.data['conversation_id'] as String?,
+  );
+}
 
 /// Background isolate handler — MUST be a top-level / static function with the
 /// `@pragma('vm:entry-point')` annotation. FCM spins up a fresh isolate to
@@ -17,8 +32,13 @@ import 'devices_api.dart';
 /// delivered + the tap path works on a cold launch.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // No-op: the OS shows the notification; tap routing is handled by
-  // `getInitialMessage` / `onMessageOpenedApp` once the app is running.
+  // The OS shows the notification block itself; tap routing is handled by
+  // `getInitialMessage` / `onMessageOpenedApp` once the app runs. We DO
+  // persist it to the inbox here (SharedPreferences, isolate-safe) so a
+  // notification the user never taps still shows up in the in-app bell.
+  if (message.notification != null) {
+    await NotificationsStore.appendToPrefs(appNotificationFrom(message));
+  }
 }
 
 /// Android notification channels — ids MUST match
@@ -45,11 +65,12 @@ const _updatesChannel = AndroidNotificationChannel(
 /// [stop] on logout (which also unregisters the device server-side so a
 /// signed-out phone stops receiving that user's pushes).
 class PushNotificationsService {
-  PushNotificationsService(this._devices);
+  PushNotificationsService(this._devices, this._store);
 
   static const _tag = 'PushNotificationsService';
 
   final DevicesApi _devices;
+  final NotificationsStore _store;
   final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
 
@@ -60,7 +81,13 @@ class PushNotificationsService {
   /// so [stop] can revoke exactly this device on logout.
   String? _deviceId;
 
-  Future<void> start() async {
+  /// The app's current UI language (`en`/`ar`) sent with the token so the
+  /// backend localizes the OS-rendered notification text. Updated live via
+  /// [updateLocale] when the user switches language.
+  String? _localeCode;
+
+  Future<void> start({String? localeCode}) async {
+    _localeCode = localeCode;
     if (_started) return;
     _started = true;
     try {
@@ -72,6 +99,10 @@ class PushNotificationsService {
       await _initLocalNotifications();
 
       final token = await messaging.getToken();
+      // Debug-only (AppLogger is a no-op in release): surfaces the token so it
+      // can be pasted into Firebase Console → "Send test message" to verify
+      // delivery independently of the backend.
+      AppLogger.info(_tag, 'FCM token = $token');
       if (token != null) await _registerToken(token);
 
       _subs.add(messaging.onTokenRefresh.listen(_registerToken));
@@ -105,11 +136,26 @@ class PushNotificationsService {
     }
   }
 
+  /// Re-registers the current token with a new UI [localeCode] when the user
+  /// switches language mid-session, so the next notification's title/body
+  /// arrives in the right language. No-op until [start] has run / on no change.
+  Future<void> updateLocale(String? localeCode) async {
+    if (!_started || localeCode == _localeCode) return;
+    _localeCode = localeCode;
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) await _registerToken(token);
+    } catch (e, st) {
+      AppLogger.warn(_tag, 'updateLocale failed', error: e, stackTrace: st);
+    }
+  }
+
   Future<void> _registerToken(String token) async {
     try {
       final res = await _devices.register(
         platform: Platform.isIOS ? DevicePlatform.ios : DevicePlatform.android,
         token: token,
+        locale: _localeCode,
       );
       _deviceId = res.device.id;
       AppLogger.info(_tag, 'device registered (created=${res.created})');
@@ -138,6 +184,12 @@ class PushNotificationsService {
     );
     final android = _local.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
+    // Explicitly request the Android 13+ POST_NOTIFICATIONS runtime permission.
+    // FirebaseMessaging.requestPermission alone doesn't reliably surface the
+    // system dialog on every OEM skin (e.g. MIUI/HyperOS) — this one does.
+    // NOTE: Android only shows the dialog ONCE; if the user previously denied
+    // it, this returns false silently and they must enable it in Settings.
+    await android?.requestNotificationsPermission();
     await android?.createNotificationChannel(_approvalsChannel);
     await android?.createNotificationChannel(_updatesChannel);
   }
@@ -148,6 +200,8 @@ class PushNotificationsService {
   void _onForegroundMessage(RemoteMessage message) {
     final notification = message.notification;
     if (notification == null) return; // data-only — nothing user-facing.
+    // Keep it in the in-app inbox so the user can review it later.
+    _store.add(appNotificationFrom(message));
     final isApproval = message.data['type'] == 'approval_required';
     final channel = isApproval ? _approvalsChannel : _updatesChannel;
     _local.show(
@@ -170,6 +224,9 @@ class PushNotificationsService {
   }
 
   void _routeFromMessage(RemoteMessage message) {
+    // A tapped notification (from background/terminated) wasn't captured by
+    // onMessage — record it so it lands in the inbox too. Deduped by id.
+    if (message.notification != null) _store.add(appNotificationFrom(message));
     final convId = message.data['conversation_id'] as String?;
     if (convId != null && convId.isNotEmpty) _openConversation(convId);
   }

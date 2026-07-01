@@ -148,6 +148,7 @@ class ConversationsApi {
     bool? deepThink,
     Map<String, dynamic>? context,
     String? environmentId,
+    List<String>? environmentIds,
   }) async {
     final body = <String, dynamic>{
       if (title != null) 'title': title,
@@ -157,6 +158,10 @@ class ConversationsApi {
       if (context != null) 'context': context,
       if (environmentId != null)
         'environment_id': environmentId.isEmpty ? null : environmentId,
+      // Multi-env binding (web parity) — the full set of environments for
+      // this conversation. Sent as `environment_ids:[uuid]` per the API
+      // contract §3; an empty list clears all bindings.
+      if (environmentIds != null) 'environment_ids': environmentIds,
     };
     final res = await _dio.patch<Map<String, dynamic>>(
       ApiEndpoints.conversationDetail(id),

@@ -79,15 +79,22 @@ class DevicesApi {
   /// `POST /api/v1/devices/` — upsert by token. Returns the row plus a
   /// `created` flag (true when this token was newly registered, false on
   /// the refresh path).
+  ///
+  /// [locale] (`en`/`ar`) is the app's current UI language; the backend
+  /// uses it to localize the notification title/body the OS renders while
+  /// the app is backgrounded (API_MOBILE_PUSH.md §4/§9). Omit to let the
+  /// server fall back to the most recent device locale (default English).
   Future<({DeviceRow device, bool created})> register({
     required DevicePlatform platform,
     required String token,
     String? appVersion,
+    String? locale,
   }) async {
     final body = <String, dynamic>{
       'platform': platform.wire,
       'token': token,
       if (appVersion != null) 'app_version': appVersion,
+      if (locale != null && locale.isNotEmpty) 'locale': locale,
     };
     final res = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.devices,
