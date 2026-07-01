@@ -18,7 +18,7 @@ publish_to: 'none'
 #   • Multi-file attachments in the chat composer.
 #   • Receive ACTION_SEND / ACTION_SEND_MULTIPLE from WhatsApp, Files,
 #     Photos — user picks the target chat instead of auto-opening a new one.
-version: 1.0.22+101
+version: 1.0.24+103
 
 environment:
   sdk: ^3.9.2
@@ -101,7 +101,7 @@ dependencies:
   # the DSN comes from `--dart-define=SAQQAR_SENTRY_DSN=...` so it stays
   # out of source control. When the DSN is missing (e.g. local dev) the
   # SDK quietly no-ops so we never gate boot on a network call.
-  sentry_flutter: ^8.13.0
+  sentry_flutter: ^9.22.0
 
   # Receives Android ACTION_SEND / ACTION_SEND_MULTIPLE intents (and the
   # iOS Share Extension once we ship one) so users can hit "Share → Saqqar"
