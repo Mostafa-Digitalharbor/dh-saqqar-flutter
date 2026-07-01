@@ -2,24 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Push Notifications (APNs). `development` is the standard committed
-	     value; Apple automatically switches to the production APNs environment
-	     for App Store / TestFlight builds, so you do NOT change this to
-	     `production` by hand. This mirrors exactly what Xcode's "Push
-	     Notifications" capability adds.
-	     ⚠️ This entitlements file must be WIRED into the Runner target
-	     (Build Settings → Code Signing Entitlements = Runner/Runner.entitlements).
-	     Xcode sets that automatically the moment you add the App Group or Push
-	     capability in Signing & Capabilities. Until it's wired, neither this
-	     key nor the App Group below take effect. See
-	     docs/IOS_FIREBASE_HANDOFF.md. -->
 	<key>aps-environment</key>
 	<string>development</string>
-	<!-- App Group shared with the Share Extension. MUST exactly match the
-	     group in ios/Share Extension/ShareExtension.entitlements and the
-	     group registered on the Apple Developer portal.
-	     receive_sharing_intent derives it from the host bundle id:
-	     group.<bundle id> = group.sa.com.digitalharbor.saqqar -->
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.sa.com.digitalharbor.saqqar</string>

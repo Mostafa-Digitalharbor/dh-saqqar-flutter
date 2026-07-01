@@ -177,6 +177,8 @@ flutter:
           weight: 400
         - asset: assets/fonts/JetBrainsMono-Medium.ttf
           weight: 500
+  config:
+    enable-swift-package-manager: false
 
 # App-icon generator config — points at the composed SAQQÂR wordmark
 # (navy on a white rounded square, padded inside the tile so it isn't

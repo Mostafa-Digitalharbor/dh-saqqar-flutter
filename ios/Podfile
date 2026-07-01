@@ -36,11 +36,24 @@ target 'Runner' do
   end
 end
 
+target 'Share Extension' do
+  use_frameworks!
+  inherit! :search_paths
+  pod 'receive_sharing_intent', :path => '.symlinks/plugins/receive_sharing_intent/ios'
+end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+      # receive_sharing_intent's SwiftReceiveSharingIntentPlugin calls
+      # addApplicationDelegate, which the compiler forbids in extension targets.
+      # Disabling the extension-only API check for this pod lets it compile for
+      # the Share Extension without changing the plugin source.
+      if target.name.include?('receive_sharing_intent')
+        config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'NO'
+      end
     end
   end
 end
