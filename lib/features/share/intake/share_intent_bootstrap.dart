@@ -105,6 +105,15 @@ class _ShareIntentBootstrapState extends State<ShareIntentBootstrap> {
   List<File> _toFiles(List<SharedMediaFile> media) {
     final out = <File>[];
     for (final m in media) {
+      // Skip non-file payloads. Now that the Android filter accepts `text/*`
+      // (so WhatsApp documents with a text-ish MIME show Saqqar), a shared
+      // plain-text MESSAGE or link can also reach us — those arrive with
+      // `type == text`/`url` and put the CONTENT (not a path) in `m.path`,
+      // so `File(m.path)` would point at a file that doesn't exist. Only
+      // real file/image/video payloads carry a usable path.
+      if (m.type == SharedMediaType.text || m.type == SharedMediaType.url) {
+        continue;
+      }
       final path = m.path;
       if (path.isEmpty) continue;
       out.add(File(path));

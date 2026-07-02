@@ -50,23 +50,26 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             <!-- "Share to Saqqar" entry point. Surfaces the app in the
-                 system share sheet (WhatsApp, Photos, Files, etc.). The
-                 mime-types match what the chat composer already accepts:
-                 images for inline preview, PDFs / Office docs / CSVs for
-                 the agent to read. Wildcard image/* + application/* cover
-                 the long tail without enumerating every sub-type. -->
+                 system share sheet (WhatsApp, Photos, Files, etc.).
+
+                 IMPORTANT: use TOP-LEVEL wildcards, not enumerated subtypes.
+                 WhatsApp (and many apps) share documents with a MIME type
+                 that isn't a "nice" one — e.g. a PDF often comes through as
+                 `application/octet-stream`, a CSV as `text/plain`, etc. An
+                 earlier version listed specific subtypes (application/pdf,
+                 …xlsx, text/csv) and so Saqqar simply DID NOT APPEAR in
+                 WhatsApp's share sheet for those files. `application/*` +
+                 `text/*` + `image/*` match every document/image the agent
+                 can read. Non-file payloads (a shared plain-text message /
+                 link) are filtered out on the Dart side in
+                 ShareIntentBootstrap._toFiles, so a stray text share can't
+                 open the picker with a broken "file". -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>
-                <data android:mimeType="application/pdf"/>
-                <data android:mimeType="application/msword"/>
-                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>
-                <data android:mimeType="application/vnd.ms-excel"/>
-                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>
-                <data android:mimeType="text/csv"/>
-                <data android:mimeType="text/comma-separated-values"/>
-                <data android:mimeType="text/tab-separated-values"/>
+                <data android:mimeType="application/*"/>
+                <data android:mimeType="text/*"/>
             </intent-filter>
             <!-- Multi-file share — Photos "Share 4 images" etc. The
                  receive_sharing_intent plugin demands a separate filter
@@ -76,14 +79,8 @@
                 <action android:name="android.intent.action.SEND_MULTIPLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>
-                <data android:mimeType="application/pdf"/>
-                <data android:mimeType="application/msword"/>
-                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>
-                <data android:mimeType="application/vnd.ms-excel"/>
-                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>
-                <data android:mimeType="text/csv"/>
-                <data android:mimeType="text/comma-separated-values"/>
-                <data android:mimeType="text/tab-separated-values"/>
+                <data android:mimeType="application/*"/>
+                <data android:mimeType="text/*"/>
             </intent-filter>
         </activity>
         <!-- Force the Skia rendering backend (disable Impeller).
