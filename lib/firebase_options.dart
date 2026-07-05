@@ -60,11 +60,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDsdNBFZOvCdWxZ1JW1p2cxuVI8zltRsRA',
-    appId: '1:55105284059:ios:8518bc677c9023356ca9fe',
+    appId: '1:55105284059:ios:5a90498c2e57fa3d6ca9fe',
     messagingSenderId: '55105284059',
     projectId: 'saqqar-ai',
     storageBucket: 'saqqar-ai.firebasestorage.app',
-    iosBundleId: 'sa.com.digitalharbor.saqqar',
+    iosBundleId: 'sa.com.digitalharbor.saqqarapp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
