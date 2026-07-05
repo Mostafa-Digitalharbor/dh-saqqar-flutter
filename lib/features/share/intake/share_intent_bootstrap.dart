@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../../core/constants/ui_strings.dart';
@@ -45,23 +47,35 @@ class ShareIntentBootstrap extends StatefulWidget {
 
 class _ShareIntentBootstrapState extends State<ShareIntentBootstrap> {
   static const _tag = 'ShareIntentBootstrap';
+  static const _iosShareChannel = MethodChannel('saqqar/share_intake');
 
   StreamSubscription<List<SharedMediaFile>>? _sub;
+  late final WidgetsBindingObserver _shareLifecycleObserver;
+  bool _isPollingNativeShare = false;
 
   @override
   void initState() {
     super.initState();
+    _shareLifecycleObserver = _ShareLifecycleObserver(
+      onResumed: _pollNativeIosAppGroupMedia,
+    );
+    WidgetsBinding.instance.addObserver(_shareLifecycleObserver);
     // Cold-start handoff: if the app was launched FROM the share sheet
     // (process wasn't running before), the initial payload arrives via
     // `getInitialMedia` instead of the stream.
     _consumeInitialMedia();
+    unawaited(_pollNativeIosAppGroupMedia());
     // Warm-start handoff: the app was already running (foreground or
     // background); the stream fires for every subsequent share.
     _sub = ReceiveSharingIntent.instance.getMediaStream().listen(
       _onMedia,
       onError: (Object error, StackTrace st) {
-        AppLogger.warn(_tag, 'getMediaStream error',
-            error: error, stackTrace: st);
+        AppLogger.warn(
+          _tag,
+          'getMediaStream error',
+          error: error,
+          stackTrace: st,
+        );
       },
     );
   }
@@ -76,8 +90,62 @@ class _ShareIntentBootstrapState extends State<ShareIntentBootstrap> {
       // housekeeping call we don't gate the flow on.
       unawaited(ReceiveSharingIntent.instance.reset());
     } catch (e, st) {
-      AppLogger.warn(_tag, 'getInitialMedia failed',
-          error: e, stackTrace: st);
+      AppLogger.warn(_tag, 'getInitialMedia failed', error: e, stackTrace: st);
+    }
+  }
+
+  Future<void> _pollNativeIosAppGroupMedia() async {
+    if (!Platform.isIOS || !mounted) return;
+    if (_isPollingNativeShare) return;
+
+    _isPollingNativeShare = true;
+    try {
+      for (var attempt = 0; attempt < 20; attempt += 1) {
+        final consumed = await _consumeNativeIosAppGroupMedia();
+        if (consumed) return;
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        if (!mounted) return;
+      }
+    } finally {
+      _isPollingNativeShare = false;
+    }
+  }
+
+  Future<bool> _consumeNativeIosAppGroupMedia() async {
+    if (!Platform.isIOS || !mounted) return false;
+
+    try {
+      final jsonPayload = await _iosShareChannel.invokeMethod<String>(
+        'peekSharedMedia',
+      );
+      if (jsonPayload == null || jsonPayload.isEmpty) return false;
+
+      final decoded = jsonDecode(jsonPayload);
+      if (decoded is! List) return false;
+
+      final files = <File>[];
+      for (final item in decoded) {
+        if (item is! Map) continue;
+        final type = item['type'] as String?;
+        if (type == 'text' || type == 'url') continue;
+        final rawPath = item['path'] as String?;
+        final path = _normalizeSharedPath(rawPath);
+        if (path == null || path.isEmpty) continue;
+        files.add(File(path));
+      }
+
+      if (files.isEmpty) {
+        AppLogger.info(_tag, 'received iOS app-group share with no files');
+        return false;
+      }
+
+      if (!mounted) return false;
+      context.read<ShareIntakeService>().stage(files);
+      unawaited(_iosShareChannel.invokeMethod<void>('clearSharedMedia'));
+      return true;
+    } catch (e, st) {
+      AppLogger.warn(_tag, 'takeSharedMedia failed', error: e, stackTrace: st);
+      return false;
     }
   }
 
@@ -116,9 +184,18 @@ class _ShareIntentBootstrapState extends State<ShareIntentBootstrap> {
       }
       final path = m.path;
       if (path.isEmpty) continue;
-      out.add(File(path));
+      out.add(File(_normalizeSharedPath(path) ?? path));
     }
     return out;
+  }
+
+  String? _normalizeSharedPath(String? rawPath) {
+    if (rawPath == null || rawPath.isEmpty) return null;
+    final uri = Uri.tryParse(rawPath);
+    if (uri != null && uri.scheme == 'file') {
+      return uri.toFilePath();
+    }
+    return rawPath;
   }
 
   /// Tapped on Cancel inside the picker. Drops the staged batch and
@@ -141,14 +218,14 @@ class _ShareIntentBootstrapState extends State<ShareIntentBootstrap> {
   /// `GoRouter.of(context)` throws "No GoRouter found in context".
   void _pickDestination(ShareDestination dest) {
     if (!mounted) return;
-    final targetId =
-        dest.isNew ? UiStrings.routeNewConversation : dest.id!;
+    final targetId = dest.isNew ? UiStrings.routeNewConversation : dest.id!;
     context.read<ShareIntakeService>().deliverTo(targetId);
     appRouter?.go(RouteNames.chatPath(targetId));
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(_shareLifecycleObserver);
     _sub?.cancel();
     super.dispose();
   }
@@ -176,13 +253,23 @@ class _ShareIntentBootstrapState extends State<ShareIntentBootstrap> {
           // chat picker; the staged batch sits in the service until
           // they auth, then the BlocListener-driven rebuild surfaces
           // the overlay).
-          _SharePickerOverlay(
-            onCancel: _cancel,
-            onPick: _pickDestination,
-          ),
+          _SharePickerOverlay(onCancel: _cancel, onPick: _pickDestination),
         ],
       ),
     );
+  }
+}
+
+class _ShareLifecycleObserver extends WidgetsBindingObserver {
+  _ShareLifecycleObserver({required this.onResumed});
+
+  final Future<void> Function() onResumed;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(onResumed());
+    }
   }
 }
 
@@ -193,10 +280,7 @@ class _ShareIntentBootstrapState extends State<ShareIntentBootstrap> {
 /// Renders `SizedBox.shrink()` in every other case so it doesn't steal
 /// gestures from the underlying app.
 class _SharePickerOverlay extends StatelessWidget {
-  const _SharePickerOverlay({
-    required this.onCancel,
-    required this.onPick,
-  });
+  const _SharePickerOverlay({required this.onCancel, required this.onPick});
 
   final VoidCallback onCancel;
   final ValueChanged<ShareDestination> onPick;
@@ -205,7 +289,8 @@ class _SharePickerOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final intake = context.watch<ShareIntakeService>();
     final auth = context.watch<AuthCubit>().state;
-    final shouldShow = intake.hasStaged &&
+    final shouldShow =
+        intake.hasStaged &&
         intake.targetChatId == null &&
         auth.status == AuthStatus.authenticated;
     if (!shouldShow) return const SizedBox.shrink();
