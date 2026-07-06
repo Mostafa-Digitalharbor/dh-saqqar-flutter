@@ -95,6 +95,12 @@ android/app/release/
 # project root by accident.
 **/google-services.json
 **/GoogleService-Info.plist
+# EXCEPTION: the iOS Runner config is intentionally committed. This is a
+# PRIVATE repo and the values are client-side identifiers that ship inside
+# every iOS build anyway (not real secrets). Committing it means teammates
+# get it on `git pull` — no manual placement needed. Do NOT move this repo
+# to a public host without removing this file + rotating via Firebase.
+!ios/Runner/GoogleService-Info.plist
 
 # ── Local environment overrides ──────────────────────────────────
 # `.env*` covers any dotenv variants. `.env.example` is whitelisted
