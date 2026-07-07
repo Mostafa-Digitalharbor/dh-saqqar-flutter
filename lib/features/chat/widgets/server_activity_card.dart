@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
-import '../../../core/constants/ui_strings.dart';
+import '../../../shared/widgets/code_plate.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -127,7 +127,7 @@ class _ServerActivityCardState extends State<ServerActivityCard> {
           //    when collapsed, e.g. to scan across multiple cards) ────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-            child: _CodePlate(
+            child: CodePlate(
               text: a.command,
               accent: accent,
               maxLines: _expanded ? null : 2,
@@ -148,13 +148,13 @@ class _ServerActivityCardState extends State<ServerActivityCard> {
                         if (a.stdout.isNotEmpty) ...[
                           const _SectionLabel(text: 'stdout'),
                           const SizedBox(height: 6),
-                          _CodePlate(text: a.stdout, accent: s.text),
+                          CodePlate(text: a.stdout, accent: s.text),
                           const SizedBox(height: 10),
                         ],
                         if (a.stderr.isNotEmpty) ...[
                           const _SectionLabel(text: 'stderr', danger: true),
                           const SizedBox(height: 6),
-                          _CodePlate(text: a.stderr, accent: AppColors.danger),
+                          CodePlate(text: a.stderr, accent: AppColors.danger),
                           const SizedBox(height: 10),
                         ],
                         Row(
@@ -203,47 +203,6 @@ class _SectionLabel extends StatelessWidget {
         fontSize: 9,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.0,
-      ),
-    );
-  }
-}
-
-class _CodePlate extends StatelessWidget {
-  const _CodePlate({
-    required this.text,
-    required this.accent,
-    this.maxLines,
-  });
-
-  final String text;
-  final Color accent;
-
-  /// When non-null, the plate clips after this many lines (with an
-  /// ellipsis). Used in the collapsed header so a long command doesn't
-  /// blow up the card height — the user still gets the first ~2 lines
-  /// and can expand for the full thing.
-  final int? maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: s.codePlate,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: s.border),
-      ),
-      child: SelectableText(
-        text,
-        maxLines: maxLines,
-        style: context.text.bodySmall?.copyWith(
-          fontFamily: UiStrings.monospaceFontFamily,
-          color: accent,
-          height: 1.5,
-          fontSize: 12,
-        ),
       ),
     );
   }

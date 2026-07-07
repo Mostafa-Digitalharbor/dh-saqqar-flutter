@@ -145,7 +145,14 @@ class ChatAppBarTitle extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 220),
+                            // Cap derived from screen width (was a fixed
+                            // 220) so a long env name can't exceed the title
+                            // slot and overflow the subtitle row on ~320px
+                            // phones, while still capping on roomy screens.
+                            constraints: BoxConstraints(
+                              maxWidth: (MediaQuery.sizeOf(context).width * 0.5)
+                                  .clamp(120.0, 220.0),
+                            ),
                             child: Text(
                               activeCredentialLabel,
                               maxLines: 1,

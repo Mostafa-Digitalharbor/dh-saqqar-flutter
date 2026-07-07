@@ -83,6 +83,13 @@ class ChatMarkdown extends StatelessWidget {
       tableHead: base?.copyWith(fontWeight: FontWeight.w700),
       tableBody: base,
       tableBorder: TableBorder.all(color: s.cardBorder, width: 1),
+      // IntrinsicColumnWidth (not the default FlexColumnWidth) makes each
+      // column size to its content AND opts the whole table into
+      // flutter_markdown's built-in horizontal SingleChildScrollView, so a
+      // wide agent table (many Odoo columns) scrolls sideways instead of
+      // overflowing the chat bubble. Fenced code blocks already scroll
+      // horizontally by default in the package.
+      tableColumnWidth: const IntrinsicColumnWidth(),
       tableCellsPadding: const EdgeInsets.symmetric(
         horizontal: 10,
         vertical: 6,

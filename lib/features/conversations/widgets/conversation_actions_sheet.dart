@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/conversation_models.dart';
 import 'conversation_action.dart';
 
@@ -67,16 +67,7 @@ class ConversationActionsSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 64,
-                height: 3,
-                decoration: const BoxDecoration(
-                  gradient: AppGradients.primaryCta,
-                  borderRadius: BorderRadius.all(Radius.circular(999)),
-                ),
-              ),
-            ),
+            const SheetDragHandle(),
             const SizedBox(height: 18),
             Text(
               tr.longPressActionsTitle,

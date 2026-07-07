@@ -6,16 +6,8 @@ class UiStrings {
 
   static const routeNewConversation = 'new';
   static const newConversationId = 'new';
-  static const fallbackCredential = 'gac-staging';
   static const none = 'none';
   static const monospaceFontFamily = 'monospace';
-
-  static const demoUsername = 'test';
-  static const demoUserInitial = 'T';
-  static const demoAttachmentName = 'screenshot.png';
-  static const demoAttachmentKind = 'Image';
-  static const demoAttachmentSize = '242 KB';
-  static const demoAutoApprovedTool = 'auto_approved_plan';
 
   static const localeEnglishCode = 'en';
   static const localeArabicCode = 'ar';

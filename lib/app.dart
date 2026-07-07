@@ -181,13 +181,49 @@ class _SaqqarAppState extends State<SaqqarApp> {
             // Navigator — the lock screen's sign-out dialog still resolves.
             child: AppLockGate(
               child: ShareIntentBootstrap(
-                child: child ?? const SizedBox.shrink(),
+                // Global "tap a blank area to dismiss the keyboard". iOS has
+                // no system button to hide the soft keyboard (Android's back
+                // gesture does), so without this a user can get stuck with
+                // the keyboard covering the UI on any screen that lacks an
+                // obvious "done" affordance.
+                child: _DismissKeyboardOnTap(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
             ),
           );
         },
         ),
       ),
+    );
+  }
+}
+
+/// Root wrapper that unfocuses the active text field when the user taps a
+/// blank area, dismissing the soft keyboard.
+///
+/// Primarily an iOS fix: unlike Android (whose system back gesture hides
+/// the keyboard), iOS offers no built-in way to dismiss it, so a field on a
+/// screen without an explicit "done" affordance can trap the user with the
+/// keyboard covering the UI. A translucent tap recognizer at the app root
+/// catches taps that aren't consumed by a button, field, or scroll/drag
+/// gesture and clears the focus. Tap-only, so it never competes with the
+/// swipe-to-archive Dismissible, drawers, or list scrolling.
+class _DismissKeyboardOnTap extends StatelessWidget {
+  const _DismissKeyboardOnTap({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      // Translucent so taps landing on non-interactive blank space still
+      // reach this recognizer; interactive children (buttons/fields) win
+      // the gesture arena and keep working normally.
+      behavior: HitTestBehavior.translucent,
+      excludeFromSemantics: true,
+      child: child,
     );
   }
 }

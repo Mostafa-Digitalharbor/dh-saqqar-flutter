@@ -33,6 +33,7 @@ class ChatSidebarDrawer extends StatefulWidget {
     required this.onPickConversation,
     required this.onNewConversation,
     required this.onOpenVault,
+    required this.onGoHome,
     required this.onClose,
   });
 
@@ -40,6 +41,12 @@ class ChatSidebarDrawer extends StatefulWidget {
   final ValueChanged<String> onPickConversation;
   final VoidCallback onNewConversation;
   final VoidCallback onOpenVault;
+
+  /// Fired when the user taps the Saqqar wordmark at the top of the
+  /// drawer — the chat screen closes the drawer and jumps to /chats
+  /// ("home"). Delegated like every other navigation action so the
+  /// screen keeps sole ownership of routing.
+  final VoidCallback onGoHome;
 
   /// Fired when the user taps the X button. The drawer lives inside
   /// the chat screen's Stack (NOT a route) so we can't `Navigator.pop`
@@ -96,7 +103,17 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
               padding: const EdgeInsets.fromLTRB(18, 14, 12, 10),
               child: Row(
                 children: [
-                  const SaqqarLogo(height: 24),
+                  // Tapping the wordmark goes home (/chats). Wrapped in a
+                  // borderless InkWell so it reads as tappable without
+                  // adding chrome around the logo.
+                  InkWell(
+                    onTap: widget.onGoHome,
+                    borderRadius: AppRadius.buttonR,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                      child: SaqqarLogo(height: 24),
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
                     tooltip: context.tr.close,

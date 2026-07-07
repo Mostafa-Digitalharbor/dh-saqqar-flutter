@@ -155,7 +155,10 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          _AmbientBackdrop(animation: _entrance, isLight: isLight),
+          // Plain splash backdrop (the animated cyan/purple radial glow was
+          // retired on user request 2026-07-06 for a cleaner look) — the
+          // Scaffold's solid [bg] shows through, and the logo zoom-in below
+          // carries the motion on its own.
           // Wordmark only — the circular "S" icon was retired on user
           // request. The entrance scale/fade animation that used to land
           // on the icon now lands on the wordmark itself so the splash
@@ -167,13 +170,27 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
                 final scale = reduceMotion ? 1.0 : _scale.value;
                 final fade = reduceMotion ? 1.0 : _fade.value;
                 final dy = reduceMotion ? 0.0 : _wordmarkSlide.value;
+                // The framing card settles in a touch more gently than the
+                // logo's dramatic zoom: a small 0.94 → 1.0 scale so the card
+                // never "pops", while the logo keeps its full 0.25 → 1.0
+                // expand-into-focus inside it.
+                final cardT = reduceMotion
+                    ? 1.0
+                    : Curves.easeOut.transform(_entrance.value);
+                final cardScale = 0.94 + 0.06 * cardT;
                 return Opacity(
                   opacity: fade,
-                  child: Transform.translate(
-                    offset: Offset(0, dy),
-                    child: Transform.scale(
-                      scale: scale,
-                      child: _Wordmark(isLight: isLight),
+                  child: Transform.scale(
+                    scale: cardScale,
+                    child: _SplashLogoCard(
+                      isLight: isLight,
+                      child: Transform.translate(
+                        offset: Offset(0, dy),
+                        child: Transform.scale(
+                          scale: scale,
+                          child: _Wordmark(isLight: isLight),
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -192,6 +209,47 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
   }
 }
 
+/// Thin, elegant frame behind the zooming logo. Deliberately understated so
+/// it reads as a refined mount for the mark, not a competing surface: a
+/// faint surface fill, a hairline border, generously rounded corners, and a
+/// soft drop shadow for a little depth. Theme-aware via [isLight].
+class _SplashLogoCard extends StatelessWidget {
+  const _SplashLogoCard({required this.isLight, required this.child});
+
+  final bool isLight;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = isLight ? AppColors.lightSurface : AppColors.darkSurface;
+    final border = isLight ? AppColors.lightBorder : AppColors.darkBorder;
+    final maxW = MediaQuery.sizeOf(context).width * 0.82;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxW.clamp(0, 420)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 30),
+        decoration: BoxDecoration(
+          // Barely-there fill so the card lifts off the plain backdrop
+          // without looking like a solid panel.
+          color: fill.withValues(alpha: isLight ? 0.55 : 0.45),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: border.withValues(alpha: isLight ? 0.9 : 0.8),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isLight ? 0.05 : 0.35),
+              blurRadius: 30,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
 class _Wordmark extends StatelessWidget {
   const _Wordmark({required this.isLight});
 
@@ -202,8 +260,11 @@ class _Wordmark extends StatelessWidget {
     // The brand lockup is a wide (~3.9:1) hexagon-mark + wordmark, so size
     // it by available width — cap the height at 96 dp but shrink it so the
     // lockup never runs past ~78 % of the screen on narrow phones.
-    final maxW = MediaQuery.sizeOf(context).width * 0.78;
-    final logoHeight = (maxW / 3.9).clamp(48.0, 96.0);
+    // Sized against a slightly tighter fraction than before (was 0.78) so
+    // the lockup sits comfortably inside the framing card's padding without
+    // crowding its rounded edges on narrow phones.
+    final maxW = MediaQuery.sizeOf(context).width * 0.60;
+    final logoHeight = (maxW / 3.9).clamp(44.0, 88.0);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -266,44 +327,3 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-/// Soft cyan→purple gradient that breathes behind the logo. Driven by
-/// the same entrance controller so it lands in sync with the wordmark.
-///
-/// The outer stop tracks the surrounding background ([Scaffold] color)
-/// so the gradient fades seamlessly into the splash chrome — pure white
-/// on light mode, dark navy on dark mode. Center alphas are tuned per
-/// theme too: the same 0.18 cyan that reads as "moody glow" on navy
-/// reads as "muddy bruise" on white, so we drop the alpha on light.
-class _AmbientBackdrop extends StatelessWidget {
-  const _AmbientBackdrop({required this.animation, required this.isLight});
-
-  final Animation<double> animation;
-  final bool isLight;
-
-  @override
-  Widget build(BuildContext context) {
-    final outer = isLight ? Colors.white : AppColors.darkBg;
-    final cyanAlpha = isLight ? 0.10 : 0.18;
-    final purpleAlpha = isLight ? 0.06 : 0.10;
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, _) {
-        final t = Curves.easeOut.transform(animation.value);
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(0, -0.15),
-              radius: 0.95 + 0.15 * t,
-              colors: [
-                AppColors.brandCyan.withValues(alpha: cyanAlpha * t),
-                AppColors.brandPurple.withValues(alpha: purpleAlpha * t),
-                outer,
-              ],
-              stops: const [0.0, 0.45, 1.0],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}

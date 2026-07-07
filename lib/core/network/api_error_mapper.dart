@@ -62,8 +62,28 @@ class ApiErrorMapper {
       DioExceptionType.cancel => const CancelledFailure(),
       DioExceptionType.connectionError ||
       DioExceptionType.unknown => const NetworkFailure(),
-      DioExceptionType.badResponse => const UnknownFailure(),
+      // A raw DioException that skipped the ErrorInterceptor wrap (e.g.
+      // `dio.download` for artifacts) still carries the HTTP status — use
+      // it so a 404/403/500 gets its specific message instead of a flat
+      // "something went wrong".
+      DioExceptionType.badResponse => _fromStatus(e.response?.statusCode),
       DioExceptionType.badCertificate => const NetworkFailure(),
+    };
+  }
+
+  /// Maps a bare HTTP status code to the matching [AppFailure]. Used for
+  /// error paths that never went through the [ApiException] wrapping.
+  static AppFailure _fromStatus(int? code) {
+    return switch (code) {
+      401 => const UnauthorizedFailure(),
+      403 => const ForbiddenFailure(),
+      404 => const NotFoundFailure(),
+      409 => const ConflictFailure(),
+      413 => const PayloadTooLargeFailure(),
+      400 || 422 => const ValidationFailure(),
+      429 => const RateLimitFailure(),
+      final c when c != null && c >= 500 => ServerFailure(statusCode: c),
+      _ => const UnknownFailure(),
     };
   }
 

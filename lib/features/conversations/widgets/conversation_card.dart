@@ -3,9 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../shared/animations/typing_dots.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/saqqar_logo.dart';
 import '../../chat/view_model/running_agents_cubit.dart';
 import '../data/conversation_models.dart';
 import '../view_model/conversations_cubit.dart';
@@ -77,22 +80,25 @@ class ConversationCard extends StatelessWidget {
           false,
     );
     // Thinking when the agent is mid-run for this conversation; else live
-    // when it was active recently; else idle.
-    final isThinking = context.select<RunningAgentsCubit, bool>(
+    // when it was active recently; else idle. Sourced from EITHER the
+    // server's `is_running` flag on the list summary (survives leaving the
+    // chat, covers background runs) OR the in-session run tracker (immediate,
+    // before the next list refresh lands).
+    final localRunning = context.select<RunningAgentsCubit, bool>(
       (cubit) => cubit.state.contains(conversation.id),
     );
+    final isThinking = localRunning || conversation.isRunning;
     final status = isThinking
         ? _ConvStatus.thinking
         : (DateTime.now().difference(conversation.updatedAt) <= _kLiveWindow
-            ? _ConvStatus.live
-            : _ConvStatus.idle);
+              ? _ConvStatus.live
+              : _ConvStatus.idle);
 
     final title = conversation.title.trim();
     final preview = conversation.lastMessagePreview.trim();
-    final isAr = context.locale.languageCode == 'ar';
     // Localized fallback only for the avatar's gradient seed when a
     // conversation has no title yet — never shown as text.
-    final projectLabel = isAr ? 'الافتراضي' : 'Default';
+    final projectLabel = context.tr.defaultProjectLabel;
 
     // Real project · environment tag — only when the API actually supplied
     // it. Both parts are optional; we join whatever is present.
@@ -124,7 +130,9 @@ class ConversationCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: needsAttention
                   ? Color.alphaBlend(
-                      s.warning.withValues(alpha: 0.05), s.cardBg)
+                      s.warning.withValues(alpha: 0.05),
+                      s.cardBg,
+                    )
                   : s.cardBg,
               borderRadius: _kCardRadius,
               // Pending cards carry a warm hairline so the "needs approval"
@@ -172,8 +180,11 @@ class ConversationCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 if (isPinned) ...[
-                                  Icon(Icons.push_pin,
-                                      size: 13, color: s.brandCyan),
+                                  Icon(
+                                    Icons.push_pin,
+                                    size: 13,
+                                    color: s.brandCyan,
+                                  ),
                                   const SizedBox(width: 6),
                                 ],
                                 Expanded(
@@ -193,53 +204,90 @@ class ConversationCard extends StatelessWidget {
                                 // line, matching the design's ConversationRow.
                                 Text(
                                   AppDateFormat.relative(
-                                      context, conversation.updatedAt),
+                                    context,
+                                    conversation.updatedAt,
+                                  ),
                                   style: context.text.labelMedium?.copyWith(
                                     color: s.muted,
                                   ),
                                 ),
                               ],
                             ),
-                            if (preview.isNotEmpty) ...[
+                            // While the agent is running for THIS chat the
+                            // preview line becomes a live "Saqqar is working"
+                            // indicator with bouncing cyan dots; it reverts to
+                            // the normal last-message preview the moment the
+                            // reply lands (isThinking tracks RunningAgentsCubit).
+                            if (isThinking) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  TypingDots(
+                                    color: s.brandCyan,
+                                    dotSize: 5,
+                                    bounce: true,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // Brand wordmark stands in for the word
+                                  // "Saqqar" so the indicator reads
+                                  // "[SAQQÂR] is working now".
+                                  const SaqqarLogo(height: 15),
+                                  const SizedBox(width: 3),
+                                  Flexible(
+                                    child: Text(
+                                      context.tr.saqqarWorkingNow,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: context.text.bodySmall?.copyWith(
+                                        color: s.brandCyan,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else if (preview.isNotEmpty) ...[
                               const SizedBox(height: 3),
                               Text(
                                 preview,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: context.text.bodySmall
-                                    ?.copyWith(color: s.muted),
+                                style: context.text.bodySmall?.copyWith(
+                                  color: s.muted,
+                                ),
                               ),
                             ],
                             const SizedBox(height: 10),
-                            // Line 1 — pending-approval badge + project ·
-                            // environment. Counts moved to their own line
-                            // below (design request 2026-06-29) so this row
-                            // reads purely as "where this conversation runs".
-                            if (pendingApprovals > 0 || envLabel != null)
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 8,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  // Pending-approval safety badge (real).
-                                  if (pendingApprovals > 0)
-                                    _WarnPill(
-                                      label:
-                                          context.tr.toApprove(pendingApprovals),
-                                    ),
-                                  // Project · environment (only when real).
-                                  // Flexible so a long tag ellipsizes to the
-                                  // available width instead of forcing a fixed
-                                  // 170px row that overflows on narrow screens.
-                                  if (envLabel != null)
-                                    _MetaInline(
-                                      icon: AppIcons.github,
-                                      label: envLabel,
-                                      flexible: true,
-                                    ),
-                                ],
+                            // Meta is a vertical stack of up to three dedicated
+                            // lines (design request 2026-07-06) so a card that
+                            // needs approval reads cleanly top-to-bottom instead
+                            // of wrapping the badge and tag onto one row:
+                            //   1. pending-approval safety badge
+                            //   2. project · environment ("where this runs")
+                            //   3. counts — messages + produced files
+                            // Line 1 — pending-approval badge (real), alone.
+                            if (pendingApprovals > 0)
+                              Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: _WarnPill(
+                                  label: context.tr.toApprove(pendingApprovals),
+                                ),
                               ),
-                            // Line 2 — counts: messages + produced files, on a
+                            // Line 2 — project · environment (only when real).
+                            // Flexible so a long tag ellipsizes to the available
+                            // width instead of overflowing on narrow screens.
+                            if (envLabel != null)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: pendingApprovals > 0 ? 6 : 0,
+                                ),
+                                child: _MetaInline(
+                                  icon: AppIcons.github,
+                                  label: envLabel,
+                                  flexible: true,
+                                ),
+                              ),
+                            // Line 3 — counts: messages + produced files, on a
                             // dedicated row beneath the project/environment.
                             Padding(
                               padding: EdgeInsets.only(
@@ -289,22 +337,15 @@ class ConversationCard extends StatelessWidget {
 }
 
 /// Distinct calm gradient per conversation, derived from its project/title —
-/// ports the Saqqar Design System's `AVATAR_GRADS` + `gradFor`.
-const List<List<Color>> _avatarGrads = [
-  [Color(0xFF1F3C88), Color(0xFF06B6D4)],
-  [Color(0xFF0E7490), Color(0xFF22D3EE)],
-  [Color(0xFF5B21B6), Color(0xFF8B5CF6)],
-  [Color(0xFF155E63), Color(0xFF10B981)],
-  [Color(0xFF1E3A8A), Color(0xFF6366F1)],
-  [Color(0xFF0F766E), Color(0xFF2DD4BF)],
-];
-
+/// ports the Saqqar Design System's `gradFor`. Palette lives in
+/// [AppColors.avatarGradients] so the brand hex has a single home.
 List<Color> _gradFor(String s) {
   var h = 0;
   for (var i = 0; i < s.length; i++) {
     h = (h * 31 + s.codeUnitAt(i)) & 0xffffffff;
   }
-  return _avatarGrads[h % _avatarGrads.length];
+  const grads = AppColors.avatarGradients;
+  return grads[h % grads.length];
 }
 
 /// First Latin or Arabic letter of [s], uppercased; `#` when none.

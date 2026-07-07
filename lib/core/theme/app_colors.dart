@@ -49,4 +49,18 @@ class AppColors {
 
   // Cyan pop shadow (CTA + active rows) — 0 10px 30px rgba(6,182,212,0.18).
   static final Color popShadowCyan = brandCyan.withValues(alpha: 0.18);
+
+  /// Per-conversation avatar gradient palette (ports the design system's
+  /// `AVATAR_GRADS`). Lives here — the one home for brand hex — instead of
+  /// being hand-duplicated inside the conversation card. Reuses the brand /
+  /// status tokens above where the stops match; the remaining stops are the
+  /// palette's own accent blends.
+  static const List<List<Color>> avatarGradients = [
+    [brandNavy, brandCyan],
+    [Color(0xFF0E7490), brandCyanStrong],
+    [Color(0xFF5B21B6), brandPurple],
+    [Color(0xFF155E63), success],
+    [Color(0xFF1E3A8A), Color(0xFF6366F1)],
+    [Color(0xFF0F766E), Color(0xFF2DD4BF)],
+  ];
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_gradients.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/sheet_drag_handle.dart';
 
 /// Bottom-sheet shell shared by every chat sub-flow (credential picker, more
 /// menu, action center, approvals, artifacts). Caps height at 85% of the
@@ -27,16 +27,7 @@ class ChatSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: Container(
-                  width: 64,
-                  height: 3,
-                  decoration: const BoxDecoration(
-                    gradient: AppGradients.primaryCta,
-                    borderRadius: BorderRadius.all(Radius.circular(999)),
-                  ),
-                ),
-              ),
+              const SheetDragHandle(),
               const SizedBox(height: 18),
               Text(
                 title,

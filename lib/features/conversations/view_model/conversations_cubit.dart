@@ -29,11 +29,24 @@ class ConversationsCubit extends Cubit<ConversationsState> {
 
   static const _tag = 'ConversationsCubit';
 
+  /// How many conversations to pull for the Chats list. The API defaults to
+  /// 30, which silently hid roughly half the list for users with many chats
+  /// (the web shows them all). Generous cap that covers virtually every
+  /// account without paging; the screen still paginates the result locally.
+  static const _listLimit = 200;
+
   final ConversationsRepository _repo;
 
   /// Guards against overlapping project/environment enrichment passes when
   /// loads fire in quick succession (mount + pull-to-refresh).
   bool _enriching = false;
+
+  /// Rows already attempted this session — INCLUDING ones that resolved to
+  /// "no bound environment". Tracked so the progressive background pass (and
+  /// on-scroll [enrichMore]) never re-fetches a row that legitimately has no
+  /// project·env tag, which would otherwise loop forever. Cleared on [reset]
+  /// (new user) and [refresh] (user explicitly wants fresh data).
+  final Set<String> _enrichAttempted = <String>{};
 
   /// Guards against overlapping [load] passes. Replaces the old
   /// `state.data is DataLoading` guard: once the offline cache is hydrated
@@ -89,7 +102,7 @@ class ConversationsCubit extends Cubit<ConversationsState> {
   /// has something to show; the screen still filters locally to
   /// decide whether to display them. Pull-to-refresh hits the same
   /// path via [refresh].
-  Future<void> load({bool includeArchived = true}) async {
+  Future<void> load({bool includeArchived = true, bool prefetch = true}) async {
     if (_loading) return;
     _loading = true;
     // Stale-while-revalidate: only show the loading skeleton on a truly
@@ -105,10 +118,10 @@ class ConversationsCubit extends Cubit<ConversationsState> {
       // approvals + files) concurrently — the meta comes from the flat
       // cross-conversation feeds and is best-effort (never blocks/fails the
       // list; yields empty maps on error). No fabricated counts.
-      final listFuture = _repo.list(includeArchived: includeArchived);
+      final listFuture =
+          _repo.list(limit: _listLimit, includeArchived: includeArchived);
       final metaFuture = _repo.conversationMeta();
       final res = await listFuture;
-      final meta = await metaFuture;
       final previous = state.data.dataOrNull;
       final pinned = previous?.pinnedIds ?? const <String>{};
       // Carry over any project/environment context already resolved for a
@@ -125,29 +138,57 @@ class ConversationsCubit extends Cubit<ConversationsState> {
             environmentName: prevById[c.id]?.environmentName,
           ),
       ];
+      // Paint the list the MOMENT it arrives — do NOT also block on the (often
+      // slow) meta feed. On a slow backend the list request itself can take
+      // seconds; waiting additionally for meta before showing anything doubled
+      // the perceived wait. Counts carry over from the previous data and
+      // refresh the instant the meta lands (below).
       emit(state.copyWith(
         data: DataSuccess(
           ConversationsData(
             conversations: conversations,
             pinnedIds: pinned,
             total: res.total,
-            pendingByConv: meta.pendingByConv,
-            filesByConv: meta.filesByConv,
+            pendingByConv: previous?.pendingByConv ?? const {},
+            filesByConv: previous?.filesByConv ?? const {},
           ),
         ),
       ));
       // Persist the fresh list for instant cold-start paint next time.
       _persistCache();
       // Warm every conversation's transcript on disk in the background so
-      // tapping any row opens instantly (no request on open). Gentle by
-      // design — see ConversationsRepository.prefetchSnapshots — so this
-      // never makes the app feel heavy after launch.
-      unawaited(_repo.prefetchSnapshots(
-        [for (final c in conversations) c.id],
-      ));
+      // tapping any row opens instantly (no request on open). ONLY on the
+      // first load / explicit pull-to-refresh — NOT on the silent auto-poll,
+      // where re-firing one snapshot request per conversation every few
+      // seconds would flood the network and make the whole app feel heavy.
+      if (prefetch) {
+        // Only warm the TOP few transcripts (the ones most likely to be
+        // opened). Kept deliberately small: on this backend a single snapshot
+        // can take 10+ seconds, so warming many would tie the (already slow)
+        // server up in background work and starve the user's own foreground
+        // request. The rest open on demand — and repeat opens are instant
+        // from the disk cache anyway.
+        unawaited(_repo.prefetchSnapshots(
+          [for (final c in conversations.take(5)) c.id],
+        ));
+      }
       // Fill in project · environment per row in the background — the list
       // is already on screen; the tags fade in as snapshots resolve.
       unawaited(_enrichContext());
+      // Fold the fresh pending-approval / file counts in when the SEPARATE
+      // meta feed resolves — never blocks the list above. Best-effort:
+      // conversationMeta already yields empty maps on error.
+      unawaited(metaFuture.then((meta) {
+        final cur = state.data.dataOrNull;
+        if (cur == null) return;
+        emit(state.copyWith(
+          data: DataSuccess(cur.copyWith(
+            pendingByConv: meta.pendingByConv,
+            filesByConv: meta.filesByConv,
+          )),
+        ));
+        _persistCache();
+      }));
     } catch (e, st) {
       AppLogger.error(_tag, 'load() failed', error: e, stackTrace: st);
       final failure = ApiErrorMapper.toFailure(e);
@@ -175,11 +216,25 @@ class ConversationsCubit extends Cubit<ConversationsState> {
   /// open behaviour is left exactly as-is.
   Future<void> refresh() async {
     // Drop the guard so an explicit refresh is never swallowed by an
-    // in-flight background load, then blank to the skeleton.
+    // in-flight background load.
     _loading = false;
-    emit(state.copyWith(data: const DataLoading<ConversationsData>()));
-    await load();
+    // A user-driven refresh re-attempts project·env for every row (an env may
+    // have been bound since last pass), so clear the attempted set.
+    _enrichAttempted.clear();
+    // Stale-while-revalidate: keep the current list ON SCREEN and update it
+    // in place. The pull-to-refresh spinner already signals the refresh, so
+    // blanking to an empty skeleton (the old behaviour) just made the app
+    // feel slow and janky. `prefetch: false` — the snapshot cache is already
+    // warm from the first load, so we don't re-flood the network here.
+    await load(prefetch: false);
   }
+
+  /// Lightweight silent revalidation for the auto-poll: refreshes the list
+  /// rows + pending/file counts + `is_running` flags in place, without the
+  /// skeleton blank or the snapshot prefetch flood. Used by the Chats screen's
+  /// periodic timer and its on-resume / on-return hooks so counts, previews,
+  /// and the "Saqqar is working" state update on their own — no manual pull.
+  Future<void> poll() => load(prefetch: false);
 
   /// Resolves the real project · environment for each row from its snapshot
   /// (the list endpoint doesn't carry them) and folds the names back into the
@@ -194,42 +249,72 @@ class ConversationsCubit extends Cubit<ConversationsState> {
   /// docs/backend-requests.md §6 — at which point this whole pass is retired.)
   static const _enrichBatch = 12;
 
+  /// Upper bound on rows enriched PER [_enrichContext] call — one screenful.
+  /// Without this the pass looped over EVERY row, so raising the list limit to
+  /// 200 turned the first open into ~200 per-conversation context requests (a
+  /// heavy N+1 that janked weak devices). Now the initial load resolves just
+  /// the first page's tags; the rest fill in a page at a time via [enrichMore]
+  /// as the user actually pages down.
+  static const _enrichPerCall = 30;
+
   /// Enriches the next batch of rows that still lack project·env tags.
   /// Called by the screen's pagination handler so context is only fetched
   /// for rows the user actually scrolls to.
   Future<void> enrichMore() => _enrichContext();
 
+  /// Breather between enrichment batches so the background pass never
+  /// competes with foreground scrolling — mirrors [prefetchSnapshots]'s gap.
+  static const _enrichBatchGap = Duration(milliseconds: 150);
+
   Future<void> _enrichContext() async {
     if (_enriching) return;
-    final current = state.data.dataOrNull;
-    if (current == null) return;
-    final missing = [
-      for (final c in current.conversations)
-        if ((c.projectName == null || c.projectName!.isEmpty) &&
-            (c.environmentName == null || c.environmentName!.isEmpty))
-          c.id,
-    ];
-    if (missing.isEmpty) return;
-    // Only this pass's batch — the next batch waits for the user to page on.
-    final batch = missing.take(_enrichBatch).toList();
     _enriching = true;
     try {
-      final ctx = await _repo.conversationContext(batch);
-      if (ctx.projectByConv.isEmpty && ctx.envByConv.isEmpty) return;
-      final cur = state.data.dataOrNull;
-      if (cur == null) return;
-      final enriched = [
-        for (final c in cur.conversations)
-          c.copyWith(
-            projectName: ctx.projectByConv[c.id],
-            environmentName: ctx.envByConv[c.id],
-          ),
-      ];
-      emit(state.copyWith(
-        data: DataSuccess(cur.copyWith(conversations: enriched)),
-      ));
-      // Re-persist so the cached rows carry the resolved project · env tags.
-      _persistCache();
+      // Resolve project·env batch-by-batch, but only up to ONE screenful per
+      // call (see [_enrichPerCall]) so the initial open never fires a request
+      // for every one of (up to 200) conversations at once. Rows with no bound
+      // environment resolve to nothing, are marked attempted, and are never
+      // retried. The remaining pages enrich lazily via [enrichMore] on
+      // scroll/paging. (The real fix is the backend embedding project/env in
+      // the list — see the docs/backend-request file — retiring this pass.)
+      var enrichedThisCall = 0;
+      while (enrichedThisCall < _enrichPerCall) {
+        final current = state.data.dataOrNull;
+        if (current == null) return;
+        final missing = [
+          for (final c in current.conversations)
+            if (!_enrichAttempted.contains(c.id) &&
+                (c.projectName == null || c.projectName!.isEmpty) &&
+                (c.environmentName == null || c.environmentName!.isEmpty))
+              c.id,
+        ];
+        if (missing.isEmpty) return;
+        final batch = missing.take(_enrichBatch).toList();
+        enrichedThisCall += batch.length;
+        // Mark attempted BEFORE the await so genuinely-empty rows are never
+        // re-queued by a concurrent trigger (scroll) mid-fetch.
+        _enrichAttempted.addAll(batch);
+        final ctx = await _repo.conversationContext(batch);
+        final cur = state.data.dataOrNull;
+        if (cur == null) return;
+        if (ctx.projectByConv.isNotEmpty || ctx.envByConv.isNotEmpty) {
+          // copyWith uses `?? this.x`, so rows not in this batch's result keep
+          // their existing tags — only resolved rows change.
+          final enriched = [
+            for (final c in cur.conversations)
+              c.copyWith(
+                projectName: ctx.projectByConv[c.id],
+                environmentName: ctx.envByConv[c.id],
+              ),
+          ];
+          emit(state.copyWith(
+            data: DataSuccess(cur.copyWith(conversations: enriched)),
+          ));
+          // Re-persist so the cached rows carry the resolved project · env tags.
+          _persistCache();
+        }
+        await Future<void>.delayed(_enrichBatchGap);
+      }
     } catch (e, st) {
       AppLogger.warn(_tag, 'context enrichment failed', error: e, stackTrace: st);
     } finally {
@@ -242,6 +327,7 @@ class ConversationsCubit extends Cubit<ConversationsState> {
   /// (sign-out OR sign-in as a different account) so the previous
   /// user's conversations don't bleed into the new session.
   void reset() {
+    _enrichAttempted.clear();
     if (state == const ConversationsState()) return;
     emit(const ConversationsState());
   }
@@ -271,6 +357,35 @@ class ConversationsCubit extends Cubit<ConversationsState> {
         actionInFlight: false,
         actionFailure: ConversationsActionFailure(
           action: ConversationsAction.create,
+          failure: ApiErrorMapper.toFailure(e),
+        ),
+      ));
+      return null;
+    }
+  }
+
+  /// Issues (or reuses) a public share link for [id] and returns the
+  /// distributable URL, or null on failure (with [actionFailure] populated
+  /// so the view's listener surfaces a localized toast).
+  ///
+  /// The URL is the same one the web share page consumes
+  /// (`saqqaar.com/share/<token>/`) — the caller hands it straight to the
+  /// native share sheet. Read-only: no list mutation, so we don't touch the
+  /// loaded data, only the `actionInFlight` / `actionFailure` quartet.
+  Future<String?> shareConversation(String id) async {
+    if (state.actionInFlight) return null;
+    emit(state.copyWith(actionInFlight: true, clearActionFailure: true));
+    try {
+      final res = await _repo.share(id);
+      emit(state.copyWith(actionInFlight: false));
+      final url = res.url.isNotEmpty ? res.url : res.path;
+      return url.isEmpty ? null : url;
+    } catch (e, st) {
+      AppLogger.warn(_tag, 'shareConversation failed', error: e, stackTrace: st);
+      emit(state.copyWith(
+        actionInFlight: false,
+        actionFailure: ConversationsActionFailure(
+          action: ConversationsAction.share,
           failure: ApiErrorMapper.toFailure(e),
         ),
       ));

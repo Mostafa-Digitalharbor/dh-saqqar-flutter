@@ -250,10 +250,17 @@ class _FeatureLine extends StatelessWidget {
         children: [
           Icon(on ? AppIcons.check : AppIcons.close, size: 16, color: color),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: context.text.bodyMedium?.copyWith(
-              color: on ? s.text : s.muted,
+          // Expanded + wrap so a long Arabic feature label (at up to 1.4x
+          // text scale on a narrow phone) wraps instead of overflowing the
+          // row — mirrors the sibling _CapRow which already uses Expanded.
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.bodyMedium?.copyWith(
+                color: on ? s.text : s.muted,
+              ),
             ),
           ),
         ],

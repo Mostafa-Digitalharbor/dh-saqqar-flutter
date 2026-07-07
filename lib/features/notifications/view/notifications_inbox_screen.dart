@@ -9,6 +9,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../data/notifications_store.dart';
 
@@ -316,18 +317,7 @@ class _NotificationTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(11),
-                  border:
-                      Border.all(color: accent.color.withValues(alpha: 0.30)),
-                ),
-                child: Icon(accent.icon, size: 18, color: accent.color),
-              ),
+              ColoredIconBox(icon: accent.icon, color: accent.color),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

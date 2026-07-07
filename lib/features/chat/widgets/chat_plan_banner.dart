@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/accent_banner.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../billing/data/plan_models.dart';
 
@@ -35,7 +36,7 @@ class ChatPlanBanner extends StatelessWidget {
 
     if (exceededWindow != null) {
       final word = tr.planWindowWord(exceededWindow!.wire);
-      return _Banner(
+      return AccentBanner(
         color: s.danger,
         icon: AppIcons.warning,
         title: tr.quotaExceededTitle,
@@ -56,7 +57,7 @@ class ChatPlanBanner extends StatelessWidget {
           : identical(near, plan!.week)
               ? 'week'
               : 'month';
-      return _Banner(
+      return AccentBanner(
         color: s.warning,
         icon: AppIcons.warning,
         title: tr.planNearLimitTitle,
@@ -68,67 +69,3 @@ class ChatPlanBanner extends StatelessWidget {
   }
 }
 
-class _Banner extends StatelessWidget {
-  const _Banner({
-    required this.color,
-    required this.icon,
-    required this.title,
-    required this.body,
-    this.action,
-  });
-
-  final Color color;
-  final IconData icon;
-  final String title;
-  final String body;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: context.text.labelLarge?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      body,
-                      style: context.text.bodySmall?.copyWith(color: s.text),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (action != null) ...[
-            const SizedBox(height: 10),
-            Align(alignment: AlignmentDirectional.centerStart, child: action!),
-          ],
-        ],
-      ),
-    );
-  }
-}

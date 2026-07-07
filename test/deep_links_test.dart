@@ -10,11 +10,19 @@ void main() {
       );
     });
 
-    test('parses saqqar://approval/<id>', () {
+    test('parses saqqar://approval/<id>?conversation=<cid>', () {
+      expect(
+        DeepLinks.resolve(
+          Uri.parse('saqqar://approval/apr-1024?conversation=3abf67f5'),
+        ),
+        '/chats/3abf67f5?approval=apr-1024',
+      );
+    });
+
+    test('rejects saqqar://approval/<id> with no conversation query', () {
       expect(
         DeepLinks.resolve(Uri.parse('saqqar://approval/apr-1024')),
-        // apr-1024 belongs to conversation 3abf67f5 in the demo seed.
-        '/chats/3abf67f5?approval=apr-1024',
+        isNull,
       );
     });
 

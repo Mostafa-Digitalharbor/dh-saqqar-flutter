@@ -8,6 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../data/devices_api.dart';
@@ -34,7 +35,12 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
   Future<void> _reload() async {
     final f = context.read<DevicesApi>().list();
-    setState(() => _future = f);
+    // Block body (not an arrow) so the closure returns void — an arrow
+    // `() => _future = f` returns the assigned Future, which trips
+    // setState's "callback must not return a Future" assert.
+    setState(() {
+      _future = f;
+    });
     await f;
   }
 
@@ -145,20 +151,10 @@ class _DeviceRowTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: s.brandCyan.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(11),
-              border: Border.all(color: s.brandCyan.withValues(alpha: 0.30)),
-            ),
-            child: Icon(
-              isIos ? Icons.phone_iphone : Icons.phone_android,
-              size: 19,
-              color: s.brandCyan,
-            ),
+          ColoredIconBox(
+            icon: isIos ? Icons.phone_iphone : Icons.phone_android,
+            color: s.brandCyan,
+            iconSize: 19,
           ),
           const SizedBox(width: 12),
           Expanded(

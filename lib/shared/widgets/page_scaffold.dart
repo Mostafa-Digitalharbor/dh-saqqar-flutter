@@ -79,10 +79,7 @@ class _PageScaffoldState extends State<PageScaffold> {
     return Scaffold(
       body: Column(
         children: [
-          _SaqqarBrandHeader(
-            title: widget.title,
-            elevated: _isScrolled,
-          ),
+          _SaqqarBrandHeader(title: widget.title, elevated: _isScrolled),
           const OfflineBanner(),
           Expanded(
             child: NotificationListener<ScrollNotification>(
@@ -113,10 +110,7 @@ class _PageScaffoldState extends State<PageScaffold> {
 /// mid-run — gives the user cross-tab "Saqqar is busy somewhere"
 /// awareness even when they're not in a chat.
 class _SaqqarBrandHeader extends StatelessWidget {
-  const _SaqqarBrandHeader({
-    required this.title,
-    required this.elevated,
-  });
+  const _SaqqarBrandHeader({required this.title, required this.elevated});
 
   final String title;
   final bool elevated;
@@ -161,60 +155,77 @@ class _SaqqarBrandHeader extends StatelessWidget {
           textDirection: TextDirection.ltr,
           child: SizedBox(
             height: 62,
-            child: Stack(
-              children: [
-                // Centered page title — the design's AppHeader pins the
-                // label dead-centre regardless of the side elements.
-                Positioned.fill(
-                  child: Center(
-                    child: Directionality(
-                      textDirection: appDir,
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 12, 0),
+              child: Row(
+                children: [
+                  // Start side: the brand logo (white on the dark surface via
+                  // SaqqarLogo's own tinting), framed in an elegant rounded
+                  // card. Tapping it jumps to the Chats tab ("home") from any
+                  // root tab.
+                  InkWell(
+                    onTap: () => context.go(RouteNames.chatsPath),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: s.cardBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: s.cardBorder),
+                      ),
+                      child: const SaqqarLogo(height: 27),
+                    ),
+                  ),
+                  // Cross-tab "agent is working" pulse — slides in next to the
+                  // logo whenever any conversation has the agent mid-run.
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 240),
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SizeTransition(
+                        sizeFactor: anim,
+                        axis: Axis.horizontal,
+                        child: child,
+                      ),
+                    ),
+                    child: agentRunning
+                        ? const Padding(
+                            key: ValueKey('agent-pulse'),
+                            padding: EdgeInsetsDirectional.only(start: 8),
+                            child: _AgentPulseDot(),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('idle')),
+                  ),
+                  // Title fills the space between the logo group and the bell
+                  // and centres within it, so the three header elements read
+                  // as evenly spaced (equal gap on each side of the title)
+                  // rather than the title floating dead-centre over an
+                  // unbalanced row. Horizontal padding keeps a long title off
+                  // the two side elements.
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Directionality(
+                        textDirection: appDir,
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: context.text.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 12, 0),
-                  child: Row(
-                    children: [
-                      // Start side: the brand logo (white on the dark
-                      // surface via SaqqarLogo's own tinting).
-                      const SaqqarLogo(height: 26),
-                      // Cross-tab "agent is working" pulse — slides in next
-                      // to the logo whenever any conversation has the agent
-                      // mid-run, slides out when the last one finishes.
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 240),
-                        transitionBuilder: (child, anim) => FadeTransition(
-                          opacity: anim,
-                          child: SizeTransition(
-                            sizeFactor: anim,
-                            axis: Axis.horizontal,
-                            child: child,
-                          ),
-                        ),
-                        child: agentRunning
-                            ? const Padding(
-                                key: ValueKey('agent-pulse'),
-                                padding: EdgeInsetsDirectional.only(start: 8),
-                                child: _AgentPulseDot(),
-                              )
-                            : const SizedBox.shrink(key: ValueKey('idle')),
-                      ),
-                      const Spacer(),
-                      // End side: notifications bell with an unread dot.
-                      const _NotificationsBell(),
-                    ],
-                  ),
-                ),
-              ],
+                  // End side: notifications bell with an unread dot.
+                  const _NotificationsBell(),
+                ],
+              ),
             ),
           ),
         ),
@@ -223,9 +234,9 @@ class _SaqqarBrandHeader extends StatelessWidget {
   }
 }
 
-/// Circular notifications bell in the brand bar's end slot — mirrors the
-/// Saqqar Design System header. Shows a red presence dot ONLY when the inbox
-/// has unread items; tapping it opens the in-app notifications inbox.
+/// Rounded-square notifications bell in the brand bar's end slot — shares its
+/// shape with the chat header's bell. Shows a red count badge ONLY when the
+/// inbox has unread items; tapping it opens the in-app notifications inbox.
 class _NotificationsBell extends StatelessWidget {
   const _NotificationsBell();
 
@@ -240,7 +251,12 @@ class _NotificationsBell extends StatelessWidget {
       child: Tooltip(
         message: tr.notifications,
         child: InkWell(
-          customBorder: const CircleBorder(),
+          // Rounded-square (radius 10) instead of a circle, matching the
+          // chat screen header's bell (_InboxBellTrigger) so both headers
+          // share one affordance shape.
+          customBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           onTap: () => context.pushNamed(RouteNames.notifications),
           child: Stack(
             clipBehavior: Clip.none,
@@ -250,7 +266,7 @@ class _NotificationsBell extends StatelessWidget {
                 height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(10),
                   color: s.cardBg,
                   border: Border.all(color: s.cardBorder),
                 ),
@@ -262,8 +278,10 @@ class _NotificationsBell extends StatelessWidget {
                   top: -2,
                   end: -2,
                   child: Container(
-                    constraints:
-                        const BoxConstraints(minWidth: 16, minHeight: 16),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
@@ -323,7 +341,9 @@ class _AgentPulseDotState extends State<_AgentPulseDot>
       child: AnimatedBuilder(
         animation: _ctrl,
         builder: (_, __) {
-          final t = reduceMotion ? 1.0 : Curves.easeInOut.transform(_ctrl.value);
+          final t = reduceMotion
+              ? 1.0
+              : Curves.easeInOut.transform(_ctrl.value);
           return Container(
             width: 8,
             height: 8,

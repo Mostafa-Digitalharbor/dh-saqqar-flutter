@@ -183,7 +183,11 @@ class AuthApi {
       options: Options(extra: _skipAuth),
     );
     final d = res.data ?? const {};
-    return (d['reset_token'] ?? d['token']) as String;
+    final resetToken = d['reset_token'] ?? d['token'];
+    if (resetToken is! String || resetToken.isEmpty) {
+      throw const FormatException('reset verify response missing reset_token');
+    }
+    return resetToken;
   }
 
   /// Re-send the reset code. `POST /password/reset/resend/ { email }`.
@@ -280,14 +284,23 @@ class AuthApi {
       ApiEndpoints.changePassword,
       data: {'old_password': oldPassword, 'new_password': newPassword},
     );
-    return res.data!['token'] as String;
+    final token = res.data?['token'];
+    if (token is! String || token.isEmpty) {
+      throw const FormatException('changePassword response missing token');
+    }
+    return token;
   }
 
   static AuthSession _sessionFrom(Map<String, dynamic> body) {
-    return AuthSession(
-      token: body['token'] as String,
-      user: AuthUser.fromJson(body['user'] as Map<String, dynamic>),
-    );
+    // Validate instead of hard-casting: a 200 with a malformed body on the
+    // highest-traffic flow (sign-in / register) must surface a clear
+    // "invalid response" error, not an opaque TypeError that reads as a
+    // generic failure and hides whether the credentials were the problem.
+    final session = _sessionOrNull(body);
+    if (session == null) {
+      throw const FormatException('auth response missing token/user');
+    }
+    return session;
   }
 
   /// Like [_sessionFrom] but returns `null` when the response carries no

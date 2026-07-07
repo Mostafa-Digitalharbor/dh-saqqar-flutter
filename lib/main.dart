@@ -9,6 +9,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -79,6 +80,20 @@ Future<void> main() async {
   // without making the architecture less explicit.
   Provider.debugCheckInvalidValueType = null;
 
+  // Read the app version/build ONCE up front so Sentry's `release` tag
+  // tracks pubspec automatically. `PackageInfo.fromPlatform()` needs the
+  // binding, so ensure it here — the call is idempotent, so `_bootApp`
+  // re-ensuring it below is harmless. Guarded so a platform channel
+  // failure degrades to an empty release instead of blocking boot.
+  WidgetsFlutterBinding.ensureInitialized();
+  String release = '';
+  try {
+    final info = await PackageInfo.fromPlatform();
+    release = 'saqqar@${info.version}+${info.buildNumber}';
+  } catch (e, st) {
+    AppLogger.warn('main', 'PackageInfo read failed', error: e, stackTrace: st);
+  }
+
   // Sentry wraps the boot via `appRunner` so any synchronous OR async
   // crash during startup is captured (including the first frame paint).
   // The DSN comes from `--dart-define=SAQQAR_SENTRY_DSN=https://…@…/…`
@@ -92,11 +107,12 @@ Future<void> main() async {
         defaultValue: '',
       );
       // Tag every event with the build environment so the dashboard
-      // can split prod crashes from dev / CI noise. `release` matches
-      // the version line in pubspec.yaml — bump both together so the
-      // Sentry UI groups crashes per version correctly.
+      // can split prod crashes from dev / CI noise. `release` is read
+      // from PackageInfo above so it tracks pubspec automatically — no
+      // hand-edited version string to drift on each bump. Falls back to
+      // Sentry's own auto-detection when the PackageInfo read failed.
       options.environment = kReleaseMode ? 'production' : 'development';
-      options.release = 'saqqar@1.0.24+103';
+      if (release.isNotEmpty) options.release = release;
       // Drop sample rate for transactions to 10% — chat polling fires
       // every 1.5 s; tracing every call would burn the free quota in
       // hours. Errors are always sent (sample rate ignored on those).
@@ -345,7 +361,9 @@ Future<void> _bootApp() async {
           BlocProvider<RunningAgentsCubit>(
             create: (_) => RunningAgentsCubit(),
           ),
-          BlocProvider<ApprovalsCubit>(create: (_) => ApprovalsCubit()),
+          BlocProvider<ApprovalsCubit>(
+            create: (_) => ApprovalsCubit(approvalsApi),
+          ),
           BlocProvider<ConversationsCubit>(
             // `..hydrateFromCache()` paints the persisted Chats list on the
             // first frame so the tab never opens to a bare skeleton when we

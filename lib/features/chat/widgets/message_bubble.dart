@@ -7,13 +7,12 @@ import 'package:flutter/services.dart'
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../../core/theme/app_gradients.dart';
-
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
+import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../inbox/data/artifact_downloader.dart';
 import 'artifact_pill.dart';
@@ -194,13 +193,19 @@ class _AgentMessage extends StatelessWidget {
               children: [
                 Icon(AppIcons.bolt, size: 11, color: s.muted),
                 const SizedBox(width: 4),
-                Text(
-                  message.toolName!,
-                  style: context.text.labelSmall?.copyWith(
-                    color: s.muted,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
-                    letterSpacing: 0.2,
+                // Flexible + ellipsis so an unusually long tool name can't
+                // push this meta row past the screen edge.
+                Flexible(
+                  child: Text(
+                    message.toolName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelSmall?.copyWith(
+                      color: s.muted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ),
               ],
@@ -301,16 +306,7 @@ class _MessageActionsSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 64,
-                height: 3,
-                decoration: const BoxDecoration(
-                  gradient: AppGradients.primaryCta,
-                  borderRadius: BorderRadius.all(Radius.circular(999)),
-                ),
-              ),
-            ),
+            const SheetDragHandle(),
             const SizedBox(height: 18),
             _SheetRow(
               icon: Icons.content_copy_outlined,
@@ -442,10 +438,10 @@ Future<void> _openAttachment(
         message: tr.artifactOpenFailed,
         variant: ToastVariant.error,
       );
-    case ArtifactDownloadFailed():
+    case ArtifactDownloadFailed(:final statusCode):
       AppToast.show(
         context,
-        message: tr.artifactDownloadFailed,
+        message: tr.artifactDownloadMessage(statusCode),
         variant: ToastVariant.error,
       );
   }

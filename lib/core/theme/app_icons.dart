@@ -1,8 +1,14 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/widgets.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class AppIcons {
   AppIcons._();
+
+  /// iPhone-style back chevron. Used app-wide for every back affordance
+  /// (AppBar leadings via the theme's [ActionIconThemeData], plus any
+  /// explicit back buttons) so navigation looks the same on every platform.
+  static const IconData backIos = CupertinoIcons.back;
 
   static const IconData search = LucideIcons.search;
   static const IconData refresh = LucideIcons.refreshCcw;

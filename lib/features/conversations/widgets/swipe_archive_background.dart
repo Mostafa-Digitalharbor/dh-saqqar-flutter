@@ -69,3 +69,47 @@ class SwipeArchiveBackground extends StatelessWidget {
     );
   }
 }
+
+/// Danger-tinted background revealed while the user drags a conversation
+/// row toward the delete direction (physical left). Same shape + motion as
+/// [SwipeArchiveBackground] so both gestures read as "the row peeling back
+/// to expose an action" — only the palette (danger red), icon (trash) and
+/// label differ, signalling the destructive outcome before the confirm
+/// dialog appears.
+class SwipeDeleteBackground extends StatelessWidget {
+  const SwipeDeleteBackground({super.key, required this.alignment});
+
+  final AlignmentDirectional alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    final base = s.danger;
+    return Container(
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: base.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: base.withValues(alpha: 0.40)),
+      ),
+      child: Align(
+        alignment: alignment,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.trash, color: base, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              context.tr.swipeDelete,
+              style: context.text.labelMedium?.copyWith(
+                color: base,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

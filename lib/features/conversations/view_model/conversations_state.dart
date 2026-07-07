@@ -15,6 +15,7 @@ enum ConversationsAction {
   unarchive,
   delete,
   stop,
+  share,
 }
 
 enum ConversationsToast {

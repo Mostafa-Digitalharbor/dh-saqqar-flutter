@@ -129,9 +129,9 @@ class _EnvironmentMultiSelectSheetState
   }
 }
 
-/// One environment row with a leading checkbox. Reuses the badge language
-/// from [EnvironmentPickerSheet] (LIVE / READ-ONLY / AUTO) so the two
-/// pickers read consistently.
+/// One environment row with a leading checkbox. Uses the same badge
+/// language (LIVE / READ-ONLY / AUTO) as the header environment dropdown
+/// so the pickers read consistently.
 class _EnvCheckRow extends StatelessWidget {
   const _EnvCheckRow({
     required this.env,

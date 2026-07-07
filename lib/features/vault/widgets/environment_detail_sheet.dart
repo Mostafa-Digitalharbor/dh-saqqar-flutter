@@ -7,6 +7,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/credential_models.dart';
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
@@ -137,16 +138,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 3,
-                    decoration: const BoxDecoration(
-                      gradient: AppGradients.primaryCta,
-                      borderRadius: BorderRadius.all(Radius.circular(999)),
-                    ),
-                  ),
-                ),
+                const SheetDragHandle(),
                 const SizedBox(height: 14),
                 // Header — breadcrumb ("Project › Env") on the start side,
                 // explicit X close on the end side. Matches the web layout

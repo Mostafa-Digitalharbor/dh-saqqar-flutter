@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
+import 'app_icons.dart';
 import 'app_radius.dart';
 import 'app_typography.dart';
 import 'saqqar_theme_extension.dart';
@@ -81,6 +82,15 @@ class AppTheme {
       dividerTheme: DividerThemeData(color: ext.border, thickness: 1, space: 1),
       splashFactory: InkSparkle.splashFactory,
       visualDensity: VisualDensity.adaptivePlatformDensity,
+
+      // Force the iPhone-style back chevron for EVERY back affordance on
+      // every platform — the auto AppBar leading, BackButton, etc. Without
+      // this, Android would render Material's arrow_back while iOS shows the
+      // chevron; the builder pins one look everywhere.
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (context) =>
+            const Icon(AppIcons.backIos, size: 24),
+      ),
 
       appBarTheme: AppBarTheme(
         backgroundColor: ext.surface.withValues(alpha: isDark ? 0.88 : 0.96),

@@ -2,28 +2,32 @@ import 'package:flutter/material.dart';
 
 /// Typography scale from §2.2 of the spec.
 ///
-/// **2026-05-24 — `google_fonts` removed.** The runtime CDN fetch
-/// crashed on offline / geo-blocked devices; the `allowRuntimeFetching
-/// = false` fallback then crashed because we don't bundle the .ttf
-/// files. Switching to platform defaults eliminates both failure
-/// modes: Android uses **Roboto** (Latin) + **Noto Sans Arabic**
-/// (Arabic) — both ship with the OS — and iOS uses **San Francisco**
-/// + **SF Arabic**. Both stacks handle our content natively and the
-/// visual difference vs. Inter / Tajawal is minor enough that
-/// production launch wasn't worth blocking on bundling.
+/// **Fonts are bundled** (not fetched via `google_fonts` CDN) so they render
+/// offline / on geo-blocked devices. The .ttf files live under
+/// `assets/fonts/` and are declared in pubspec.yaml's `fonts:` section. To
+/// change a face, bundle its weights there and point the family constant at
+/// it — do NOT re-enable the `google_fonts` runtime fetch (it crashed on
+/// offline / geo-blocked devices).
 ///
-/// If we ever want to bring Inter / Tajawal back, the right path is
-/// to bundle the .ttf files under `assets/fonts/` and declare them in
-/// pubspec.yaml's `fonts:` section — NOT to re-enable the
-/// `google_fonts` CDN fetch.
+/// **Latin + Arabic pairing:** [fontSans] (Space Grotesk) is the primary
+/// family, with [fontFallback] (IBM Plex Sans Arabic) behind it. Latin/English
+/// glyphs render in Space Grotesk; Arabic — which Space Grotesk doesn't
+/// contain — falls through to IBM Plex Sans Arabic per-glyph. Every text
+/// style must carry `fontFamilyFallback: fontFallback` for Arabic to resolve.
 class AppTypography {
   AppTypography._();
 
-  /// Returns the right [TextTheme] for the given locale, applied on top of
-  /// the platform's default [TextTheme] so platform-specific tuning is kept.
-  /// The bundled UI face — unified Arabic + Latin identity (RTL-first),
-  /// mirrors the Saqqar Design System's `--font-sans: Tajawal`.
-  static const String fontSans = 'Tajawal';
+  /// Primary Latin/English face — Space Grotesk (variable; Flutter maps
+  /// `fontWeight` onto its `wght` axis).
+  static const String fontSans = 'SpaceGrotesk';
+
+  /// Arabic face + the Latin fallback. Any glyph missing from [fontSans]
+  /// (i.e. all Arabic) resolves here. Bundled weights: 400 / 500 / 600 / 700.
+  static const String fontArabic = 'IBMPlexSansArabic';
+
+  /// Fallback chain applied to every UI text style so Arabic resolves to
+  /// [fontArabic] while Latin stays on [fontSans].
+  static const List<String> fontFallback = [fontArabic];
 
   /// Bundled monospace face for code blocks / inline code / hosts —
   /// mirrors the design system's `--font-mono: JetBrains Mono`.
@@ -34,7 +38,11 @@ class AppTypography {
     required Color text,
     required Color muted,
   }) {
-    final base = TextStyle(color: text, fontFamily: fontSans);
+    final base = TextStyle(
+      color: text,
+      fontFamily: fontSans,
+      fontFamilyFallback: fontFallback,
+    );
 
     TextStyle styled(
       double size,
@@ -85,6 +93,7 @@ class AppTypography {
   static TextStyle eyebrow({required Locale locale, required Color color}) {
     return TextStyle(
       fontFamily: fontSans,
+      fontFamilyFallback: fontFallback,
       fontSize: 11,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
@@ -96,6 +105,7 @@ class AppTypography {
   static TextStyle statusPill({required Locale locale, required Color color}) {
     return TextStyle(
       fontFamily: fontSans,
+      fontFamilyFallback: fontFallback,
       fontSize: 10,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,

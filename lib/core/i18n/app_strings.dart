@@ -313,7 +313,6 @@ class AppStrings {
   String get tabChats => _t('tab_chats');
   String get tabVault => _t('tab_vault');
   String get tabInbox => _t('tab_inbox');
-  String get tabFiles => _t('tab_files');
   String get tabAccount => _t('tab_account');
 
   // Shared labels
@@ -356,13 +355,29 @@ class AppStrings {
   String get downloadingArtifact => _t('downloading_artifact');
   String get artifactNoViewer => _t('artifact_no_viewer');
   String get artifactOpenFailed => _t('artifact_open_failed');
+  String get defaultProjectLabel => _t('default_project_label');
   String get artifactDownloadFailed => _t('artifact_download_failed');
+  String get artifactDownloadOffline => _t('artifact_download_offline');
+  String get artifactDownloadGone => _t('artifact_download_gone');
+  String get artifactDownloadForbidden => _t('artifact_download_forbidden');
+
+  /// Status-specific copy for a failed artifact download so the user learns
+  /// the actual cause: no status → offline, 403 → plan-gated, 404 → the link
+  /// expired, anything else → the generic retry message.
+  String artifactDownloadMessage(int? statusCode) => switch (statusCode) {
+        null => artifactDownloadOffline,
+        403 => artifactDownloadForbidden,
+        404 => artifactDownloadGone,
+        _ => artifactDownloadFailed,
+      };
   String get more => _t('more');
   String get shareLink => _t('share_link');
   String get rename => _t('rename');
   String get archive => _t('archive');
   String get unarchive => _t('unarchive');
   String get delete => _t('delete');
+  String get deleteConversationTitle => _t('delete_conversation_title');
+  String get deleteConversationBody => _t('delete_conversation_body');
   String get edit => _t('edit');
   String get dismiss => _t('dismiss');
   String get open => _t('open');
@@ -407,7 +422,6 @@ class AppStrings {
   String get refreshConversations => _t('refresh_conversations');
   String get refreshCredentials => _t('refresh_credentials');
   String get searchConversations => _t('search_conversations');
-  String get searchArtifacts => _t('search_artifacts');
   String get clearSearch => _t('clear_search');
   String get previousPage => _t('previous_page');
   String get nextPage => _t('next_page');
@@ -445,6 +459,7 @@ class AppStrings {
   String get agentWorking => _t('agent_working');
   String get agentThinking => _t('agent_thinking');
   String get saqqarThinking => _t('saqqar_thinking');
+  String get saqqarWorkingNow => _t('saqqar_working_now');
   String get thinkingStepsLabel => _t('thinking_steps_label');
   String get composerBusy => _t('composer_busy');
   // Long-running report progress (run_progress.phase = building_report /
@@ -576,6 +591,8 @@ class AppStrings {
       _t('conversations_action_delete_failed');
   String get conversationsActionStopFailed =>
       _t('conversations_action_stop_failed');
+  String get conversationsActionShareFailed =>
+      _t('conversations_action_share_failed');
 
   // Chat action-failure labels — the "what failed" line a failed chat
   // mutation surfaces (paired with the mapped "why" from ApiErrorMapper).
@@ -958,6 +975,7 @@ class AppStrings {
   String get quickReplyExport => _t('quick_reply_export');
   String get swipeArchive => _t('swipe_archive');
   String get swipeUnarchive => _t('swipe_unarchive');
+  String get swipeDelete => _t('swipe_delete');
   String get longPressActionsTitle => _t('long_press_actions_title');
   String get copyAction => _t('copy_action');
   String get offlineTitle => _t('offline_title');
@@ -1248,7 +1266,6 @@ const Map<String, String> _en = {
   'tab_chats': 'Chats',
   'tab_vault': 'Projects',
   'tab_inbox': 'Inbox',
-  'tab_files': 'Files',
   'tab_account': 'Account',
   'workspace': 'Workspace',
   'workspace_coverage': 'Workspace coverage',
@@ -1289,13 +1306,21 @@ const Map<String, String> _en = {
   'downloading_artifact': 'Downloading…',
   'artifact_no_viewer': "Couldn't find an app to open this file.",
   'artifact_open_failed': "Couldn't open the file.",
+  'default_project_label': 'Default',
   'artifact_download_failed': "Couldn't download the file. Try again.",
+  'artifact_download_offline':
+      "You're offline. Check your connection and try again.",
+  'artifact_download_gone': 'This file is no longer available.',
+  'artifact_download_forbidden': "This file isn't available on your plan.",
   'more': 'More',
   'share_link': 'Share link',
   'rename': 'Rename',
   'archive': 'Archive',
   'unarchive': 'Unarchive',
   'delete': 'Delete',
+  'delete_conversation_title': 'Delete conversation?',
+  'delete_conversation_body':
+      'This will permanently delete this conversation and its messages. This action cannot be undone.',
   'edit': 'Edit',
   'dismiss': 'Dismiss',
   'open': 'Open',
@@ -1336,7 +1361,6 @@ const Map<String, String> _en = {
   'refresh_conversations': 'Refresh conversations',
   'refresh_credentials': 'Refresh credentials',
   'search_conversations': 'Search conversations',
-  'search_artifacts': 'Search artifacts',
   'clear_search': 'Clear search',
   'previous_page': 'Previous page',
   'next_page': 'Next page',
@@ -1369,6 +1393,7 @@ const Map<String, String> _en = {
   'agent_working': 'Working',
   'agent_thinking': 'Working on your request.',
   'saqqar_thinking': 'Saqqar thinking',
+  'saqqar_working_now': 'is working now',
   'thinking_steps_label': 'steps',
   'composer_busy': 'Saqqar is working — type your next task; send unlocks when done.',
   'save_and_continue': 'Save and continue',
@@ -1447,6 +1472,7 @@ const Map<String, String> _en = {
       "Couldn't restore the conversation",
   'conversations_action_delete_failed': "Couldn't delete the conversation",
   'conversations_action_stop_failed': "Couldn't stop the conversation",
+  'conversations_action_share_failed': "Couldn't create a share link",
   'chat_action_send_failed': "Couldn't send your message",
   'chat_action_upload_failed': "Couldn't upload the attachment",
   'chat_action_stop_failed': "Couldn't stop the agent",
@@ -1828,6 +1854,7 @@ const Map<String, String> _en = {
   'quick_reply_export': 'Export as Excel',
   'swipe_archive': 'Archive',
   'swipe_unarchive': 'Unarchive',
+  'swipe_delete': 'Delete',
   'long_press_actions_title': 'Conversation actions',
   'copy_action': 'Copy',
   'offline_title': 'You\'re offline',
@@ -2072,7 +2099,6 @@ const Map<String, String> _ar = {
   'tab_chats': 'المحادثات',
   'tab_vault': 'المشاريع',
   'tab_inbox': 'الوارد',
-  'tab_files': 'الملفات',
   'tab_account': 'الحساب',
   'workspace': 'مساحة العمل',
   'workspace_coverage': 'تغطية مساحة العمل',
@@ -2113,13 +2139,20 @@ const Map<String, String> _ar = {
   'downloading_artifact': 'جاري التنزيل…',
   'artifact_no_viewer': 'مفيش تطبيق مثبت يقدر يفتح الملف ده.',
   'artifact_open_failed': 'تعذّر فتح الملف.',
+  'default_project_label': 'الافتراضي',
   'artifact_download_failed': 'تعذّر تنزيل الملف. حاول مرة أخرى.',
+  'artifact_download_offline': 'لا يوجد اتصال بالإنترنت. تحقّق من اتصالك وحاول مرة أخرى.',
+  'artifact_download_gone': 'هذا الملف لم يعد متاحًا.',
+  'artifact_download_forbidden': 'هذا الملف غير متاح ضمن خطتك الحالية.',
   'more': 'المزيد',
   'share_link': 'رابط المشاركة',
   'rename': 'إعادة تسمية',
   'archive': 'أرشفة',
   'unarchive': 'إلغاء الأرشفة',
   'delete': 'حذف',
+  'delete_conversation_title': 'حذف المحادثة؟',
+  'delete_conversation_body':
+      'سيتم حذف هذه المحادثة وكل رسائلها نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
   'edit': 'تعديل',
   'dismiss': 'إخفاء',
   'open': 'فتح',
@@ -2160,7 +2193,6 @@ const Map<String, String> _ar = {
   'refresh_conversations': 'تحديث المحادثات',
   'refresh_credentials': 'تحديث بيانات الدخول',
   'search_conversations': 'بحث في المحادثات',
-  'search_artifacts': 'بحث في الملفات',
   'clear_search': 'مسح البحث',
   'previous_page': 'الصفحة السابقة',
   'next_page': 'الصفحة التالية',
@@ -2192,6 +2224,7 @@ const Map<String, String> _ar = {
   'agent_working': 'يعمل',
   'agent_thinking': 'يعمل على طلبك.',
   'saqqar_thinking': 'صقّار يفكر',
+  'saqqar_working_now': 'يعمل الآن',
   'thinking_steps_label': 'خطوات',
   'composer_busy': 'صقّار يعمل — اكتب مهمتك التالية، وسيُفعَّل الإرسال عند الانتهاء.',
   'save_and_continue': 'حفظ ومتابعة',
@@ -2269,6 +2302,7 @@ const Map<String, String> _ar = {
   'conversations_action_unarchive_failed': 'تعذّر استعادة المحادثة',
   'conversations_action_delete_failed': 'تعذّر حذف المحادثة',
   'conversations_action_stop_failed': 'تعذّر إيقاف المحادثة',
+  'conversations_action_share_failed': 'تعذّر إنشاء رابط المشاركة',
   'chat_action_send_failed': 'تعذّر إرسال رسالتك',
   'chat_action_upload_failed': 'تعذّر رفع المرفق',
   'chat_action_stop_failed': 'تعذّر إيقاف الوكيل',
@@ -2635,6 +2669,7 @@ const Map<String, String> _ar = {
   'quick_reply_export': 'صدّر كـ Excel',
   'swipe_archive': 'أرشفة',
   'swipe_unarchive': 'إلغاء الأرشفة',
+  'swipe_delete': 'حذف',
   'long_press_actions_title': 'إجراءات المحادثة',
   'copy_action': 'نسخ',
   'offline_title': 'لا يوجد اتصال',

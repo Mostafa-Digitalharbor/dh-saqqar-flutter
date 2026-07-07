@@ -30,11 +30,14 @@ class ConversationsApi {
         'include_archived': includeArchived ? 1 : 0,
       },
     );
-    final data = res.data!;
+    final data = res.data ?? const {};
     return (
+      // whereType skips a malformed row; the post-map filter drops any row
+      // we couldn't identify (empty id) — one bad row never blanks the list.
       conversations: (data['conversations'] as List? ?? [])
-          .cast<Map<String, dynamic>>()
+          .whereType<Map<String, dynamic>>()
           .map(ConversationSummary.fromJson)
+          .where((c) => c.id.isNotEmpty)
           .toList(),
       total: (data['total'] as num?)?.toInt(),
     );
@@ -50,7 +53,13 @@ class ConversationsApi {
       ApiEndpoints.conversations,
       data: body,
     );
-    return res.data!['conversation_id'] as String;
+    final id = res.data?['conversation_id'];
+    if (id is! String || id.isEmpty) {
+      // Unexpected 200 body — fail loudly (and mappably) instead of
+      // returning an empty id that would break every downstream route.
+      throw const FormatException('create: response missing conversation_id');
+    }
+    return id;
   }
 
   // ── Snapshot (poll) ─────────────────────────────────────────────────
@@ -187,7 +196,7 @@ class ConversationsApi {
     final res = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.conversationStop(id),
     );
-    final data = res.data!;
+    final data = res.data ?? const <String, dynamic>{};
     return (
       isRunning: data['is_running'] as bool? ?? false,
       stopRequested: data['stop_requested'] as bool? ?? false,
@@ -202,7 +211,7 @@ class ConversationsApi {
     final res = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.conversationShare(id),
     );
-    final data = res.data!;
+    final data = res.data ?? const <String, dynamic>{};
     return (
       token: data['share_token'] as String? ?? '',
       url: data['share_url'] as String? ?? '',
@@ -228,7 +237,7 @@ class ConversationsApi {
       ApiEndpoints.conversationCredentialsActive(id),
       data: {'name': name},
     );
-    return res.data!['active_credential'] as String?;
+    return res.data?['active_credential'] as String?;
   }
 
   /// `POST /api/v1/conversations/<id>/credentials/toggle/` — per-conversation
@@ -242,7 +251,7 @@ class ConversationsApi {
       ApiEndpoints.conversationCredentialsToggle(id),
       data: {'name': name, 'enabled': enabled},
     );
-    return (res.data!['disabled_credentials'] as List? ?? [])
+    return (res.data?['disabled_credentials'] as List? ?? [])
         .map((e) => e.toString())
         .toList();
   }

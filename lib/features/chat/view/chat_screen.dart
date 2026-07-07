@@ -31,7 +31,6 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../core/network/view_model/connectivity_cubit.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/fade_slide_in.dart';
 // Dead with the conversation menu — the rail drawer renders counts as
@@ -41,7 +40,6 @@ import '../../../shared/widgets/offline_banner.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../../demo/saqqar_demo_data.dart';
-import '../../inbox/view_model/approvals_cubit.dart';
 import '../view_model/deep_think_cubit.dart';
 import '../data/live_env_ack_service.dart';
 import '../data/transcribe_api.dart';
@@ -193,6 +191,14 @@ class _ChatScreenState extends State<ChatScreen>
   /// just typed so I can edit and resend".
   String? _lastSentText;
 
+  /// Wall-clock of the last send. Used as a grace window in the run-state
+  /// sync: for a few seconds after a send we keep the optimistic "running"
+  /// marker even though the snapshot still reads `is_running=false` (the
+  /// server hasn't observed the new turn yet). Without this, the sync would
+  /// clear the marker one frame after send — before the run ever starts —
+  /// and the Chats list would never show "Saqqar is working".
+  DateTime? _lastSendAt;
+
   /// True while the chat snapshot is being fetched for the first time
   /// (no previous data to show). New chats never enter this branch —
   /// they jump straight into the empty welcome state.
@@ -206,14 +212,11 @@ class _ChatScreenState extends State<ChatScreen>
     return dataState.isLoading && dataState.dataOrNull == null;
   }
 
-  /// Live progress for a long-running report tool. Non-null while the
-  /// backend reports `run_progress.phase = building_report | rendering_report`;
-  /// cleared once the artifact lands. Drives the [ChatRunProgressCard]
-  /// rendered above the message list.
-  RunProgress? _runProgress;
-  Timer? _progressTimer;
-
-  Timer? _thinkingTimer;
+  // Report progress is now read live from the snapshot's
+  // `conversation.runProgress` (see [_liveRunProgress]) — no client-side
+  // timer/simulation. The old `_runProgress` / `_progressTimer` /
+  // `_thinkingTimer` fields drove a fabricated progress bar and were
+  // removed in the de-fabrication pass.
   Timer? _loadingTimer;
 
   bool get _isNewChat => widget.conversationId == UiStrings.newConversationId;
@@ -352,19 +355,18 @@ class _ChatScreenState extends State<ChatScreen>
     return snapshot?.conversation.isRunning ?? false;
   }
 
-  DemoConversation get _conversation {
-    return demoConversations.firstWhere(
-      (item) => item.id == widget.conversationId,
-      orElse: () => DemoConversation(
+  /// Inert placeholder used ONLY as a last-resort title fallback in the
+  /// rename dialog when the live title isn't in the list cubit yet. Carries
+  /// no data — real chats always source their title from ConversationsCubit
+  /// / the snapshot (see `_renameConversation`, `_effectiveChatTitle`).
+  DemoConversation get _conversation => DemoConversation(
         id: UiStrings.newConversationId,
         title: context.tr.startConversation,
         preview: context.tr.liveAccessNote,
         updatedLabel: context.tr.now,
         messageCount: 0,
-        activeCredential: UiStrings.fallbackCredential,
-      ),
-    );
-  }
+        activeCredential: UiStrings.none,
+      );
 
   /// Resolves the currently-bound environment for this chat.
   ///
@@ -419,18 +421,8 @@ class _ChatScreenState extends State<ChatScreen>
         );
       }
     }
-    // 3) Demo fallback (only reachable from legacy seeded chats).
-    final demo = demoEnvironmentById(id);
-    if (demo == null) return null;
-    final demoProject = demoProjectById(demo.projectId);
-    return _ResolvedEnv(
-      id: demo.id,
-      name: demoEnvironmentLabel(demo),
-      isLive: demo.isLive,
-      readOnly: demo.readOnly,
-      projectId: demo.projectId,
-      projectName: demoProject?.name ?? '',
-    );
+    // No bound env resolved from the snapshot or the vault → truly none.
+    return null;
   }
 
   /// Title shown in the AppBar subtitle and the picker chip. Falls back
@@ -720,17 +712,8 @@ class _ChatScreenState extends State<ChatScreen>
     // hands off to a real cubit.
     _messages = <DemoMessage>[];
 
-    // Resolve initial env id from the demo lookup as a fallback (for
-    // legacy seeded conversations). Real conversations from the API
-    // surface their bound env via the snapshot — see `_resolveEnv`.
-    for (final item in demoConversations) {
-      if (item.id == widget.conversationId) {
-        final env = demoEnvironmentForConversation(item);
-        _environmentId = env?.id;
-        _projectId = env?.projectId;
-        break;
-      }
-    }
+    // Existing chats resolve their bound env from the server snapshot (see
+    // `_resolveEnv`); new chats from the local vault picker. No demo seed.
     _scroll.addListener(_onScrollChanged);
     // Listen for app foreground / background transitions so the chat
     // poll timer pauses when the user minimises the app — without this,
@@ -856,9 +839,7 @@ class _ChatScreenState extends State<ChatScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _shareIntakeService?.removeListener(_onShareIntakeChanged);
-    _thinkingTimer?.cancel();
     _loadingTimer?.cancel();
-    _progressTimer?.cancel();
     _recordingTimer?.cancel();
     _recordingHardStop?.cancel();
     // Don't await — the recorder's stop() returns a Future but the
@@ -1273,6 +1254,7 @@ class _ChatScreenState extends State<ChatScreen>
       _attachments.clear();
       _pendingFiles.clear();
     });
+    _lastSendAt = DateTime.now();
     context.read<RunningAgentsCubit>().markRunning(widget.conversationId);
     final ok = await context.read<ChatCubit>().sendMessage(
           content: text.isEmpty ? context.tr.attachedFilesForReview : text,
@@ -1290,9 +1272,14 @@ class _ChatScreenState extends State<ChatScreen>
       // classified it onto `actionFailure`).
       _composer.text = text;
       _surfaceActionFailure();
+      // The send never started a run — clear the optimistic marker so the
+      // Chats list doesn't show a phantom "working" state.
+      context.read<RunningAgentsCubit>().markIdle(widget.conversationId);
     }
-    // Idle marker — polling will keep the real isRunning flag accurate.
-    context.read<RunningAgentsCubit>().markIdle(widget.conversationId);
+    // On success we deliberately DON'T mark idle here: the run has only just
+    // begun. The snapshot-driven sync in build() flips it back to idle when
+    // the server reports `is_running=false`, so the Chats list shows the
+    // live "Saqqar is working" indicator for the whole generation.
   }
 
   /// Drives the create → bind env → first-message → navigate handoff.
@@ -1413,91 +1400,35 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// Used to compute the demo-thinking timer for the new-chat
-  /// optimistic UI. Kept here so the rewritten `_send` stays terse.
-  void _runLegacyThinkingTimer({
-    required String reply,
-    required String? replyToolName,
-    required bool isReportTool,
-  }) {
-    _thinkingTimer?.cancel();
-    _thinkingTimer = Timer(
-      isReportTool
-          ? const Duration(milliseconds: 4200)
-          : const Duration(milliseconds: 1400),
-      () {
-        if (!mounted) return;
-        _progressTimer?.cancel();
-        context
-            .read<RunningAgentsCubit>()
-            .markIdle(widget.conversationId);
-        setState(() {
-          _isThinking = false;
-          _runProgress = null;
-          _messages.add(
-            DemoMessage(
-              role: DemoMessageRole.assistant,
-              content: reply,
-              time: context.tr.now,
-              toolName: replyToolName,
-            ),
-          );
-        });
-        _scrollToBottomSoft();
-      },
+  /// Maps the server-reported `conversation.run_progress` (if any) onto the
+  /// [ChatRunProgressCard]'s [RunProgress] shape so the card reflects the
+  /// REAL export progress the backend streams — no client-side simulation.
+  ///
+  /// Returns null on new chats (no snapshot yet) and whenever the backend
+  /// isn't mid-report, so the card only appears while a long-running
+  /// Excel / PDF / Word job is actually running.
+  RunProgress? get _liveRunProgress {
+    if (_isNewChat) return null;
+    final rp = context
+        .watch<ChatCubit>()
+        .state
+        .data
+        .dataOrNull
+        ?.conversation
+        .runProgress;
+    if (rp == null) return null;
+    // Server phase is a free-form string (`building_report`,
+    // `rendering_report`, …). Anything that reads as a render/write stage
+    // maps to the indeterminate "rendering" bar; everything else is the
+    // determinate "fetching N/M" bar.
+    final rendering = rp.phase.toLowerCase().contains('render');
+    return RunProgress(
+      phase: rendering ? RunProgressPhase.rendering : RunProgressPhase.fetching,
+      current: rp.current,
+      total: rp.total,
+      rows: rp.current ?? rp.total,
+      fileName: rp.label,
     );
-  }
-
-  /// Ticks a fake [RunProgress] through `building_report` → `rendering_report`
-  /// so the [ChatRunProgressCard] gets meaningful demo data. Replace with
-  /// real `conversation.run_progress` reads when the polling layer lands.
-  void _startReportProgressSimulation(String toolName) {
-    final fileName = switch (toolName) {
-      ToolNames.generatePdfReport ||
-      ToolNames.generatePdfDocument =>
-        'report.pdf',
-      ToolNames.generateWordReport ||
-      ToolNames.generateWordDocument =>
-        'report.docx',
-      _ => 'report.xlsx',
-    };
-    const total = 1247;
-    var current = 0;
-    setState(() {
-      _runProgress = RunProgress(
-        phase: RunProgressPhase.fetching,
-        current: current,
-        total: total,
-        fileName: fileName,
-      );
-    });
-    _progressTimer?.cancel();
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 220), (t) {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
-      current = (current + 92).clamp(0, total);
-      if (current < total) {
-        setState(() {
-          _runProgress = RunProgress(
-            phase: RunProgressPhase.fetching,
-            current: current,
-            total: total,
-            fileName: fileName,
-          );
-        });
-      } else {
-        t.cancel();
-        setState(() {
-          _runProgress = RunProgress(
-            phase: RunProgressPhase.rendering,
-            rows: total,
-            fileName: fileName,
-          );
-        });
-      }
-    });
   }
 
   void _seedSuggestion(String prompt) {
@@ -1802,37 +1733,6 @@ class _ChatScreenState extends State<ChatScreen>
     return '${mb.toStringAsFixed(mb < 10 ? 1 : 0)} MB';
   }
 
-  /// Opens the schema-driven credential request as a keyboard-aware
-  /// ModalBottomSheet. Replaces the inline render (max 45 % of the screen,
-  /// fought with the on-screen keyboard) with a sheet that takes up to
-  /// 95 % of the screen and dismisses via swipe-down — closer to how
-  /// users expect "fill this form" surfaces to behave on mobile.
-  Future<void> _openCredentialRequestSheet(DemoCredentialKind initial) async {
-    final result = await InlineCredentialRequest.show(
-      context,
-      initialKind: initial,
-    );
-    if (!mounted || result == null) return;
-    switch (result.kind) {
-      case InlineCredentialResultKind.provided:
-        _toast(
-          result.memorize
-              ? context.tr.inlineCredentialMemorized
-              : context.tr.inlineCredentialSession,
-        );
-      case InlineCredentialResultKind.providedContinuing:
-        // "Save and continue" — the agent resumes immediately so the
-        // toast tells the user the run picked back up. Once streaming
-        // lands, this branch also kicks the conversation back into
-        // running state without waiting for a fresh user message.
-        _toast(context.tr.credentialSavedContinuing);
-      case InlineCredentialResultKind.pickSaved:
-        await _openEnvironmentPicker();
-      case InlineCredentialResultKind.cancelled:
-        break;
-    }
-  }
-
   // Bell trigger is inlined below as a private widget so the AppBar
   // `actions` slot stays terse.
 
@@ -1920,10 +1820,10 @@ class _ChatScreenState extends State<ChatScreen>
       if (mounted) _toast(context.tr.generationStopped);
       return;
     }
-    // Legacy new-chat path (cancels the local fake timer).
+    // New-chat optimistic path: Stop clears the local "thinking" state
+    // and returns the user to the composer (the create/send round-trip is
+    // fire-and-forget from here).
     if (_isThinking) {
-      _thinkingTimer?.cancel();
-      _thinkingTimer = null;
       setState(() {
         _isThinking = false;
         _stopping = false;
@@ -1965,7 +1865,7 @@ class _ChatScreenState extends State<ChatScreen>
                 const SizedBox(height: 20),
                 PrimaryButton(
                   label: context.tr.backToChats,
-                  icon: AppIcons.chevronLeft,
+                  icon: AppIcons.backIos,
                   onPressed: () => context.go(RouteNames.chatsPath),
                 ),
               ],
@@ -2039,6 +1939,31 @@ class _ChatScreenState extends State<ChatScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         context.read<PlanCubit>().update(planSnapshot);
+      });
+    }
+
+    // Mirror the SERVER's run state into the cross-app RunningAgentsCubit so
+    // the Chats list shows the live "Saqqar is working" indicator for the
+    // WHOLE generation (not just the ~1 s send request). markRunning/markIdle
+    // no-op when already in the target state, so firing every build is cheap.
+    if (!_isNewChat) {
+      final running = snapshotConv?.isRunning ?? false;
+      final convId = widget.conversationId;
+      // Grace window: within ~12 s of a send, keep the optimistic marker even
+      // if the snapshot still reads not-running — the server hasn't picked up
+      // the new turn yet, and clearing here would race the run to false before
+      // it ever flips true.
+      final sentAt = _lastSendAt;
+      final inGrace = sentAt != null &&
+          DateTime.now().difference(sentAt) < const Duration(seconds: 12);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final agents = context.read<RunningAgentsCubit>();
+        if (running) {
+          agents.markRunning(convId);
+        } else if (!inGrace) {
+          agents.markIdle(convId);
+        }
       });
     }
 
@@ -2169,9 +2094,12 @@ class _ChatScreenState extends State<ChatScreen>
             // Rendered above the message list (not inside the typing row)
             // because the user's eye needs to find the percentage fast,
             // and the typing row sits at the message tail where new
-            // messages can push it off-screen.
-            if (_runProgress != null)
-              ChatRunProgressCard(progress: _runProgress!),
+            // messages can push it off-screen. Fed by the REAL
+            // `conversation.run_progress` snapshot field via
+            // [_liveRunProgress]; hidden whenever the backend isn't
+            // mid-report.
+            if (_liveRunProgress case final progress?)
+              ChatRunProgressCard(progress: progress),
             Expanded(
               child: Stack(
                 children: [
@@ -2354,6 +2282,13 @@ class _ChatScreenState extends State<ChatScreen>
               onOpenVault: () {
                 setState(() => _sidebarOpen = false);
                 context.go(RouteNames.vaultPath);
+              },
+              // Tapping the wordmark closes the drawer and jumps home
+              // (the chats list). Same close-then-go pattern as the
+              // other drawer actions.
+              onGoHome: () {
+                setState(() => _sidebarOpen = false);
+                context.go(RouteNames.chatsPath);
               },
               // Close the drawer in-place — flipping the local flag
               // triggers the slide-out animation. Routes don't move.
@@ -2944,183 +2879,6 @@ class _ChatScreenState extends State<ChatScreen>
   /// popping the demo sheet.
   Future<void> _openEnvironmentPicker() async {
     _toast(context.tr.pickEnvironmentToStart);
-  }
-
-  // The `_openConversationMenu` sheet was retired on 2026-05-17 — the
-  // brief §4.1/§4.3 moved its surfaces (Action Center, Approvals,
-  // Artifacts, Activity, Share, Pin, Rename, Archive, Delete) into the
-  // chat's rail drawer (bell trigger) so the chat header only carries
-  // the hamburger + title + bell. The individual handlers it used to
-  // dispatch to (`_openActionCenter`, `_openArtifacts`,
-  // `_openServerActivity`, `_renameConversation`, `_togglePin`) are still
-  // alive — they're now invoked from inside the drawer instead.
-
-  void _openActionCenter() {
-    final approvalsState = context.read<ApprovalsCubit>().state;
-    final openActions =
-        demoPendingActionsForConversation(widget.conversationId)
-            .where((a) => !approvalsState.isDismissed(a))
-            .toList();
-    _openListSheet(
-      title: context.tr.actionCenter,
-      children: openActions.isEmpty
-          ? [ChatSheetEmpty(text: context.tr.noAgentActionsTitle)]
-          : [
-              for (final action in openActions)
-                ChatActionCard(
-                  title: action.title,
-                  body: action.body,
-                  icon: action.icon,
-                  color: action.color,
-                  trailing: action.requestsCredential != null
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GhostButton(
-                              label: context.tr.dismiss,
-                              minHeight: 38,
-                              onPressed: () {
-                                context
-                                    .read<ApprovalsCubit>()
-                                    .dismissAction(action.id);
-                                Navigator.of(context).pop();
-                                _toast(context.tr.actionDismissed);
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            PrimaryButton(
-                              label: context.tr.provideCredential,
-                              icon: AppIcons.key,
-                              minHeight: 38,
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                _openCredentialRequestSheet(
-                                  action.requestsCredential!,
-                                );
-                              },
-                            ),
-                          ],
-                        )
-                      : GhostButton(
-                          label: context.tr.dismiss,
-                          minHeight: 38,
-                          onPressed: () {
-                            context
-                                .read<ApprovalsCubit>()
-                                .dismissAction(action.id);
-                            Navigator.of(context).pop();
-                            _toast(context.tr.actionDismissed);
-                          },
-                        ),
-                ),
-            ],
-    );
-  }
-
-  void _openApprovals() {
-    final approvalsState = context.read<ApprovalsCubit>().state;
-    final pending = demoApprovalsForConversation(widget.conversationId)
-        .where(
-          (a) => approvalsState.statusFor(a) == DemoApprovalStatus.pending,
-        )
-        .toList();
-    _openListSheet(
-      title: context.tr.pendingApprovals,
-      children: pending.isEmpty
-          ? [ChatSheetEmpty(text: context.tr.noPendingApprovalsTitle)]
-          : [
-              for (final approval in pending)
-                ChatApprovalCard(
-                  approval: approval,
-                  onApprove: () {
-                    final cubit = context.read<ApprovalsCubit>();
-                    if (approval.isGrouped) {
-                      cubit.approveAllInGroup(approval);
-                    } else {
-                      cubit.decide(
-                        approval.id,
-                        DemoApprovalStatus.approved,
-                      );
-                    }
-                    Navigator.of(context).pop();
-                    _toast(
-                      approval.isGrouped && approval.sharedShape != null
-                          ? context.tr.approvalGrantedWithPreapproval(
-                              approval.groupedCount ?? 1,
-                            )
-                          : context.tr.approvalGrantedExecuting,
-                    );
-                  },
-                  onReject: () {
-                    context
-                        .read<ApprovalsCubit>()
-                        .decide(approval.id, DemoApprovalStatus.rejected);
-                    Navigator.of(context).pop();
-                    _toast(context.tr.approvalRejected);
-                  },
-                ),
-            ],
-    );
-  }
-
-  void _openArtifacts() {
-    final artifacts = demoArtifactsForConversation(widget.conversationId);
-    _openListSheet(
-      title: context.tr.artifacts,
-      children: artifacts.isEmpty
-          ? [ChatSheetEmpty(text: context.tr.noExportsTitle)]
-          : [
-              for (final artifact in artifacts)
-                ChatArtifactTile(
-                  artifact: artifact,
-                  onOpen: () => _toast(context.tr.opening(artifact.name)),
-                ),
-            ],
-    );
-  }
-
-  /// Opens the server-activity sheet — one [ServerActivityCard] per
-  /// `run_server_command` invocation in this conversation. The latest
-  /// failing card auto-expands so the user lands directly on what they
-  /// most likely came to look at.
-  void _openServerActivity() {
-    final activity =
-        demoServerActivityForConversation(widget.conversationId);
-    final lastFailingId = activity.reversed
-        .firstWhere(
-          (a) => a.failed,
-          orElse: () =>
-              const DemoServerActivity(id: '', conversationId: '', command: '', createdLabel: ''),
-        )
-        .id;
-    _openListSheet(
-      title: context.tr.serverActivity,
-      children: activity.isEmpty
-          ? [ChatSheetEmpty(text: context.tr.noServerActivity)]
-          : [
-              for (final a in activity)
-                ServerActivityCard(
-                  activity: a,
-                  initiallyExpanded: a.id == lastFailingId,
-                ),
-            ],
-    );
-  }
-
-  void _openListSheet({
-    required String title,
-    required List<Widget> children,
-  }) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => ChatSheet(
-        title: title,
-        children: children
-            .expand((child) => [child, const SizedBox(height: 10)])
-            .toList(),
-      ),
-    );
   }
 
   // -------- Toasts --------

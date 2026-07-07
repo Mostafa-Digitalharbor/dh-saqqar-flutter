@@ -56,14 +56,19 @@ class Message {
   factory Message.fromJson(Map<String, dynamic> json) {
     final tn = json['tool_name'];
     return Message(
-      id: json['id'] as String,
+      // Defensive: never hard-cast server fields. A single row with a
+      // missing/non-string id used to throw and abort parsing of the
+      // WHOLE snapshot — one bad message failed the entire chat.
+      id: json['id']?.toString() ?? '',
       role: MessageRole.fromWire(json['role'] as String?),
       content: json['content'] as String? ?? '',
       createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
       toolName: tn is String && tn.isNotEmpty ? tn : null,
       toolPayload: (json['tool_payload'] as Map?)?.cast<String, dynamic>(),
+      // whereType (not cast) so one malformed attachment is skipped rather
+      // than throwing and dropping every message in the list.
       attachments: (json['attachments'] as List? ?? [])
-          .cast<Map<String, dynamic>>()
+          .whereType<Map<String, dynamic>>()
           .map(Attachment.fromJson)
           .toList(),
     );
@@ -181,6 +186,7 @@ class ConversationSummary {
     required this.isArchived,
     required this.messageCount,
     this.lastMessagePreview = '',
+    this.isRunning = false,
     this.projectName,
     this.environmentName,
   });
@@ -193,6 +199,13 @@ class ConversationSummary {
   final int messageCount;
   final String lastMessagePreview;
 
+  /// Whether the agent is mid-run for this conversation on the SERVER — the
+  /// Chats list uses it to show the live "Saqqar is working" indicator. Not
+  /// persisted to the offline cache (ephemeral), so a cold start reads it as
+  /// false until the first live fetch. Defaults false when the list endpoint
+  /// doesn't carry `is_running`.
+  final bool isRunning;
+
   /// Real project / environment context when the list endpoint includes it.
   /// The documented `GET /conversations/` summary (SAQQAR_MOBILE_API.md §2)
   /// doesn't carry these, so they're parsed defensively and stay `null` when
@@ -203,13 +216,16 @@ class ConversationSummary {
 
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     return ConversationSummary(
-      id: json['id'] as String,
+      // Null-safe id — one malformed row must not throw and fail the WHOLE
+      // Chats list (the app's home surface). Callers skip empty-id rows.
+      id: json['id']?.toString() ?? '',
       title: json['title'] as String? ?? '',
       createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
       updatedAt: _parseDate(json['updated_at']) ?? DateTime.now(),
       isArchived: json['is_archived'] as bool? ?? false,
       messageCount: (json['message_count'] as num?)?.toInt() ?? 0,
       lastMessagePreview: json['last_message_preview'] as String? ?? '',
+      isRunning: json['is_running'] as bool? ?? false,
       projectName:
           _nameOf(json['project']) ?? json['project_name'] as String?,
       environmentName: _nameOf(json['environment']) ??
@@ -241,6 +257,7 @@ class ConversationSummary {
   ConversationSummary copyWith({
     String? projectName,
     String? environmentName,
+    bool? isRunning,
   }) {
     return ConversationSummary(
       id: id,
@@ -250,6 +267,7 @@ class ConversationSummary {
       isArchived: isArchived,
       messageCount: messageCount,
       lastMessagePreview: lastMessagePreview,
+      isRunning: isRunning ?? this.isRunning,
       projectName: projectName ?? this.projectName,
       environmentName: environmentName ?? this.environmentName,
     );
@@ -371,7 +389,7 @@ class Conversation {
     // moment the next poll landed).
     final deepThinkRaw = json['deep_think'] ?? ctx['deep_think'];
     return Conversation(
-      id: json['id'] as String,
+      id: json['id']?.toString() ?? '',
       title: json['title'] as String? ?? '',
       context: ctx,
       createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
@@ -503,33 +521,41 @@ class ConversationSnapshot {
   final List<PendingAction> pendingActions;
 
   factory ConversationSnapshot.fromJson(Map<String, dynamic> json) {
+    // The `conversation` object is required. Guard it so a snapshot missing
+    // the key surfaces a clear "couldn't load this conversation" failure
+    // upstream instead of an opaque TypeError.
+    final conv = json['conversation'];
+    if (conv is! Map<String, dynamic>) {
+      throw const FormatException('snapshot missing "conversation" object');
+    }
     return ConversationSnapshot(
-      conversation: Conversation.fromJson(
-        json['conversation'] as Map<String, dynamic>,
-      ),
+      conversation: Conversation.fromJson(conv),
+      // whereType (not cast) throughout: one malformed element (a bad
+      // message / approval / artifact / credential / action) is skipped
+      // rather than aborting the parse of the ENTIRE snapshot.
       messages: (json['messages'] as List? ?? [])
-          .cast<Map<String, dynamic>>()
+          .whereType<Map<String, dynamic>>()
           .map(Message.fromJson)
           .toList(),
       cursor: _parseDate(json['cursor']),
       delta: json['delta'] as bool? ?? false,
       approvals: (json['approvals'] as List? ?? [])
-          .cast<Map<String, dynamic>>()
+          .whereType<Map<String, dynamic>>()
           .map(Approval.fromJson)
           .toList(),
       artifacts: (json['artifacts'] as List? ?? [])
-          .cast<Map<String, dynamic>>()
+          .whereType<Map<String, dynamic>>()
           .map(Artifact.fromJson)
           .toList(),
       availableCredentials: (json['available_credentials'] as List? ?? [])
-          .cast<Map<String, dynamic>>()
+          .whereType<Map<String, dynamic>>()
           .map(Credential.fromJson)
           .toList(),
       disabledCredentials: (json['disabled_credentials'] as List? ?? [])
           .map((e) => e.toString())
           .toList(),
       pendingActions: (json['pending_actions'] as List? ?? [])
-          .cast<Map<String, dynamic>>()
+          .whereType<Map<String, dynamic>>()
           .map(PendingAction.fromJson)
           .toList(),
       quotaExceeded: QuotaWindow.fromWire(json['quota_exceeded'] as String?),

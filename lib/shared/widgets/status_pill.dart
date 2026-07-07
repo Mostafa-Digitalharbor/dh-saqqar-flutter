@@ -44,11 +44,18 @@ class StatusPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (pulsing) ...[PulseDot(color: color), const SizedBox(width: 6)],
-          Text(
-            label.toUpperCase(),
-            style: AppTypography.statusPill(
-              locale: context.locale,
-              color: color,
+          // Flexible + single-line ellipsis so an unexpectedly long label
+          // (or a future caller's longer status) can't overflow the fixed
+          // padding when the pill sits in a bounded Row.
+          Flexible(
+            child: Text(
+              label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.statusPill(
+                locale: context.locale,
+                color: color,
+              ),
             ),
           ),
         ],

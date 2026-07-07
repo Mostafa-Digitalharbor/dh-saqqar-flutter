@@ -114,6 +114,13 @@ dependencies:
   # receive_sharing_intent above.
   share_plus: ^10.1.2
 
+  # App version/build read at runtime. Feeds Sentry's `release` tag so it
+  # tracks pubspec automatically (no hand-edited `saqqar@x.y.z+n` string to
+  # drift out of sync on every version bump). Was already present
+  # transitively; promoted to a direct dep so `PackageInfo.fromPlatform()`
+  # is a supported call site.
+  package_info_plus: ^9.0.1
+
   # Voice input in the chat composer. Records the user's speech to a
   # short m4a/AAC file (mono, 16 kHz, 32 kbps — see SAQQAR_MOBILE_VOICE.md §3),
   # then `POST`s the audio to /api/v1/transcribe/ which proxies to
@@ -161,6 +168,25 @@ flutter:
   # Tajawal identity (Arabic + Latin, RTL-first) + JetBrains Mono for code.
   # Bundled (not google_fonts CDN) so they render offline / geo-blocked.
   fonts:
+    # Latin/English face — Space Grotesk (variable). Paired with IBM Plex
+    # Sans Arabic: Latin glyphs render in Space Grotesk, Arabic falls back to
+    # IBM Plex Sans Arabic (see AppTypography.fontFallback). One variable
+    # file — Flutter maps `fontWeight` onto its `wght` axis automatically.
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Variable.ttf
+    # Arabic face — IBM Plex Sans Arabic (RTL-first), also the Latin fallback.
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+    # Kept bundled so we can revert the UI face by flipping AppTypography.fontSans.
     - family: Tajawal
       fonts:
         - asset: assets/fonts/Tajawal-Regular.ttf

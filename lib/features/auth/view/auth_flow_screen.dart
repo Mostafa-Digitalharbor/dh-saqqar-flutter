@@ -48,8 +48,11 @@ class _AuthFlowView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Decorative blobs (the soft circles) were retired on user request
+      // 2026-07-06 for a cleaner login — plain ambient backdrop, with the
+      // logo now framed by an elegant card (see below).
       body: AmbientBackground(
-        withBlobs: true,
+        withBlobs: false,
         child: SafeArea(
           child: BlocConsumer<AuthFlowCubit, AuthFlowState>(
             listenWhen: (a, b) =>
@@ -100,11 +103,12 @@ class _AuthFlowView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               // App brand logo above the form — shown on every
-                              // auth step. SaqqarLogo tints itself (white on the
-                              // dark auth backdrop, navy on light).
+                              // auth step, framed by an elegant card (matches
+                              // the splash). SaqqarLogo tints itself (white on
+                              // the dark auth backdrop, navy on light).
                               const Padding(
                                 padding: EdgeInsets.only(bottom: 28),
-                                child: Center(child: SaqqarLogo(height: 40)),
+                                child: Center(child: _AuthLogoCard()),
                               ),
                               // Key by step so each step's StatefulWidget body
                               // gets a fresh element (controllers reset) on
@@ -150,6 +154,29 @@ class _AuthFlowView extends StatelessWidget {
       AuthFlowStep.resetNewPassword =>
         const _ResetPasswordBody(key: ValueKey('rs_pwd')),
     };
+  }
+}
+
+/// Elegant frame around the brand logo on the auth screen — mirrors the
+/// splash's framed mark: a faint surface fill, a hairline border, generously
+/// rounded corners and a soft shadow, sized snugly to the logo. Theme-aware
+/// via [context.saqqar].
+class _AuthLogoCard extends StatelessWidget {
+  const _AuthLogoCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 24),
+      decoration: BoxDecoration(
+        color: s.surface.withValues(alpha: context.isDark ? 0.45 : 0.55),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: s.cardBorder),
+        boxShadow: s.glassShadow,
+      ),
+      child: const SaqqarLogo(height: 40),
+    );
   }
 }
 

@@ -20,7 +20,7 @@ import 'package:saqqar_app/features/chat/view_model/running_agents_cubit.dart';
 import 'package:saqqar_app/features/conversations/data/conversations_api.dart';
 import 'package:saqqar_app/features/conversations/data/conversations_repository.dart';
 import 'package:saqqar_app/features/conversations/view_model/conversations_cubit.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/inbox/data/approval_models.dart';
 import 'package:saqqar_app/features/inbox/data/approvals_api.dart';
 import 'package:saqqar_app/features/inbox/data/artifacts_api.dart';
 import 'package:saqqar_app/features/inbox/view_model/approvals_cubit.dart';
@@ -58,6 +58,72 @@ class _FakeSecureTokenStore implements SecureTokenStore {
     _refresh = null;
   }
 }
+
+/// In-memory fake for [ApprovalsApi] — never touches the network. `list`
+/// returns the seeded approvals (filtered by status), `decide` flips the
+/// matching approval's status so a subsequent `list(status: pending)` drops
+/// it, mirroring the server resolving an approval.
+class _FakeApprovalsApi implements ApprovalsApi {
+  _FakeApprovalsApi(this._approvals);
+
+  List<Approval> _approvals;
+  final List<String> decided = [];
+
+  @override
+  Future<ApprovalsPage> list({
+    ApprovalStatus? status,
+    int limit = 30,
+    int offset = 0,
+  }) async {
+    final filtered = status == null
+        ? _approvals
+        : _approvals.where((a) => a.status == status).toList();
+    final pending =
+        _approvals.where((a) => a.status == ApprovalStatus.pending).length;
+    return ApprovalsPage(
+      approvals: filtered,
+      total: filtered.length,
+      pendingCount: pending,
+      limit: limit,
+      offset: offset,
+    );
+  }
+
+  @override
+  Future<ApprovalDecisionResult> decide({
+    required String id,
+    required bool approved,
+    String? note,
+    bool batchScope = false,
+  }) async {
+    decided.add(id);
+    _approvals = [
+      for (final a in _approvals)
+        if (a.id == id)
+          Approval(
+            id: a.id,
+            actionType: a.actionType,
+            status:
+                approved ? ApprovalStatus.approved : ApprovalStatus.rejected,
+            prompt: a.prompt,
+            payload: a.payload,
+          )
+        else
+          a,
+    ];
+    return ApprovalDecisionResult(
+      approval: _approvals.firstWhere((a) => a.id == id),
+    );
+  }
+}
+
+Approval _pendingApproval(String id) => Approval(
+      id: id,
+      actionType: ApprovalActionType.odooWrite,
+      status: ApprovalStatus.pending,
+      prompt: 'Write to res.partner',
+      payload: const {},
+    );
 
 /// Mirrors main.dart's repository + cubit tree so widget tests boot a
 /// fully-wired SaqqarApp without going through the real `main()` entrypoint
@@ -125,7 +191,9 @@ Future<void> _pumpApp(WidgetTester tester) async {
           BlocProvider<RunningAgentsCubit>(
             create: (_) => RunningAgentsCubit(),
           ),
-          BlocProvider<ApprovalsCubit>(create: (_) => ApprovalsCubit()),
+          BlocProvider<ApprovalsCubit>(
+            create: (_) => ApprovalsCubit(approvalsApi),
+          ),
           BlocProvider<ConversationsCubit>(
             create: (_) =>
                 ConversationsCubit(repository: conversationsRepository),
@@ -162,31 +230,36 @@ void main() {
     expect(find.text('Continue with email'), findsWidgets);
   });
 
-  test('Approval decision updates pending count', () {
-    final cubit = ApprovalsCubit();
+  test('load() populates approvals + pending count from the real API', () async {
+    final api = _FakeApprovalsApi([
+      _pendingApproval('a1'),
+      _pendingApproval('a2'),
+    ]);
+    final cubit = ApprovalsCubit(api);
     addTearDown(cubit.close);
 
-    final initialPending = cubit.state.pendingCount;
-    expect(initialPending, greaterThan(0));
+    await cubit.load();
 
-    final firstPending = demoApprovals.firstWhere(
-      (a) => a.status == DemoApprovalStatus.pending,
-    );
-    cubit.decide(firstPending.id, DemoApprovalStatus.approved);
-
-    expect(cubit.state.pendingCount, initialPending - 1);
+    expect(cubit.state.approvals.isSuccess, isTrue);
+    expect(cubit.state.pendingCount, 2);
+    expect(cubit.state.pendingTotal, 2);
   });
 
-  test('Dismissing an action shrinks the open list', () {
-    final cubit = ApprovalsCubit();
+  test('decide() resolves the approval and refreshes the pending count',
+      () async {
+    final api = _FakeApprovalsApi([
+      _pendingApproval('a1'),
+      _pendingApproval('a2'),
+    ]);
+    final cubit = ApprovalsCubit(api);
     addTearDown(cubit.close);
 
-    final before = cubit.state.openActionsCount;
-    expect(before, greaterThan(0));
+    await cubit.load();
+    await cubit.decide('a1', approved: true);
 
-    cubit.dismissAction(demoPendingActions.first.id);
-
-    expect(cubit.state.openActionsCount, before - 1);
+    expect(api.decided, contains('a1'));
+    // a1 is now approved → the pending-only reload drops it to one.
+    expect(cubit.state.pendingCount, 1);
   });
 
   testWidgets('PrimaryButton survives tight RTL + scaled-text layouts', (

@@ -10,9 +10,7 @@ import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/attachment_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_avatar.dart';
-import 'package:saqqar_app/features/chat/widgets/chat_mini_switch.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_scroll_down_button.dart';
-import 'package:saqqar_app/features/chat/widgets/credential_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/message_bubble.dart';
 import 'package:saqqar_app/features/conversations/data/attachment_models.dart';
 import 'package:saqqar_app/features/conversations/data/conversation_models.dart';
@@ -23,6 +21,7 @@ import 'package:saqqar_app/features/conversations/view_model/conversations_cubit
 import 'package:saqqar_app/features/conversations/widgets/conversation_card.dart';
 import 'package:saqqar_app/features/conversations/widgets/meta_dot.dart';
 import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/inbox/data/approvals_api.dart';
 import 'package:saqqar_app/features/inbox/view_model/approvals_cubit.dart';
 
 /// Stub repository for widget tests — never makes a real HTTP call.
@@ -203,7 +202,11 @@ Widget _harness(Widget child, {Locale locale = const Locale('en')}) {
           repository: _StubConversationsRepository(),
         ),
       ),
-      BlocProvider<ApprovalsCubit>(create: (_) => ApprovalsCubit()),
+      // The cubit never loads in these tests (no consumer triggers it), so a
+      // bare ApprovalsApi over a throwaway Dio is enough to satisfy DI.
+      BlocProvider<ApprovalsCubit>(
+        create: (_) => ApprovalsCubit(ApprovalsApi(Dio())),
+      ),
       // The conversation row reads the running-agent set for its "thinking"
       // status ring, so the harness must provide it too.
       BlocProvider<RunningAgentsCubit>(create: (_) => RunningAgentsCubit()),
@@ -242,38 +245,6 @@ void main() {
       await tester.pumpWidget(_harness(const ChatAvatar(isUser: true)));
       expect(find.byType(ChatAvatar), findsOneWidget);
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('ChatMiniSwitch shows thumb at start when off', (tester) async {
-      await tester.pumpWidget(
-        _harness(const ChatMiniSwitch(value: false, color: Colors.cyan)),
-      );
-      final alignFinder = find.byType(AnimatedAlign);
-      expect(alignFinder, findsOneWidget);
-      final align = tester.widget<AnimatedAlign>(alignFinder);
-      expect(align.alignment, AlignmentDirectional.centerStart);
-    });
-
-    testWidgets('ChatMiniSwitch shifts thumb to end when on', (tester) async {
-      await tester.pumpWidget(
-        _harness(const ChatMiniSwitch(value: true, color: Colors.cyan)),
-      );
-      final align = tester.widget<AnimatedAlign>(find.byType(AnimatedAlign));
-      expect(align.alignment, AlignmentDirectional.centerEnd);
-    });
-
-    testWidgets('CredentialChip is tappable and shows its label', (
-      tester,
-    ) async {
-      var tapped = false;
-      await tester.pumpWidget(
-        _harness(
-          CredentialChip(label: 'GAC Staging', onTap: () => tapped = true),
-        ),
-      );
-      expect(find.text('GAC Staging'), findsOneWidget);
-      await tester.tap(find.byType(CredentialChip));
-      expect(tapped, isTrue);
     });
 
     testWidgets('ChatScrollDownButton is invisible when not visible', (
@@ -387,6 +358,38 @@ void main() {
       expect(find.text(conversation.lastMessagePreview), findsOneWidget);
       expect(find.text('${conversation.messageCount}'), findsOneWidget);
     });
+
+    testWidgets(
+      'ConversationCard swaps the preview for the "Saqqar is working" '
+      'indicator while the conversation is running',
+      (tester) async {
+        final conversation = ConversationSummary(
+          id: 'running-conv',
+          title: 'Excel export',
+          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+          updatedAt: DateTime.now().subtract(const Duration(minutes: 1)),
+          isArchived: false,
+          messageCount: 3,
+          lastMessagePreview: 'This preview is hidden while working.',
+          isRunning: true,
+        );
+        await tester.pumpWidget(
+          _harness(
+            ConversationCard(
+              conversation: conversation,
+              onTap: () {},
+              onAction: (_) {},
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        // The live indicator (brand wordmark + "is working now") replaces
+        // the last-message preview.
+        expect(find.text('is working now'), findsOneWidget);
+        expect(find.text(conversation.lastMessagePreview), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   // The standalone CredentialRow widget was retired when the Vault was

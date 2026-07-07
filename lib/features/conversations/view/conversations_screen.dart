@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
@@ -15,6 +18,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/data_state_refreshable_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/fade_slide_in.dart';
@@ -56,8 +60,16 @@ class ConversationsScreen extends StatefulWidget {
   State<ConversationsScreen> createState() => _ConversationsScreenState();
 }
 
-class _ConversationsScreenState extends State<ConversationsScreen> {
+class _ConversationsScreenState extends State<ConversationsScreen>
+    with WidgetsBindingObserver {
   static const _pageSize = 30;
+
+  /// How often the list silently revalidates so pending-approval counts,
+  /// previews, and the "Saqqar is working" state update on their own — no
+  /// manual pull-to-refresh needed. Cheap: list + counts only, no per-row
+  /// snapshot prefetch (see [ConversationsCubit.poll]).
+  static const _pollInterval = Duration(seconds: 20);
+  Timer? _pollTimer;
 
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
@@ -74,37 +86,52 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addObserver(this);
     // Always revalidate on mount — NOT gated on `isIdle`, because
     // `hydrateFromCache` leaves the cubit in DataSuccess (the cached list)
     // before the screen ever builds, so an idle-gate would skip the live
     // fetch and the rows would stay stale. `load()` dedupes internally and
     // keeps the cached rows visible while it refreshes. Mirrors VaultScreen.
     context.read<ConversationsCubit>().load();
+    _startPolling();
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _pollTimer?.cancel();
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  // ── Pagination ──────────────────────────────────────────────────────
+  /// (Re)starts the silent auto-poll. The list stays mounted beneath an open
+  /// chat, so this keeps counts / running-state fresh even while the user is
+  /// inside a conversation — the moment they pop back, the list already
+  /// reflects the approval they just actioned instead of a stale count.
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(_pollInterval, (_) {
+      if (!mounted) return;
+      context.read<ConversationsCubit>().poll();
+    });
+  }
 
-  void _onScroll() {
-    final data = context.read<ConversationsCubit>().state.data.dataOrNull;
-    if (data == null) return;
-    final filtered = _filter(data);
-    if (!_scrollController.hasClients || filtered.length <= _pageSize) return;
-    final pageCount = _pageCountFor(filtered.length);
-    if (_scrollController.position.extentAfter <= 120 &&
-        _pageIndex < pageCount - 1) {
-      _goToPage(_pageIndex + 1);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Pause polling in the background (no point spending battery/data), and
+    // fire an immediate revalidation the instant the app returns so the user
+    // never stares at stale rows after switching away and back.
+    if (state == AppLifecycleState.resumed) {
+      context.read<ConversationsCubit>().poll();
+      _startPolling();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _pollTimer?.cancel();
     }
   }
+
+  // ── Pagination ──────────────────────────────────────────────────────
 
   void _resetPagination() => _pageIndex = 0;
 
@@ -221,12 +248,51 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           await _archiveWithUndo(cubit, c);
         }
       case ConversationAction.delete:
+        // Deleting is irreversible, so gate it behind a Yes/No confirm
+        // with the destructive (red) confirm button. Applies whether the
+        // action came from the row's kebab menu or the swipe-left gesture.
+        final confirmed = await _confirmDelete(c);
+        if (!confirmed || !mounted) return;
         await cubit.deleteConversation(c.id);
       case ConversationAction.share:
-        // Share goes through ChatRepository (per-chat share/revoke).
-        // The chat screen owns the share UI; row-level share is deferred.
-        AppToast.show(context, message: context.tr.comingSoonToast);
+        await _shareConversation(c);
     }
+  }
+
+  /// Requests a public share link for [c] and hands it to the OS share
+  /// sheet (WhatsApp / Telegram / copy-link / …). The link is issued by
+  /// `POST /conversations/<id>/share/` — the same token the web share page
+  /// (`saqqaar.com/share/<token>/`) consumes. On failure the cubit sets
+  /// `actionFailure`, which the screen's BlocListener turns into a toast,
+  /// so we just bail here.
+  Future<void> _shareConversation(ConversationSummary c) async {
+    final cubit = context.read<ConversationsCubit>();
+    final url = await cubit.shareConversation(c.id);
+    if (!mounted || url == null) return;
+    // share_plus 10.x uses the static `Share.share(text, subject:)` API.
+    // `subject` is only used as the email subject on the mailto fallback;
+    // most share targets ignore it. Falls back to the app name for
+    // untitled chats.
+    await Share.share(
+      url,
+      subject: c.title.trim().isEmpty ? context.tr.appName : c.title.trim(),
+    );
+  }
+
+  /// Yes/No confirmation before a permanent delete. The confirm button
+  /// renders in the danger (red) palette via `destructive: true`, and the
+  /// labels reuse the shared confirmYes / confirmNo copy so this reads the
+  /// same as the app's other destructive prompts.
+  Future<bool> _confirmDelete(ConversationSummary c) {
+    return ConfirmDialog.show(
+      context,
+      title: context.tr.deleteConversationTitle,
+      body: context.tr.deleteConversationBody,
+      confirmLabel: context.tr.confirmYes,
+      cancelLabel: context.tr.confirmNo,
+      icon: AppIcons.trash,
+      destructive: true,
+    );
   }
 
   /// Archives the conversation and surfaces a "Conversation archived"
@@ -328,6 +394,15 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     // Real per-conversation meta (pending approvals + files) from the loaded
     // data — passed into each card so the counts are never fabricated.
     final data = context.read<ConversationsCubit>().state.data.dataOrNull;
+    // Physical-direction mapping for the swipe gestures. We want "swipe
+    // right = archive, swipe left = delete" regardless of locale, so we
+    // resolve Flutter's directional [DismissDirection] against the current
+    // text direction: startToEnd is a physical-right drag in LTR but a
+    // physical-left drag in RTL.
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    // In LTR the startToEnd (background) edge is the archive/right side; in
+    // RTL that same edge is the delete/left side.
+    final startToEndIsArchive = !rtl;
     for (final entry in rows.asMap().entries) {
       final c = entry.value;
       final group = _dateGroupKey(context, c);
@@ -358,27 +433,45 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           index: entry.key,
           child: Dismissible(
             key: ValueKey('dismiss-${c.id}'),
-            // Swipe in either horizontal direction archives /
-            // unarchives. We don't want one of the two directions to
-            // accidentally `delete` — that would punish a misread
-            // gesture. Both edges resolve to the same action.
+            // Two distinct horizontal gestures (request 2026-07-06):
+            //   • swipe RIGHT → archive / unarchive
+            //   • swipe LEFT  → delete (guarded by the Yes/No confirm)
+            // The backgrounds are laid out against the resolved text
+            // direction so each edge shows the action it will actually
+            // trigger.
             direction: DismissDirection.horizontal,
-            background: SwipeArchiveBackground(
-              alignment: AlignmentDirectional.centerStart,
-              archived: c.isArchived,
-            ),
-            secondaryBackground: SwipeArchiveBackground(
-              alignment: AlignmentDirectional.centerEnd,
-              archived: c.isArchived,
-            ),
-            // Return false so Dismissible doesn't actually unmount the
-            // row — the cubit's optimistic update already drives the
-            // visual state (archived rows move to the Archived bucket
-            // or back to the active list). Returning true would cause
-            // a duplicate animation + a "key reused" assert on the next
-            // emit. The action callback fires regardless.
-            confirmDismiss: (_) async {
-              onRowActionFromBuild(c, ConversationAction.archive);
+            background: startToEndIsArchive
+                ? SwipeArchiveBackground(
+                    alignment: AlignmentDirectional.centerStart,
+                    archived: c.isArchived,
+                  )
+                : const SwipeDeleteBackground(
+                    alignment: AlignmentDirectional.centerStart,
+                  ),
+            secondaryBackground: startToEndIsArchive
+                ? const SwipeDeleteBackground(
+                    alignment: AlignmentDirectional.centerEnd,
+                  )
+                : SwipeArchiveBackground(
+                    alignment: AlignmentDirectional.centerEnd,
+                    archived: c.isArchived,
+                  ),
+            // Return false so Dismissible never unmounts the row itself —
+            // archive is driven by the cubit's optimistic update, and
+            // delete only proceeds after the confirm dialog resolves.
+            // Returning true would double-animate + trip a "key reused"
+            // assert on the next emit. The routed action fires regardless.
+            confirmDismiss: (direction) async {
+              // Physical-right drag = archive; physical-left = delete.
+              final swipedRight =
+                  (direction == DismissDirection.startToEnd) != rtl;
+              if (swipedRight) {
+                onRowActionFromBuild(c, ConversationAction.archive);
+              } else {
+                // Route through the shared handler so the delete confirm
+                // dialog (red "Yes") is identical to the kebab-menu path.
+                onRowActionFromBuild(c, ConversationAction.delete);
+              }
               return false;
             },
             child: ConversationCard(
@@ -492,6 +585,10 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                 onRowAction: _handleRowAction,
               ),
             ),
+            // Bottom clearance so the floating "New conversation" FAB never
+            // covers the last item (the pagination controls / final card)
+            // when the list is scrolled to the bottom.
+            const SizedBox(height: 80),
           ],
         );
       },
@@ -587,20 +684,6 @@ class _ConversationsBody extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        if (filtered.length > pageSize) ...[
-          PaginationBar(
-            page: pageIndex + 1,
-            pageCount: pageCount,
-            visibleCount: paged.length,
-            totalCount: filtered.length,
-            itemLabel: context.tr.conversations,
-            onPrevious: pageIndex == 0 ? null : () => onGoToPage(pageIndex - 1),
-            onNext: pageIndex >= pageCount - 1
-                ? null
-                : () => onGoToPage(pageIndex + 1),
-          ),
-          const SizedBox(height: 12),
-        ],
         if (filtered.isEmpty &&
             archivedRows.isEmpty &&
             data.conversations.isEmpty)
@@ -628,6 +711,25 @@ class _ConversationsBody extends StatelessWidget {
             key: ValueKey('conversation-list-$query-${paged.length}'),
             children: buildGroupedRows(paged),
           ),
+        // Page navigation sits at the BOTTOM of the list (moved down on
+        // request) so it follows the conversations instead of preceding them.
+        if (filtered.length > pageSize) ...[
+          const SizedBox(height: 12),
+          PaginationBar(
+            page: pageIndex + 1,
+            pageCount: pageCount,
+            // Cumulative count THROUGH the current page (30 → 60 → 89…),
+            // not just this page's rows, so it reads as "how many you've
+            // reached out of the total".
+            visibleCount: (pageIndex * pageSize) + paged.length,
+            totalCount: filtered.length,
+            itemLabel: context.tr.conversations,
+            onPrevious: pageIndex == 0 ? null : () => onGoToPage(pageIndex - 1),
+            onNext: pageIndex >= pageCount - 1
+                ? null
+                : () => onGoToPage(pageIndex + 1),
+          ),
+        ],
       ],
     );
   }
@@ -884,6 +986,7 @@ String _actionLabel(AppStrings tr, ConversationsAction action) {
     ConversationsAction.unarchive => tr.conversationsActionUnarchiveFailed,
     ConversationsAction.delete => tr.conversationsActionDeleteFailed,
     ConversationsAction.stop => tr.conversationsActionStopFailed,
+    ConversationsAction.share => tr.conversationsActionShareFailed,
   };
 }
 

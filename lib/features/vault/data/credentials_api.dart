@@ -96,8 +96,12 @@ class CredentialsApi {
         if (v is String && v.isNotEmpty) err = v;
       }
       return CredentialTestResult.failure(err ?? e.message ?? 'Connection failed');
-    } catch (e) {
-      return CredentialTestResult.failure(e.toString());
+    } catch (_) {
+      // Non-Dio errors (e.g. a Dart TypeError parsing an unexpected body)
+      // must NOT leak a raw exception string onto the Test-Connection badge.
+      // Fall back to the same stable marker the other branches use, which
+      // the UI localizes via `localizeServerMessage`.
+      return const CredentialTestResult.failure('Connection failed');
     }
   }
 

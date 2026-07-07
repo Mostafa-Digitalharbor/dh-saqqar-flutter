@@ -100,9 +100,14 @@ class ChatTypingRow extends StatelessWidget {
     );
 
     final isRtl = context.isRtl;
+    // The bubble MUST be Flexible in the outer row: its inner status-label
+    // Flexible only ellipsizes once the bubble itself is width-bounded.
+    // Without this, a long tool-status label ("Checking Odoo data…") grows
+    // the bubble past the screen and overflows the row while Saqqar replies.
+    final boundedBubble = Flexible(child: bubble);
     final children = isRtl
-        ? [bubble, gap, avatarSlot]
-        : [avatarSlot, gap, bubble];
+        ? [boundedBubble, gap, avatarSlot]
+        : [avatarSlot, gap, boundedBubble];
 
     return Row(
       mainAxisAlignment: isRtl

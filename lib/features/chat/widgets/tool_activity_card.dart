@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/code_plate.dart';
 import '../../demo/saqqar_demo_data.dart';
 
 /// Inline collapsible card representing a tool call (Odoo XML-RPC, SQL, shell,
@@ -83,24 +83,7 @@ class _ToolActivityCardState extends State<ToolActivityCard> {
               ),
               if (_expanded) ...[
                 const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: s.codePlate,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: s.border),
-                  ),
-                  child: SelectableText(
-                    widget.message.content,
-                    style: context.text.bodySmall?.copyWith(
-                      fontFamily: UiStrings.monospaceFontFamily,
-                      color: s.brandCyan,
-                      height: 1.5,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+                CodePlate(text: widget.message.content, accent: s.brandCyan),
               ],
             ],
           ),

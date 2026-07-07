@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/demo/saqqar_demo_data.dart';
 import 'route_names.dart';
 
 /// Translates `saqqar://...` URIs (spec §4.4) into app routes.
 ///
 /// Supported schemes:
 /// - `saqqar://conversation/<uuid>` → `/chats/<uuid>`
-/// - `saqqar://approval/<uuid>` → `/chats/<convId>?approval=<uuid>`
-///   (the chat screen pops its own approvals sheet — Inbox tab was retired)
+/// - `saqqar://approval/<uuid>?conversation=<convId>` →
+///   `/chats/<convId>?approval=<uuid>` (the chat screen pops its own
+///   approvals sheet — Inbox tab was retired). The conversation id MUST be
+///   carried on the link because `resolve` is pure/synchronous and can't
+///   look up an approval → conversation mapping; the backend push that
+///   raises the link already knows both ids (SAQQAR_MOBILE_API.md §8).
 /// - `saqqar://credential/add?kind=xmlrpc` → `/vault/add?kind=xmlrpc`
 /// - `saqqar://share/<token>` → `/share/<token>`
 ///
@@ -47,18 +50,17 @@ class DeepLinks {
       case 'approval':
         if (tail.isEmpty) return null;
         final approvalId = tail.first;
-        // Resolve the conversation that raised this approval — we land the
-        // user inside that chat with a query flag so the chat screen can
-        // pop its approvals sheet automatically.
-        for (final approval in demoApprovals) {
-          if (approval.id == approvalId && approval.conversationId != null) {
-            return RouteNames.approvalDetailPath(
-              conversationId: approval.conversationId!,
-              approvalId: approvalId,
-            );
-          }
-        }
-        return null;
+        // The conversation the approval belongs to rides on the link's
+        // `?conversation=` query (the push knows it). We land the user
+        // inside that chat with an `?approval=` flag so the chat screen can
+        // pop its approvals sheet automatically. Without the conversation
+        // id there's nothing to route to synchronously → unrecognized.
+        final conversationId = uri.queryParameters['conversation'];
+        if (conversationId == null || conversationId.isEmpty) return null;
+        return RouteNames.approvalDetailPath(
+          conversationId: conversationId,
+          approvalId: approvalId,
+        );
 
       case 'credential':
         if (tail.isEmpty || tail.first != 'add') return null;

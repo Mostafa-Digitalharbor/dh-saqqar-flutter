@@ -18,8 +18,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_app_bar_title.dart';
-import 'package:saqqar_app/features/chat/widgets/chat_header_badges.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
 import 'package:saqqar_app/shared/extensions/responsive_breakpoints.dart';
 
 /// Named phone profiles spanning the support matrix. `tiny` covers the
@@ -143,30 +141,6 @@ void main() {
           ),
         ),
         locale: const Locale('ar'),
-      );
-    });
-  });
-
-  group('ChatHeaderBadges responsive', () {
-    testWidgets('long project + env names + all 3 badges fit on every size',
-        (tester) async {
-      await _pumpAtAllSizes(
-        tester,
-        () => ChatHeaderBadges(
-          project: const DemoProject(
-            id: 'p1',
-            name: 'Default workspace',
-          ),
-          environment: const DemoEnvironment(
-            id: 'e1',
-            name: 'Sahm Musanda Staging',
-            projectId: 'p1',
-            isLive: true,
-            readOnly: true,
-            autoApprove: true,
-          ),
-          onTap: () {},
-        ),
       );
     });
   });

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/view_model/locale_cubit.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
@@ -142,10 +143,10 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
           message: tr.artifactOpenFailed,
           variant: ToastVariant.error,
         );
-      case ArtifactDownloadFailed():
+      case ArtifactDownloadFailed(:final statusCode):
         AppToast.show(
           context,
-          message: tr.artifactDownloadFailed,
+          message: tr.artifactDownloadMessage(statusCode),
           variant: ToastVariant.error,
         );
     }
@@ -279,10 +280,12 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
 // widget boundary, isolated from the live data path.
 // ─────────────────────────────────────────────────────────────────────────
 
-DemoApproval _adaptApiApproval(inbox_api.Approval a) {
+DemoApproval _adaptApiApproval(inbox_api.Approval a, AppStrings tr) {
   return DemoApproval(
     id: a.id,
-    title: _approvalTitleFor(a.actionType),
+    // Localized via the shared approval-title table (same one the inline
+    // chat approval card uses) so Arabic users don't see English titles.
+    title: tr.approvalActionTitle(a.actionType.wire),
     prompt: a.prompt,
     actionType: a.actionType.wire,
     risk: _riskFor(a.actionType),
@@ -295,17 +298,6 @@ DemoApproval _adaptApiApproval(inbox_api.Approval a) {
       for (final entry in a.payload.entries) entry.key: entry.value.toString(),
     },
   );
-}
-
-String _approvalTitleFor(inbox_api.ApprovalActionType t) {
-  return switch (t) {
-    inbox_api.ApprovalActionType.credentialStorage => 'Credential storage',
-    inbox_api.ApprovalActionType.credentialUsage => 'Credential usage',
-    inbox_api.ApprovalActionType.serverCommand => 'Server command',
-    inbox_api.ApprovalActionType.odooWrite => 'Odoo write',
-    inbox_api.ApprovalActionType.reportExport => 'Report export',
-    inbox_api.ApprovalActionType.unknown => 'Approval',
-  };
 }
 
 String _riskFor(inbox_api.ApprovalActionType t) {
@@ -441,7 +433,7 @@ class _ApprovalsTab extends StatelessWidget {
       itemCount: approvals.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) => ChatApprovalCard(
-        approval: _adaptApiApproval(approvals[i]),
+        approval: _adaptApiApproval(approvals[i], context.tr),
         onApprove: () => onApprove(approvals[i].id),
         onReject: () => onReject(approvals[i].id),
       ),
