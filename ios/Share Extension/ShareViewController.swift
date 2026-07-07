@@ -287,6 +287,7 @@ final class ShareViewController: SLComposeServiceViewController {
                 try FileManager.default.removeItem(at: destinationURL)
             }
             try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+            hardenSharedFile(destinationURL)
             return destinationURL
         } catch {
             return nil
@@ -305,6 +306,7 @@ final class ShareViewController: SLComposeServiceViewController {
 
         do {
             try data.write(to: destinationURL, options: .atomic)
+            hardenSharedFile(destinationURL)
             return destinationURL
         } catch {
             return nil
@@ -329,10 +331,25 @@ final class ShareViewController: SLComposeServiceViewController {
                 try FileManager.default.removeItem(at: destinationURL)
             }
             try data.write(to: destinationURL, options: .atomic)
+            hardenSharedFile(destinationURL)
             return destinationURL
         } catch {
             return nil
         }
+    }
+
+    /// Encrypts a file written into the shared App-Group container at rest
+    /// (readable after first unlock, matching the app's token store) and marks
+    /// it excluded from iCloud/iTunes backups. Without this, user-shared
+    /// documents (PDFs, images, arbitrary data) sat in the container with the
+    /// default protection AND were eligible for device backups. Best-effort:
+    /// a failure here never blocks the share.
+    private func hardenSharedFile(_ url: URL) {
+        var target = url
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        values.fileProtection = .completeUntilFirstUserAuthentication
+        try? target.setResourceValues(values)
     }
 
     private func fileName(suggestedName: String?, typeIdentifier: String) -> String {

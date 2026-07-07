@@ -15,13 +15,34 @@ import 'devices_api.dart';
 AppNotification appNotificationFrom(RemoteMessage m) {
   final n = m.notification;
   return AppNotification(
-    id: m.messageId ?? '${DateTime.now().microsecondsSinceEpoch}',
+    // Prefer FCM's own message id. When it's absent, derive a STABLE id from
+    // the message content instead of a wall-clock timestamp: the same push is
+    // recorded from up to three code paths (foreground `onMessage`, a tap via
+    // `onMessageOpenedApp`, and the background isolate), and a time-based id
+    // would differ between them → the inbox would show the same notification
+    // two or three times. A content hash collapses those to one row while
+    // still separating genuinely different notifications.
+    id: m.messageId ?? _syntheticNotificationId(m),
     type: (m.data['type'] as String?) ?? '',
     title: n?.title ?? '',
     body: n?.body ?? '',
     receivedAt: DateTime.now(),
     conversationId: m.data['conversation_id'] as String?,
   );
+}
+
+/// Stable fallback id for a push with no `messageId`, built from the fields
+/// that identify it (type + conversation + title + body). Deterministic, so
+/// every delivery path derives the same id and the inbox dedupe works.
+String _syntheticNotificationId(RemoteMessage m) {
+  final n = m.notification;
+  final basis = [
+    m.data['type'] ?? '',
+    m.data['conversation_id'] ?? '',
+    n?.title ?? '',
+    n?.body ?? '',
+  ].join('');
+  return 'syn:${basis.hashCode}';
 }
 
 /// Background isolate handler — MUST be a top-level / static function with the
@@ -77,6 +98,12 @@ class PushNotificationsService {
   final List<StreamSubscription<dynamic>> _subs = [];
   bool _started = false;
 
+  /// Bumped by [stop]. [start] captures the value on entry and bails at each
+  /// async checkpoint if it changed — so a fast authenticated→unauthenticated
+  /// flip can't let an in-flight [start] re-register the device (or add
+  /// listeners) AFTER [stop] already revoked it for a signed-out user.
+  int _generation = 0;
+
   /// The server-side device row id from the last successful register — kept
   /// so [stop] can revoke exactly this device on logout.
   String? _deviceId;
@@ -90,6 +117,7 @@ class PushNotificationsService {
     _localeCode = localeCode;
     if (_started) return;
     _started = true;
+    final gen = _generation;
     try {
       final messaging = FirebaseMessaging.instance;
       // iOS shows the system prompt here; Android 13+ shows the runtime
@@ -97,13 +125,19 @@ class PushNotificationsService {
       // token registration still proceeds (the user can enable later).
       await messaging.requestPermission(alert: true, badge: true, sound: true);
       await _initLocalNotifications();
+      // If stop() ran while we were awaiting the prompts above, abort before
+      // we register the device or attach any listeners — otherwise a
+      // signed-out phone gets re-registered for the previous user's pushes.
+      if (gen != _generation) return;
 
       final token = await messaging.getToken();
+      if (gen != _generation) return;
       // Debug-only (AppLogger is a no-op in release): surfaces the token so it
       // can be pasted into Firebase Console → "Send test message" to verify
       // delivery independently of the backend.
       AppLogger.info(_tag, 'FCM token = $token');
       if (token != null) await _registerToken(token);
+      if (gen != _generation) return;
 
       _subs.add(messaging.onTokenRefresh.listen(_registerToken));
       _subs.add(FirebaseMessaging.onMessage.listen(_onForegroundMessage));
@@ -111,6 +145,7 @@ class PushNotificationsService {
 
       // Cold launch FROM a notification tap (terminated state).
       final initial = await messaging.getInitialMessage();
+      if (gen != _generation) return;
       if (initial != null) _routeFromMessage(initial);
     } catch (e, st) {
       AppLogger.warn(_tag, 'start() failed', error: e, stackTrace: st);
@@ -120,6 +155,9 @@ class PushNotificationsService {
   /// Tear down listeners and unregister this device server-side. Called on
   /// logout so the next user (or a signed-out device) gets no pushes.
   Future<void> stop() async {
+    // Invalidate any in-flight start() so it can't re-register this device
+    // after we revoke it below.
+    _generation++;
     for (final s in _subs) {
       await s.cancel();
     }

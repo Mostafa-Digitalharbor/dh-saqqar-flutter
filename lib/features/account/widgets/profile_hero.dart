@@ -47,6 +47,12 @@ class ProfileHero extends StatelessWidget {
         (plan != null && plan.showBadge) ? plan.name : null;
 
     return GlassCard(
+      // Sits on the Account tab's flat opaque AmbientBackground, so the 14px
+      // backdrop blur has no visible subject (blurring a uniform colour yields
+      // the same colour). Dropping it removes a full-screen saveLayer per card
+      // — the Account tab stacked ~6, the single biggest GPU cost on low-end
+      // phones — with pixel-identical output.
+      blur: false,
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -10,6 +10,14 @@ import receive_sharing_intent
   private static let shareMessageKey = "ShareMessageKey"
   private var shareIntakeChannel: FlutterMethodChannel?
 
+  /// Opaque overlay raised while the app is not active, so the iOS
+  /// app-switcher thumbnail (and the resign-active transition) never captures
+  /// live Odoo data / chat content. iOS has no `FLAG_SECURE` equivalent
+  /// (Android sets that in MainActivity), so this is the parity mechanism.
+  /// It runs UNCONDITIONALLY — independent of the optional in-app biometric
+  /// lock — and is purely visual (no auth prompt), so it adds no friction.
+  private var privacyCover: UIView?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -34,6 +42,42 @@ import receive_sharing_intent
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     registerShareIntakeChannel(messenger: engineBridge.applicationRegistrar.messenger())
+  }
+
+  // MARK: - App-switcher privacy cover
+
+  override func applicationWillResignActive(_ application: UIApplication) {
+    super.applicationWillResignActive(application)
+    // Raise the cover BEFORE the switcher snapshot is taken (which happens
+    // around resign-active), not on didEnterBackground which is too late.
+    showPrivacyCover()
+  }
+
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    super.applicationDidBecomeActive(application)
+    hidePrivacyCover()
+  }
+
+  private func showPrivacyCover() {
+    guard privacyCover == nil, let window = self.window else { return }
+    let cover = UIView(frame: window.bounds)
+    cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    // Solid brand navy (#0B1A38) — matches the launch/splash background so
+    // the switcher thumbnail reads as the app's launch state, not a blank.
+    cover.backgroundColor = UIColor(
+      red: 0x0B / 255.0,
+      green: 0x1A / 255.0,
+      blue: 0x38 / 255.0,
+      alpha: 1.0
+    )
+    cover.isUserInteractionEnabled = false
+    window.addSubview(cover)
+    privacyCover = cover
+  }
+
+  private func hidePrivacyCover() {
+    privacyCover?.removeFromSuperview()
+    privacyCover = nil
   }
 
   override func application(

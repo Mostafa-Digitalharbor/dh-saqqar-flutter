@@ -101,7 +101,22 @@ class _BreathingGlowState extends State<_BreathingGlow>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2200),
-  )..repeat(reverse: true);
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Under Reduce Motion the glow holds at a constant `t = 0.5`, so a
+    // repeating controller would rebuild identical frames forever. Stop it;
+    // otherwise breathe as before.
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {
@@ -113,27 +128,31 @@ class _BreathingGlowState extends State<_BreathingGlow>
   Widget build(BuildContext context) {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    return AnimatedBuilder(
-      animation: _controller,
-      child: widget.child,
-      builder: (context, child) {
-        final t = reduceMotion
-            ? 0.5
-            : Curves.easeInOut.transform(_controller.value);
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.18 + 0.22 * t),
-                blurRadius: 18 + 10 * t,
-                spreadRadius: 1 + 2 * t,
-              ),
-            ],
-          ),
-          child: child,
-        );
-      },
+    // Isolate the animated glow's repaint so its per-frame shadow doesn't
+    // invalidate the empty-state content it wraps.
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        child: widget.child,
+        builder: (context, child) {
+          final t = reduceMotion
+              ? 0.5
+              : Curves.easeInOut.transform(_controller.value);
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: 0.18 + 0.22 * t),
+                  blurRadius: 18 + 10 * t,
+                  spreadRadius: 1 + 2 * t,
+                ),
+              ],
+            ),
+            child: child,
+          );
+        },
+      ),
     );
   }
 }

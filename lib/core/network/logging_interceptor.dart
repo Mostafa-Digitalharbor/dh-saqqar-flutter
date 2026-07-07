@@ -45,7 +45,21 @@ class LoggingInterceptor extends Interceptor {
     'token',
     'access_token',
     'refresh_token',
+    // Credential-vault secrets. The schema-driven form ships these under a
+    // `payload` wrapper with schema-named fields (xmlrpc → `secret`,
+    // postgres/server_shell → `password`/SSH-key shaped). The whole
+    // `payload` value is masked wholesale below; these entries cover the
+    // same fields if a future endpoint sends them un-wrapped.
+    'secret',
+    'private_key',
+    'passphrase',
   };
+
+  /// Keys whose ENTIRE value is masked, structure and all — credential
+  /// payloads carry live Odoo secrets under arbitrary schema-named fields,
+  /// so redacting per-known-key isn't enough. A dev pasting a debug log must
+  /// never leak a customer's DB password / SSH key.
+  static const _opaqueBodyKeys = {'payload'};
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -149,7 +163,8 @@ class LoggingInterceptor extends Interceptor {
       final out = <String, Object?>{};
       input.forEach((k, v) {
         final key = k.toString();
-        if (_sensitiveBodyKeys.contains(key.toLowerCase())) {
+        if (_sensitiveBodyKeys.contains(key.toLowerCase()) ||
+            _opaqueBodyKeys.contains(key.toLowerCase())) {
           out[key] = '***';
         } else if (v is Map || v is List) {
           out[key] = _deepRedact(v as Object);

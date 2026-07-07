@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/format/compact_number.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
@@ -127,6 +128,10 @@ class _PlanTierCard extends StatelessWidget {
     final tr = context.tr;
 
     return GlassCard(
+      // Pricing sits on a flat opaque AmbientBackground and renders one card
+      // per tier — the backdrop blur has no visible subject, so dropping it
+      // removes N stacked saveLayers with pixel-identical output.
+      blur: false,
       // Highlight the caller's current tier with a cyan ring.
       borderColor: isCurrent ? s.brandCyan : null,
       child: Column(
@@ -172,12 +177,12 @@ class _PlanTierCard extends StatelessWidget {
           const SizedBox(height: 14),
           _CapRow(
             label: tr.pricingDailyCap,
-            value: '${_compact(tier.dailyBurstTokens)} ${tr.pricingStUnit}',
+            value: '${compactCount(tier.dailyBurstTokens)} ${tr.pricingStUnit}',
           ),
           const SizedBox(height: 6),
           _CapRow(
             label: tr.pricingMonthlyCap,
-            value: '${_compact(tier.monthlyTokens)} ${tr.pricingStUnit}',
+            value: '${compactCount(tier.monthlyTokens)} ${tr.pricingStUnit}',
           ),
           const SizedBox(height: 6),
           _CapRow(
@@ -290,16 +295,4 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Compact ST count — `950`, `12.3K`, `2.5M`. Western digits in both locales.
-String _compact(int value) {
-  if (value < 1000) return '$value';
-  if (value < 1000000) return '${_trim(value / 1000)}K';
-  return '${_trim(value / 1000000)}M';
-}
-
-String _trim(double v) {
-  final s = v.toStringAsFixed(1);
-  return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
 }

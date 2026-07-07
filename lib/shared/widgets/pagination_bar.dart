@@ -14,6 +14,7 @@ class PaginationBar extends StatelessWidget {
     required this.itemLabel,
     required this.onPrevious,
     required this.onNext,
+    this.onFirst,
   });
 
   final int page;
@@ -23,6 +24,13 @@ class PaginationBar extends StatelessWidget {
   final String itemLabel;
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
+
+  /// Optional "jump back to the first page" action. When supplied, a
+  /// double-chevron button appears at the START of the controls — but ONLY
+  /// once the user has moved past page 1 (`page > 1`); it stays hidden on the
+  /// first page so nothing changes there. `null` (the default) keeps the bar
+  /// exactly as it was for any other caller.
+  final VoidCallback? onFirst;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +54,15 @@ class PaginationBar extends StatelessWidget {
               style: context.text.labelMedium?.copyWith(color: s.muted),
             ),
           ),
+          // "Back to first page" — hidden on page 1, appears from page 2
+          // onward (and on every page after). Only when the caller opted in
+          // by passing [onFirst].
+          if (onFirst != null && page > 1)
+            IconButton(
+              tooltip: context.tr.firstPage,
+              onPressed: onFirst,
+              icon: const Icon(AppIcons.chevronsLeft),
+            ),
           IconButton(
             tooltip: context.tr.previousPage,
             onPressed: onPrevious,

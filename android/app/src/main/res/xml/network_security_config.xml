@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Explicit "HTTPS only" posture. Cleartext HTTP is already blocked by the
+  modern targetSdk default, but declaring it here makes the guarantee
+  independent of any future SDK downgrade for an app that carries bearer
+  tokens + live Odoo credentials to saqqaar.com. System trust anchors only
+  (no user-added CAs), which also blunts casual on-device MITM proxies.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

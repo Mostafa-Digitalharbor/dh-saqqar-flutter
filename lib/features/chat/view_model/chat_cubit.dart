@@ -342,12 +342,25 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       _repo.cacheSnapshot(conversationId, incoming);
       return;
     }
+    // Append new messages to the existing list, skipping any row whose id
+    // we already hold. The server returns rows newer than `?since=`, but a
+    // poll can be IN FLIGHT when `sendMessage`/`stopGeneration` adopts a
+    // full snapshot (both reschedule a poll) — that in-flight delta was
+    // requested against the OLD cursor, so it re-delivers the just-adopted
+    // rows and, without this guard, they'd appear as duplicate bubbles until
+    // the next full refresh. Empty ids (defensive fallback for a malformed
+    // server row) can't be deduped, so they always append — same as before.
+    final existingIds = {
+      for (final m in current.messages)
+        if (m.id.isNotEmpty) m.id,
+    };
+    final appended = [
+      for (final m in incoming.messages)
+        if (m.id.isEmpty || !existingIds.contains(m.id)) m,
+    ];
     final merged = ConversationSnapshot(
       conversation: incoming.conversation,
-      // Append new messages to the existing list. The server only
-      // returns rows newer than `?since=`, so duplicates aren't a
-      // concern under normal operation.
-      messages: [...current.messages, ...incoming.messages],
+      messages: [...current.messages, ...appended],
       cursor: incoming.cursor ?? current.cursor,
       delta: true,
       approvals: incoming.approvals,

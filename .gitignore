@@ -12,6 +12,11 @@
 # ── Misc / OS clutter ────────────────────────────────────────────
 *.class
 *.log
+# `flutter run` console capture. Named `.txt` (not `.log`) so the `*.log`
+# rule above doesn't catch it — a 95 MB dump was being tracked, bloating the
+# repo. Ignored here; untrack an already-committed copy with:
+#   git rm --cached run_log.txt && git commit
+run_log.txt
 *.pyc
 *.swp
 *.swo

@@ -15,9 +15,11 @@ import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
 import '../data/auth_api.dart';
+import '../data/social_auth_service.dart';
 import '../view_model/auth_cubit.dart';
 import '../view_model/auth_flow_cubit.dart';
 import '../widgets/auth_header_actions.dart';
+import '../widgets/social_auth_buttons.dart';
 
 /// Email-OTP auth flow (Gap D). One screen, nine steps, driven by
 /// [AuthFlowCubit]. `/sign-up` enters at [AuthFlowStep.signUpEmail] and
@@ -35,6 +37,7 @@ class AuthFlowScreen extends StatelessWidget {
       create: (ctx) => AuthFlowCubit(
         api: ctx.read<AuthApi>(),
         authCubit: ctx.read<AuthCubit>(),
+        socialAuth: ctx.read<SocialAuthService>(),
         initial: initial,
       ),
       child: const _AuthFlowView(),
@@ -435,6 +438,7 @@ class _SignUpEmailBodyState extends State<_SignUpEmailBody> {
           expand: true,
           onPressed: loading ? null : _submit,
         ),
+        const SocialAuthButtons(),
         _Footer(
           label: tr.alreadyHaveAccount,
           actionLabel: tr.authSignInInstead,
@@ -646,6 +650,7 @@ class _SignInEmailBodyState extends State<_SignInEmailBody> {
           onPressed: loading ? null : _continueWithPassword,
           child: Text(tr.authContinueWithPassword),
         ),
+        const SocialAuthButtons(),
         _Footer(
           label: tr.newToSaqqar,
           actionLabel: tr.authCreateAnAccount,

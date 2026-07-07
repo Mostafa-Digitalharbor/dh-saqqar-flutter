@@ -48,7 +48,23 @@
 				<string>saqqar</string>
 			</array>
 		</dict>
+		<!-- Google Sign-In callback: the REVERSED iOS OAuth client ID.
+		     Must match GIDClientID below and the iOS client ID in the
+		     Google Cloud project (487560580263). -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>google-signin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.487560580263-mteed8gpe4eb525bjtamc5e4328tgqfe</string>
+			</array>
+		</dict>
 	</array>
+	<!-- Google Sign-In iOS client ID (google_sign_in reads this at init). -->
+	<key>GIDClientID</key>
+	<string>487560580263-mteed8gpe4eb525bjtamc5e4328tgqfe.apps.googleusercontent.com</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>

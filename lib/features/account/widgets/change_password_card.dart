@@ -163,6 +163,9 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
     final s = context.saqqar;
 
     return GlassCard(
+      // Flat opaque Account backdrop → the backdrop blur has no visible
+      // subject; dropping it removes a saveLayer with pixel-identical output.
+      blur: false,
       // Tighter padding so the collapsed header reads as a single row, not
       // a card with a lot of empty space underneath.
       padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),

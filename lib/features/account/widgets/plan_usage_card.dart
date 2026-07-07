@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/format/compact_number.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
@@ -29,6 +30,9 @@ class PlanUsageCard extends StatelessWidget {
 
     final s = context.saqqar;
     return GlassCard(
+      // Flat opaque Account backdrop → the backdrop blur has no visible
+      // subject; dropping it removes a saveLayer with pixel-identical output.
+      blur: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -102,8 +106,8 @@ class _UsageRow extends StatelessWidget {
             ),
             Text(
               context.tr.planUsageLine(
-                _compact(window.used),
-                _compact(window.cap),
+                compactCount(window.used),
+                compactCount(window.cap),
               ),
               style: context.text.labelMedium?.copyWith(
                 color: s.text,
@@ -130,23 +134,4 @@ class _UsageRow extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Compact ST count — `950`, `12.3K`, `2.5M`. Keeps the row readable when
-/// caps run into the millions (Pro = 2.5M burst). Western digits in both
-/// locales (matches how the app renders other numerics).
-String _compact(int value) {
-  if (value < 1000) return '$value';
-  if (value < 1000000) {
-    final k = value / 1000;
-    return '${_trim(k)}K';
-  }
-  final m = value / 1000000;
-  return '${_trim(m)}M';
-}
-
-String _trim(double v) {
-  // One decimal, but drop a trailing ".0" so 12.0K renders as 12K.
-  final s = v.toStringAsFixed(1);
-  return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
 }

@@ -728,6 +728,10 @@ class _ConversationsBody extends StatelessWidget {
             onNext: pageIndex >= pageCount - 1
                 ? null
                 : () => onGoToPage(pageIndex + 1),
+            // Jump straight back to the first page. The bar hides this button
+            // on page 1 itself (page > 1 guard), so it only shows once the
+            // user has paged forward.
+            onFirst: () => onGoToPage(0),
           ),
         ],
       ],

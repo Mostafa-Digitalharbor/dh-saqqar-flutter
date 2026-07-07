@@ -425,6 +425,7 @@ class AppStrings {
   String get clearSearch => _t('clear_search');
   String get previousPage => _t('previous_page');
   String get nextPage => _t('next_page');
+  String get firstPage => _t('first_page');
   String get conversationActions => _t('conversation_actions');
   String get credentialActions => _t('credential_actions');
   String get attachFiles => _t('attach_files');
@@ -1094,6 +1095,9 @@ class AppStrings {
   String get authContinueWithEmailInstead => _t('auth_continue_email_instead');
   String get authContinueWithPasswordInstead =>
       _t('auth_continue_password_instead');
+  String get authOrContinueWith => _t('auth_or_continue_with');
+  String get authContinueWithGoogle => _t('auth_continue_google');
+  String get authContinueWithApple => _t('auth_continue_apple');
   String get authVerifyCode => _t('auth_verify_code');
   String get authVerifyAndSignIn => _t('auth_verify_signin');
   String get authCreateAccountBtn => _t('auth_create_account_btn');
@@ -1364,6 +1368,7 @@ const Map<String, String> _en = {
   'clear_search': 'Clear search',
   'previous_page': 'Previous page',
   'next_page': 'Next page',
+  'first_page': 'First page',
   'conversation_actions': 'Conversation actions',
   'credential_actions': 'Credential actions',
   'attach_files': 'Attach screenshots, PDFs, or spreadsheets',
@@ -1811,6 +1816,9 @@ const Map<String, String> _en = {
   'auth_continue_password': 'Continue with password',
   'auth_continue_email_instead': 'Continue with email instead',
   'auth_continue_password_instead': 'Continue with password instead',
+  'auth_or_continue_with': 'or continue with',
+  'auth_continue_google': 'Continue with Google',
+  'auth_continue_apple': 'Continue with Apple',
   'auth_verify_code': 'Verify code',
   'auth_verify_signin': 'Verify & sign in',
   'auth_create_account_btn': 'Create account',
@@ -2196,6 +2204,7 @@ const Map<String, String> _ar = {
   'clear_search': 'مسح البحث',
   'previous_page': 'الصفحة السابقة',
   'next_page': 'الصفحة التالية',
+  'first_page': 'الصفحة الأولى',
   'conversation_actions': 'إجراءات المحادثة',
   'credential_actions': 'إجراءات بيانات الدخول',
   'attach_files': 'إرفاق صور أو PDF أو جداول',
@@ -2626,6 +2635,9 @@ const Map<String, String> _ar = {
   'auth_continue_password': 'المتابعة بكلمة المرور',
   'auth_continue_email_instead': 'المتابعة بالبريد بدلاً من ذلك',
   'auth_continue_password_instead': 'المتابعة بكلمة المرور بدلاً من ذلك',
+  'auth_or_continue_with': 'أو تابع باستخدام',
+  'auth_continue_google': 'المتابعة بحساب Google',
+  'auth_continue_apple': 'المتابعة عبر Apple',
   'auth_verify_code': 'تأكيد الرمز',
   'auth_verify_signin': 'تأكيد وتسجيل الدخول',
   'auth_create_account_btn': 'إنشاء الحساب',

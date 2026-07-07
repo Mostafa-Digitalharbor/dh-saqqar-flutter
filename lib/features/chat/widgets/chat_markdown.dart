@@ -16,7 +16,7 @@ import '../../../shared/widgets/app_toast.dart';
 /// Tapping a link copies it to the clipboard and toasts a confirmation —
 /// we deliberately avoid `url_launcher` here to keep the dependency tree
 /// thin and skip the per-platform setup it requires.
-class ChatMarkdown extends StatelessWidget {
+class ChatMarkdown extends StatefulWidget {
   const ChatMarkdown({
     super.key,
     required this.data,
@@ -27,7 +27,49 @@ class ChatMarkdown extends StatelessWidget {
   final bool isUser;
 
   @override
+  State<ChatMarkdown> createState() => _ChatMarkdownState();
+}
+
+class _ChatMarkdownState extends State<ChatMarkdown> {
+  /// The built body, cached so a rebuild that doesn't change the markdown
+  /// text, the user/agent flag, or the theme reuses the SAME [MarkdownBody]
+  /// instance. That matters because the chat screen rebuilds on every ~1.5 s
+  /// poll tick: without this, each visible bubble re-parses its markdown AST
+  /// + rebuilds selectable text spans 40×/minute. Returning the identical
+  /// widget lets Flutter's element diff skip the subtree entirely — same
+  /// pixels, same selection, none of the parse cost. Invalidated on:
+  ///   * `data`/`isUser` change  → [didUpdateWidget]
+  ///   * theme / locale change   → [didChangeDependencies]
+  /// (Text-scale is applied by [MarkdownBody] at layout time, so it needs no
+  /// cache bust.)
+  Widget? _cachedBody;
+
+  @override
+  void didUpdateWidget(ChatMarkdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data != widget.data || oldWidget.isUser != widget.isUser) {
+      _cachedBody = null;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Any inherited change (theme brightness, ThemeExtension tokens, locale
+    // typography) alters the rendered markdown, so drop the cache. This does
+    // NOT fire on ordinary parent rebuilds — only when a dependency changes —
+    // so the poll-tick fast path keeps hitting the cache.
+    _cachedBody = null;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return _cachedBody ??= _buildBody(context);
+  }
+
+  Widget _buildBody(BuildContext context) {
+    final data = widget.data;
+    final isUser = widget.isUser;
     final s = context.saqqar;
     final base = context.text.bodyMedium?.copyWith(
       color: s.text,

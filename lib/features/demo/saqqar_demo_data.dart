@@ -97,10 +97,17 @@ class DemoMessage {
     required this.role,
     required this.content,
     required this.time,
+    this.id = '',
     this.toolName,
     this.attachments = const [],
     this.createdAt,
   });
+
+  /// Server message id (empty for locally-authored demo/optimistic rows).
+  /// Carried through the API adapter so the chat list can give each row a
+  /// stable [ValueKey], letting Flutter match elements across poll rebuilds
+  /// instead of reusing the wrong one when messages shift index.
+  final String id;
 
   final DemoMessageRole role;
   final String content;

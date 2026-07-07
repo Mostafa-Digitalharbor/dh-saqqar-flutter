@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/format/compact_number.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
@@ -77,6 +78,9 @@ class _PlanCardBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final tr = context.tr;
     return GlassCard(
+      // Flat opaque Account backdrop → the backdrop blur has no visible
+      // subject; dropping it removes a saveLayer with pixel-identical output.
+      blur: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -91,12 +95,12 @@ class _PlanCardBody extends StatelessWidget {
           const SizedBox(height: 14),
           _CapRow(
             label: tr.pricingDailyCap,
-            value: '${_compact(tier.dailyBurstTokens)} ${tr.pricingStUnit}',
+            value: '${compactCount(tier.dailyBurstTokens)} ${tr.pricingStUnit}',
           ),
           const SizedBox(height: 6),
           _CapRow(
             label: tr.pricingMonthlyCap,
-            value: '${_compact(tier.monthlyTokens)} ${tr.pricingStUnit}',
+            value: '${compactCount(tier.monthlyTokens)} ${tr.pricingStUnit}',
           ),
           const SizedBox(height: 14),
           Align(
@@ -138,15 +142,4 @@ class _CapRow extends StatelessWidget {
       ],
     );
   }
-}
-
-String _compact(int value) {
-  if (value < 1000) return '$value';
-  if (value < 1000000) return '${_trim(value / 1000)}K';
-  return '${_trim(value / 1000000)}M';
-}
-
-String _trim(double v) {
-  final s = v.toStringAsFixed(1);
-  return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
 }

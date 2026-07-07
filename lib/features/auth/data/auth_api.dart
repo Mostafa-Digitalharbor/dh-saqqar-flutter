@@ -56,6 +56,47 @@ class AuthApi {
     return _sessionFrom(res.data!);
   }
 
+  // ── Social sign-in (docs/MOBILE_AUTH_GUIDE.md) ───────────────────────
+
+  /// `POST /api/v1/auth/google/ { id_token }` — exchanges a Google ID token
+  /// for a Saqqar bearer token. The backend verifies the token's signature +
+  /// audience, then auto-links by verified email (same account as an existing
+  /// email/OTP user). 401 if verification fails.
+  Future<AuthSession> loginWithGoogle({required String idToken}) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.authGoogle,
+      data: {'id_token': idToken},
+      options: Options(extra: _skipAuth),
+    );
+    return _sessionFrom(res.data!);
+  }
+
+  /// `POST /api/v1/auth/apple/ { id_token, user? }` — same exchange for Apple.
+  /// Apple only surfaces the user's name on the FIRST sign-in, so pass
+  /// [firstName] / [lastName] through when present (omitted otherwise) so a
+  /// new account gets a real display name instead of a blank one.
+  Future<AuthSession> loginWithApple({
+    required String idToken,
+    String? firstName,
+    String? lastName,
+  }) async {
+    final body = <String, dynamic>{'id_token': idToken};
+    final hasName = (firstName != null && firstName.isNotEmpty) ||
+        (lastName != null && lastName.isNotEmpty);
+    if (hasName) {
+      body['user'] = {
+        'first_name': firstName ?? '',
+        'last_name': lastName ?? '',
+      };
+    }
+    final res = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.authApple,
+      data: body,
+      options: Options(extra: _skipAuth),
+    );
+    return _sessionFrom(res.data!);
+  }
+
   // ── Email-OTP signup (Gap D) ─────────────────────────────────────────
   //
   // The server keys the OTP flow by EMAIL (the `start` calls return only

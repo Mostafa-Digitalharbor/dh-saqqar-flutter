@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -80,13 +82,32 @@ class _SaqqarAppState extends State<SaqqarApp> {
               FlutterNativeSplash.remove();
               _nativeRemoved = true;
             }
+            // Capture the boot-scoped services BEFORE the async gap so we
+            // never touch `context` after the await.
+            final authCubit = context.read<AuthCubit>();
+            final push = context.read<PushNotificationsService>();
+            final notificationsEnabled =
+                context.read<NotificationsSettingsCubit>().state;
             // Block the splash → router handoff until AuthCubit's
             // cold-start bootstrap (read stored token + validate via
             // /auth/me/) resolves. Otherwise the router's redirect
             // callback sees `auth.isResolved == false` and lets the user
             // through to /chats for one frame before bouncing them out —
             // visible as a flicker.
-            await context.read<AuthCubit>().bootstrap();
+            await authCubit.bootstrap();
+            // Cold-start push registration for a RETURNING signed-in user.
+            // bootstrap() flips auth → authenticated HERE, before the
+            // post-splash `BlocListener<AuthCubit>` (which owns the runtime
+            // push.start/stop) has mounted — and BlocListener never fires
+            // for the state present at mount. Without this, a returning user
+            // never re-registers their FCM token (stale token → missed
+            // pushes) until they re-auth or toggle the setting. start() is
+            // idempotent (guards on `_started`), so if a later real
+            // sign-in transition also fires the listener, this is a no-op.
+            if (authCubit.state.status == AuthStatus.authenticated &&
+                notificationsEnabled) {
+              unawaited(push.start(localeCode: supportedLocale.languageCode));
+            }
           },
           onComplete: () {
             if (!mounted) return;

@@ -42,9 +42,19 @@ class _SkeletonBlockState extends State<SkeletonBlock>
   );
 
   @override
-  void initState() {
-    super.initState();
-    _ctrl.repeat();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Drive the shimmer from here (not initState) so we can read the OS
+    // Reduce-Motion setting: keeping the controller repeating for a user who
+    // asked for no motion is pure wasted vsync CPU (the static plate is what
+    // renders anyway). Runs right after initState on first build, so the
+    // shimmer still starts immediately for everyone else.
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (reduceMotion) {
+      _ctrl.stop();
+    } else if (!_ctrl.isAnimating) {
+      _ctrl.repeat();
+    }
   }
 
   @override
@@ -81,7 +91,11 @@ class _SkeletonBlockState extends State<SkeletonBlock>
 
     if (reduceMotion) return block;
 
-    return AnimatedBuilder(
+    // A list-skeleton paints many blocks at once; isolate each shimmer in
+    // its own layer so a repaint of one doesn't invalidate its neighbours
+    // (or whatever list row hosts it) every frame.
+    return RepaintBoundary(
+      child: AnimatedBuilder(
       animation: _ctrl,
       builder: (context, _) {
         // Sweep a soft highlight from -1 to 2 (slightly past both edges)
@@ -113,6 +127,7 @@ class _SkeletonBlockState extends State<SkeletonBlock>
           ),
         );
       },
+      ),
     );
   }
 }

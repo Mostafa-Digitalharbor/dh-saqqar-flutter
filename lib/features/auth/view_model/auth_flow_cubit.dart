@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/auth_api.dart';
 import '../data/auth_models.dart';
+import '../data/social_auth_service.dart';
 import 'auth_cubit.dart';
 
 /// The nine screens of the email-OTP auth flow (Gap D). One cubit drives a
@@ -91,13 +92,16 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
   AuthFlowCubit({
     required AuthApi api,
     required AuthCubit authCubit,
+    required SocialAuthService socialAuth,
     required AuthFlowStep initial,
   })  : _api = api,
         _auth = authCubit,
+        _social = socialAuth,
         super(AuthFlowState(step: initial));
 
   final AuthApi _api;
   final AuthCubit _auth;
+  final SocialAuthService _social;
 
   @override
   void emit(AuthFlowState state) {
@@ -195,6 +199,41 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
   }) async {
     await _run(() async {
       final session = await _api.login(email: email, password: password);
+      await _auth.adoptSession(session);
+    });
+  }
+
+  // ── Social sign-in (Google / Apple) ──────────────────────────────────
+
+  /// Runs the native Google picker, exchanges the ID token for a Saqqar
+  /// bearer, and adopts the session. A user cancel is a no-op (drop loading,
+  /// no error toast); real failures surface via [_run]'s catch.
+  Future<void> continueWithGoogle() async {
+    await _run(() async {
+      final result = await _social.signInWithGoogle();
+      if (result == null) {
+        emit(state.copyWith(loading: false));
+        return;
+      }
+      final session = await _api.loginWithGoogle(idToken: result.idToken);
+      await _auth.adoptSession(session);
+    });
+  }
+
+  /// Native Sign in with Apple (iOS). Passes the name through on the first
+  /// sign-in (Apple omits it afterwards). Cancel is a no-op like Google.
+  Future<void> continueWithApple() async {
+    await _run(() async {
+      final result = await _social.signInWithApple();
+      if (result == null) {
+        emit(state.copyWith(loading: false));
+        return;
+      }
+      final session = await _api.loginWithApple(
+        idToken: result.idToken,
+        firstName: result.firstName,
+        lastName: result.lastName,
+      );
       await _auth.adoptSession(session);
     });
   }

@@ -35,13 +35,29 @@ class AuthInterceptor extends QueuedInterceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    if (options.extra['skipAuth'] != true) {
+    if (options.extra['skipAuth'] != true && _isApiHost(options)) {
       final token = await _store.readAccessToken();
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
     }
     handler.next(options);
+  }
+
+  /// Whether the request targets our own API host. The bearer is attached
+  /// ONLY to same-host requests: artifact / attachment URLs come back as
+  /// absolute URLs straight from the server (`absoluteUrl` passes them
+  /// through verbatim), so a compromised or misconfigured backend that
+  /// returned an absolute URL on a FOREIGN host would otherwise make us leak
+  /// the user's bearer token to that host. Same-host requests (every
+  /// `/api/v1/…` call resolves to the base host, and artifact URLs served
+  /// from saqqaar.com) are unaffected; cross-host artifact URLs are already
+  /// self-authorizing per spec (the unguessable URL IS the credential), so
+  /// they lose nothing by not carrying the bearer.
+  bool _isApiHost(RequestOptions options) {
+    final baseHost = Uri.tryParse(options.baseUrl)?.host ?? '';
+    final reqHost = options.uri.host;
+    return reqHost.isEmpty || reqHost == baseHost;
   }
 
   @override

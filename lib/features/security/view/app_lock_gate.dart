@@ -66,20 +66,24 @@ class _AppLockGateState extends State<AppLockGate>
     final authed = context.select<AuthCubit, bool>(
       (c) => c.state.isAuthenticated,
     );
+    // Is the opaque lock currently covering the app?
+    final showLock = authed &&
+        context.select<AppLockCubit, bool>(
+          (c) => c.state.enabled && c.state.locked,
+        );
     return Stack(
       children: [
-        widget.child,
-        if (authed)
-          BlocBuilder<AppLockCubit, AppLockState>(
-            buildWhen: (a, b) =>
-                a.enabled != b.enabled || a.locked != b.locked,
-            builder: (context, state) {
-              if (!state.enabled || !state.locked) {
-                return const SizedBox.shrink();
-              }
-              return const Positioned.fill(child: AppLockScreen());
-            },
-          ),
+        // While the lock is up, drop the authenticated app out of the
+        // semantics tree so TalkBack / VoiceOver can't read the Odoo data
+        // behind the opaque lock screen — the lock previously hid pixels
+        // only, leaving the content reachable to assistive tech. No effect
+        // when unlocked (`excluding: false`), so the normal experience is
+        // byte-for-byte unchanged.
+        ExcludeSemantics(
+          excluding: showLock,
+          child: widget.child,
+        ),
+        if (showLock) const Positioned.fill(child: AppLockScreen()),
       ],
     );
   }

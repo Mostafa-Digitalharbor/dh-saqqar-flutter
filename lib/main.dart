@@ -25,6 +25,7 @@ import 'core/network/view_model/connectivity_cubit.dart';
 import 'core/storage/secure_token_store.dart';
 import 'core/theme/view_model/theme_cubit.dart';
 import 'features/auth/data/auth_api.dart';
+import 'features/auth/data/social_auth_service.dart';
 import 'features/auth/view_model/auth_cubit.dart';
 import 'features/billing/data/plans_api.dart';
 import 'features/billing/data/usage_api.dart';
@@ -238,6 +239,9 @@ Future<void> _bootApp() async {
   // cubit via `RepositoryProvider`. Cheap to build (no I/O), so doing it
   // here keeps `main` predictable and lets tests override individually.
   final authApi = AuthApi(dio);
+  // Native Google / Apple sign-in wrapper (docs/MOBILE_AUTH_GUIDE.md). No I/O
+  // at construction — the underlying SDKs init lazily on first use.
+  final socialAuthService = SocialAuthService();
   final projectsApi = ProjectsApi(dio);
   final plansApi = PlansApi(dio);
   final usageApi = UsageApi(dio);
@@ -293,6 +297,7 @@ Future<void> _bootApp() async {
         RepositoryProvider<SecureTokenStore>.value(value: tokenStore),
         RepositoryProvider<Dio>.value(value: dio),
         RepositoryProvider<AuthApi>.value(value: authApi),
+        RepositoryProvider<SocialAuthService>.value(value: socialAuthService),
         RepositoryProvider<ProjectsApi>.value(value: projectsApi),
         RepositoryProvider<PlansApi>.value(value: plansApi),
         RepositoryProvider<UsageApi>.value(value: usageApi),

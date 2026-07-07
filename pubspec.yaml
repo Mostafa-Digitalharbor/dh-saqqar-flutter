@@ -49,6 +49,15 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   shared_preferences: ^2.3.3
 
+  # Native social sign-in (docs/MOBILE_AUTH_GUIDE.md). google_sign_in is
+  # pinned to the v6 API (GoogleSignIn(...).signIn() → authentication.idToken);
+  # v7 reworked the surface. The app posts the provider ID token to
+  # /api/v1/auth/{google,apple}/ and gets back the same bearer token the
+  # email/OTP login returns. sign_in_with_apple is iOS-only in the UI (App
+  # Store 4.8 requires Apple when a third-party login is offered).
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.0
+
   # Biometric / device-credential app lock (Face ID, fingerprint, PIN).
   # Gates the app behind the OS authenticator since it holds the user's
   # live Odoo credentials. iOS needs NSFaceIDUsageDescription (Info.plist).

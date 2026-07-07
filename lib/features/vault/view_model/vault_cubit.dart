@@ -531,6 +531,11 @@ class VaultCubit extends Cubit<VaultState> {
   /// fires [commit] in the background, and rolls back to the
   /// pre-mutation data if the server rejects. Use for renames / deletes
   /// / flag toggles where the user expects instant feedback.
+  /// Monotonic id stamped on each optimistic mutation. On rollback we only
+  /// restore the captured pre-state if OURS is still the latest mutation —
+  /// see [_runOptimistic].
+  int _optimisticSeq = 0;
+
   Future<bool> _runOptimistic(
     VaultAction action, {
     required VaultData Function(VaultData) mutate,
@@ -543,6 +548,7 @@ class VaultCubit extends Cubit<VaultState> {
       return false;
     }
     final optimistic = mutate(current);
+    final seq = ++_optimisticSeq;
     emit(state.copyWith(
       data: DataSuccess(optimistic),
       actionInFlight: true,
@@ -563,8 +569,16 @@ class VaultCubit extends Cubit<VaultState> {
         error: e,
         stackTrace: st,
       );
+      // Restore the pre-mutation data ONLY if no newer optimistic mutation
+      // landed while our commit was in flight. Otherwise `current` is a stale
+      // capture from before that newer change, and blindly restoring it would
+      // silently discard the concurrent (already-applied, possibly-succeeded)
+      // mutation — a lost update. In that case we keep the newer data intact
+      // and only surface the failure; the newer mutation owns the rollback of
+      // its own slice if IT fails too.
+      final isLatest = seq == _optimisticSeq;
       emit(state.copyWith(
-        data: DataSuccess(current),
+        data: isLatest ? DataSuccess(current) : state.data,
         actionInFlight: false,
         actionFailure: VaultActionFailure(
           action: action,

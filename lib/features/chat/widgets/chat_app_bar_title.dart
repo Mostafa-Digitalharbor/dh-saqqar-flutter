@@ -210,7 +210,21 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
   late final AnimationController _pulse = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1400),
-  )..repeat(reverse: true);
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Under Reduce Motion the dot holds at a constant `t = 1.0`, so keep the
+    // controller stopped instead of rebuilding an identical frame 60×/s in
+    // the app bar for the whole run.
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (reduceMotion) {
+      _pulse.stop();
+    } else if (!_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {

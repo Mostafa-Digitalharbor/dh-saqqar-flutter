@@ -24,7 +24,10 @@ import 'package:saqqar_app/features/inbox/data/approval_models.dart';
 import 'package:saqqar_app/features/inbox/data/approvals_api.dart';
 import 'package:saqqar_app/features/inbox/data/artifacts_api.dart';
 import 'package:saqqar_app/features/inbox/view_model/approvals_cubit.dart';
+import 'package:saqqar_app/features/notifications/data/notifications_store.dart';
+import 'package:saqqar_app/features/notifications/view_model/notifications_settings_cubit.dart';
 import 'package:saqqar_app/features/push/data/devices_api.dart';
+import 'package:saqqar_app/features/push/data/push_notifications_service.dart';
 import 'package:saqqar_app/features/share/data/shares_api.dart';
 import 'package:saqqar_app/features/share/intake/share_intake_service.dart';
 import 'package:saqqar_app/features/vault/data/credentials_api.dart';
@@ -145,6 +148,13 @@ Future<void> _pumpApp(WidgetTester tester) async {
   final devicesApi = DevicesApi(dio);
   final liveEnvAckService = LiveEnvAckService(prefs);
   final shareIntakeService = ShareIntakeService();
+  // Push service + notifications store — provided (never started) so the
+  // cold-start push-registration path in app.dart's splash `onReady` can
+  // resolve them via context.read. start() only fires for an authenticated
+  // user, and this harness boots with no token, so no platform channel is
+  // touched.
+  final notificationsStore = NotificationsStore(prefs);
+  final pushService = PushNotificationsService(devicesApi, notificationsStore);
   final vaultRepository = VaultRepository(
     projectsApi: projectsApi,
     credentialsApi: credentialsApi,
@@ -166,6 +176,7 @@ Future<void> _pumpApp(WidgetTester tester) async {
         RepositoryProvider<SharesApi>.value(value: sharesApi),
         RepositoryProvider<RemoteI18nApi>.value(value: remoteI18nApi),
         RepositoryProvider<DevicesApi>.value(value: devicesApi),
+        RepositoryProvider<PushNotificationsService>.value(value: pushService),
         RepositoryProvider<LiveEnvAckService>.value(value: liveEnvAckService),
         // Mirror main.dart — ShareIntentBootstrap (mounted inside
         // MaterialApp.router's builder) reads this via context.watch, so
@@ -188,6 +199,9 @@ Future<void> _pumpApp(WidgetTester tester) async {
             create: (_) => AuthCubit(api: authApi, tokenStore: tokenStore),
           ),
           BlocProvider<DeepThinkCubit>(create: (_) => DeepThinkCubit(prefs)),
+          BlocProvider<NotificationsSettingsCubit>(
+            create: (_) => NotificationsSettingsCubit(prefs),
+          ),
           BlocProvider<RunningAgentsCubit>(
             create: (_) => RunningAgentsCubit(),
           ),

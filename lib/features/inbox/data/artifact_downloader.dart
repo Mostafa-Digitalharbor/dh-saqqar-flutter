@@ -93,7 +93,29 @@ class ArtifactDownloader {
     // the auth token"). Still send through the normal Dio instance so
     // the AuthInterceptor attaches our bearer in case the server is
     // configured to require it on a future revision.
-    await _dio.download(url, target.path);
+    //
+    // Download to a sibling `.part` file and atomically rename on success.
+    // Writing straight to `target.path` meant an interrupted download
+    // (network drop, app killed mid-transfer) left a NON-EMPTY partial
+    // file that the `lengthSync() > 0` cache check then served forever —
+    // the user opened a truncated/corrupt document with no way to recover.
+    // A `.part` that never gets renamed is simply re-attempted next time.
+    final partial = File('${target.path}.part');
+    try {
+      await _dio.download(url, partial.path);
+      // `rename` is atomic within the same directory on both Android and
+      // iOS sandboxes, so `target` only ever exists as a complete file.
+      await partial.rename(target.path);
+    } catch (_) {
+      // Clean up the partial so a retry starts fresh and the corrupt
+      // bytes can never be mistaken for a cached copy.
+      if (partial.existsSync()) {
+        try {
+          partial.deleteSync();
+        } catch (_) {/* best-effort cleanup */}
+      }
+      rethrow;
+    }
     return target;
   }
 
@@ -114,7 +136,14 @@ class ArtifactDownloader {
       ext = kindHint.toLowerCase();
     }
     if (ext.isEmpty || ext.length > 6) ext = 'bin';
-    return '$cacheKey.$ext';
+    // Sanitize the server-supplied cacheKey (artifact/attachment id) before
+    // it becomes a path segment: an id containing `/` or `..` would let a
+    // malicious/compromised backend write the download OUTSIDE
+    // `saqqar_artifacts` (path traversal within the app sandbox). Legit ids
+    // are UUID/slug-shaped, so this is a no-op for real data. Mirrors the
+    // sibling ChatSnapshotDiskCache, which already sanitizes the same way.
+    final safeKey = cacheKey.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+    return '$safeKey.$ext';
   }
 }
 

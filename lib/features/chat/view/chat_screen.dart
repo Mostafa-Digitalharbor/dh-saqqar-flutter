@@ -215,9 +215,8 @@ class _ChatScreenState extends State<ChatScreen>
   // Report progress is now read live from the snapshot's
   // `conversation.runProgress` (see [_liveRunProgress]) — no client-side
   // timer/simulation. The old `_runProgress` / `_progressTimer` /
-  // `_thinkingTimer` fields drove a fabricated progress bar and were
-  // removed in the de-fabrication pass.
-  Timer? _loadingTimer;
+  // `_thinkingTimer` / `_loadingTimer` fields drove a fabricated progress
+  // bar and were removed in the de-fabrication pass.
 
   bool get _isNewChat => widget.conversationId == UiStrings.newConversationId;
 
@@ -262,6 +261,20 @@ class _ChatScreenState extends State<ChatScreen>
     return snapshot.messages.where(_isVisibleMessage).length;
   }
 
+  // Memo for [_allVisibleMessages]. The adaptation (filter + map to
+  // `DemoMessage` + per-row intl date formatting) is a pure function of the
+  // snapshot object and the locale, but the getter is invoked ~4× per
+  // build() (count, effective-slice, message-list, search) — so without a
+  // cache the whole transcript is re-adapted four times every frame, and
+  // every frame is a 1.5 s poll tick. Keyed on `identical(snapshot)` so it's
+  // provably correct: a new snapshot object (the only thing the cubit emits
+  // on a real change) misses the cache and recomputes; repeated calls within
+  // one build hit it. `_visibleLocaleTag` invalidates on a language switch
+  // so timestamps re-localize.
+  Object? _visibleMemoSnapshot;
+  String? _visibleMemoLocaleTag;
+  List<DemoMessage>? _visibleMemo;
+
   /// EVERY loaded visible message (no display window), adapted to the
   /// demo-shaped widgets. Source of truth for the count + in-chat search.
   ///
@@ -272,12 +285,22 @@ class _ChatScreenState extends State<ChatScreen>
     if (_isNewChat) return _messages;
     final snapshot = context.watch<ChatCubit>().state.data.dataOrNull;
     if (snapshot == null) return const [];
+    final localeTag = Localizations.localeOf(context).toString();
+    if (identical(_visibleMemoSnapshot, snapshot) &&
+        _visibleMemoLocaleTag == localeTag &&
+        _visibleMemo != null) {
+      return _visibleMemo!;
+    }
     // Closure capture: pass `context` into the adapter so the timestamp
     // resolves through the current locale.
-    return snapshot.messages
+    final adapted = snapshot.messages
         .where(_isVisibleMessage)
         .map((m) => _adaptApiMessage(m, context))
         .toList();
+    _visibleMemoSnapshot = snapshot;
+    _visibleMemoLocaleTag = localeTag;
+    _visibleMemo = adapted;
+    return adapted;
   }
 
   /// The windowed slice actually rendered in the lane — the most-recent
@@ -839,7 +862,6 @@ class _ChatScreenState extends State<ChatScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _shareIntakeService?.removeListener(_onShareIntakeChanged);
-    _loadingTimer?.cancel();
     _recordingTimer?.cancel();
     _recordingHardStop?.cancel();
     // Don't await — the recorder's stop() returns a Future but the
@@ -2420,13 +2442,18 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _openConversationSearch() async {
     final messages = _searchableMessages;
     final s = context.saqqar;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: s.surface,
-      builder: (sheetContext) {
-        final controller = TextEditingController();
-        return Padding(
+    // Owned here (not inside the sheet builder) so it can be disposed when
+    // the sheet closes — an earlier revision created it inside `builder` and
+    // never disposed it, leaking one TextEditingController per search-open
+    // for the app's lifetime.
+    final controller = TextEditingController();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: s.surface,
+        builder: (sheetContext) {
+          return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
           ),
@@ -2546,7 +2573,10 @@ class _ChatScreenState extends State<ChatScreen>
           ),
         );
       },
-    );
+      );
+    } finally {
+      controller.dispose();
+    }
   }
 
   Widget _buildMessageList() {
@@ -2762,6 +2792,7 @@ class _ChatScreenState extends State<ChatScreen>
           6,
         ),
         child: MessageRow(
+          key: message.id.isEmpty ? null : ValueKey('msg-${message.id}'),
           message: message,
           isFirstOfGroup: isFirstOfGroup,
           isLastOfGroup: true,
@@ -2780,6 +2811,9 @@ class _ChatScreenState extends State<ChatScreen>
         ),
         const SizedBox(height: 6),
         MessageRow(
+          key: finalReply.id.isEmpty
+              ? null
+              : ValueKey('msg-${finalReply.id}'),
           message: finalReply,
           isFirstOfGroup: true,
           isLastOfGroup: true,
@@ -3147,6 +3181,7 @@ class _LoadEarlierButton extends StatelessWidget {
 /// Matches the web's per-message timestamp footer.
 DemoMessage _adaptApiMessage(api.Message m, BuildContext context) {
   return DemoMessage(
+    id: m.id,
     role: switch (m.role) {
       api.MessageRole.user => DemoMessageRole.user,
       // Tool + system messages render in the assistant lane; the chat

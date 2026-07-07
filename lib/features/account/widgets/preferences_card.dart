@@ -30,6 +30,9 @@ class PreferencesCard extends StatelessWidget {
     final s = context.saqqar;
 
     return GlassCard(
+      // Flat opaque Account backdrop → the backdrop blur has no visible
+      // subject; dropping it removes a saveLayer with pixel-identical output.
+      blur: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

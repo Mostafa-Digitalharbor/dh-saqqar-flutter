@@ -28,7 +28,19 @@
     <application
         android:label="Saqqar"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:networkSecurityConfig="@xml/network_security_config">
+        <!-- allowBackup=false + dataExtractionRules: the app holds live Odoo
+             credentials + bearer tokens (in EncryptedSharedPreferences).
+             Even though the encryption key lives in the AndroidKeyStore and
+             isn't backed up, we don't want the encrypted blobs (or any plain
+             cached state) leaving the device via cloud auto-backup / adb
+             backup / device-to-device transfer. networkSecurityConfig pins an
+             explicit "no cleartext" posture (already the targetSdk default —
+             this makes it independent of any future SDK downgrade). -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

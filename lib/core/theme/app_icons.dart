@@ -23,6 +23,8 @@ class AppIcons {
   static const IconData close = LucideIcons.x;
   static const IconData chevronLeft = LucideIcons.chevronLeft;
   static const IconData chevronRight = LucideIcons.chevronRight;
+  // Double-chevron "jump to first page" affordance for the pagination bar.
+  static const IconData chevronsLeft = LucideIcons.chevronsLeft;
   static const IconData chevronDown = LucideIcons.chevronDown;
   static const IconData chevronUp = LucideIcons.chevronUp;
   static const IconData arrowRight = LucideIcons.arrowRight;

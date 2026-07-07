@@ -131,6 +131,9 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
     final email = context.read<AuthCubit>().state.user?.email ?? '';
 
     return GlassCard(
+      // Flat opaque Account backdrop → the backdrop blur has no visible
+      // subject; dropping it removes a saveLayer with pixel-identical output.
+      blur: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

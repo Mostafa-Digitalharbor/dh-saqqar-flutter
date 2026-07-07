@@ -97,7 +97,16 @@ class ApiErrorMapper {
     if (e.isRateLimited) {
       return RateLimitFailure(retryAfterSeconds: e.retryAfterSeconds);
     }
-    if (e.isValidation || (e.fieldErrors != null && e.fieldErrors!.isNotEmpty)) {
+    // Validation only wins for 4xx. A 5xx that happens to carry an extra
+    // string field (e.g. `trace_id`, `request_id`) gets those keys hoisted
+    // into `fieldErrors` by the ErrorInterceptor — without this status guard
+    // the server crash would surface to the user as a "check your input"
+    // validation error and diverge from what Sentry (correctly) reports as a
+    // 5xx. Let it fall through to the ServerFailure branch below instead.
+    final is5xx = e.statusCode != null && e.statusCode! >= 500;
+    if (!is5xx &&
+        (e.isValidation ||
+            (e.fieldErrors != null && e.fieldErrors!.isNotEmpty))) {
       return ValidationFailure(
         fieldErrors: e.fieldErrors ?? const {},
         message: e.message.isNotEmpty ? e.message : null,

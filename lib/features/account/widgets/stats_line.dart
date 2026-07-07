@@ -8,15 +8,17 @@ import '../../../shared/extensions/context_extensions.dart';
 ///
 /// Format: `6 chats · 7 credentials · 2 approvals · 8 files`
 ///
-/// Numbers are still placeholder until the API ships; once `/api/auth/me/`
-/// returns the `stats` block, swap them in.
+/// Counts come from `/api/auth/me/` via [AuthCounts] (0 when the user has
+/// none). The values are REQUIRED — there are deliberately no default
+/// numbers so a caller can never render fabricated stats, which the
+/// product explicitly prohibits.
 class StatsLine extends StatelessWidget {
   const StatsLine({
     super.key,
-    this.conversations = 6,
-    this.credentials = 7,
-    this.approvals = 2,
-    this.artifacts = 8,
+    required this.conversations,
+    required this.credentials,
+    required this.approvals,
+    required this.artifacts,
   });
 
   final int conversations;

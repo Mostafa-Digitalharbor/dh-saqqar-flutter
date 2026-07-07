@@ -20,6 +20,17 @@ class ApiEndpoints {
   static const String logout = '/api/v1/auth/logout/';
   static const String me = '/api/v1/auth/me/';
 
+  // ── Social sign-in (docs/MOBILE_AUTH_GUIDE.md) ───────────────────────
+  // Exchange a provider ID token for a Saqqar bearer token. Same response
+  // shape as login/register (`{ ok, token, user, created }`). Auto-links to
+  // an existing account by verified email.
+  /// `POST /api/v1/auth/google/ { id_token }`
+  static const String authGoogle = '/api/v1/auth/google/';
+
+  /// `POST /api/v1/auth/apple/ { id_token, user? }` — `user` (name) only on
+  /// the first Apple sign-in.
+  static const String authApple = '/api/v1/auth/apple/';
+
   /// Rotates the password and returns a fresh bearer token. Every other
   /// device's token is revoked server-side.
   static const String changePassword = '/api/v1/auth/password/';

@@ -324,7 +324,21 @@ class _AgentPulseDotState extends State<_AgentPulseDot>
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1400),
-  )..repeat(reverse: true);
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Under OS Reduce Motion the dot renders at a constant `t = 1.0`, so
+    // keeping the controller repeating would rebuild an identical frame
+    // 60×/s for nothing. Stop it; otherwise pulse as before.
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (reduceMotion) {
+      _ctrl.stop();
+    } else if (!_ctrl.isAnimating) {
+      _ctrl.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {
@@ -338,28 +352,32 @@ class _AgentPulseDotState extends State<_AgentPulseDot>
     return Semantics(
       liveRegion: true,
       label: context.tr.agentWorking,
-      child: AnimatedBuilder(
-        animation: _ctrl,
-        builder: (_, __) {
-          final t = reduceMotion
-              ? 1.0
-              : Curves.easeInOut.transform(_ctrl.value);
-          return Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: AppColors.brandCyan.withValues(alpha: 0.55 + 0.45 * t),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.brandCyan.withValues(alpha: 0.35 * t),
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          );
-        },
+      // Isolate the header pulse's per-frame repaint from the rest of the
+      // brand header so it doesn't invalidate neighbouring layers each tick.
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) {
+            final t = reduceMotion
+                ? 1.0
+                : Curves.easeInOut.transform(_ctrl.value);
+            return Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: AppColors.brandCyan.withValues(alpha: 0.55 + 0.45 * t),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.brandCyan.withValues(alpha: 0.35 * t),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

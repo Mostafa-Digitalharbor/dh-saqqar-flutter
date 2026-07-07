@@ -33,9 +33,18 @@ class _TypingDotsState extends State<TypingDots>
   );
 
   @override
-  void initState() {
-    super.initState();
-    _ctrl.repeat();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Drive from here so we can honour OS Reduce Motion: repeating the
+    // controller for a user who asked for no motion is pure wasted vsync
+    // (the static dots are what render anyway). Runs right after initState on
+    // first build, so the pulse still starts immediately for everyone else.
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (reduceMotion) {
+      _ctrl.stop();
+    } else if (!_ctrl.isAnimating) {
+      _ctrl.repeat();
+    }
   }
 
   @override
@@ -60,20 +69,25 @@ class _TypingDotsState extends State<TypingDots>
       );
     }
 
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _animatedDot(0),
-            SizedBox(width: widget.dotSize * 0.7),
-            _animatedDot(0.18),
-            SizedBox(width: widget.dotSize * 0.7),
-            _animatedDot(0.36),
-          ],
-        );
-      },
+    // Isolate the per-frame dot repaint from whatever hosts the indicator
+    // (chat typing row, conversation "working" preview) so the pulse doesn't
+    // invalidate its neighbours' layers every frame.
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _animatedDot(0),
+              SizedBox(width: widget.dotSize * 0.7),
+              _animatedDot(0.18),
+              SizedBox(width: widget.dotSize * 0.7),
+              _animatedDot(0.36),
+            ],
+          );
+        },
+      ),
     );
   }
 
