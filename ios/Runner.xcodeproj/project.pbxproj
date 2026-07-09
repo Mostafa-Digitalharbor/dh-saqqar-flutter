@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -179,6 +179,10 @@
 			exceptions = (
 				9DFB599DEBF957644504425F /* Exceptions for "Saqqar Watch App" folder in "Saqqar Watch App" target */,
 			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
 			path = "Saqqar Watch App";
 			sourceTree = "<group>";
 		};
@@ -186,6 +190,10 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				02C005748D9AE12848F52AA2 /* Exceptions for "Saqqar Watch App Complication" folder in "Saqqar Watch App Complication" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
 			);
 			path = "Saqqar Watch App Complication";
 			sourceTree = "<group>";
@@ -289,6 +297,7 @@
 				95B6769E23CBC546F8B1BF8D /* Frameworks */,
 				29FBD859662DBD43B374428B /* Saqqar Watch App */,
 				6BCAF3436F5AF231D46DFDFE /* Saqqar Watch App Complication */,
+				A99E3CB62FFFCEDD004D7EB1 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -351,6 +360,15 @@
 				031BBDCFC9B7D457551C7527 /* Release.xcconfig */,
 			);
 			path = "Share Extension";
+			sourceTree = "<group>";
+		};
+		A99E3CB62FFFCEDD004D7EB1 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				12272C535DE49ECFA5D81DA8 /* Foundation.framework */,
+				DB394BEE63529C3CEDB32FFD /* Foundation.framework */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -605,9 +623,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -644,9 +666,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -900,6 +926,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
@@ -961,6 +989,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App Complication/Saqqar Watch App Complication.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P95FNYY2S2;
@@ -968,10 +997,13 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Saqqar Watch App Complication/Info.plist";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.complication;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
@@ -1024,6 +1056,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				VALIDATE_PRODUCT = YES;
@@ -1223,7 +1257,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App/Saqqar Watch App.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App/Saqqar Watch AppProfile.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P95FNYY2S2;
@@ -1235,6 +1269,8 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				VALIDATE_PRODUCT = YES;
@@ -1247,6 +1283,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App Complication/Saqqar Watch App Complication.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P95FNYY2S2;
@@ -1254,10 +1291,13 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Saqqar Watch App Complication/Info.plist";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.complication;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				VALIDATE_PRODUCT = YES;
@@ -1270,6 +1310,7 @@
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App Complication/Saqqar Watch App Complication.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P95FNYY2S2;
@@ -1277,10 +1318,13 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Saqqar Watch App Complication/Info.plist";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.complication;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
 				VALIDATE_PRODUCT = YES;

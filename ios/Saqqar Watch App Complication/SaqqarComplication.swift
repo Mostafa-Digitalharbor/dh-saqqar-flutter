@@ -13,7 +13,7 @@ struct ApprovalsEntry: TimelineEntry {
 }
 
 struct ApprovalsTimelineProvider: TimelineProvider {
-  private static let appGroup = "group.sa.com.digitalharbor.saqqar.watch"
+  private static let appGroup = "group.sa.com.digitalharbor.saqqar"
   private static let pendingCountKey = "saqqar.pendingCount"
 
   private func currentPendingCount() -> Int {

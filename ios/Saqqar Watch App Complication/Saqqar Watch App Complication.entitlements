@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.sa.com.digitalharbor.saqqar.watch</string>
+		<string>group.sa.com.digitalharbor.saqqar</string>
 	</array>
 </dict>
 </plist>

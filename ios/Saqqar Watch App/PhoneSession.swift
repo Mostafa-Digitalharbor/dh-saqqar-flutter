@@ -29,7 +29,7 @@ final class PhoneSession: NSObject, ObservableObject {
   /// notification for whenever it isn't.
   @Published var lateVoiceReply: LateVoiceReply?
 
-  static let appGroup = "group.sa.com.digitalharbor.saqqar.watch"
+  static let appGroup = "group.sa.com.digitalharbor.saqqar"
   private static let pendingCountKey = "saqqar.pendingCount"
   private static let approvalsKey = "saqqar.approvals"
 
