@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0123FB76C48D31BCEA98DCD3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 12272C535DE49ECFA5D81DA8 /* Foundation.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		153F79ED9956874B07F5B465 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DEF2FC791D41FE356784CB33 /* Pods_Runner.framework */; };
 		1603B4A998C85C28FCB34310 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A96FAB272FF6B19F00B399A0 /* ShareViewController.swift */; };
@@ -15,7 +16,9 @@
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		3DD4A8D98EB22BF66C1D6204 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2DDD1AF36CA96A4491E601E0 /* Pods_RunnerTests.framework */; };
+		67F9CB3F10DB870B9F0BBA37 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB394BEE63529C3CEDB32FFD /* Foundation.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		78A09A3D8614C32C1C23C5DF /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF03DD89D0202688C6631064 /* WatchSessionManager.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		8219FC6FD7D73337AFD6CBA9 /* Pods_Share_Extension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB0E66C40AB70C1DA7FBED09 /* Pods_Share_Extension.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
@@ -24,6 +27,8 @@
 		9CD61D86B85C8416BDB6AA45 /* Share Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D167D8A9BE70530349B784D9 /* Share Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A3BA39B216628205FA1B94EF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA4E3D49C935570DF407F6A8 /* Foundation.framework */; };
 		A9903A912FF939F9007A973E /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9903A902FF939F9007A973E /* SceneDelegate.swift */; };
+		B8C626642877E2A5486A0A6B /* Saqqar Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DF8A56D8C6D33C06CC14ADD4 /* Saqqar Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EB41614020BB628238F4CF24 /* Saqqar Watch App Complication.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BD94589D379E11FE2469BAD5 /* Saqqar Watch App Complication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,9 +46,34 @@
 			remoteGlobalIDString = E8AF4F1A506E699F6AAF4B93;
 			remoteInfo = "Share Extension";
 		};
+		DEA431D9AB9319DAE1C22320 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 66B0AA731754A1870039F680;
+			remoteInfo = "Saqqar Watch App Complication";
+		};
+		F6988FB58133749BCB0FEF12 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BE74DEF76FC088CEB268BEBA;
+			remoteInfo = "Saqqar Watch App";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		3DC05CAD9CBD338EE6D26C29 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				EB41614020BB628238F4CF24 /* Saqqar Watch App Complication.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		84FFEB6A0DF3B32B6FC8AC66 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -65,12 +95,24 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FE1A224E1F13AF38ADC7C0D3 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				B8C626642877E2A5486A0A6B /* Saqqar Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		031BBDCFC9B7D457551C7527 /* Release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		04D6E1289F25C454D350AC48 /* Debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		1058AADCE84C075AA8889A09 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
+		12272C535DE49ECFA5D81DA8 /* Foundation.framework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		2DDD1AF36CA96A4491E601E0 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -102,15 +144,71 @@
 		A96FAB272FF6B19F00B399A0 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		A9903A902FF939F9007A973E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		B8F5F729B3C969A6ADDABC86 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		BD94589D379E11FE2469BAD5 /* Saqqar Watch App Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Saqqar Watch App Complication.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D167D8A9BE70530349B784D9 /* Share Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Share Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		DB394BEE63529C3CEDB32FFD /* Foundation.framework */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		DEF2FC791D41FE356784CB33 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF8A56D8C6D33C06CC14ADD4 /* Saqqar Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Saqqar Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EA4E3D49C935570DF407F6A8 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		EB0E66C40AB70C1DA7FBED09 /* Pods_Share_Extension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Share_Extension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F68ED6E1FA3F7848A67F0869 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		FA9CFFE62E188045A0DE258D /* Pods-Share Extension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Share Extension.debug.xcconfig"; path = "Target Support Files/Pods-Share Extension/Pods-Share Extension.debug.xcconfig"; sourceTree = "<group>"; };
+		FF03DD89D0202688C6631064 /* WatchSessionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		02C005748D9AE12848F52AA2 /* Exceptions for "Saqqar Watch App Complication" folder in "Saqqar Watch App Complication" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 66B0AA731754A1870039F680 /* Saqqar Watch App Complication */;
+		};
+		9DFB599DEBF957644504425F /* Exceptions for "Saqqar Watch App" folder in "Saqqar Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BE74DEF76FC088CEB268BEBA /* Saqqar Watch App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		29FBD859662DBD43B374428B /* Saqqar Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9DFB599DEBF957644504425F /* Exceptions for "Saqqar Watch App" folder in "Saqqar Watch App" target */,
+			);
+			path = "Saqqar Watch App";
+			sourceTree = "<group>";
+		};
+		6BCAF3436F5AF231D46DFDFE /* Saqqar Watch App Complication */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				02C005748D9AE12848F52AA2 /* Exceptions for "Saqqar Watch App Complication" folder in "Saqqar Watch App Complication" target */,
+			);
+			path = "Saqqar Watch App Complication";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		0FE534762205F085BB47810E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67F9CB3F10DB870B9F0BBA37 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69239536624DF31F37269A18 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0123FB76C48D31BCEA98DCD3 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		821BB77E0F6F11A6B40D4752 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -189,6 +287,8 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				A664777CCDE0B8FC9BF0D10E /* Pods */,
 				95B6769E23CBC546F8B1BF8D /* Frameworks */,
+				29FBD859662DBD43B374428B /* Saqqar Watch App */,
+				6BCAF3436F5AF231D46DFDFE /* Saqqar Watch App Complication */,
 			);
 			sourceTree = "<group>";
 		};
@@ -197,6 +297,8 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				DF8A56D8C6D33C06CC14ADD4 /* Saqqar Watch App.app */,
+				BD94589D379E11FE2469BAD5 /* Saqqar Watch App Complication.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -215,6 +317,7 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				4739157EF0901B7EA83BEB87 /* GoogleService-Info.plist */,
 				A9903A902FF939F9007A973E /* SceneDelegate.swift */,
+				FF03DD89D0202688C6631064 /* WatchSessionManager.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -272,6 +375,26 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		66B0AA731754A1870039F680 /* Saqqar Watch App Complication */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE0B4BB8A43759CC142F76DF /* Build configuration list for PBXNativeTarget "Saqqar Watch App Complication" */;
+			buildPhases = (
+				F17EDB5D8C51CCFD0DC59F72 /* Sources */,
+				69239536624DF31F37269A18 /* Frameworks */,
+				884E70486BBC4026F3440336 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				6BCAF3436F5AF231D46DFDFE /* Saqqar Watch App Complication */,
+			);
+			name = "Saqqar Watch App Complication";
+			productName = "Saqqar Watch App Complication";
+			productReference = BD94589D379E11FE2469BAD5 /* Saqqar Watch App Complication.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -283,6 +406,7 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				84FFEB6A0DF3B32B6FC8AC66 /* Embed Foundation Extensions */,
+				FE1A224E1F13AF38ADC7C0D3 /* Embed Watch Content */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				8428132046B0FA06BD912007 /* [CP] Embed Pods Frameworks */,
 				5D32C729680EF5C39975D5FA /* [CP] Copy Pods Resources */,
@@ -291,6 +415,7 @@
 			);
 			dependencies = (
 				445D3B358995630A899CE069 /* PBXTargetDependency */,
+				7FF0643216D782BF1094992B /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -298,6 +423,28 @@
 			);
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BE74DEF76FC088CEB268BEBA /* Saqqar Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C6CB02C53950F37E46A7876 /* Build configuration list for PBXNativeTarget "Saqqar Watch App" */;
+			buildPhases = (
+				57D2B4434A129875A6681C83 /* Sources */,
+				0FE534762205F085BB47810E /* Frameworks */,
+				402F10298878FF4B46F80278 /* Resources */,
+				3DC05CAD9CBD338EE6D26C29 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A8EFE9B0FF5AFF1AF98F7087 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				29FBD859662DBD43B374428B /* Saqqar Watch App */,
+			);
+			name = "Saqqar Watch App";
+			productName = "Saqqar Watch App";
+			productReference = DF8A56D8C6D33C06CC14ADD4 /* Saqqar Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 		E8AF4F1A506E699F6AAF4B93 /* Share Extension */ = {
@@ -361,6 +508,8 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				E8AF4F1A506E699F6AAF4B93 /* Share Extension */,
+				66B0AA731754A1870039F680 /* Saqqar Watch App Complication */,
+				BE74DEF76FC088CEB268BEBA /* Saqqar Watch App */,
 			);
 		};
 /* End PBXProject section */
@@ -375,6 +524,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		331C807F294A63A400263BE5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		402F10298878FF4B46F80278 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		884E70486BBC4026F3440336 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -538,6 +701,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		57D2B4434A129875A6681C83 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -545,6 +715,7 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				A9903A912FF939F9007A973E /* SceneDelegate.swift in Sources */,
+				78A09A3D8614C32C1C23C5DF /* WatchSessionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -553,6 +724,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				1603B4A998C85C28FCB34310 /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F17EDB5D8C51CCFD0DC59F72 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -569,6 +747,16 @@
 			name = "Share Extension";
 			target = E8AF4F1A506E699F6AAF4B93 /* Share Extension */;
 			targetProxy = C575541CA33C35C3D00825D4 /* PBXContainerItemProxy */;
+		};
+		7FF0643216D782BF1094992B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BE74DEF76FC088CEB268BEBA /* Saqqar Watch App */;
+			targetProxy = F6988FB58133749BCB0FEF12 /* PBXContainerItemProxy */;
+		};
+		A8EFE9B0FF5AFF1AF98F7087 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 66B0AA731754A1870039F680 /* Saqqar Watch App Complication */;
+			targetProxy = DEA431D9AB9319DAE1C22320 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -694,6 +882,30 @@
 			};
 			name = Debug;
 		};
+		32C9F7ABA0D6AD431E2FB696 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App/Saqqar Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P95FNYY2S2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Saqqar Watch App/Info.plist";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 		331C8088294A63A400263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = F68ED6E1FA3F7848A67F0869 /* Pods-RunnerTests.debug.xcconfig */;
@@ -744,6 +956,28 @@
 			};
 			name = Profile;
 		};
+		55D049B50627D8E2C4EBC91F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App Complication/Saqqar Watch App Complication.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P95FNYY2S2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Saqqar Watch App Complication/Info.plist";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.complication;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 		596E525E18E453D8E8B11857 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 031BBDCFC9B7D457551C7527 /* Release.xcconfig */;
@@ -769,6 +1003,31 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		640B52A242A54BF567699DED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App/Saqqar Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P95FNYY2S2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Saqqar Watch App/Info.plist";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Release;
 		};
@@ -958,6 +1217,77 @@
 			};
 			name = Release;
 		};
+		BE19ECC8ABD7753735B55E92 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App/Saqqar Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P95FNYY2S2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Saqqar Watch App/Info.plist";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
+		BF9178BF651BB33DC42BB28C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App Complication/Saqqar Watch App Complication.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P95FNYY2S2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Saqqar Watch App Complication/Info.plist";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.complication;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		DCC246C024F1665236968AF2 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "Saqqar Watch App Complication/Saqqar Watch App Complication.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P95FNYY2S2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Saqqar Watch App Complication/Info.plist";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sa.com.digitalharbor.saqqarapp.watchkitapp.complication;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -967,6 +1297,16 @@
 				331C8088294A63A400263BE5 /* Debug */,
 				331C8089294A63A400263BE5 /* Release */,
 				331C808A294A63A400263BE5 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4C6CB02C53950F37E46A7876 /* Build configuration list for PBXNativeTarget "Saqqar Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				32C9F7ABA0D6AD431E2FB696 /* Debug */,
+				640B52A242A54BF567699DED /* Release */,
+				BE19ECC8ABD7753735B55E92 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -997,6 +1337,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EE0B4BB8A43759CC142F76DF /* Build configuration list for PBXNativeTarget "Saqqar Watch App Complication" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55D049B50627D8E2C4EBC91F /* Debug */,
+				BF9178BF651BB33DC42BB28C /* Release */,
+				DCC246C024F1665236968AF2 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

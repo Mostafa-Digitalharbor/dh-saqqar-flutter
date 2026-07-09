@@ -9,6 +9,7 @@ import '../../chat/data/chat_snapshot_disk_cache.dart';
 import '../../inbox/data/approval_models.dart';
 import '../../inbox/data/approvals_api.dart';
 import '../../inbox/data/artifacts_api.dart';
+import '../../watch/data/watch_bridge.dart';
 import 'attachment_models.dart';
 import 'conversation_models.dart';
 import 'conversations_api.dart';
@@ -34,10 +35,12 @@ class ConversationsRepository {
     ArtifactsApi? artifactsApi,
     ConversationsCache? listCache,
     ChatSnapshotDiskCache? snapshotDiskCache,
+    WatchBridge? watchBridge,
   })  : _approvalsApi = approvalsApi,
         _artifactsApi = artifactsApi,
         _listCache = listCache,
-        _diskCache = snapshotDiskCache;
+        _diskCache = snapshotDiskCache,
+        _watchBridge = watchBridge;
 
   static const _tag = 'ConversationsRepository';
 
@@ -59,6 +62,12 @@ class ConversationsRepository {
   /// is instant even on a cold start, and the background prefetch can warm
   /// every conversation. Nullable for tests.
   final ChatSnapshotDiskCache? _diskCache;
+
+  /// Pushes the pending-approvals feed to a paired Apple Watch after every
+  /// list refresh. Nullable for tests / platforms without the bridge (it's
+  /// a no-op off iOS anyway) — same optional-dependency shape as
+  /// [_approvalsApi] / [_artifactsApi] above.
+  final WatchBridge? _watchBridge;
 
   /// Guards the background prefetch so list reloads don't stack passes.
   bool _prefetching = false;
@@ -261,6 +270,10 @@ class ConversationsRepository {
         final id = a.conversation?.id;
         if (id != null) counts[id] = (counts[id] ?? 0) + 1;
       }
+      unawaited(_watchBridge?.syncApprovals(
+        page.approvals,
+        pendingCount: page.pendingCount,
+      ));
       return counts;
     } catch (e, st) {
       AppLogger.warn(_tag, 'pending-approvals meta failed', error: e, stackTrace: st);

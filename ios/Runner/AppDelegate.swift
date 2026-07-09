@@ -41,6 +41,7 @@ import receive_sharing_intent
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    WatchSessionManager.shared.start(messenger: engineBridge.applicationRegistrar.messenger())
     registerShareIntakeChannel(messenger: engineBridge.applicationRegistrar.messenger())
   }
 

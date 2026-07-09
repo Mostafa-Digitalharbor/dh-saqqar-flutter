@@ -55,6 +55,7 @@ import 'features/vault/data/projects_api.dart';
 import 'features/vault/data/vault_cache.dart';
 import 'features/vault/data/vault_repository.dart';
 import 'features/vault/view_model/vault_cubit.dart';
+import 'features/watch/data/watch_bridge.dart';
 
 /// Boot order:
 ///   1. Bind Flutter immediately and PRESERVE the native splash so the
@@ -252,6 +253,18 @@ Future<void> _bootApp() async {
   final sharesApi = SharesApi(dio);
   final remoteI18nApi = RemoteI18nApi(dio);
   final devicesApi = DevicesApi(dio);
+  final transcribeApi = TranscribeApi(dio);
+  // Companion Apple Watch bridge — pushes the pending-approvals feed to a
+  // paired watch, relays approve/deny taps back to this same
+  // ApprovalsApi, and turns a watch-recorded voice note into a normal
+  // chat turn via transcribeApi + conversationsApi. No-op on Android /
+  // when no watch is paired.
+  final watchBridge = WatchBridge(
+    approvalsApi,
+    transcribeApi: transcribeApi,
+    conversationsApi: conversationsApi,
+    projectsApi: projectsApi,
+  );
   // In-app inbox of received notifications (persisted); the header bell reads
   // it, the push service + background isolate write to it.
   final notificationsStore = NotificationsStore(prefs);
@@ -259,7 +272,6 @@ Future<void> _bootApp() async {
   // records them to the inbox, and routes notification taps. Started/stopped
   // by the auth listener in app.dart.
   final pushService = PushNotificationsService(devicesApi, notificationsStore);
-  final transcribeApi = TranscribeApi(dio);
   final liveEnvAckService = LiveEnvAckService(prefs);
   // In-memory hand-off between Android's ACTION_SEND intent-filter and
   // the chat screen. Lives at boot scope so files survive the
@@ -281,6 +293,7 @@ Future<void> _bootApp() async {
     conversationsApi,
     approvalsApi: approvalsApi,
     artifactsApi: artifactsApi,
+    watchBridge: watchBridge,
     // Offline cache: persists the Chats list + counts so the tab paints
     // instantly on cold start while a fresh fetch runs in the background.
     listCache: ConversationsCache(prefs),
