@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/i18n/app_localizations.dart';
 import '../core/routing/route_names.dart';
 import '../core/theme/app_icons.dart';
-import '../features/billing/view_model/plan_cubit.dart';
 import '../shared/extensions/context_extensions.dart';
 import '../shared/widgets/confirm_dialog.dart';
 
@@ -62,15 +60,12 @@ class HomeShell extends StatelessWidget {
     final location = GoRouterState.of(context).uri.toString();
     final s = context.saqqar;
 
-    // Vault is hidden for Free users (Gap C) — they can't store credentials
-    // effectively. `exempt` (staff) and any paid plan keep it. Null plan →
-    // show it (don't hide a feature we haven't confirmed is locked).
-    final plan = context.watch<PlanCubit>().state;
-    final showVault = plan == null || plan.exempt || !plan.isFree;
-    final tabs = [
-      for (final t in _tabs)
-        if (t.routeName != RouteNames.vault || showVault) t,
-    ];
+    // All three tabs (Chats / Vault / Account) are always shown. We used to
+    // hide Vault for Free users, but that (a) dropped the tab entirely and
+    // (b) desynced the bottom bar when the drawer's "Vault" action routed to
+    // /vault — `_indexFor` couldn't find the missing tab and fell back to
+    // Chats, so the Vault screen rendered under the Chats highlight.
+    const tabs = _tabs;
     final selected = _indexFor(location, tabs);
 
     // Per-tab transitions are owned by the GoRouter `CustomTransitionPage`

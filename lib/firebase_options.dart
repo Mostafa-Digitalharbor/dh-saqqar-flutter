@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'saqqar-ai.firebasestorage.app',
     measurementId: 'G-KSRLH5JFD8',
   );
+
 }

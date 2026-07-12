@@ -29,7 +29,7 @@ final _cyan = img.ColorRgb8(0x06, 0xB6, 0xD4); // #06B6D4
 final _purple = img.ColorRgb8(0x8B, 0x5C, 0xF6); // #8B5CF6
 
 void main() {
-  const sourceLogoPath = 'assets/img/saqqar-logo-dark.png';
+  const sourceLogoPath = 'play-store-assets/logo-light.png';
   final logoFile = File(sourceLogoPath);
   if (!logoFile.existsSync()) {
     stderr.writeln('✗ source missing: $sourceLogoPath');
@@ -137,14 +137,19 @@ void _paintRadialGlow(
 /// transparent, so it composites cleanly over the radial glow without
 /// any colour cast.
 void _paintLogo(img.Image canvas, img.Image logo) {
-  // Target ~62% of the canvas height for the wordmark — large enough to
-  // be the unmistakable hero, small enough to leave a safe margin top
-  // and bottom for Play's variable cropping.
-  final targetH = (_height * 0.45).round();
-  final aspect = logo.width / logo.height;
+  // The brand logo is dark navy ink (+ cyan accents) on transparent — built
+  // for LIGHT backgrounds. On our dark navy banner the navy ink would vanish,
+  // so recolour it for dark: dark ink → white, cyan accents kept as cyan.
+  final light = _recolorForDark(logo);
+
+  // Target ~45% of the canvas height for the wordmark — large enough to be
+  // the unmistakable hero, small enough to leave a safe margin top and bottom
+  // for Play's variable cropping.
+  final targetH = (_height * 0.42).round();
+  final aspect = light.width / light.height;
   final targetW = (targetH * aspect).round();
   final resized = img.copyResize(
-    logo,
+    light,
     width: targetW,
     height: targetH,
     interpolation: img.Interpolation.cubic,
@@ -158,6 +163,33 @@ void _paintLogo(img.Image canvas, img.Image logo) {
     dstY: dy,
     blend: img.BlendMode.alpha,
   );
+}
+
+/// Returns a copy of [logo] recoloured for a dark backdrop: near-black / navy
+/// ink is mapped to white, while cyan/teal accent pixels are pushed to the
+/// bright brand cyan so the check-mark accent still pops. Alpha is preserved
+/// so the mark composites cleanly over the glow.
+img.Image _recolorForDark(img.Image logo) {
+  final out = img.Image.from(logo);
+  for (var y = 0; y < out.height; y++) {
+    for (var x = 0; x < out.width; x++) {
+      final p = out.getPixel(x, y);
+      final a = p.a.toInt();
+      if (a == 0) continue;
+      final r = p.r.toInt();
+      final g = p.g.toInt();
+      final b = p.b.toInt();
+      // Cyan/teal accent: green + blue clearly dominate red.
+      final isCyan = g > 110 && b > 110 && r < g - 30 && r < b - 30;
+      if (isCyan) {
+        out.setPixelRgba(x, y, _cyan.r.toInt(), _cyan.g.toInt(),
+            _cyan.b.toInt(), a);
+      } else {
+        out.setPixelRgba(x, y, 255, 255, 255, a);
+      }
+    }
+  }
+  return out;
 }
 
 int _lerp(int a, int b, double t) {

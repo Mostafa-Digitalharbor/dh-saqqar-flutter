@@ -130,6 +130,30 @@ class PushNotificationsService {
       // signed-out phone gets re-registered for the previous user's pushes.
       if (gen != _generation) return;
 
+      // iOS ONLY: FCM can't mint a token until APNs has handed the app its
+      // device token (this is gated behind the swizzled
+      // `didRegisterForRemoteNotifications` callback). If getToken() runs
+      // before that, it returns null — or throws `apns-token-not-set` — and
+      // the device is never registered. That is the classic "push works on
+      // Android but not on iOS" symptom. Wait for the APNs token first
+      // (bounded retry) and log the outcome, so a missing one points at
+      // provisioning / the APNs auth key rather than the FCM setup.
+      if (Platform.isIOS) {
+        final apnsToken = await _awaitApnsToken(messaging);
+        if (gen != _generation) return;
+        if (apnsToken == null) {
+          AppLogger.warn(
+            _tag,
+            'APNs token still null after retries — iOS push cannot work. '
+            'Check on a real device (the simulator has no APNs): Push '
+            'Notifications capability, the aps-environment entitlement, and '
+            'that an APNs auth key is uploaded for this app in Firebase.',
+          );
+        } else {
+          AppLogger.info(_tag, 'APNs token = $apnsToken');
+        }
+      }
+
       final token = await messaging.getToken();
       if (gen != _generation) return;
       // Debug-only (AppLogger is a no-op in release): surfaces the token so it
@@ -186,6 +210,26 @@ class PushNotificationsService {
     } catch (e, st) {
       AppLogger.warn(_tag, 'updateLocale failed', error: e, stackTrace: st);
     }
+  }
+
+  /// Polls for the iOS APNs device token. Firebase hands it over
+  /// asynchronously once the OS has granted notification permission and
+  /// registered the app with APNs; until it arrives, the FCM `getToken()`
+  /// can't be minted. Retries a few times with a short backoff instead of
+  /// giving up on the first null (the token typically lands within a second
+  /// or two on a real device, and never on the simulator).
+  Future<String?> _awaitApnsToken(FirebaseMessaging messaging) async {
+    for (var attempt = 0; attempt < 6; attempt++) {
+      try {
+        final apns = await messaging.getAPNSToken();
+        if (apns != null) return apns;
+      } catch (e, st) {
+        AppLogger.warn(_tag, 'getAPNSToken attempt $attempt failed',
+            error: e, stackTrace: st);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+    return null;
   }
 
   Future<void> _registerToken(String token) async {

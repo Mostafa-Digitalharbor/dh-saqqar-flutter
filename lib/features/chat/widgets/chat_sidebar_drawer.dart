@@ -11,6 +11,8 @@ import '../../../shared/widgets/saqqar_logo.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../../conversations/view_model/conversations_cubit.dart';
 import '../../conversations/view_model/conversations_state.dart';
+import '../../conversations/widgets/conversation_action_handler.dart';
+import '../../conversations/widgets/conversation_actions_sheet.dart';
 
 /// Brief §4.2 — sidebar drawer mounted on `Scaffold.drawer` of the chat
 /// screen. Opens from the start side via the AppBar hamburger.
@@ -66,6 +68,29 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  /// Long-press on a drawer row opens the same Pin / Rename / Share /
+  /// Archive / Delete sheet a long-press on a conversation card does, and
+  /// routes the choice through the shared handler so the flows are identical
+  /// (rename dialog, OS share sheet, delete confirm). The drawer stays open
+  /// underneath — the sheet floats above it — so the user lands back on the
+  /// list after acting. The list is BlocBuilder-driven, so a rename/archive
+  /// reflects live without any manual refresh here.
+  Future<void> _onRowLongPress(ConversationSummary c) async {
+    final cubit = context.read<ConversationsCubit>();
+    final action = await ConversationActionsSheet.show(
+      context,
+      conversation: c,
+      isPinned: cubit.isPinned(c.id),
+    );
+    if (action == null || !mounted) return;
+    await runConversationAction(
+      context,
+      cubit: cubit,
+      c: c,
+      action: action,
+    );
   }
 
   /// Filters by title / last-message preview — same shape the Chats
@@ -149,6 +174,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                     conversations: _filtered(state),
                     currentId: widget.currentConversationId,
                     onPick: widget.onPickConversation,
+                    onLongPress: _onRowLongPress,
                   );
                 },
               ),
@@ -250,11 +276,13 @@ class _ConversationGroupedList extends StatelessWidget {
     required this.conversations,
     required this.currentId,
     required this.onPick,
+    required this.onLongPress,
   });
 
   final List<ConversationSummary> conversations;
   final String currentId;
   final ValueChanged<String> onPick;
+  final ValueChanged<ConversationSummary> onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -295,6 +323,7 @@ class _ConversationGroupedList extends StatelessWidget {
               conversation: c,
               isActive: c.id == currentId,
               onTap: () => onPick(c.id),
+              onLongPress: () => onLongPress(c),
             ),
         ],
         if (earlier.isNotEmpty) ...[
@@ -304,6 +333,7 @@ class _ConversationGroupedList extends StatelessWidget {
               conversation: c,
               isActive: c.id == currentId,
               onTap: () => onPick(c.id),
+              onLongPress: () => onLongPress(c),
             ),
         ],
       ],
@@ -338,11 +368,13 @@ class _DrawerConversationRow extends StatelessWidget {
     required this.conversation,
     required this.isActive,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final ConversationSummary conversation;
   final bool isActive;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -352,6 +384,7 @@ class _DrawerConversationRow extends StatelessWidget {
       borderRadius: AppRadius.buttonR,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: AppRadius.buttonR,
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 2),
