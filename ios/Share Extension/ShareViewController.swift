@@ -47,7 +47,10 @@ final class ShareViewController: SLComposeServiceViewController {
                 ShareAttachmentType(identifier: UTType.image.identifier, type: .image),
                 ShareAttachmentType(identifier: UTType.movie.identifier, type: .video),
                 ShareAttachmentType(identifier: UTType.fileURL.identifier, type: .file),
+                ShareAttachmentType(identifier: UTType.pdf.identifier, type: .file),
                 ShareAttachmentType(identifier: UTType.data.identifier, type: .file),
+                ShareAttachmentType(identifier: UTType.content.identifier, type: .file),
+                ShareAttachmentType(identifier: UTType.item.identifier, type: .file),
                 ShareAttachmentType(identifier: UTType.url.identifier, type: .url),
                 ShareAttachmentType(identifier: UTType.text.identifier, type: .text),
             ]
@@ -57,7 +60,10 @@ final class ShareViewController: SLComposeServiceViewController {
             ShareAttachmentType(identifier: kUTTypeImage as String, type: .image),
             ShareAttachmentType(identifier: kUTTypeMovie as String, type: .video),
             ShareAttachmentType(identifier: kUTTypeFileURL as String, type: .file),
+            ShareAttachmentType(identifier: "com.adobe.pdf", type: .file),
             ShareAttachmentType(identifier: kUTTypeData as String, type: .file),
+            ShareAttachmentType(identifier: kUTTypeContent as String, type: .file),
+            ShareAttachmentType(identifier: kUTTypeItem as String, type: .file),
             ShareAttachmentType(identifier: kUTTypeURL as String, type: .url),
             ShareAttachmentType(identifier: kUTTypeText as String, type: .text),
         ]
@@ -106,7 +112,7 @@ final class ShareViewController: SLComposeServiceViewController {
         let lock = NSLock()
 
         for attachment in attachments {
-            guard let attachmentType = supportedTypes.first(where: { attachment.hasItemConformingToTypeIdentifier($0.identifier) }) else {
+            guard let attachmentType = resolvedAttachmentType(for: attachment) else {
                 continue
             }
 
@@ -127,6 +133,18 @@ final class ShareViewController: SLComposeServiceViewController {
         group.notify(queue: .main) { [weak self] in
             self?.saveAndRedirect(files)
         }
+    }
+
+    private func resolvedAttachmentType(for attachment: NSItemProvider) -> ShareAttachmentType? {
+        if let supportedType = supportedTypes.first(where: { attachment.hasItemConformingToTypeIdentifier($0.identifier) }) {
+            return supportedType
+        }
+
+        guard let firstRegisteredType = attachment.registeredTypeIdentifiers.first else {
+            return nil
+        }
+
+        return ShareAttachmentType(identifier: firstRegisteredType, type: .file)
     }
 
     private func loadSharedMediaFile(
@@ -348,8 +366,11 @@ final class ShareViewController: SLComposeServiceViewController {
         var target = url
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
-        values.fileProtection = .completeUntilFirstUserAuthentication
         try? target.setResourceValues(values)
+        try? FileManager.default.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+            ofItemAtPath: url.path
+        )
     }
 
     private func fileName(suggestedName: String?, typeIdentifier: String) -> String {
