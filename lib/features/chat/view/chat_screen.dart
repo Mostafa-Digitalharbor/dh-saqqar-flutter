@@ -883,17 +883,62 @@ class _ChatScreenState extends State<ChatScreen>
   /// Owns the permission prompt, recorder setup, timer + hard-stop
   /// scheduling. Bail out if a recording is already in flight (the UI
   /// disables the mic, but defensive).
+  /// Resolves microphone access before recording, returning true only when the
+  /// mic is granted. Ordering is deliberate for App Store review (guideline
+  /// 5.1.1(iv)): the system permission dialog is shown FIRST via `request()`;
+  /// the user is never sent to Settings before that dialog has appeared. A
+  /// Settings shortcut is offered ONLY once the permission is *permanently*
+  /// denied, and only as an optional toast action the user chooses to tap.
+  Future<bool> _ensureMicPermission() async {
+    final current = await Permission.microphone.status;
+    if (!mounted) return false;
+    if (current.isGranted) return true;
+
+    // Already permanently denied (or restricted by device policy): the OS will
+    // not surface the dialog again, so recording can't proceed without a manual
+    // change. Offer — never force — a Settings shortcut.
+    if (current.isPermanentlyDenied || current.isRestricted) {
+      _micPermissionToast(offerSettings: true);
+      return false;
+    }
+
+    // notDetermined / denied-but-askable: show the native prompt now. This is
+    // the user's first sight of anything permission-related.
+    final result = await Permission.microphone.request();
+    if (!mounted) return false;
+    if (result.isGranted) return true;
+
+    // Denied at the prompt. Offer the Settings shortcut only if the OS now
+    // marks it permanent; otherwise keep the message gentle with no Settings
+    // mention (the user can simply tap the mic again to get the prompt back).
+    _micPermissionToast(offerSettings: result.isPermanentlyDenied);
+    return false;
+  }
+
+  /// Localised "mic access needed" toast. When [offerSettings] is true it
+  /// carries an optional, user-initiated "Open Settings" action — the only
+  /// place in the app that ever calls `openAppSettings()`.
+  void _micPermissionToast({required bool offerSettings}) {
+    AppToast.show(
+      context,
+      message: offerSettings
+          ? context.tr.voicePermissionOpenSettings
+          : context.tr.voicePermissionDenied,
+      action: offerSettings
+          ? ToastAction(
+              label: context.tr.openSettings,
+              onPressed: openAppSettings,
+            )
+          : null,
+    );
+  }
+
   Future<void> _startRecording() async {
     if (_recording || _transcribing) return;
-    // Pull the permission prompt up front. permission_handler returns
-    // the *post-prompt* status, so a deny here means the user chose to
-    // deny and we surface a localized toast instead of failing silently.
-    final status = await Permission.microphone.request();
-    if (!mounted) return;
-    if (!status.isGranted) {
-      _toast(context.tr.voicePermissionDenied);
-      return;
-    }
+    // Permission gate. Ordering matters for App Store review (guideline
+    // 5.1.1(iv)): the native OS prompt must be the FIRST permission-related
+    // thing the user ever sees — we never route them to Settings before it.
+    if (!await _ensureMicPermission()) return;
     // m4a + AAC + mono + 16 kHz + 32 kbps — see SAQQAR_MOBILE_VOICE.md §3.
     // Output file lives under the OS temp dir; we delete it after the
     // transcribe upload (or on discard).

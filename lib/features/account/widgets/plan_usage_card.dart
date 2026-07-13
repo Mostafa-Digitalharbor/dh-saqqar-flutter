@@ -9,6 +9,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/plan_models.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import 'plan_badge.dart';
@@ -60,16 +61,20 @@ class PlanUsageCard extends StatelessWidget {
             const SizedBox(height: 14),
             _UsageRow(label: context.tr.planWindowMonth, window: plan.month),
           ],
-          const SizedBox(height: 14),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: GhostButton(
-              label: context.tr.quotaUpgradeCta,
-              icon: AppIcons.sparkles,
-              minHeight: 40,
-              onPressed: () => context.pushNamed(RouteNames.pricing),
+          // Upgrade CTA → pricing catalogue. Hidden on iOS (App Store 3.1.1);
+          // the usage bars above stay (informational).
+          if (showPaidUpsell) ...[
+            const SizedBox(height: 14),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: GhostButton(
+                label: context.tr.quotaUpgradeCta,
+                icon: AppIcons.sparkles,
+                minHeight: 40,
+                onPressed: () => context.pushNamed(RouteNames.pricing),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

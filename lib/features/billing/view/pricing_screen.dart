@@ -9,6 +9,7 @@ import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../data/billing_visibility.dart';
 import '../data/plan_tier_models.dart';
 import '../data/plans_api.dart';
 import '../view_model/plan_cubit.dart';
@@ -166,14 +167,18 @@ class _PlanTierCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            tr.pricePerMonth(tier.priceMonthlyCents),
-            style: context.text.titleMedium?.copyWith(
-              color: s.brandCyan,
-              fontWeight: FontWeight.w800,
+          // Price line — hidden on iOS (App Store 3.1.1: no prices for digital
+          // features outside IAP). The tier name + feature comparison stay.
+          if (showPaidUpsell) ...[
+            const SizedBox(height: 4),
+            Text(
+              tr.pricePerMonth(tier.priceMonthlyCents),
+              style: context.text.titleMedium?.copyWith(
+                color: s.brandCyan,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 14),
           _CapRow(
             label: tr.pricingDailyCap,
@@ -199,7 +204,8 @@ class _PlanTierCard extends StatelessWidget {
             label: tr.featureServerShell,
             on: tier.features.serverShell,
           ),
-          if (!isCurrent && !tier.isFree) ...[
+          // Upgrade / "Contact us" CTA — hidden on iOS (App Store 3.1.1).
+          if (showPaidUpsell && !isCurrent && !tier.isFree) ...[
             const SizedBox(height: 14),
             PrimaryButton(
               label: tr.pricingContactCta,

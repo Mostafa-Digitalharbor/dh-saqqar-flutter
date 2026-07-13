@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/logging/app_logger.dart';
 import '../data/auth_api.dart';
 import '../data/auth_models.dart';
 import '../data/social_auth_service.dart';
@@ -224,17 +225,24 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
   /// sign-in (Apple omits it afterwards). Cancel is a no-op like Google.
   Future<void> continueWithApple() async {
     await _run(() async {
+      AppLogger.info('AppleSignIn', '▶ START — user tapped "Continue with Apple"');
       final result = await _social.signInWithApple();
       if (result == null) {
+        AppLogger.info('AppleSignIn', '⊘ canceled before token — nothing to do');
         emit(state.copyWith(loading: false));
         return;
       }
+      AppLogger.info(
+        'AppleSignIn',
+        '⑥ exchanging Apple token for a Saqqar session…',
+      );
       final session = await _api.loginWithApple(
         idToken: result.idToken,
         firstName: result.firstName,
         lastName: result.lastName,
       );
       await _auth.adoptSession(session);
+      AppLogger.info('AppleSignIn', '✓ DONE — signed in, session adopted 🎉');
     });
   }
 

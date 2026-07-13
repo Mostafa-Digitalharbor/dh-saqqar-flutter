@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../../../core/logging/app_logger.dart';
 import 'social_auth_config.dart';
 
 /// The Google half of a native sign-in — just the ID token the backend needs.
@@ -41,6 +43,10 @@ class SocialAuthException implements Exception {
 /// See `docs/MOBILE_AUTH_GUIDE.md`. `serverClientId` = the Web client ID makes
 /// the Google ID token's `aud` a value the backend already trusts.
 class SocialAuthService {
+  /// One shared tag so the whole Apple flow is greppable in the console —
+  /// tell the tester to copy every line containing `AppleSignIn`.
+  static const _appleTag = 'AppleSignIn';
+
   GoogleSignIn? _google;
 
   GoogleSignIn get _googleSignIn => _google ??= GoogleSignIn(
@@ -94,6 +100,7 @@ class SocialAuthService {
   /// Runs native Sign in with Apple (iOS). Returns null if the user cancels;
   /// throws on any other failure.
   Future<AppleSignInResult?> signInWithApple() async {
+    AppLogger.info(_appleTag, '① requesting Apple ID credential…');
     try {
       final cred = await SignInWithApple.getAppleIDCredential(
         scopes: const [
@@ -102,17 +109,79 @@ class SocialAuthService {
         ],
       );
       final idToken = cred.identityToken;
+      AppLogger.info(
+        _appleTag,
+        '② credential received — identityToken len=${idToken?.length ?? 0}, '
+        'authCode len=${cred.authorizationCode.length}, '
+        'givenName=${cred.givenName != null}, '
+        'familyName=${cred.familyName != null}, '
+        'email=${cred.email ?? "(null, only on 1st sign-in)"}',
+      );
       if (idToken == null || idToken.isEmpty) {
+        AppLogger.error(_appleTag, '✗ Apple returned NO identity token');
         throw const SocialAuthException('Apple returned no identity token.');
       }
+      _logTokenClaims(idToken);
       return AppleSignInResult(
         idToken: idToken,
         firstName: cred.givenName,
         lastName: cred.familyName,
       );
     } on SignInWithAppleAuthorizationException catch (e) {
-      if (e.code == AuthorizationErrorCode.canceled) return null;
+      if (e.code == AuthorizationErrorCode.canceled) {
+        AppLogger.info(_appleTag, '⊘ user canceled the Apple sheet — no-op');
+        return null;
+      }
+      AppLogger.error(
+        _appleTag,
+        '✗ Apple authorization failed — code=${e.code}, message=${e.message}',
+      );
       rethrow;
+    } catch (e, st) {
+      AppLogger.error(
+        _appleTag,
+        '✗ unexpected error getting Apple credential',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
+  /// Debug diagnostic: decodes the (UNVERIFIED — display only) JWT payload of
+  /// the Apple identity token and logs the claims the backend will check. The
+  /// critical one is `aud`: it MUST be present in the backend's
+  /// `/settings/apple/` → Native app IDs list, or the exchange returns 401.
+  /// Never throws — a malformed token just logs a note.
+  void _logTokenClaims(String jwt) {
+    try {
+      final parts = jwt.split('.');
+      if (parts.length != 3) {
+        AppLogger.warn(
+          _appleTag,
+          '  identity token is not a 3-part JWT (parts=${parts.length})',
+        );
+        return;
+      }
+      var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      payload = payload.padRight((payload.length + 3) ~/ 4 * 4, '=');
+      final map =
+          jsonDecode(utf8.decode(base64.decode(payload))) as Map<String, dynamic>;
+      AppLogger.info(
+        _appleTag,
+        '③ token claims → aud=${map['aud']} | iss=${map['iss']} | '
+        'sub=${map['sub']} | exp=${map['exp']} | '
+        'email=${map['email'] ?? "(none)"} | '
+        'email_verified=${map['email_verified']} | '
+        'is_private_email=${map['is_private_email']}',
+      );
+      AppLogger.info(
+        _appleTag,
+        '   ⇒ backend MUST list aud "${map['aud']}" under /settings/apple/ '
+        'Native app IDs (else 401)',
+      );
+    } catch (e) {
+      AppLogger.warn(_appleTag, '  could not decode token claims: $e');
     }
   }
 }

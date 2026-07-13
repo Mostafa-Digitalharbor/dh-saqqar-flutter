@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../core/logging/app_logger.dart';
 import '../../../core/network/api_endpoints.dart';
 import 'auth_models.dart';
 
@@ -80,6 +81,7 @@ class AuthApi {
     String? firstName,
     String? lastName,
   }) async {
+    const tag = 'AppleSignIn';
     final body = <String, dynamic>{'id_token': idToken};
     final hasName = (firstName != null && firstName.isNotEmpty) ||
         (lastName != null && lastName.isNotEmpty);
@@ -89,12 +91,36 @@ class AuthApi {
         'last_name': lastName ?? '',
       };
     }
-    final res = await _dio.post<Map<String, dynamic>>(
-      ApiEndpoints.authApple,
-      data: body,
-      options: Options(extra: _skipAuth),
+    AppLogger.info(
+      tag,
+      '④ POST ${ApiEndpoints.baseUrl}${ApiEndpoints.authApple} '
+      '(id_token len=${idToken.length}, user=${hasName ? "yes" : "no"})',
     );
-    return _sessionFrom(res.data!);
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        ApiEndpoints.authApple,
+        data: body,
+        options: Options(extra: _skipAuth),
+      );
+      final token = res.data?['token'] as String?;
+      AppLogger.info(
+        tag,
+        '⑤ backend ACCEPTED — status=${res.statusCode}, '
+        'created=${res.data?['created']}, '
+        'token=${(token != null && token.isNotEmpty) ? "present" : "MISSING"}',
+      );
+      return _sessionFrom(res.data!);
+    } on DioException catch (e) {
+      // THE key diagnostic: the backend's exact status + body on rejection.
+      // A 401 with an "audience"/"aud" message means the aud logged in step ③
+      // isn't in the backend's Apple allowlist yet.
+      AppLogger.error(
+        tag,
+        '✗ backend REJECTED Apple sign-in — status=${e.response?.statusCode}, '
+        'body=${e.response?.data}',
+      );
+      rethrow;
+    }
   }
 
   // ── Email-OTP signup (Gap D) ─────────────────────────────────────────

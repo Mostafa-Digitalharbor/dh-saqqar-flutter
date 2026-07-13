@@ -814,6 +814,9 @@ class AppStrings {
   String get voiceListening => _t('voice_listening');
   String get voiceNotAvailable => _t('voice_not_available');
   String get voicePermissionDenied => _t('voice_permission_denied');
+  String get voicePermissionOpenSettings =>
+      _t('voice_permission_open_settings');
+  String get openSettings => _t('open_settings');
 
   // Voice transcription (Whisper). Key names mirror the web client's
   // i18n table (SAQQAR_MOBILE_VOICE.md §5) so backend/web/mobile share
@@ -1660,7 +1663,10 @@ const Map<String, String> _en = {
   'voice_listening': 'Listening… tap to stop',
   'voice_not_available': 'Voice input is not available on this device.',
   'voice_permission_denied':
-      'Microphone permission denied. Enable it from system settings to use voice input.',
+      'Microphone access is needed to record a voice message.',
+  'voice_permission_open_settings':
+      'Microphone access is off. Turn it on in Settings to record voice messages.',
+  'open_settings': 'Open Settings',
   'record_voice': 'Record voice',
   'stop_recording': 'Stop recording',
   'transcribing': 'Transcribing…',
@@ -2486,7 +2492,10 @@ const Map<String, String> _ar = {
   'voice_listening': 'جارٍ الاستماع… اضغط للإيقاف',
   'voice_not_available': 'الإدخال الصوتي غير متاح على هذا الجهاز.',
   'voice_permission_denied':
-      'تم رفض إذن الميكروفون. فعّله من إعدادات النظام لاستخدام الإدخال الصوتي.',
+      'محتاجين إذن الميكروفون عشان تسجّل رسالة صوتية.',
+  'voice_permission_open_settings':
+      'إذن الميكروفون مقفول. فعّله من الإعدادات عشان تسجّل رسائل صوتية.',
+  'open_settings': 'افتح الإعدادات',
   'record_voice': 'تسجيل صوتي',
   'stop_recording': 'إيقاف التسجيل',
   'transcribing': 'جارٍ تحويل الصوت…',

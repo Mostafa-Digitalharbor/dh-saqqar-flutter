@@ -9,6 +9,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/plan_tier_models.dart';
 import '../../billing/data/plans_api.dart';
 import '../../billing/view_model/plan_cubit.dart';
@@ -102,16 +103,20 @@ class _PlanCardBody extends StatelessWidget {
             label: tr.pricingMonthlyCap,
             value: '${compactCount(tier.monthlyTokens)} ${tr.pricingStUnit}',
           ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: GhostButton(
-              label: tr.quotaUpgradeCta,
-              icon: AppIcons.sparkles,
-              minHeight: 40,
-              onPressed: () => context.pushNamed(RouteNames.pricing),
+          // Upgrade CTA → pricing catalogue. Hidden on iOS (App Store 3.1.1);
+          // the current plan + caps above stay (informational).
+          if (showPaidUpsell) ...[
+            const SizedBox(height: 14),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: GhostButton(
+                label: tr.quotaUpgradeCta,
+                icon: AppIcons.sparkles,
+                minHeight: 40,
+                onPressed: () => context.pushNamed(RouteNames.pricing),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

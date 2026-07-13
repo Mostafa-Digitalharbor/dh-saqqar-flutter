@@ -15,6 +15,7 @@ import '../../../shared/widgets/delete_account_helper.dart';
 import '../../../shared/widgets/sign_out_helper.dart';
 import '../../../shared/widgets/skeleton_block.dart';
 import '../../auth/view_model/auth_cubit.dart';
+import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/usage_api.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../widgets/widgets.dart';
@@ -97,16 +98,20 @@ class _AccountScreenState extends State<AccountScreen> {
                 padding: const EdgeInsets.only(bottom: 14),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: GhostButton(
-                        label: context.tr.accountSeePlans,
-                        icon: Icons.workspace_premium_outlined,
-                        expand: true,
-                        onPressed: () =>
-                            context.pushNamed(RouteNames.pricing),
+                    // "See plans" leads to the pricing catalogue — hidden on
+                    // iOS (App Store 3.1.1). "Usage" stays and fills the row.
+                    if (showPaidUpsell) ...[
+                      Expanded(
+                        child: GhostButton(
+                          label: context.tr.accountSeePlans,
+                          icon: Icons.workspace_premium_outlined,
+                          expand: true,
+                          onPressed: () =>
+                              context.pushNamed(RouteNames.pricing),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
+                      const SizedBox(width: 10),
+                    ],
                     Expanded(
                       child: GhostButton(
                         label: context.tr.accountUsage,
