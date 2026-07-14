@@ -39,6 +39,45 @@ import receive_sharing_intent
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
+  // MARK: - APNs registration diagnostics
+  //
+  // Purely additive logging so a failing iOS push setup names its OWN cause in
+  // the console. Grep the run for `SAQQAR-APNS`:
+  //   ✅ registered → APNs is fine; any non-delivery is backend/FCM side.
+  //   ❌ FAILED     → the error string is the exact reason, e.g.
+  //      "no valid 'aps-environment' entitlement string found" = the Push
+  //      Notifications capability / provisioning profile is missing it.
+  //
+  // Firebase's method swizzling (FirebaseAppDelegateProxyEnabled, default on)
+  // still runs: we call `super`, which chains to the swizzled implementation
+  // that hands the device token to FCM. This only observes; it changes nothing.
+  override func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
+    NSLog("[SAQQAR-APNS] ✅ registered — APNs device token = \(hex)")
+    super.application(
+      application,
+      didRegisterForRemoteNotificationsWithDeviceToken: deviceToken
+    )
+  }
+
+  override func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    let ns = error as NSError
+    NSLog(
+      "[SAQQAR-APNS] ❌ APNs registration FAILED — "
+        + "\(ns.domain) code=\(ns.code): \(ns.localizedDescription)"
+    )
+    super.application(
+      application,
+      didFailToRegisterForRemoteNotificationsWithError: error
+    )
+  }
+
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     WatchSessionManager.shared.start(messenger: engineBridge.applicationRegistrar.messenger())
