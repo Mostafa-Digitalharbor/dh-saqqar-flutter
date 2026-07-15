@@ -18,6 +18,11 @@ import receive_sharing_intent
   /// lock — and is purely visual (no auth prompt), so it adds no friction.
   private var privacyCover: UIView?
 
+  /// Set by either APNs registration callback. The launch-time watchdog reads
+  /// it so "iOS answered with nothing at all" is reported instead of leaving a
+  /// silent gap in the log.
+  private var apnsCallbackFired = false
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -36,7 +41,78 @@ import receive_sharing_intent
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
     }
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    logPushDiagnostics(application)
+    return result
+  }
+
+  // MARK: - Push diagnostics (launch-time)
+
+  /// Dumps everything needed to explain an iOS push failure WITHOUT guessing,
+  /// then explicitly asks APNs to register so the ✅/❌ callback below always
+  /// fires. Grep the run for `SAQQAR-APNS`.
+  ///
+  /// The decisive line is `aps-environment` read from the *embedded
+  /// provisioning profile the app was actually signed with*:
+  ///   • `development` / `production` → the build really is push-entitled, so a
+  ///     null APNs token is NOT a signing problem.
+  ///   • `MISSING` → the profile grants no push. That is the whole bug: enable
+  ///     Push Notifications on the App ID + add the capability in Xcode →
+  ///     Signing & Capabilities, then let automatic signing regenerate it.
+  ///
+  /// Registering here (rather than waiting for the Dart layer) is safe and
+  /// idempotent — iOS issues the device token regardless of alert permission,
+  /// so this also removes the "token not ready yet" race that made
+  /// `getAPNSToken()` return null.
+  private func logPushDiagnostics(_ application: UIApplication) {
+    #if targetEnvironment(simulator)
+    NSLog("[SAQQAR-APNS] ⚠️ running on the SIMULATOR — APNs never issues a token here. Use a real device.")
+    #endif
+    let bundleId = Bundle.main.bundleIdentifier ?? "(unknown)"
+    NSLog("[SAQQAR-APNS] ℹ️ bundleId=\(bundleId) · aps-environment=\(Self.apsEnvironmentFromProfile()) · alreadyRegistered=\(application.isRegisteredForRemoteNotifications)")
+    NSLog("[SAQQAR-APNS] ▶ requesting APNs registration…")
+    application.registerForRemoteNotifications()
+
+    // Watchdog: iOS answers registerForRemoteNotifications with EITHER
+    // didRegister or didFailToRegister. Silence past this point is itself the
+    // finding (the request never reached APNs), so say so rather than leaving
+    // the log ambiguous.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
+      guard let self = self, !self.apnsCallbackFired else { return }
+      NSLog("[SAQQAR-APNS] ⏱ NO callback after 12s — iOS answered the registration request with neither success nor failure.")
+      NSLog("[SAQQAR-APNS] 👉 CAUSE: almost always the build is signed with a profile that has no push entitlement (check the aps-environment line above), or there is no network path to APNs. It is NOT the backend and NOT the notification permission.")
+    }
+  }
+
+  /// Reads `Entitlements → aps-environment` out of `embedded.mobileprovision`
+  /// (the profile baked into this build). Returns `MISSING …` when the profile
+  /// grants no push, which is the single most common cause of a null APNs
+  /// token on a correctly-permissioned real device.
+  private static func apsEnvironmentFromProfile() -> String {
+    guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+          let data = try? Data(contentsOf: url),
+          let raw = String(data: data, encoding: .isoLatin1)
+    else {
+      return "NO PROFILE FOUND (simulator, or App Store build)"
+    }
+    guard let start = raw.range(of: "<?xml"),
+          let end = raw.range(of: "</plist>")
+    else {
+      return "PROFILE UNPARSEABLE"
+    }
+    let plistText = String(raw[start.lowerBound..<end.upperBound])
+    guard let plistData = plistText.data(using: .isoLatin1),
+          let plist = try? PropertyListSerialization.propertyList(
+            from: plistData, options: [], format: nil
+          ) as? [String: Any],
+          let entitlements = plist["Entitlements"] as? [String: Any]
+    else {
+      return "PROFILE HAS NO ENTITLEMENTS"
+    }
+    if let aps = entitlements["aps-environment"] as? String {
+      return aps
+    }
+    return "MISSING ❌ (this profile grants NO push — that is the bug)"
   }
 
   // MARK: - APNs registration diagnostics
@@ -55,8 +131,10 @@ import receive_sharing_intent
     _ application: UIApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
   ) {
+    apnsCallbackFired = true
     let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
     NSLog("[SAQQAR-APNS] ✅ registered — APNs device token = \(hex)")
+    NSLog("[SAQQAR-APNS] 👉 APNs is WORKING on this device. If pushes still do not arrive, the client is fine — look at FCM/backend delivery (test the FCM token in Firebase Console → Send test message).")
     super.application(
       application,
       didRegisterForRemoteNotificationsWithDeviceToken: deviceToken
@@ -67,11 +145,22 @@ import receive_sharing_intent
     _ application: UIApplication,
     didFailToRegisterForRemoteNotificationsWithError error: Error
   ) {
+    apnsCallbackFired = true
     let ns = error as NSError
     NSLog(
       "[SAQQAR-APNS] ❌ APNs registration FAILED — "
         + "\(ns.domain) code=\(ns.code): \(ns.localizedDescription)"
     )
+    // Translate the raw error into the action that actually fixes it, so the
+    // console says what to DO rather than only what broke.
+    let text = ns.localizedDescription.lowercased()
+    if text.contains("aps-environment") || text.contains("entitlement") {
+      NSLog("[SAQQAR-APNS] 👉 CAUSE: the signed build has no valid push entitlement. FIX: Apple Developer portal → App ID → enable Push Notifications, then Xcode → Runner → Signing & Capabilities → + Capability → Push Notifications, let automatic signing regenerate the profile, then flutter clean && rebuild.")
+    } else if text.contains("network") || text.contains("connect") || text.contains("offline") {
+      NSLog("[SAQQAR-APNS] 👉 CAUSE: the device could not reach APNs (network). FIX: retry on a normal Wi-Fi/cellular connection — corporate networks sometimes block APNs (port 5223).")
+    } else {
+      NSLog("[SAQQAR-APNS] 👉 Unrecognised APNs error — send the two lines above verbatim.")
+    }
     super.application(
       application,
       didFailToRegisterForRemoteNotificationsWithError: error
