@@ -299,6 +299,16 @@ class PushNotificationsService {
   /// them through flutter_local_notifications. Carries `conversation_id` as
   /// the payload so a tap routes correctly.
   void _onForegroundMessage(RemoteMessage message) {
+    // Proves DELIVERY independently of DISPLAY. Without this, a push that FCM
+    // delivered but iOS chose not to banner (app in foreground, Focus mode)
+    // is indistinguishable from one that never arrived — the two have opposite
+    // fixes. If this line prints, the whole Firebase↔APNs chain is working.
+    AppLogger.info(
+      _tag,
+      '📩 push RECEIVED (foreground) — id=${message.messageId} '
+      'title=${message.notification?.title} body=${message.notification?.body} '
+      'data=${message.data}',
+    );
     final notification = message.notification;
     if (notification == null) return; // data-only — nothing user-facing.
     // Keep it in the in-app inbox so the user can review it later.
@@ -325,6 +335,10 @@ class PushNotificationsService {
   }
 
   void _routeFromMessage(RemoteMessage message) {
+    AppLogger.info(
+      _tag,
+      '📩 push OPENED (tap) — id=${message.messageId} data=${message.data}',
+    );
     // A tapped notification (from background/terminated) wasn't captured by
     // onMessage — record it so it lands in the inbox too. Deduped by id.
     if (message.notification != null) _store.add(appNotificationFrom(message));
