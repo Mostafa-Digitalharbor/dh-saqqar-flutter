@@ -6,11 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
-import '../../features/conversations/data/conversations_repository.dart';
-import '../../features/notifications/data/notifications_store.dart';
-import '../../features/vault/data/vault_repository.dart';
-import '../extensions/context_extensions.dart';
+import '../session/local_session_caches.dart';
 import 'app_toast.dart';
+import 'blocking_progress_dialog.dart';
 import 'confirm_dialog.dart';
 
 /// Single entry-point for "sign the user out of Saqqar". Shows the
@@ -34,31 +32,24 @@ Future<bool> showSignOutFlow(BuildContext context) async {
 
   // Capture references before any awaits — after logout the widget tree
   // is rebuilt by the auth-gate redirect and `context.read` would throw.
-  final vaultRepo = context.read<VaultRepository>();
-  final conversationsRepo = context.read<ConversationsRepository>();
-  final notificationsStore = context.read<NotificationsStore>();
+  final caches = LocalSessionCaches.of(context);
   final authCubit = context.read<AuthCubit>();
   final navigator = Navigator.of(context, rootNavigator: true);
 
-  unawaited(showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black.withValues(alpha: 0.25),
-    builder: (_) => const _SignOutProgressDialog(),
-  ));
+  unawaited(
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.25),
+      builder: (_) => const BlockingProgressDialog(),
+    ),
+  );
 
   try {
-    // Clear feature-level offline caches BEFORE revoking the token so
-    // the next user signing in on the same device doesn't see the
-    // previous user's projects flash on screen while the live fetch
-    // runs. Repositories that don't have an offline cache wired no-op.
-    await vaultRepo.clearOfflineCache();
-    // Drop in-memory chat transcripts + the offline Chats list so the next
-    // user doesn't briefly inherit the previous user's messages or rows.
-    conversationsRepo.clearSnapshotCache();
-    await conversationsRepo.clearListCache();
-    await conversationsRepo.clearDiskCache();
-    await notificationsStore.clearPersisted();
+    // Purge local caches BEFORE revoking the token so the next user
+    // signing in on this device can't see the previous user's projects or
+    // messages flash on screen while the live fetch runs.
+    await caches.clear();
     await authCubit.logout();
   } finally {
     if (navigator.canPop()) navigator.pop();
@@ -71,46 +62,4 @@ Future<bool> showSignOutFlow(BuildContext context) async {
     variant: ToastVariant.success,
   );
   return true;
-}
-
-/// Compact centred dialog — just a thin indeterminate progress bar in
-/// a small pill so the user sees that logout is in flight without a
-/// big loading card dominating the screen. Disables the system back
-/// gesture; the async chain resolves in well under a second.
-class _SignOutProgressDialog extends StatelessWidget {
-  const _SignOutProgressDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    // Cap at 220 but never exceed 80% of the viewport so the pill keeps a
-    // margin on very narrow phones (≤280 px) instead of touching the edges.
-    final screenW = MediaQuery.sizeOf(context).width;
-    final dialogW = screenW * 0.8 < 220 ? screenW * 0.8 : 220.0;
-    return PopScope(
-      canPop: false,
-      child: Center(
-        child: Container(
-          width: dialogW,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            color: s.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: s.cardBorder),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: SizedBox(
-              height: 2.5,
-              child: LinearProgressIndicator(
-                backgroundColor: s.border.withValues(alpha: 0.35),
-                valueColor: AlwaysStoppedAnimation<Color>(s.brandCyanStrong),
-                minHeight: 2.5,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

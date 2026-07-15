@@ -53,7 +53,7 @@ class SharedTranscriptScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Token: $token',
+                    context.tr.shareTokenLabel(token),
                     style: context.text.bodySmall?.copyWith(color: s.muted),
                   ),
                   const SizedBox(height: 18),

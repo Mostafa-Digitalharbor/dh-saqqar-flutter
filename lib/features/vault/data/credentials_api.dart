@@ -5,10 +5,21 @@ import 'credential_models.dart';
 
 /// Result of `POST /api/v1/credentials/test/`. Returned by
 /// [CredentialsApi.testConnection]; the UI maps `success` to a green
-/// badge and `error` (non-null) to the red one.
+/// badge and a failure to the red one.
 class CredentialTestResult {
   const CredentialTestResult.success() : success = true, error = null;
-  const CredentialTestResult.failure(String this.error) : success = false;
+
+  /// [error] carries the SERVER's own explanation of why the test failed
+  /// (e.g. `"AccessDenied: invalid password"`), which the badge localizes
+  /// through `AppStrings.testConnectionError`.
+  ///
+  /// Pass `null` — or omit it — when the reason isn't known. The badge
+  /// then renders its own localized "Connection failed" line instead.
+  /// Never pass a generic English marker here: the badge already prefixes
+  /// the localized `testConnectionFailed`, so a generic `error` renders as
+  /// "Connection failed: Connection failed" in English and leaks raw
+  /// English into an otherwise-Arabic badge.
+  const CredentialTestResult.failure([this.error]) : success = false;
 
   final bool success;
   final String? error;
@@ -82,26 +93,34 @@ class CredentialsApi {
       );
       final body = res.data ?? const <String, dynamic>{};
       if (body['ok'] == true) return const CredentialTestResult.success();
-      final err = body['error']?.toString() ?? 'Connection failed';
-      return CredentialTestResult.failure(err);
+      final err = body['error']?.toString();
+      return CredentialTestResult.failure(
+        (err != null && err.isNotEmpty) ? err : null,
+      );
     } on DioException catch (e) {
       // 400 / 500 / 502 land here via the error interceptor. Pull the
       // server's `error` text out of the response body when present so
       // the user sees a real reason (e.g. "AccessDenied: invalid
-      // password") instead of a generic "Connection failed".
+      // password") instead of the generic badge.
+      //
+      // `e.message` is deliberately NOT used as a fallback: it's a raw Dio
+      // string ("The request connection took longer than 0:00:30.000000")
+      // that no locale table can translate. The transport reason is already
+      // captured by the logging interceptor; the user gets the localized
+      // badge instead.
       final data = e.response?.data;
       String? err;
       if (data is Map) {
         final v = data['error'];
         if (v is String && v.isNotEmpty) err = v;
       }
-      return CredentialTestResult.failure(err ?? e.message ?? 'Connection failed');
+      return CredentialTestResult.failure(err);
     } catch (_) {
       // Non-Dio errors (e.g. a Dart TypeError parsing an unexpected body)
       // must NOT leak a raw exception string onto the Test-Connection badge.
-      // Fall back to the same stable marker the other branches use, which
-      // the UI localizes via `localizeServerMessage`.
-      return const CredentialTestResult.failure('Connection failed');
+      // No reason we can localize → let the badge render its own localized
+      // "Connection failed" line.
+      return const CredentialTestResult.failure();
     }
   }
 

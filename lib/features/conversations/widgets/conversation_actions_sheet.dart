@@ -56,73 +56,102 @@ class ConversationActionsSheet extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          18,
-          4,
-          18,
-          22 + MediaQuery.viewInsetsOf(context).bottom,
+      // Shown with `isScrollControlled: true`, which lets the sheet grow to
+      // the full viewport — so an uncapped, unscrollable column overflows
+      // wherever the content is taller than the window (landscape at ~320 px
+      // tall, or Arabic at 1.4×). Cap the height and let the rows scroll,
+      // mirroring `ChatSheet` / `EnvironmentDetailSheet`.
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SheetDragHandle(),
-            const SizedBox(height: 18),
-            Text(
-              tr.longPressActionsTitle,
-              style: context.text.labelSmall?.copyWith(
-                color: s.muted,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.0,
-                fontSize: 10,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            4,
+            18,
+            22 + MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SheetDragHandle(),
+              const SizedBox(height: 18),
+              Text(
+                tr.longPressActionsTitle,
+                style: context.text.labelSmall?.copyWith(
+                  color: s.muted,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                  fontSize: 10,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.2,
+              const SizedBox(height: 4),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
               ),
-            ),
-            const SizedBox(height: 14),
-            _ActionRow(
-              icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-              label: isPinned ? tr.unpinConversation : tr.pinConversation,
-              onTap: () =>
-                  Navigator.of(context).pop(ConversationAction.pin),
-            ),
-            _ActionRow(
-              icon: AppIcons.edit,
-              label: tr.rename,
-              onTap: () =>
-                  Navigator.of(context).pop(ConversationAction.rename),
-            ),
-            _ActionRow(
-              icon: AppIcons.share,
-              label: tr.shareLink,
-              onTap: () =>
-                  Navigator.of(context).pop(ConversationAction.share),
-            ),
-            _ActionRow(
-              icon: isArchived
-                  ? Icons.unarchive_outlined
-                  : AppIcons.archive,
-              label: isArchived ? tr.unarchive : tr.archive,
-              onTap: () =>
-                  Navigator.of(context).pop(ConversationAction.archive),
-            ),
-            _ActionRow(
-              icon: AppIcons.trash,
-              label: tr.delete,
-              danger: true,
-              onTap: () =>
-                  Navigator.of(context).pop(ConversationAction.delete),
-            ),
-          ],
+              const SizedBox(height: 14),
+              // Only the action rows scroll — the drag handle and the
+              // conversation title stay pinned, so the user can always see
+              // which conversation they're acting on.
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ActionRow(
+                        icon: isPinned
+                            ? Icons.push_pin
+                            : Icons.push_pin_outlined,
+                        label: isPinned
+                            ? tr.unpinConversation
+                            : tr.pinConversation,
+                        onTap: () =>
+                            Navigator.of(context).pop(ConversationAction.pin),
+                      ),
+                      _ActionRow(
+                        icon: AppIcons.edit,
+                        label: tr.rename,
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pop(ConversationAction.rename),
+                      ),
+                      _ActionRow(
+                        icon: AppIcons.share,
+                        label: tr.shareLink,
+                        onTap: () =>
+                            Navigator.of(context).pop(ConversationAction.share),
+                      ),
+                      _ActionRow(
+                        icon: isArchived
+                            ? Icons.unarchive_outlined
+                            : AppIcons.archive,
+                        label: isArchived ? tr.unarchive : tr.archive,
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pop(ConversationAction.archive),
+                      ),
+                      _ActionRow(
+                        icon: AppIcons.trash,
+                        label: tr.delete,
+                        danger: true,
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pop(ConversationAction.delete),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

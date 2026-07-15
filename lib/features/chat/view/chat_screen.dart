@@ -2500,7 +2500,10 @@ class _ChatScreenState extends State<ChatScreen>
         builder: (sheetContext) {
           return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+            // Scoped accessor — wholesale `MediaQuery.of` would rebuild this
+            // sheet on every unrelated MediaQuery change (text scale,
+            // brightness, padding) when only the keyboard inset matters.
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
           child: DraggableScrollableSheet(
             initialChildSize: 0.7,

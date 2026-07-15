@@ -144,23 +144,35 @@ class ChatAppBarTitle extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          ConstrainedBox(
-                            // Cap derived from screen width (was a fixed
-                            // 220) so a long env name can't exceed the title
-                            // slot and overflow the subtitle row on ~320px
-                            // phones, while still capping on roomy screens.
-                            constraints: BoxConstraints(
-                              maxWidth: (MediaQuery.sizeOf(context).width * 0.5)
-                                  .clamp(120.0, 220.0),
-                            ),
-                            child: Text(
-                              activeCredentialLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.text.labelSmall?.copyWith(
-                                color: s.muted,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
+                          // `Flexible` is what actually prevents the
+                          // overflow: the enclosing Wrap lays this Row out
+                          // against the real title-slot width, so Flexible
+                          // hands the name whatever is left after the dot +
+                          // gap and lets it ellipsize there.
+                          //
+                          // Deriving the cap from MediaQuery instead (as
+                          // this did) measures the wrong box — the slot is
+                          // ~146 px narrower than the screen once the
+                          // leading, search and bell chrome is subtracted,
+                          // so a screen-relative cap overflowed a ~320 px
+                          // phone by ~14 px on long env names.
+                          //
+                          // The fixed 220 is now only a comfort cap for
+                          // roomy screens: it keeps a long env name from
+                          // eating the whole slot so the flag badges can
+                          // still sit beside it rather than always wrapping.
+                          Flexible(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 220),
+                              child: Text(
+                                activeCredentialLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.text.labelSmall?.copyWith(
+                                  color: s.muted,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
                               ),
                             ),
                           ),

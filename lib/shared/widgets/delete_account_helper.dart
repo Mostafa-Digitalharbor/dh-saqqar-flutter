@@ -7,11 +7,9 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/network/api_error_mapper.dart';
 import '../../core/theme/app_icons.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
-import '../../features/conversations/data/conversations_repository.dart';
-import '../../features/notifications/data/notifications_store.dart';
-import '../../features/vault/data/vault_repository.dart';
-import '../extensions/context_extensions.dart';
+import '../session/local_session_caches.dart';
 import 'app_toast.dart';
+import 'blocking_progress_dialog.dart';
 import 'confirm_dialog.dart';
 
 /// Single entry-point for "delete my Saqqar account" — the App/Play Store
@@ -40,19 +38,19 @@ Future<bool> showDeleteAccountFlow(BuildContext context) async {
 
   // Capture references before any awaits — the auth-gate redirect rebuilds
   // the tree on success and `context.read` would throw afterwards.
-  final vaultRepo = context.read<VaultRepository>();
-  final conversationsRepo = context.read<ConversationsRepository>();
-  final notificationsStore = context.read<NotificationsStore>();
+  final caches = LocalSessionCaches.of(context);
   final authCubit = context.read<AuthCubit>();
   final messenger = ScaffoldMessenger.maybeOf(context);
   final navigator = Navigator.of(context, rootNavigator: true);
 
-  unawaited(showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black.withValues(alpha: 0.25),
-    builder: (_) => const _DeleteAccountProgressDialog(),
-  ));
+  unawaited(
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.25),
+      builder: (_) => const BlockingProgressDialog(),
+    ),
+  );
 
   var deleted = false;
   Object? error;
@@ -60,11 +58,7 @@ Future<bool> showDeleteAccountFlow(BuildContext context) async {
     await authCubit.deleteAccount();
     deleted = true;
     // Only purge local caches once the server confirmed deletion.
-    await vaultRepo.clearOfflineCache();
-    conversationsRepo.clearSnapshotCache();
-    await conversationsRepo.clearListCache();
-    await conversationsRepo.clearDiskCache();
-    await notificationsStore.clearPersisted();
+    await caches.clear();
   } catch (e) {
     error = e;
   } finally {
@@ -90,43 +84,4 @@ Future<bool> showDeleteAccountFlow(BuildContext context) async {
     }
   }
   return deleted;
-}
-
-/// Compact centred progress dialog — a thin indeterminate bar while the
-/// delete round-trip runs. Mirrors the sign-out progress dialog so the two
-/// destructive flows feel identical. Blocks the system back gesture.
-class _DeleteAccountProgressDialog extends StatelessWidget {
-  const _DeleteAccountProgressDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final screenW = MediaQuery.sizeOf(context).width;
-    final dialogW = screenW * 0.8 < 220 ? screenW * 0.8 : 220.0;
-    return PopScope(
-      canPop: false,
-      child: Center(
-        child: Container(
-          width: dialogW,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            color: s.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: s.cardBorder),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: SizedBox(
-              height: 2.5,
-              child: LinearProgressIndicator(
-                backgroundColor: s.border.withValues(alpha: 0.35),
-                valueColor: AlwaysStoppedAnimation<Color>(s.brandCyanStrong),
-                minHeight: 2.5,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

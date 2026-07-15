@@ -65,7 +65,13 @@ class ConfirmDialog extends StatelessWidget {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+      // `vertical: 24` is load-bearing, not cosmetic: passing only
+      // `horizontal` here sets the vertical inset to 0, which lets the
+      // dialog claim the FULL viewport height. The unscrollable column
+      // below then has nothing to push back against and overflows — e.g.
+      // in landscape (~320 px tall), or with a long user-supplied name in
+      // `body` at 1.4× Arabic. Keep both axes.
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: ClipRRect(
@@ -93,85 +99,91 @@ class ConfirmDialog extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: destructive
                         ? LinearGradient(
-                            colors: [
-                              s.danger,
-                              s.danger.withValues(alpha: 0.7),
-                            ],
+                            colors: [s.danger, s.danger.withValues(alpha: 0.7)],
                           )
                         : AppGradients.primaryCta,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (icon != null) ...[
-                        Container(
-                          width: 46,
-                          height: 46,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: (destructive ? s.danger : s.brandCyan)
-                                .withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
+                // Scrolls rather than overflows when the content can't fit
+                // the height the inset leaves us — `body` carries
+                // user-supplied names (project / environment) and Arabic at
+                // 1.4× is materially taller than English. Mirrors
+                // `RenameConversationDialog`. `Flexible` keeps the gradient
+                // hairline above pinned while only the content scrolls; on
+                // a normal device everything fits and no scrollbar shows.
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (icon != null) ...[
+                          Container(
+                            width: 46,
+                            height: 46,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
                               color: (destructive ? s.danger : s.brandCyan)
-                                  .withValues(alpha: 0.28),
+                                  .withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: (destructive ? s.danger : s.brandCyan)
+                                    .withValues(alpha: 0.28),
+                              ),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: destructive ? s.danger : s.brandCyan,
+                              size: 22,
                             ),
                           ),
-                          child: Icon(
-                            icon,
-                            color: destructive ? s.danger : s.brandCyan,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-                      Text(
-                        title,
-                        style: context.text.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        body,
-                        style: context.text.bodyMedium?.copyWith(
-                          color: s.muted,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GhostButton(
-                              label: cancelLabel ?? context.tr.cancel,
-                              onPressed: () =>
-                                  Navigator.of(context).pop(false),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: destructive
-                                ? GhostButton(
-                                    label: confirmLabel,
-                                    tone: GhostButtonTone.danger,
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(true),
-                                  )
-                                : PrimaryButton(
-                                    label: confirmLabel,
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(true),
-                                  ),
-                          ),
+                          const SizedBox(height: 14),
                         ],
-                      ),
-                    ],
+                        Text(
+                          title,
+                          style: context.text.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          body,
+                          style: context.text.bodyMedium?.copyWith(
+                            color: s.muted,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GhostButton(
+                                label: cancelLabel ?? context.tr.cancel,
+                                onPressed: () =>
+                                    Navigator.of(context).pop(false),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: destructive
+                                  ? GhostButton(
+                                      label: confirmLabel,
+                                      tone: GhostButtonTone.danger,
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                    )
+                                  : PrimaryButton(
+                                      label: confirmLabel,
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

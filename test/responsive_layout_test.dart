@@ -143,5 +143,82 @@ void main() {
         locale: const Locale('ar'),
       );
     });
+
+    // Regression: a long env name overflowed the subtitle row by ~14 px on
+    // a 320 px phone. The two tests above missed it for two reasons, both
+    // worth preserving here:
+    //
+    //   1. They pump into `Align`, which passes LOOSE constraints — the
+    //      widget got the whole screen width. The real chat AppBar gives
+    //      its title slot ~146 px less than the screen once the leading
+    //      back button, the search action and the inbox bell are taken
+    //      out. The bug only exists inside that narrower box.
+    //   2. 'ALZOMMAN Staging' is 16 chars — too short to reach the cap.
+    //      The name has to be long enough to saturate it (~27+ EN chars).
+    //
+    // So this pumps into a real AppBar carrying the same chrome as
+    // `ChatScreen`, with a name long enough to fight for the last pixels.
+    for (final locale in const [Locale('en'), Locale('ar')]) {
+      final isArabic = locale.languageCode == 'ar';
+      testWidgets(
+        'long env name stays inside the real AppBar title slot '
+        '(${locale.languageCode})',
+        (tester) async {
+          await _pumpAtAllSizes(
+            tester,
+            () => _ChatAppBarHarness(
+              title: isArabic ? 'إقفال دفتر الأستاذ' : 'Ledger close',
+              // Long enough to saturate the env-name cap in both scripts.
+              activeCredentialLabel: isArabic
+                  ? 'بيئة ألزومان للإنتاج والتجريب الرئيسية'
+                  : 'ALZOMMAN Production Staging Server',
+            ),
+            locale: locale,
+          );
+        },
+      );
+    }
   });
+}
+
+/// Mirrors the chat AppBar's real geometry: a leading button plus the two
+/// trailing actions (search + inbox bell) that squeeze the title slot.
+/// Pumping [ChatAppBarTitle] bare gives it the full screen width and hides
+/// slot-width bugs, so the chrome is reproduced rather than approximated.
+class _ChatAppBarHarness extends StatelessWidget {
+  const _ChatAppBarHarness({
+    required this.title,
+    required this.activeCredentialLabel,
+  });
+
+  final String title;
+  final String activeCredentialLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () {}),
+        title: ChatAppBarTitle(
+          title: title,
+          activeCredentialLabel: activeCredentialLabel,
+          autoApprove: true,
+          envIsLive: true,
+          envReadOnly: true,
+          onCredentialTap: () {},
+          onRenameTap: () {},
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+          // Stands in for `_InboxBellTrigger` — a 38 px box with 4 px of
+          // end padding, per chat_screen.dart.
+          const Padding(
+            padding: EdgeInsetsDirectional.only(end: 4),
+            child: SizedBox.square(dimension: 38, child: Icon(Icons.notifications)),
+          ),
+        ],
+      ),
+      body: const SizedBox.shrink(),
+    );
+  }
 }

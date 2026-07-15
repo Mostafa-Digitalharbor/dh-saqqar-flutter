@@ -13,6 +13,7 @@ import 'package:saqqar_app/core/network/view_model/connectivity_cubit.dart';
 import 'package:saqqar_app/core/storage/secure_token_store.dart';
 import 'package:saqqar_app/core/theme/view_model/theme_cubit.dart';
 import 'package:saqqar_app/features/auth/data/auth_api.dart';
+import 'package:saqqar_app/features/auth/data/social_auth_service.dart';
 import 'package:saqqar_app/features/auth/view_model/auth_cubit.dart';
 import 'package:saqqar_app/features/chat/data/live_env_ack_service.dart';
 import 'package:saqqar_app/features/chat/view_model/deep_think_cubit.dart';
@@ -148,6 +149,7 @@ Future<void> _pumpApp(WidgetTester tester) async {
   final devicesApi = DevicesApi(dio);
   final liveEnvAckService = LiveEnvAckService(prefs);
   final shareIntakeService = ShareIntakeService();
+  final socialAuthService = SocialAuthService();
   // Push service + notifications store — provided (never started) so the
   // cold-start push-registration path in app.dart's splash `onReady` can
   // resolve them via context.read. start() only fires for an authenticated
@@ -168,6 +170,13 @@ Future<void> _pumpApp(WidgetTester tester) async {
         RepositoryProvider<SecureTokenStore>.value(value: tokenStore),
         RepositoryProvider<Dio>.value(value: dio),
         RepositoryProvider<AuthApi>.value(value: authApi),
+        // Mirror main.dart — AuthFlowScreen's `create` resolves this via
+        // context.read to build its AuthFlowCubit, so /sign-in throws
+        // ProviderNotFoundException without it. Constructing the real
+        // service is safe here: it builds its GoogleSignIn lazily, so
+        // nothing touches a platform channel until a sign-in is attempted
+        // (which this harness never does).
+        RepositoryProvider<SocialAuthService>.value(value: socialAuthService),
         RepositoryProvider<ProjectsApi>.value(value: projectsApi),
         RepositoryProvider<CredentialsApi>.value(value: credentialsApi),
         RepositoryProvider<ConversationsApi>.value(value: conversationsApi),

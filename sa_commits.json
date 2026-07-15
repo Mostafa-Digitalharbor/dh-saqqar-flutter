@@ -1,0 +1,986 @@
+[
+  {
+    "sha": "da7fef65484381e770fa3e532445d79f882c481d",
+    "node_id": "C_kwDOAS1I7NoAKGRhN2ZlZjY1NDg0MzgxZTc3MGZhM2U1MzI0NDVkNzlmODgyYzQ4MWQ",
+    "commit": {
+      "author": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-06-27T19:11:03Z"
+      },
+      "committer": {
+        "name": "Dylan Kiss (dyki)",
+        "email": "dyki@odoo.com",
+        "date": "2026-06-28T14:20:56Z"
+      },
+      "message": "[I18N] *: fetch latest Weblate translations\n\ncloses odoo/odoo#272673\n\nRelated: odoo/enterprise#122010\nSigned-off-by: Tiffany Chang (tic) <tic@odoo.com>",
+      "tree": {
+        "sha": "5740fa10ac6489105a4caa1ed744706b2f93f07c",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/5740fa10ac6489105a4caa1ed744706b2f93f07c"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/da7fef65484381e770fa3e532445d79f882c481d",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/da7fef65484381e770fa3e532445d79f882c481d",
+    "html_url": "https://github.com/odoo/odoo/commit/da7fef65484381e770fa3e532445d79f882c481d",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/da7fef65484381e770fa3e532445d79f882c481d/comments",
+    "author": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "dylankiss",
+      "id": 5985577,
+      "node_id": "MDQ6VXNlcjU5ODU1Nzc=",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5985577?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dylankiss",
+      "html_url": "https://github.com/dylankiss",
+      "followers_url": "https://api.github.com/users/dylankiss/followers",
+      "following_url": "https://api.github.com/users/dylankiss/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dylankiss/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dylankiss/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dylankiss/subscriptions",
+      "organizations_url": "https://api.github.com/users/dylankiss/orgs",
+      "repos_url": "https://api.github.com/users/dylankiss/repos",
+      "events_url": "https://api.github.com/users/dylankiss/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dylankiss/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "bef4ea4ca50ff41fdaa45735438df8afcd5af366",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/bef4ea4ca50ff41fdaa45735438df8afcd5af366",
+        "html_url": "https://github.com/odoo/odoo/commit/bef4ea4ca50ff41fdaa45735438df8afcd5af366"
+      }
+    ]
+  },
+  {
+    "sha": "5fd134cd0a5ca425481252ba76d52111f81dcf63",
+    "node_id": "C_kwDOAS1I7NoAKDVmZDEzNGNkMGE1Y2E0MjU0ODEyNTJiYTc2ZDUyMTExZjgxZGNmNjM",
+    "commit": {
+      "author": {
+        "name": "Louis Gobert",
+        "email": "loug@odoo.com",
+        "date": "2026-04-15T12:19:40Z"
+      },
+      "committer": {
+        "name": "Louis Gobert",
+        "email": "loug@odoo.com",
+        "date": "2026-05-29T17:00:41Z"
+      },
+      "message": "[FIX] l10n_sa_edi: skip reversed down-payments\n\nSending the final invoice of a sale order to ZATCA crashed with\nValueError: Expected singleton: account.move(a, b) when the\nsale order had multiple down-payment references.\n\nSteps to reproduce:\n1. Configure a SA company and setup ZATCA.\n2. Create a sale order and confirm it.\n3. Deliver the product line.\n4. From the sale order, create a down-payment invoice (fixed\n   amount, e.g. 115) and post it (DP1).\n5. On DP1, click \"Credit Note\" and choose \"Full refund and\n   new draft invoice\"; validate. DP1 becomes reversed and a\n   new draft down-payment DP2 is created. Post DP2.\n6. From the sale order, create the final regular invoice and\n   post it.\n7. Send the final invoice to ZATCA (or generate its XML) ->\n   ValueError: Expected singleton: account.move(a, b).\n\nRoot cause: _l10n_sa_get_line_prepayment_vals looks up the\nrelated down-payment move through the down-payment sale order\nline shared with the product line. The filter matched any\nout_invoice with _is_downpayment() == True, so the reversed\nDP1 and the active DP2 both ended up in the recordset, and\nreading .name raised the singleton error.\n\nPrefer non-reversed down-payment moves when available, but\nfall back to reversed ones if no alternative exists (e.g.\nwhen generating a credit note of the final invoice after the\noriginal down-payment was itself reversed).\n\nopw-6116265\n\ncloses odoo/odoo#266879\n\nX-original-commit: 076c20a6598ae4a36c68b8dcc4e1c5109e0bcd4d\nSigned-off-by: Maximilien La Barre (malb) <malb@odoo.com>\nSigned-off-by: Louis Gobert (loug) <loug@odoo.com>",
+      "tree": {
+        "sha": "adad9059226b19de0078290388f7801ed2470ffc",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/adad9059226b19de0078290388f7801ed2470ffc"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/5fd134cd0a5ca425481252ba76d52111f81dcf63",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/5fd134cd0a5ca425481252ba76d52111f81dcf63",
+    "html_url": "https://github.com/odoo/odoo/commit/5fd134cd0a5ca425481252ba76d52111f81dcf63",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/5fd134cd0a5ca425481252ba76d52111f81dcf63/comments",
+    "author": {
+      "login": "LouisGobert",
+      "id": 45512639,
+      "node_id": "MDQ6VXNlcjQ1NTEyNjM5",
+      "avatar_url": "https://avatars.githubusercontent.com/u/45512639?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/LouisGobert",
+      "html_url": "https://github.com/LouisGobert",
+      "followers_url": "https://api.github.com/users/LouisGobert/followers",
+      "following_url": "https://api.github.com/users/LouisGobert/following{/other_user}",
+      "gists_url": "https://api.github.com/users/LouisGobert/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/LouisGobert/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/LouisGobert/subscriptions",
+      "organizations_url": "https://api.github.com/users/LouisGobert/orgs",
+      "repos_url": "https://api.github.com/users/LouisGobert/repos",
+      "events_url": "https://api.github.com/users/LouisGobert/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/LouisGobert/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "LouisGobert",
+      "id": 45512639,
+      "node_id": "MDQ6VXNlcjQ1NTEyNjM5",
+      "avatar_url": "https://avatars.githubusercontent.com/u/45512639?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/LouisGobert",
+      "html_url": "https://github.com/LouisGobert",
+      "followers_url": "https://api.github.com/users/LouisGobert/followers",
+      "following_url": "https://api.github.com/users/LouisGobert/following{/other_user}",
+      "gists_url": "https://api.github.com/users/LouisGobert/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/LouisGobert/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/LouisGobert/subscriptions",
+      "organizations_url": "https://api.github.com/users/LouisGobert/orgs",
+      "repos_url": "https://api.github.com/users/LouisGobert/repos",
+      "events_url": "https://api.github.com/users/LouisGobert/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/LouisGobert/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "5bc90100383c6ef29140078b7cf8ba2102c70e0d",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/5bc90100383c6ef29140078b7cf8ba2102c70e0d",
+        "html_url": "https://github.com/odoo/odoo/commit/5bc90100383c6ef29140078b7cf8ba2102c70e0d"
+      }
+    ]
+  },
+  {
+    "sha": "588d9a48f53e2e471db84f5a51da6b99624cd884",
+    "node_id": "C_kwDOAS1I7NoAKDU4OGQ5YTQ4ZjUzZTJlNDcxZGI4NGY1YTUxZGE2Yjk5NjI0Y2Q4ODQ",
+    "commit": {
+      "author": {
+        "name": "Farah (ahmfa)",
+        "email": "ahmfa@odoo.com",
+        "date": "2026-04-24T12:41:13Z"
+      },
+      "committer": {
+        "name": "Farah (ahmfa)",
+        "email": "ahmfa@odoo.com",
+        "date": "2026-05-19T23:19:36Z"
+      },
+      "message": "[FIX] l10n_sa_edi: correct prepaid tax calculation with global rounding\n\nSteps to reproduce:\n===================\n- Download 'Sales', 'Accounting', and 'l10n_sa_edi' modules\n- Settings > Accounting > Rounding Method > Enable global rounding\n- Create sale order with 8 lines at 29.7 each with 15% taxes (triggers rounding precision issues)\n- Create and confirm 100% downpayment invoice\n- Deliver, then create final invoice with downpayment lines\n- Call `_l10n_sa_get_prepaid_amount()` on final invoice\n- Tax amount was calculated as 35.67 instead of correct 35.64\n\nCause of Issue:\n===============\nThe prepaid amount calculation was summing pre-rounded `tax_amount_currency` values\nfrom individual downpayment lines (5.00 + 5.00 + 5.00... = 40.00), instead of summing\nunrounded `raw_tax_amount_currency` values (5.001 × 8 = 40.008 → 40.01 (after global rounding)) to\ncalculate `tax_amount`.\nhttps://github.com/odoo/odoo/blob/27930ae41a5f03bd499983109de7f632472c3650/addons/l10n_sa_edi/models/account_edi_xml_ubl_21_zatca.py#L227-L240\n\nThis violates Odoo's [recent change](https://github.com/odoo/odoo/pull/180062) in `round_globally`\npattern which states:\nhttps://github.com/odoo/odoo/blob/8a88756bed194910bc5a47e93f0e29610dbeee1f/addons/account/models/account_tax.py#L2208\n\nFix:\n====\nEnsure cumulative rounding errors are avoided and correct global rounding is applied.\n\nopw-5881564\n\nX-original-commit: e5815ae0ff96f9bc19cfacbe365ba01d4fdd5655\n\nNote for v18.4 onwards: the bug isn't present anymore, only merging the test\n\ncloses odoo/odoo#264797\n\nX-original-commit: 748c28894c3f4e71ec32892453faec985fe091f4\nSigned-off-by: Florian Gilbert (flg) <flg@odoo.com>\nSigned-off-by: Farah Ahmed (ahmfa) <ahmfa@odoo.com>",
+      "tree": {
+        "sha": "76489b087a003d448852153ecdafbbd2c96a49cf",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/76489b087a003d448852153ecdafbbd2c96a49cf"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/588d9a48f53e2e471db84f5a51da6b99624cd884",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/588d9a48f53e2e471db84f5a51da6b99624cd884",
+    "html_url": "https://github.com/odoo/odoo/commit/588d9a48f53e2e471db84f5a51da6b99624cd884",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/588d9a48f53e2e471db84f5a51da6b99624cd884/comments",
+    "author": {
+      "login": "farahdawod",
+      "id": 102561773,
+      "node_id": "U_kgDOBhz37Q",
+      "avatar_url": "https://avatars.githubusercontent.com/u/102561773?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/farahdawod",
+      "html_url": "https://github.com/farahdawod",
+      "followers_url": "https://api.github.com/users/farahdawod/followers",
+      "following_url": "https://api.github.com/users/farahdawod/following{/other_user}",
+      "gists_url": "https://api.github.com/users/farahdawod/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/farahdawod/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/farahdawod/subscriptions",
+      "organizations_url": "https://api.github.com/users/farahdawod/orgs",
+      "repos_url": "https://api.github.com/users/farahdawod/repos",
+      "events_url": "https://api.github.com/users/farahdawod/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/farahdawod/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "farahdawod",
+      "id": 102561773,
+      "node_id": "U_kgDOBhz37Q",
+      "avatar_url": "https://avatars.githubusercontent.com/u/102561773?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/farahdawod",
+      "html_url": "https://github.com/farahdawod",
+      "followers_url": "https://api.github.com/users/farahdawod/followers",
+      "following_url": "https://api.github.com/users/farahdawod/following{/other_user}",
+      "gists_url": "https://api.github.com/users/farahdawod/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/farahdawod/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/farahdawod/subscriptions",
+      "organizations_url": "https://api.github.com/users/farahdawod/orgs",
+      "repos_url": "https://api.github.com/users/farahdawod/repos",
+      "events_url": "https://api.github.com/users/farahdawod/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/farahdawod/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b92204132f35f8459a9928e62bfaa423cadfeac0",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/b92204132f35f8459a9928e62bfaa423cadfeac0",
+        "html_url": "https://github.com/odoo/odoo/commit/b92204132f35f8459a9928e62bfaa423cadfeac0"
+      }
+    ]
+  },
+  {
+    "sha": "ceaf61274c1e6bd1289b623b50ff4371e90e10d1",
+    "node_id": "C_kwDOAS1I7NoAKGNlYWY2MTI3NGMxZTZiZDEyODliNjIzYjUwZmY0MzcxZTkwZTEwZDE",
+    "commit": {
+      "author": {
+        "name": "Adnan Sabbir",
+        "email": "adns@odoo.com",
+        "date": "2026-04-27T12:05:22Z"
+      },
+      "committer": {
+        "name": "Adnan Sabbir",
+        "email": "adns@odoo.com",
+        "date": "2026-05-12T11:21:42Z"
+      },
+      "message": "[FIX] l10n_sa_edi: log suppressed technical errors for troubleshooting\n\nTechnical validation errors were intentionally hidden from end users to keep\nUI messages clean, but this reduced backend visibility when diagnosing failures.\n\nThis change adds server-side logging at suppression points and prefixes entries\nwith `ZATCA_ERROR:` to make them easy to search, while keeping user-facing\nmessages unchanged.\n\ntask-6110313\n\ncloses odoo/odoo#261536\n\nSigned-off-by: Florian Gilbert (flg) <flg@odoo.com>",
+      "tree": {
+        "sha": "f4882ab4395142f83b182aaeeb14abbbe1145279",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/f4882ab4395142f83b182aaeeb14abbbe1145279"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/ceaf61274c1e6bd1289b623b50ff4371e90e10d1",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/ceaf61274c1e6bd1289b623b50ff4371e90e10d1",
+    "html_url": "https://github.com/odoo/odoo/commit/ceaf61274c1e6bd1289b623b50ff4371e90e10d1",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/ceaf61274c1e6bd1289b623b50ff4371e90e10d1/comments",
+    "author": {
+      "login": "adns-odoo",
+      "id": 168822048,
+      "node_id": "U_kgDOChAFIA",
+      "avatar_url": "https://avatars.githubusercontent.com/u/168822048?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/adns-odoo",
+      "html_url": "https://github.com/adns-odoo",
+      "followers_url": "https://api.github.com/users/adns-odoo/followers",
+      "following_url": "https://api.github.com/users/adns-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/adns-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/adns-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/adns-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/adns-odoo/orgs",
+      "repos_url": "https://api.github.com/users/adns-odoo/repos",
+      "events_url": "https://api.github.com/users/adns-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/adns-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "adns-odoo",
+      "id": 168822048,
+      "node_id": "U_kgDOChAFIA",
+      "avatar_url": "https://avatars.githubusercontent.com/u/168822048?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/adns-odoo",
+      "html_url": "https://github.com/adns-odoo",
+      "followers_url": "https://api.github.com/users/adns-odoo/followers",
+      "following_url": "https://api.github.com/users/adns-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/adns-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/adns-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/adns-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/adns-odoo/orgs",
+      "repos_url": "https://api.github.com/users/adns-odoo/repos",
+      "events_url": "https://api.github.com/users/adns-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/adns-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "c22cd06bf338d58699b2e06f6668b0ebd75a0ff6",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/c22cd06bf338d58699b2e06f6668b0ebd75a0ff6",
+        "html_url": "https://github.com/odoo/odoo/commit/c22cd06bf338d58699b2e06f6668b0ebd75a0ff6"
+      }
+    ]
+  },
+  {
+    "sha": "fee35cc869d8ad6ca4a54b6161587f1c8d75bd35",
+    "node_id": "C_kwDOAS1I7NoAKGZlZTM1Y2M4NjlkOGFkNmNhNGE1NGI2MTYxNTg3ZjFjOGQ3NWJkMzU",
+    "commit": {
+      "author": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-05-09T09:41:18Z"
+      },
+      "committer": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-05-09T19:11:33Z"
+      },
+      "message": "[I18N] *: fetch latest Weblate translations",
+      "tree": {
+        "sha": "5749df50fc04445d911b1fb187daddc637c2ed82",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/5749df50fc04445d911b1fb187daddc637c2ed82"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/fee35cc869d8ad6ca4a54b6161587f1c8d75bd35",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/fee35cc869d8ad6ca4a54b6161587f1c8d75bd35",
+    "html_url": "https://github.com/odoo/odoo/commit/fee35cc869d8ad6ca4a54b6161587f1c8d75bd35",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/fee35cc869d8ad6ca4a54b6161587f1c8d75bd35/comments",
+    "author": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "28654013e38cfa63fa2a420f129e0577c7e72047",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/28654013e38cfa63fa2a420f129e0577c7e72047",
+        "html_url": "https://github.com/odoo/odoo/commit/28654013e38cfa63fa2a420f129e0577c7e72047"
+      }
+    ]
+  },
+  {
+    "sha": "365f03209f2d5260081874f3cb4f970905e7d565",
+    "node_id": "C_kwDOAS1I7NoAKDM2NWYwMzIwOWYyZDUyNjAwODE4NzRmM2NiNGY5NzA5MDVlN2Q1NjU",
+    "commit": {
+      "author": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-05-09T09:33:30Z"
+      },
+      "committer": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-05-09T09:33:30Z"
+      },
+      "message": "[I18N] *: export 19.0 l10n source terms",
+      "tree": {
+        "sha": "d178e9d65761242c5641e95bcffb50cf05665086",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/d178e9d65761242c5641e95bcffb50cf05665086"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/365f03209f2d5260081874f3cb4f970905e7d565",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/365f03209f2d5260081874f3cb4f970905e7d565",
+    "html_url": "https://github.com/odoo/odoo/commit/365f03209f2d5260081874f3cb4f970905e7d565",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/365f03209f2d5260081874f3cb4f970905e7d565/comments",
+    "author": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "9bb2c02b93efaa6fbbb1c4bf1294b8f88ea09b22",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/9bb2c02b93efaa6fbbb1c4bf1294b8f88ea09b22",
+        "html_url": "https://github.com/odoo/odoo/commit/9bb2c02b93efaa6fbbb1c4bf1294b8f88ea09b22"
+      }
+    ]
+  },
+  {
+    "sha": "4a8c63e1bea20962bd4541603762d6baa976c8ff",
+    "node_id": "C_kwDOAS1I7NoAKDRhOGM2M2UxYmVhMjA5NjJiZDQ1NDE2MDM3NjJkNmJhYTk3NmM4ZmY",
+    "commit": {
+      "author": {
+        "name": "matd-odoo",
+        "email": "matd@odoo.com",
+        "date": "2026-03-24T05:03:54Z"
+      },
+      "committer": {
+        "name": "matd-odoo",
+        "email": "matd@odoo.com",
+        "date": "2026-05-05T05:02:01Z"
+      },
+      "message": "[FIX] l10n_sa, l10n_sa_edi: fix layout overlap, dynamic IDs and paper format\n\nThis commit introduces several improvements and fixes to the Saudi\ndocument layouts and company configurations:\n\n- Removes the redundant VAT number from document layout\n  header to resolve visual overlapping with other elements.\n- Extracts `l10n_sa_edi_additional_identification_scheme` and\n  `l10n_sa_edi_additional_identification_number` from static company\n  details and injects them dynamically into document layouts so they\n  always remain up-to-date when printed.\n- Updates the configuration logic to ensure the default Saudi paper\n  format is applied to all SA companies.\n\ntask-6040091\n\ncloses odoo/odoo#255463\n\nSigned-off-by: Deep Matholiya (matd) <matd@odoo.com>",
+      "tree": {
+        "sha": "3dedd266a0c2660f85da5581eafec84e3f34f3d4",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/3dedd266a0c2660f85da5581eafec84e3f34f3d4"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/4a8c63e1bea20962bd4541603762d6baa976c8ff",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/4a8c63e1bea20962bd4541603762d6baa976c8ff",
+    "html_url": "https://github.com/odoo/odoo/commit/4a8c63e1bea20962bd4541603762d6baa976c8ff",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/4a8c63e1bea20962bd4541603762d6baa976c8ff/comments",
+    "author": {
+      "login": "matd-odoo",
+      "id": 197566240,
+      "node_id": "U_kgDOC8afIA",
+      "avatar_url": "https://avatars.githubusercontent.com/u/197566240?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/matd-odoo",
+      "html_url": "https://github.com/matd-odoo",
+      "followers_url": "https://api.github.com/users/matd-odoo/followers",
+      "following_url": "https://api.github.com/users/matd-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/matd-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/matd-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/matd-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/matd-odoo/orgs",
+      "repos_url": "https://api.github.com/users/matd-odoo/repos",
+      "events_url": "https://api.github.com/users/matd-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/matd-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "matd-odoo",
+      "id": 197566240,
+      "node_id": "U_kgDOC8afIA",
+      "avatar_url": "https://avatars.githubusercontent.com/u/197566240?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/matd-odoo",
+      "html_url": "https://github.com/matd-odoo",
+      "followers_url": "https://api.github.com/users/matd-odoo/followers",
+      "following_url": "https://api.github.com/users/matd-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/matd-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/matd-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/matd-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/matd-odoo/orgs",
+      "repos_url": "https://api.github.com/users/matd-odoo/repos",
+      "events_url": "https://api.github.com/users/matd-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/matd-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "4c86322a3d6be123be6fc5d0ec161515ad5a170a",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/4c86322a3d6be123be6fc5d0ec161515ad5a170a",
+        "html_url": "https://github.com/odoo/odoo/commit/4c86322a3d6be123be6fc5d0ec161515ad5a170a"
+      }
+    ]
+  },
+  {
+    "sha": "86c28f89fc633358990bd7baaaed432e3d2a920a",
+    "node_id": "C_kwDOAS1I7NoAKDg2YzI4Zjg5ZmM2MzMzNTg5OTBiZDdiYWFhZWQ0MzJlM2QyYTkyMGE",
+    "commit": {
+      "author": {
+        "name": "amml",
+        "email": "amml@odoo.com",
+        "date": "2026-04-24T12:01:59Z"
+      },
+      "committer": {
+        "name": "amml",
+        "email": "amml@odoo.com",
+        "date": "2026-04-28T14:27:47Z"
+      },
+      "message": "[FIX] l10n_sa, l10n_sa_edi: fix duplicate tax number in invoice printout\n\nBefore this change:\n- the addiitonal_company_details would print a second tax number to invoice printout\nAfter this change:\n- company details will print tax number only once\n\nthis issue came after https://github.com/odoo/odoo/commit/1c2e17718e6f2a11d93585f0ea3ba3abee5a4a41\n\ncloses odoo/odoo#261272\n\nSigned-off-by: Maximilien La Barre (malb) <malb@odoo.com>",
+      "tree": {
+        "sha": "663e4b3fa9de72b13bda505098c345dc6918537c",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/663e4b3fa9de72b13bda505098c345dc6918537c"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/86c28f89fc633358990bd7baaaed432e3d2a920a",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/86c28f89fc633358990bd7baaaed432e3d2a920a",
+    "html_url": "https://github.com/odoo/odoo/commit/86c28f89fc633358990bd7baaaed432e3d2a920a",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/86c28f89fc633358990bd7baaaed432e3d2a920a/comments",
+    "author": {
+      "login": "amml-odoo",
+      "id": 215801729,
+      "node_id": "U_kgDODNzfgQ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/215801729?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/amml-odoo",
+      "html_url": "https://github.com/amml-odoo",
+      "followers_url": "https://api.github.com/users/amml-odoo/followers",
+      "following_url": "https://api.github.com/users/amml-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/amml-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/amml-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/amml-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/amml-odoo/orgs",
+      "repos_url": "https://api.github.com/users/amml-odoo/repos",
+      "events_url": "https://api.github.com/users/amml-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/amml-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "amml-odoo",
+      "id": 215801729,
+      "node_id": "U_kgDODNzfgQ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/215801729?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/amml-odoo",
+      "html_url": "https://github.com/amml-odoo",
+      "followers_url": "https://api.github.com/users/amml-odoo/followers",
+      "following_url": "https://api.github.com/users/amml-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/amml-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/amml-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/amml-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/amml-odoo/orgs",
+      "repos_url": "https://api.github.com/users/amml-odoo/repos",
+      "events_url": "https://api.github.com/users/amml-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/amml-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "e8ad11d109e9e2d30e41a1808e3c016b2f484bcb",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/e8ad11d109e9e2d30e41a1808e3c016b2f484bcb",
+        "html_url": "https://github.com/odoo/odoo/commit/e8ad11d109e9e2d30e41a1808e3c016b2f484bcb"
+      }
+    ]
+  },
+  {
+    "sha": "6eefba4919abc763287fea6e42d30b61662def31",
+    "node_id": "C_kwDOAS1I7NoAKDZlZWZiYTQ5MTlhYmM3NjMyODdmZWE2ZTQyZDMwYjYxNjYyZGVmMzE",
+    "commit": {
+      "author": {
+        "name": "bhra-odoo",
+        "email": "bhra@odoo.com",
+        "date": "2026-04-08T05:57:42Z"
+      },
+      "committer": {
+        "name": "bhra-odoo",
+        "email": "bhra@odoo.com",
+        "date": "2026-04-13T06:19:23Z"
+      },
+      "message": "[FIX] l10n_sa_edi: prevent resetting parent journal on branch API mode change\n\n**Steps to reproduce:**\n* Create a parent company and a child company, both with the same VAT number.\n* Onboard the parent company's Sales journal with ZATCA.\n* Onboard the child company's Sales journal with ZATCA.\n  Create a journal for the child if there is no journal.\n* Change the child company's ZATCA API mode to any other mode.\n\n**Observed behavior:**\n* Changing the child company's API mode resets and unboards the parent\n  company's Sales journal as well.\n\n**Cause:**\n* In `res.company.write`, when `l10n_sa_api_mode` changes, journals to\n  reset are fetched using `_check_company_domain(company)`.\n* `account.journal` uses `check_company_domain_parent_of`, which returns\n  journals where `company_id` is a parent of the given company — so\n  passing a child company also matches journals belonging to the parent.\n\n**Fix:**\n* Replace `_check_company_domain(company)` with a direct\n  `('company_id', '=', company.id)` filter, so only journals strictly\n  owned by the company being modified are reset.\n\nopw-6099340\n\ncloses odoo/odoo#258750\n\nX-original-commit: cb1d13fd67f6dea05dc78308b43edf8ea91772c2\nSigned-off-by: Yolann Sabaux (yosa) <yosa@odoo.com>\nSigned-off-by: Raj Bhuva (bhra) <bhra@odoo.com>",
+      "tree": {
+        "sha": "b11b9b0f2791a0fcae39e06ddc15d556fdd9e174",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/b11b9b0f2791a0fcae39e06ddc15d556fdd9e174"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/6eefba4919abc763287fea6e42d30b61662def31",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/6eefba4919abc763287fea6e42d30b61662def31",
+    "html_url": "https://github.com/odoo/odoo/commit/6eefba4919abc763287fea6e42d30b61662def31",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/6eefba4919abc763287fea6e42d30b61662def31/comments",
+    "author": {
+      "login": "bhra-odoo",
+      "id": 157008752,
+      "node_id": "U_kgDOCVvDcA",
+      "avatar_url": "https://avatars.githubusercontent.com/u/157008752?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/bhra-odoo",
+      "html_url": "https://github.com/bhra-odoo",
+      "followers_url": "https://api.github.com/users/bhra-odoo/followers",
+      "following_url": "https://api.github.com/users/bhra-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/bhra-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/bhra-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/bhra-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/bhra-odoo/orgs",
+      "repos_url": "https://api.github.com/users/bhra-odoo/repos",
+      "events_url": "https://api.github.com/users/bhra-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/bhra-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "bhra-odoo",
+      "id": 157008752,
+      "node_id": "U_kgDOCVvDcA",
+      "avatar_url": "https://avatars.githubusercontent.com/u/157008752?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/bhra-odoo",
+      "html_url": "https://github.com/bhra-odoo",
+      "followers_url": "https://api.github.com/users/bhra-odoo/followers",
+      "following_url": "https://api.github.com/users/bhra-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/bhra-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/bhra-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/bhra-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/bhra-odoo/orgs",
+      "repos_url": "https://api.github.com/users/bhra-odoo/repos",
+      "events_url": "https://api.github.com/users/bhra-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/bhra-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "c72200ffa4b09cfa1cbfddac32b06db9fec4f325",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/c72200ffa4b09cfa1cbfddac32b06db9fec4f325",
+        "html_url": "https://github.com/odoo/odoo/commit/c72200ffa4b09cfa1cbfddac32b06db9fec4f325"
+      }
+    ]
+  },
+  {
+    "sha": "7a1ace8c8e2873dd437511ac9468e6ff58b8dde5",
+    "node_id": "C_kwDOAS1I7NoAKDdhMWFjZThjOGUyODczZGQ0Mzc1MTFhYzk0NjhlNmZmNThiOGRkZTU",
+    "commit": {
+      "author": {
+        "name": "Andrea Grazioso (agr-odoo)",
+        "email": "agr@odoo.com",
+        "date": "2026-03-12T09:34:04Z"
+      },
+      "committer": {
+        "name": "Andrea Grazioso (agr-odoo)",
+        "email": "agr@odoo.com",
+        "date": "2026-03-24T15:49:43Z"
+      },
+      "message": "[FIX] l10n_sa_edi: include cash rounding line in payable amount\n\nCurrently the generated ZATCA XML is not accounting for invoice\ncash rounding, leading to an invoice validation issue due to a mismatch\nin the calculation of PayableAmount.\n\nSteps to reproduce:\n- Have a SA Company setup\n- Create a [cash rounding] with strategy 'Add invoice line' and rounding 1.00 (UP)\n- Create an invoice for 99.55 + 15% Tax\n- Set Cash Rounding Method to [cash rounding]\n- Confirm and send xml for validation\n\nIssue:\nValidation will issue the following warning\n`[202] BR-CO-16 : Amount due for payment (BT-115) = Invoice total amount\nwith VAT (BT-112) -Pre-Paid amount (BT-113) + Rounding amount (BT-114).`\n\nAnalysis:\nThe ZATCA implementation was calculating the payable amount strictly as\n(TaxInclusiveAmount - PrepaidAmount).  This change ensures the rounding\namount is fetched and added to the total payable calculation\n\nopw-5939550\n\ncloses odoo/odoo#255384\n\nX-original-commit: 4322b03a91ca0823454407969947201b23dda1f8\nSigned-off-by: Ali Alfie (alal) <alal@odoo.com>\nSigned-off-by: Andrea Grazioso (agr) <agr@odoo.com>",
+      "tree": {
+        "sha": "6fa7e4583e26a116d4827146e803dda11deffb8c",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/6fa7e4583e26a116d4827146e803dda11deffb8c"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/7a1ace8c8e2873dd437511ac9468e6ff58b8dde5",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/7a1ace8c8e2873dd437511ac9468e6ff58b8dde5",
+    "html_url": "https://github.com/odoo/odoo/commit/7a1ace8c8e2873dd437511ac9468e6ff58b8dde5",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/7a1ace8c8e2873dd437511ac9468e6ff58b8dde5/comments",
+    "author": {
+      "login": "agr-odoo",
+      "id": 53174659,
+      "node_id": "MDQ6VXNlcjUzMTc0NjU5",
+      "avatar_url": "https://avatars.githubusercontent.com/u/53174659?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/agr-odoo",
+      "html_url": "https://github.com/agr-odoo",
+      "followers_url": "https://api.github.com/users/agr-odoo/followers",
+      "following_url": "https://api.github.com/users/agr-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/agr-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/agr-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/agr-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/agr-odoo/orgs",
+      "repos_url": "https://api.github.com/users/agr-odoo/repos",
+      "events_url": "https://api.github.com/users/agr-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/agr-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "agr-odoo",
+      "id": 53174659,
+      "node_id": "MDQ6VXNlcjUzMTc0NjU5",
+      "avatar_url": "https://avatars.githubusercontent.com/u/53174659?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/agr-odoo",
+      "html_url": "https://github.com/agr-odoo",
+      "followers_url": "https://api.github.com/users/agr-odoo/followers",
+      "following_url": "https://api.github.com/users/agr-odoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/agr-odoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/agr-odoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/agr-odoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/agr-odoo/orgs",
+      "repos_url": "https://api.github.com/users/agr-odoo/repos",
+      "events_url": "https://api.github.com/users/agr-odoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/agr-odoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "9a470ae4fa10fa6e028941b822bdef6fa8a306e2",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/9a470ae4fa10fa6e028941b822bdef6fa8a306e2",
+        "html_url": "https://github.com/odoo/odoo/commit/9a470ae4fa10fa6e028941b822bdef6fa8a306e2"
+      }
+    ]
+  },
+  {
+    "sha": "3a6e478d483ac9b3ce323958d2b08ba0a37dbee7",
+    "node_id": "C_kwDOAS1I7NoAKDNhNmU0NzhkNDgzYWM5YjNjZTMyMzk1OGQyYjA4YmEwYTM3ZGJlZTc",
+    "commit": {
+      "author": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-03-07T10:04:40Z"
+      },
+      "committer": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-03-07T19:11:48Z"
+      },
+      "message": "[I18N] *: fetch latest Weblate translations",
+      "tree": {
+        "sha": "a62fc5a62d28db239eb2ab53ff1f66a56e4f01a9",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/a62fc5a62d28db239eb2ab53ff1f66a56e4f01a9"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/3a6e478d483ac9b3ce323958d2b08ba0a37dbee7",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/3a6e478d483ac9b3ce323958d2b08ba0a37dbee7",
+    "html_url": "https://github.com/odoo/odoo/commit/3a6e478d483ac9b3ce323958d2b08ba0a37dbee7",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/3a6e478d483ac9b3ce323958d2b08ba0a37dbee7/comments",
+    "author": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "734f45dd0ed4695833db6373eadf712b18e74646",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/734f45dd0ed4695833db6373eadf712b18e74646",
+        "html_url": "https://github.com/odoo/odoo/commit/734f45dd0ed4695833db6373eadf712b18e74646"
+      }
+    ]
+  },
+  {
+    "sha": "b3ba8787d96bba12f53ace0a1ea16c75361d2b7b",
+    "node_id": "C_kwDOAS1I7NoAKGIzYmE4Nzg3ZDk2YmJhMTJmNTNhY2UwYTFlYTE2Yzc1MzYxZDJiN2I",
+    "commit": {
+      "author": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-03-07T09:33:55Z"
+      },
+      "committer": {
+        "name": "Odoo Translation Bot",
+        "email": "c3p@odoo.com",
+        "date": "2026-03-07T09:33:55Z"
+      },
+      "message": "[I18N] *: export 19.0 l10n source terms",
+      "tree": {
+        "sha": "bd37176f67669ceb4324797cb15c283179e11eb3",
+        "url": "https://api.github.com/repos/odoo/odoo/git/trees/bd37176f67669ceb4324797cb15c283179e11eb3"
+      },
+      "url": "https://api.github.com/repos/odoo/odoo/git/commits/b3ba8787d96bba12f53ace0a1ea16c75361d2b7b",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null,
+        "verified_at": null
+      }
+    },
+    "url": "https://api.github.com/repos/odoo/odoo/commits/b3ba8787d96bba12f53ace0a1ea16c75361d2b7b",
+    "html_url": "https://github.com/odoo/odoo/commit/b3ba8787d96bba12f53ace0a1ea16c75361d2b7b",
+    "comments_url": "https://api.github.com/repos/odoo/odoo/commits/b3ba8787d96bba12f53ace0a1ea16c75361d2b7b/comments",
+    "author": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "C3POdoo",
+      "id": 12633088,
+      "node_id": "MDQ6VXNlcjEyNjMzMDg4",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12633088?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/C3POdoo",
+      "html_url": "https://github.com/C3POdoo",
+      "followers_url": "https://api.github.com/users/C3POdoo/followers",
+      "following_url": "https://api.github.com/users/C3POdoo/following{/other_user}",
+      "gists_url": "https://api.github.com/users/C3POdoo/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/C3POdoo/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/C3POdoo/subscriptions",
+      "organizations_url": "https://api.github.com/users/C3POdoo/orgs",
+      "repos_url": "https://api.github.com/users/C3POdoo/repos",
+      "events_url": "https://api.github.com/users/C3POdoo/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/C3POdoo/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "5c2fb1268988112a49e29d02152e2e1c2657777b",
+        "url": "https://api.github.com/repos/odoo/odoo/commits/5c2fb1268988112a49e29d02152e2e1c2657777b",
+        "html_url": "https://github.com/odoo/odoo/commit/5c2fb1268988112a49e29d02152e2e1c2657777b"
+      }
+    ]
+  }
+]

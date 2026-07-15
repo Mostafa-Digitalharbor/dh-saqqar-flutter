@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/i18n/app_localizations.dart';
+import '../../core/i18n/app_strings.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 
 /// Friendly fallback for uncaught widget build errors.
@@ -20,91 +23,135 @@ class AppErrorScreen extends StatelessWidget {
 
   final FlutterErrorDetails details;
 
+  /// Resolves the app's strings WITHOUT throwing.
+  ///
+  /// This widget is `ErrorWidget.builder` — the handler of last resort. If
+  /// it throws, Flutter re-enters the error path and the user gets a broken
+  /// screen instead of this one, so every lookup here has to degrade rather
+  /// than fail. `AppLocalizations.of` asserts non-null and would do exactly
+  /// the wrong thing; the raw `Localizations.of` returns null when this
+  /// mounts above the app's Localizations scope (which is the very case the
+  /// English fallbacks below exist for).
+  static AppStrings? _stringsOrNull(BuildContext context) {
+    try {
+      return Localizations.of<AppLocalizations>(
+        context,
+        AppLocalizations,
+      )?.strings;
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // We can't read app theme reliably here — this widget can mount
-    // before MaterialApp's theme is in scope. Use a dark neutral palette
-    // hardcoded so it always renders something sensible.
-    const bg = Color(0xFF030712);
-    const card = Color(0xFF111827);
-    const danger = Color(0xFFEF4444);
-    const muted = Color(0xFF94A3B8);
+    // We can't read the app THEME reliably here — this widget can mount
+    // before MaterialApp's theme is in scope — so pin a dark neutral
+    // palette that always renders something sensible.
+    //
+    // These are `AppColors` members rather than raw hexes on purpose:
+    // they're plain `static const`, so naming them costs no BuildContext
+    // and keeps the crash screen on the brand palette instead of quietly
+    // drifting from it. Do NOT swap these for `context.saqqar` lookups —
+    // that's the part that isn't safe here.
+    const bg = AppColors.darkBg;
+    const card = AppColors.darkSurface;
+    const danger = AppColors.danger;
+    const muted = AppColors.darkMuted;
 
-    return Material(
-      color: bg,
-      child: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: danger.withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: danger.withValues(alpha: 0.32),
-                      ),
-                    ),
-                    child: const Icon(
-                      AppIcons.warning,
-                      color: danger,
-                      size: 30,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Something went wrong',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'This screen ran into a problem. The error has been '
-                    'logged. Try going back, or restart the app if it '
-                    'keeps happening.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: muted,
-                      height: 1.45,
-                      fontSize: 14,
-                    ),
-                  ),
-                  if (kDebugMode) ...[
-                    const SizedBox(height: 18),
+    // Localized when the app's scope survived the error, English when it
+    // didn't. The English here must match `crash_screen_*` in app_strings.
+    final tr = _stringsOrNull(context);
+    final title = tr?.crashScreenTitle ?? 'Something went wrong';
+    final body =
+        tr?.crashScreenBody ??
+        'This screen ran into a problem. The error has been '
+            'logged. Try going back, or restart the app if it '
+            'keeps happening.';
+
+    // `Text` needs a Directionality ancestor and there's no guarantee one is
+    // in scope here. Prefer the ambient direction; otherwise derive it from
+    // the locale we resolved, and fall back to LTR.
+    final direction =
+        Directionality.maybeOf(context) ??
+        (tr != null && tr.isArabic ? TextDirection.rtl : TextDirection.ltr);
+
+    return Directionality(
+      textDirection: direction,
+      child: Material(
+        color: bg,
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      width: 64,
+                      height: 64,
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: card,
-                        borderRadius: BorderRadius.circular(10),
+                        color: danger.withValues(alpha: 0.14),
+                        shape: BoxShape.circle,
                         border: Border.all(
-                          color: muted.withValues(alpha: 0.2),
+                          color: danger.withValues(alpha: 0.32),
                         ),
                       ),
-                      child: SelectableText(
-                        details.exceptionAsString(),
-                        style: const TextStyle(
-                          color: muted,
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
+                      child: const Icon(
+                        AppIcons.warning,
+                        color: danger,
+                        size: 30,
                       ),
                     ),
+                    const SizedBox(height: 18),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      body,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: muted,
+                        height: 1.45,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (kDebugMode) ...[
+                      const SizedBox(height: 18),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: card,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: muted.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: SelectableText(
+                          details.exceptionAsString(),
+                          style: const TextStyle(
+                            color: muted,
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

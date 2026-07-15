@@ -396,6 +396,13 @@ class AppStrings {
   String get close => _t('close');
   String get save => _t('save');
   String get share => _t('share');
+
+  /// Caption under the shared-transcript header. [token] is the opaque
+  /// share id from the `saqqar://share/<token>` deep link — it's an
+  /// identifier, so it stays verbatim in both locales; only the label
+  /// around it translates.
+  String shareTokenLabel(String token) =>
+      _isArabic ? 'الرمز: $token' : 'Token: $token';
   String get retry => _t('retry');
   String get label => _t('label');
   String get kind => _t('kind');
@@ -544,6 +551,14 @@ class AppStrings {
   String get errorPayloadTooLarge => _t('error_payload_too_large');
   String get errorServer => _t('error_server');
   String get errorUnknown => _t('error_unknown');
+
+  /// Copy for the last-resort crash screen ([AppErrorScreen], wired to
+  /// `ErrorWidget.builder`). That screen can mount before the app's
+  /// Localizations are in scope, so it resolves these defensively and
+  /// falls back to the English text inline — keep the English here and
+  /// the fallback there in sync.
+  String get crashScreenTitle => _t('crash_screen_title');
+  String get crashScreenBody => _t('crash_screen_body');
 
   // ── Vault action labels (prefix for "<action> · <error>" messages) ──
   String get vaultActionLoadFailed => _t('vault_action_load_failed');
@@ -1453,6 +1468,9 @@ const Map<String, String> _en = {
       'That file is too large. The limit is 25 MB (500 MB for archives).',
   'error_server': 'The server hit a problem. Please try again in a moment.',
   'error_unknown': 'Something went wrong. Please try again.',
+  'crash_screen_title': 'Something went wrong',
+  'crash_screen_body': 'This screen ran into a problem. The error has been '
+      'logged. Try going back, or restart the app if it keeps happening.',
   // ── Vault action labels (prefixes) ──
   'vault_action_load_failed': "Couldn't load your projects",
   'vault_action_create_project_failed': "Couldn't create the project",
@@ -2291,6 +2309,9 @@ const Map<String, String> _ar = {
       'الملف كبير جداً. الحد الأقصى 25 ميجابايت (500 ميجابايت للأرشيف).',
   'error_server': 'وقعت مشكلة في الخادم. حاول بعد قليل.',
   'error_unknown': 'حدث خطأ. حاول مرة أخرى.',
+  'crash_screen_title': 'حدث خطأ ما',
+  'crash_screen_body': 'واجهت هذه الشاشة مشكلة، وتم تسجيل الخطأ. جرّب الرجوع '
+      'للخلف، أو أعد تشغيل التطبيق إذا تكرر الأمر.',
   // ── Vault action labels (prefixes) ──
   'vault_action_load_failed': 'تعذّر تحميل مشاريعك',
   'vault_action_create_project_failed': 'تعذّر إنشاء المشروع',
