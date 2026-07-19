@@ -154,6 +154,18 @@ class PushNotificationsService {
         'notification permission = ${settings.authorizationStatus} '
         '(alert=${settings.alert}, badge=${settings.badge})',
       );
+      // iOS suppresses the banner for the app that is CURRENTLY FRONTMOST
+      // unless it is told otherwise — firebase_messaging's notification-centre
+      // delegate returns empty presentation options by default. Without this
+      // call the push still arrives, it just never renders: the symptom is
+      // "notifications only show when the app is closed" (and, on a paired
+      // Apple Watch, "it shows on the watch but not the phone" — the watch is
+      // a separate device, so the frontmost-app rule does not apply there).
+      await messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
       await _initLocalNotifications();
       // If stop() ran while we were awaiting the prompts above, abort before
       // we register the device or attach any listeners — otherwise a
@@ -334,6 +346,12 @@ class PushNotificationsService {
     if (notification == null) return; // data-only — nothing user-facing.
     // Keep it in the in-app inbox so the user can review it later.
     _store.add(appNotificationFrom(message));
+    // iOS now presents the FCM notification itself (see the
+    // setForegroundNotificationPresentationOptions call in start()), so
+    // mirroring it here as well would banner the same push TWICE. Android
+    // still needs the mirror — FCM never auto-displays there in the
+    // foreground.
+    if (Platform.isIOS) return;
     final isApproval = message.data['type'] == 'approval_required';
     final tr = _platformStrings.strings;
     final channel = isApproval ? _approvalsChannel(tr) : _updatesChannel(tr);
