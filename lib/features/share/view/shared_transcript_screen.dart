@@ -45,7 +45,7 @@ class SharedTranscriptScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const EyebrowLabel('Saqqar'),
+                  EyebrowLabel(context.tr.appName),
                   const SizedBox(height: 8),
                   Text(
                     context.tr.share,

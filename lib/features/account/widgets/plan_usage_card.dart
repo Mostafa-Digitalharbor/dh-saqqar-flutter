@@ -13,6 +13,7 @@ import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/plan_models.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import 'plan_badge.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Account "Plan & usage" card (Gap A) — mirrors the web `/usage/` view:
 /// the plan name as a badge plus three usage bars (day / week / month)
@@ -45,7 +46,12 @@ class PlanUsageCard extends StatelessWidget {
                   style: context.text.titleMedium,
                 ),
               ),
-              PlanBadge(name: plan.name.isEmpty ? plan.slug : plan.name),
+              // Free accounts get no badge (PlanBadge's contract) — naming the
+              // only tier that exists implies a paid one you could buy, which
+              // is what App Review asked us about. The slug fallback is gone
+              // too: it leaked the wire value ("free") when name came back
+              // empty, which is exactly the case that must render nothing.
+              if (plan.showBadge) PlanBadge(name: plan.name),
             ],
           ),
           const SizedBox(height: 16),
@@ -111,8 +117,8 @@ class _UsageRow extends StatelessWidget {
             ),
             Text(
               context.tr.planUsageLine(
-                compactCount(window.used),
-                compactCount(window.cap),
+                compactCount(window.used, context.tr),
+                compactCount(window.cap, context.tr),
               ),
               style: context.text.labelMedium?.copyWith(
                 color: s.text,
@@ -123,7 +129,7 @@ class _UsageRow extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppRadius.pillR,
           child: LinearProgressIndicator(
             value: window.fraction,
             minHeight: 7,

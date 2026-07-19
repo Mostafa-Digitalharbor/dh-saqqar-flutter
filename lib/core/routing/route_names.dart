@@ -55,7 +55,16 @@ class RouteNames {
 
   // Public read-only transcript view (from saqqar://share/<token>).
   static const sharedTranscript = 'shared_transcript';
-  static String sharedTranscriptPath(String token) => '/share/$token';
+
+  /// Prefix shared by [sharedTranscriptPath] and the GoRoute pattern, and
+  /// used by the auth gate to recognise the one unauthenticated route in
+  /// the app. All three had their own `'/share/'` literal; a rename that
+  /// missed the gate would have quietly required a login to open a link
+  /// that is public by design.
+  static const sharedTranscriptPrefix = '/share/';
+  static const sharedTranscriptPattern = '$sharedTranscriptPrefix:token';
+  static String sharedTranscriptPath(String token) =>
+      '$sharedTranscriptPrefix$token';
 
   // Storybook (foundation-only, hidden behind a long-press in Account).
   static const storybook = 'storybook';

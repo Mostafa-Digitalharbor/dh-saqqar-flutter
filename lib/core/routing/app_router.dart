@@ -11,6 +11,7 @@ import '../../features/auth/view/auth_flow_screen.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/auth/view_model/auth_flow_cubit.dart';
 import '../../features/auth/view_model/auth_state.dart';
+import '../../features/billing/data/billing_visibility.dart';
 import '../../features/billing/view/pricing_screen.dart';
 import '../../features/billing/view/usage_screen.dart';
 import '../../features/chat/view/chat_screen.dart';
@@ -50,7 +51,8 @@ const _publicPaths = <String>{
 };
 
 /// `/share/<token>` is public — anyone with the token can read.
-bool _isPublicShare(String location) => location.startsWith('/share/');
+bool _isPublicShare(String location) =>
+    location.startsWith(RouteNames.sharedTranscriptPrefix);
 
 /// Builds a GoRouter wired against the supplied [AuthCubit].
 ///
@@ -117,6 +119,10 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
       GoRoute(
         path: RouteNames.pricingPath,
         name: RouteNames.pricing,
+        // Unreachable on iOS (App Store 3.1.1) — every CTA that pushes here is
+        // already behind [showPaidUpsell], and this guard closes the deep-link
+        // path too so the tier catalogue can't surface there at all.
+        redirect: (_, __) => showPaidUpsell ? null : RouteNames.chatsPath,
         pageBuilder: (_, state) => _transitionPage(
           state: state,
           child: const PricingScreen(),
@@ -151,7 +157,7 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
         ),
       ),
       GoRoute(
-        path: '/share/:token',
+        path: RouteNames.sharedTranscriptPattern,
         name: RouteNames.sharedTranscript,
         pageBuilder: (_, state) => _transitionPage(
           state: state,

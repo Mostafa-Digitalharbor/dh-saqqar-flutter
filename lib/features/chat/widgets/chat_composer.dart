@@ -447,6 +447,14 @@ class _StagedAttachment extends StatelessWidget {
 /// the pulse is intentionally loud (1.0 ↔ 0.6 opacity, 1100 ms cycle)
 /// because "I forgot auto-approve was ON" is a real footgun on a
 /// production Odoo connection.
+///
+/// The pulse runs [_attentionPulses] times and then HOLDS at its brightest
+/// ring instead of breathing forever. Deep-think and auto-approve are sticky
+/// settings, not transient states, so an endless pulse meant the chat screen
+/// — where users spend nearly all their time — never stopped producing
+/// frames for as long as either mode was on. Holding at peak keeps the badge
+/// exactly as loud as the pulse's most visible moment, so the warning is not
+/// weakened; only the repaint is.
 class _ActiveModeBadge extends StatefulWidget {
   const _ActiveModeBadge({
     required this.icon,
@@ -466,18 +474,43 @@ class _ActiveModeBadgeState extends State<_ActiveModeBadge>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
+  /// Breaths to draw the eye before settling. Enough to register as motion
+  /// in peripheral vision; short enough that the screen goes quiet.
+  static const _attentionPulses = 4;
+  int _pulsesDone = 0;
+
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1100),
-    )..repeat(reverse: true);
+    )..addStatusListener(_onHalfCycle);
+    _ctrl.forward();
+  }
+
+  /// One `forward` + one `reverse` is a full breath. Count the reverses so
+  /// we always settle from the same end, then park at 1.0 — the peak of the
+  /// ring, i.e. the badge's most visible state.
+  void _onHalfCycle(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _ctrl.reverse();
+      return;
+    }
+    if (status != AnimationStatus.dismissed) return;
+    _pulsesDone++;
+    if (_pulsesDone >= _attentionPulses) {
+      _ctrl.value = 1.0; // hold bright; no further frames scheduled
+      return;
+    }
+    _ctrl.forward();
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _ctrl
+      ..removeStatusListener(_onHalfCycle)
+      ..dispose();
     super.dispose();
   }
 
@@ -657,7 +690,7 @@ class _MiniSwitch extends StatelessWidget {
               color: value
                   ? activeColor.withValues(alpha: 0.85)
                   : s.surface3,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppRadius.pillR,
               border: Border.all(
                 color: value ? activeColor : s.cardBorder,
                 width: 1,

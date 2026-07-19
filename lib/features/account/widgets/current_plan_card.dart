@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/format/compact_number.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
@@ -44,13 +45,34 @@ class _CurrentPlanCardState extends State<CurrentPlanCard> {
     _future = context.read<PlansApi>().list();
   }
 
+  /// Re-issues the `/plans/` request after a failure.
+  void _retry() {
+    final f = context.read<PlansApi>().list();
+    setState(() {
+      _future = f;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<PlansResponse>(
       future: _future,
       builder: (context, snap) {
-        // Stay invisible while loading / on error — the account screen
-        // shouldn't show a broken or empty plan card.
+        // Errors MUST be checked before `hasData`. `!snap.hasData` is true
+        // for BOTH "still loading" and "failed", so collapsing them into
+        // one `SizedBox.shrink()` meant a failed /plans/ call rendered an
+        // invisible widget: no spinner, no error, no retry — just a gap
+        // where the plan card should be. `usage_screen` was fixed for the
+        // same bug; this was the other half of that blank page.
+        if (snap.hasError) {
+          return _PlanCardError(
+            message: ApiErrorMapper.message(context, snap.error),
+            onRetry: _retry,
+          );
+        }
+        // Staying invisible while LOADING is still right — this is a
+        // secondary card on the account screen, and a spinner that flashes
+        // for 200 ms is noisier than the card simply appearing.
         if (!snap.hasData) return const SizedBox.shrink();
         final data = snap.data!;
         final slug = data.currentPlan ??
@@ -68,6 +90,47 @@ class _CurrentPlanCardState extends State<CurrentPlanCard> {
       if (t.slug == slug) return t;
     }
     return tiers.isNotEmpty ? tiers.first : null;
+  }
+}
+
+/// Failure state for the plan card.
+///
+/// Deliberately the same [GlassCard] shell as [_PlanCardBody] so the card
+/// keeps its place in the account layout instead of the section silently
+/// collapsing — the user sees that this panel exists and could not load,
+/// which is the whole point of not returning `SizedBox.shrink()` here.
+class _PlanCardError extends StatelessWidget {
+  const _PlanCardError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return GlassCard(
+      blur: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.tr.planUsageTitle, style: context.text.titleMedium),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: context.text.bodySmall?.copyWith(color: s.muted),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: GhostButton(
+              label: context.tr.retry,
+              icon: AppIcons.refresh,
+              onPressed: onRetry,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -90,18 +153,18 @@ class _PlanCardBody extends StatelessWidget {
               Expanded(
                 child: Text(tr.planUsageTitle, style: context.text.titleMedium),
               ),
-              PlanBadge(name: tier.name.isEmpty ? tier.slug : tier.name),
+              if (tier.showBadge) PlanBadge(name: tier.name),
             ],
           ),
           const SizedBox(height: 14),
           _CapRow(
             label: tr.pricingDailyCap,
-            value: '${compactCount(tier.dailyBurstTokens)} ${tr.pricingStUnit}',
+            value: '${compactCount(tier.dailyBurstTokens, tr)} ${tr.pricingStUnit}',
           ),
           const SizedBox(height: 6),
           _CapRow(
             label: tr.pricingMonthlyCap,
-            value: '${compactCount(tier.monthlyTokens)} ${tr.pricingStUnit}',
+            value: '${compactCount(tier.monthlyTokens, tr)} ${tr.pricingStUnit}',
           ),
           // Upgrade CTA → pricing catalogue. Hidden on iOS (App Store 3.1.1);
           // the current plan + caps above stay (informational).

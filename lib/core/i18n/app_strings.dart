@@ -25,6 +25,27 @@ class AppStrings {
 
   String _t(String key) => _table[key] ?? _en[key] ?? key;
 
+  /// [_t] plus `{placeholder}` substitution.
+  ///
+  /// Interpolated copy used to be written as an inline
+  /// `_isArabic ? 'منذ $n د' : '$n m ago'` ternary. That works, but it puts
+  /// the Arabic *outside* the `_ar` table, where `i18n_parity_test` cannot
+  /// see it — so a missing or drifted translation in one of those getters
+  /// was invisible to the guard that exists precisely to catch it. Routing
+  /// them through a keyed template restores that coverage.
+  ///
+  /// Uses `replaceAll`, not `replaceFirst`, so a template may repeat a
+  /// placeholder; unknown placeholders are left verbatim rather than
+  /// blanked, which makes a typo visible in review instead of silently
+  /// dropping the value.
+  String _f(String key, Map<String, Object?> vars) {
+    var out = _t(key);
+    for (final entry in vars.entries) {
+      out = out.replaceAll('{${entry.key}}', '${entry.value}');
+    }
+    return out;
+  }
+
   /// Public lookup by raw key. Used by schema-driven UIs (e.g. the
   /// credential form) where the field schema carries the i18n key
   /// directly instead of mapping through a typed getter. Returns
@@ -118,13 +139,13 @@ class AppStrings {
   String get envMultiUpdated => _t('env_multi_updated');
   String get envMultiNone => _t('env_multi_none');
   String envMultiSelectedCount(int n) =>
-      _isArabic ? '$n بيئة مختارة' : '$n selected';
-  String envMultiExtra(int n) => _isArabic ? '+$n أخرى' : '+$n more';
+      _f('env_multi_selected_count', {'n': n});
+  String envMultiExtra(int n) => _f('env_multi_extra', {'n': n});
 
   // Inline pending approvals banner (above composer)
   String get reviewApproval => _t('review_approval');
   String morePendingApprovals(int n) =>
-      _isArabic ? '+ $n موافقات أخرى معلّقة' : '+ $n more pending approvals';
+      _f('more_pending_approvals', {'n': n});
 
   // Chat header strip — 3 dropdowns matching the web's header
   String get headerProject => _t('header_project');
@@ -183,35 +204,17 @@ class AppStrings {
   String get deleteCredentialTitle => _t('delete_credential_title');
   String get deleteCredentialBody => _t('delete_credential_body');
   String get notSavedYet => _t('not_saved_yet');
-  String lastVerifiedAt(String at) =>
-      _isArabic ? 'آخر تحقق: $at' : 'Last verified $at';
+  String lastVerifiedAt(String at) => _f('last_verified_at', {'at': at});
 
   /// Relative-time label like "2 hours ago" / "just now" — used inline by
   /// the credential form's "Last verified" hint.
-  String relativeTime(DateTime when) {
-    final diff = DateTime.now().difference(when);
-    final mins = diff.inMinutes;
-    final hours = diff.inHours;
-    final days = diff.inDays;
-    if (_isArabic) {
-      if (mins < 1) return 'الآن';
-      if (mins < 60) return 'منذ $mins دقيقة';
-      if (hours < 24) return 'منذ $hours ساعة';
-      if (days < 7) return 'منذ $days يوم';
-      if (days < 30) return 'منذ ${(days / 7).floor()} أسبوع';
-      return 'منذ ${(days / 30).floor()} شهر';
-    }
-    if (mins < 1) return 'just now';
-    if (mins < 60) return '$mins min ago';
-    if (hours < 24) return '$hours hour${hours == 1 ? '' : 's'} ago';
-    if (days < 7) return '$days day${days == 1 ? '' : 's'} ago';
-    if (days < 30) {
-      final w = (days / 7).floor();
-      return '$w week${w == 1 ? '' : 's'} ago';
-    }
-    final m = (days / 30).floor();
-    return '$m month${m == 1 ? '' : 's'} ago';
-  }
+  // NOTE: relative-time formatting lives in `AppDateFormat.relative`, not
+  // here. A second implementation used to sit at this spot and was the
+  // app's only source of `منذ 5 دقيقة` — Western digits inside Arabic copy —
+  // because it interpolated ints directly instead of going through
+  // `NumberFormat`, and hardcoded its Arabic inline instead of `_t()`, so
+  // the i18n parity test couldn't see it either. Its one caller (the vault's
+  // "last verified" hint) now uses AppDateFormat like everything else.
 
   // Credential form: Test connection
   // (deprecated short labels — replaced by the camelCase keys below
@@ -284,28 +287,25 @@ class AppStrings {
       _t('activity_preparing_approval');
 
   // Grouped approvals (web pre-approval shortcut)
-  String similarRequestsCount(int count) => _isArabic
-      ? '$count طلب مشابه'
-      : '$count similar requests';
+  String similarRequestsCount(int count) =>
+      _f('similar_requests_count', {'count': count});
   String operationOnModel(String operation, String model) =>
-      _isArabic ? '$operation على `$model`' : '$operation on `$model`';
-  String approveAllN(int count) =>
-      _isArabic ? 'وافق على الكل ($count)' : 'Approve all $count';
-  String rejectAllN(int count) =>
-      _isArabic ? 'ارفض الكل ($count)' : 'Reject all $count';
+      _f('operation_on_model', {'operation': operation, 'model': model});
+  String approveAllN(int count) => _f('approve_all_n', {'count': count});
+  String rejectAllN(int count) => _f('reject_all_n', {'count': count});
   String get preApprovalTip => _t('pre_approval_tip');
   String get showIndividualRecords => _t('show_individual_records');
   String get hideIndividualRecords => _t('hide_individual_records');
-  String approvalGrantedWithPreapproval(int count) => _isArabic
-      ? 'تمت الموافقة. $count طلب مماثل تمت الموافقة عليه مسبقاً.'
-      : 'Approval granted. $count similar request(s) pre-approved.';
+  String approvalGrantedWithPreapproval(int count) =>
+      _f('approval_granted_with_preapproval', {'count': count});
 
   // Live environment confirmation (web one-shot warning)
   String liveWarningTitle(String envName) =>
-      _isArabic ? 'بيئة مباشرة: $envName' : 'Live environment: $envName';
-  String liveWarningBody(String envName, String projectName) => _isArabic
-      ? 'أنت على وشك التحدث مع "$envName" في مشروع "$projectName" — بيئة مباشرة. الإجراءات المؤذية لا تزال تحت الموافقة، لكن انتبه. هل تريد المتابعة؟'
-      : "You're about to talk to \"$envName\" in project \"$projectName\" — a LIVE environment. Destructive actions are still approval-gated, but be careful. Continue?";
+      _f('live_warning_title', {'envName': envName});
+  String liveWarningBody(String envName, String projectName) => _f(
+        'live_warning_body',
+        {'envName': envName, 'projectName': projectName},
+      );
   String get sendToLive => _t('send_to_live');
   String get dontAskAgain => _t('dont_ask_again');
 
@@ -356,6 +356,11 @@ class AppStrings {
   String get artifactNoViewer => _t('artifact_no_viewer');
   String get artifactOpenFailed => _t('artifact_open_failed');
   String get defaultProjectLabel => _t('default_project_label');
+
+  /// Stand-in for a conversation preview whose last message is a machine
+  /// payload (tool result / approval request) rather than readable prose.
+  String get conversationPreviewUnavailable =>
+      _t('conversation_preview_unavailable');
   String get artifactDownloadFailed => _t('artifact_download_failed');
   String get artifactDownloadOffline => _t('artifact_download_offline');
   String get artifactDownloadGone => _t('artifact_download_gone');
@@ -402,7 +407,7 @@ class AppStrings {
   /// identifier, so it stays verbatim in both locales; only the label
   /// around it translates.
   String shareTokenLabel(String token) =>
-      _isArabic ? 'الرمز: $token' : 'Token: $token';
+      _f('share_token_label', {'token': token});
   String get retry => _t('retry');
   String get label => _t('label');
   String get kind => _t('kind');
@@ -474,22 +479,18 @@ class AppStrings {
   // rendering_report). Shown on the typing row while Excel/PDF/Word
   // generation is in flight.
   String phaseFetching(int current, int? total) {
-    if (total == null) {
-      return _isArabic ? 'جلب $current' : 'Fetching $current';
-    }
+    if (total == null) return _f('phase_fetching', {'current': current});
     final pct = ((current / total) * 100).round().clamp(0, 100);
-    return _isArabic
-        ? 'جلب $current / $total · $pct%'
-        : 'Fetching $current / $total · $pct%';
+    return _f('phase_fetching_of_total', {
+      'current': current,
+      'total': total,
+      'pct': pct,
+    });
   }
-  String phaseRendering(int? rows) {
-    if (rows == null) {
-      return _isArabic ? 'كتابة الملف…' : 'Writing file…';
-    }
-    return _isArabic
-        ? 'كتابة الملف… $rows صف'
-        : 'Writing file… $rows rows';
-  }
+
+  String phaseRendering(int? rows) => rows == null
+      ? _t('phase_rendering')
+      : _f('phase_rendering_rows', {'rows': rows});
   // Credential form — extra submit action: save + the agent resumes
   // immediately without dismissing the sheet. Web parity for the
   // `saveAndContinue` button.
@@ -532,6 +533,10 @@ class AppStrings {
   String get deleteNeedsConfirmation => _t('delete_needs_confirmation');
   String get attachedFilesForReview => _t('attached_files_for_review');
   String get defaultApiError => _t('default_api_error');
+
+  /// Shown when the server answered but the body didn't match our models.
+  /// Names "update the app" because retrying replays the same mismatch.
+  String get errorUnexpectedResponse => _t('error_unexpected_response');
   String get loading => _t('loading');
 
   // ── Typed error categories (used by ApiErrorMapper) ────────────────
@@ -549,6 +554,8 @@ class AppStrings {
   String errorRateLimitedWithRetry(int seconds) =>
       _t('error_rate_limited_with_retry').replaceFirst('{seconds}', '$seconds');
   String get errorPayloadTooLarge => _t('error_payload_too_large');
+  String get errorQuotaExceeded => _t('error_quota_exceeded');
+  String get errorUnsupportedMedia => _t('error_unsupported_media');
   String get errorServer => _t('error_server');
   String get errorUnknown => _t('error_unknown');
 
@@ -616,6 +623,8 @@ class AppStrings {
   String get chatActionUploadFailed => _t('chat_action_upload_failed');
   String get chatActionStopFailed => _t('chat_action_stop_failed');
   String get chatActionShareFailed => _t('chat_action_share_failed');
+  String get chatActionRevokeShareFailed =>
+      _t('chat_action_revoke_share_failed');
   String get chatActionCredentialFailed =>
       _t('chat_action_credential_failed');
   String get chatActionDismissFailed => _t('chat_action_dismiss_failed');
@@ -640,6 +649,22 @@ class AppStrings {
   String get notificationsSettingTitle => _t('notifications_setting_title');
   String get notificationsSettingSubtitle =>
       _t('notifications_setting_subtitle');
+
+  // Android notification channels — rendered by the OS in system Settings,
+  // not by us. Read via `PlatformStrings` (no BuildContext out there).
+  String get pushChannelApprovalsName => _t('push_channel_approvals_name');
+  String get pushChannelApprovalsDescription =>
+      _t('push_channel_approvals_description');
+  String get pushChannelUpdatesName => _t('push_channel_updates_name');
+  String get pushChannelUpdatesDescription =>
+      _t('push_channel_updates_description');
+
+  // Apple Watch bridge — drawn on the watch face, which has no widget tree
+  // of its own. Also read via `PlatformStrings`.
+  String get watchErrorNoSpeech => _t('watch_error_no_speech');
+  String get watchErrorUnreachable => _t('watch_error_unreachable');
+  String get watchErrorProjectsLoad => _t('watch_error_projects_load');
+  String get watchErrorProjectSetup => _t('watch_error_project_setup');
   String get accountUsage => _t('account_usage');
   String get accountSeePlans => _t('account_see_plans');
   String get usageTitle => _t('usage_title');
@@ -662,7 +687,7 @@ class AppStrings {
 
   /// Pending-approval safety pill on a conversation row — "2 TO APPROVE" /
   /// "٢ للموافقة".
-  String toApprove(int n) => _isArabic ? '$n للموافقة' : '$n TO APPROVE';
+  String toApprove(int n) => _f('to_approve', {'n': n});
   String get slashRestartDesc => _t('slash_restart_desc');
   String get slashReportDesc => _t('slash_report_desc');
   String get slashSyncDesc => _t('slash_sync_desc');
@@ -684,9 +709,28 @@ class AppStrings {
   // through NumberFormat so AR sees Arabic-Indic digits). "at"/"في" joins a
   // full date + time.
   String get dateAtConnector => _t('date_at_connector');
-  String relativeMinutesAgo(String n) => _isArabic ? 'منذ $n د' : '$n m ago';
-  String relativeHoursAgo(String n) => _isArabic ? 'منذ $n س' : '$n h ago';
-  String relativeDaysAgo(String n) => _isArabic ? 'منذ $n أيام' : '$n d ago';
+
+  // Unit words. `humanBytes` / `compactCount` render the digits and join
+  // these on — the digits stay Western in both locales, the word does not.
+  /// Attachment category word. The format badges next to it ("PDF",
+  /// "XLSX") are identifiers and live in `UiStrings` instead.
+  String get fileKindImage => _t('file_kind_image');
+
+  /// Placeholder *inside* the 6-digit OTP field — distinct from
+  /// [authOtpHint], which is the explanatory line above it. Localized
+  /// because these are illustrative sample digits, not a computed value,
+  /// so Arabic can show its own numerals here without breaking the
+  /// app-wide "Western digits for real numbers" convention.
+  String get authOtpPlaceholder => _t('auth_otp_placeholder');
+
+  String get unitBytes => _t('unit_bytes');
+  String get unitKilobytes => _t('unit_kilobytes');
+  String get unitMegabytes => _t('unit_megabytes');
+  String get compactThousands => _t('compact_thousands');
+  String get compactMillions => _t('compact_millions');
+  String relativeMinutesAgo(String n) => _f('relative_minutes_ago', {'n': n});
+  String relativeHoursAgo(String n) => _f('relative_hours_ago', {'n': n});
+  String relativeDaysAgo(String n) => _f('relative_days_ago', {'n': n});
 
   /// Project header stats line — "3 environments · 1 live · 2 credentials"
   /// (pluralized for EN, RTL-natural for AR). Segments after the count are
@@ -886,13 +930,55 @@ class AppStrings {
   String get appLockUnavailable => _t('appLockUnavailable');
   String get appLockEnableFailed => _t('appLockEnableFailed');
 
+  /// Matches [raw] against text a developer would never want a user to read:
+  /// stack traces, driver exceptions, SQL constraint names, ORM internals.
+  ///
+  /// The backend's `error` field is developer-facing by design, so it carries
+  /// whatever Django/psycopg/DRF raised — e.g. `IntegrityError: duplicate key
+  /// value violates unique constraint "auth_user_email_key"`, or a 500 with a
+  /// traceback inline. That text used to render verbatim into [AppErrorState],
+  /// the very widget whose doc says "Don't put raw exception text here".
+  ///
+  /// Deliberately a denylist of technical SHAPES rather than a length cap
+  /// alone: real copy is short prose, and the artifacts are recognizable.
+  static final RegExp _technicalArtifact = RegExp(
+    r'Traceback|Exception\b|\bError:|File "|line \d+, in |'
+    r'<class |0x[0-9a-fA-F]{6,}|psycopg|sqlalchemy|django\.|'
+    r'[a-z_]{2,}\.[a-z_]{2,}\(|violates \w+ constraint',
+    caseSensitive: false,
+  );
+
+  /// Whether [raw] reads like a sentence written for a person.
+  bool _looksLikeHumanCopy(String raw) =>
+      raw.length <= 160 && // real copy is one sentence, not a dump
+      !raw.contains('\n') && // multi-line means stack trace
+      !_technicalArtifact.hasMatch(raw);
+
+  /// The server's message, made safe to show — or `null` when it isn't.
+  ///
+  /// Returns localized copy for a recognized failure, the server's own text
+  /// when it reads like human prose, and `null` when the text is a developer
+  /// artifact. `null` means "substitute your own fallback": each caller knows
+  /// which one fits (a conflict isn't a server crash), so this deliberately
+  /// doesn't pick a generic one for them.
+  String? presentableServerMessage(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    // Applies in EVERY locale. An English user has no more use for a psycopg
+    // traceback than an Arabic one does.
+    if (!_looksLikeHumanCopy(raw)) return null;
+    return localizeServerMessage(raw);
+  }
+
   /// Localize a raw server-side error message. Backend `error` strings are
   /// developer-facing English; this matches the common cases to a clean
-  /// localized line so an Arabic UI shows no English. Used both by the
-  /// credential test badge and by [ApiErrorMapper] for every API failure
-  /// that carries a server message. Unknown messages fall back to [raw] —
-  /// translating arbitrary server text isn't possible, so that's the one
-  /// allowed (and rare) English leak.
+  /// localized line so an Arabic UI shows no English. Used by the credential
+  /// test badge, and by [presentableServerMessage] for every API failure that
+  /// carries a server message.
+  ///
+  /// Unrecognized messages fall back to [raw] — arbitrary server text can't
+  /// be translated. Prefer [presentableServerMessage] on any path that
+  /// renders to a user: it screens out the text that must never be shown at
+  /// all, which this method (by itself) will happily pass through.
   String localizeServerMessage(String raw) {
     if (raw.isEmpty) return raw;
     // English locale (or any non-Arabic) keeps the server's own wording.
@@ -1061,13 +1147,13 @@ class AppStrings {
     final dollars = cents % 100 == 0
         ? '${cents ~/ 100}'
         : (cents / 100).toStringAsFixed(2);
-    return _isArabic ? '\$$dollars / شهرياً' : '\$$dollars / month';
+    return _f('price_per_month', {'dollars': dollars});
   }
 
   // Addon authoring hint (Gap M) — shown when a `.zip` addon is staged.
   String get addonHint => _t('addon_hint');
 
-  // Feature-gating (Gap C) — friendly upgrade hint when a locked tool 403s.
+  // Feature-gating (Gap C) — shown when a locked tool 403s.
   String get voiceLockedPro => _t('voice_locked_pro');
 
   // Env-hint banner (Gap H) — one-click "Use My Database".
@@ -1148,7 +1234,7 @@ class AppStrings {
 
   /// "Resend in 53s" — countdown owned by the view.
   String authResendIn(int seconds) =>
-      _isArabic ? 'إعادة الإرسال خلال $seconds ث' : 'Resend in $seconds s';
+      _f('auth_resend_in', {'seconds': seconds});
 
   // Approvals — friendly Odoo model names + operation verbs (Gap E)
   String approvalActionTitle(String wire) => switch (wire) {
@@ -1192,8 +1278,7 @@ class AppStrings {
       };
 
   /// "12% used" — pct already computed server-side.
-  String planPctUsed(int pct) =>
-      _isArabic ? 'مُستخدَم $pct٪' : '$pct% used';
+  String planPctUsed(int pct) => _f('plan_pct_used', {'pct': pct});
 
   /// "12.3K / 125K" — compact used/cap pair (formatting done by caller).
   String planUsageLine(String used, String cap) => '$used / $cap';
@@ -1207,6 +1292,12 @@ class AppStrings {
   String quotaExceededBody(String window) => _isArabic
       ? 'لقد بلغت حدّ الاستخدام $window. ستُعاد التهيئة عند انتهاء الفترة، أو رقِّ خطتك.'
       : "You've reached your $window usage limit. It resets when the window rolls over, or upgrade your plan.";
+
+  /// [quotaExceededBody] minus the upgrade nudge — used where paid-plan upsell
+  /// is suppressed (iOS, App Store 3.1.1). Callers pick via `showPaidUpsell`.
+  String quotaExceededBodyPlain(String window) => _isArabic
+      ? 'لقد بلغت حدّ الاستخدام $window. ستُعاد التهيئة عند انتهاء الفترة.'
+      : "You've reached your $window usage limit. It resets when the window rolls over.";
 
   String sendBlockedTooltip(String window) => _isArabic
       ? 'تم بلوغ الحد $window'
@@ -1237,7 +1328,7 @@ class AppStrings {
   String routeNotFound(Uri uri) => '${_t('route_not_found')}: $uri';
 
   String itemCount(int visible, int total, String label) =>
-      _isArabic ? '$visible من $total $label' : '$visible of $total $label';
+      _f('item_count', {'visible': visible, 'total': total, 'label': label});
 
   String pageCount(int pageNumber, int totalPages) => _isArabic
       ? '${_t('page')} $pageNumber ${_t('of')} $totalPages'
@@ -1329,6 +1420,7 @@ const Map<String, String> _en = {
   'artifact_no_viewer': "Couldn't find an app to open this file.",
   'artifact_open_failed': "Couldn't open the file.",
   'default_project_label': 'Default',
+  'conversation_preview_unavailable': 'Waiting on an action in this chat.',
   'artifact_download_failed': "Couldn't download the file. Try again.",
   'artifact_download_offline':
       "You're offline. Check your connection and try again.",
@@ -1452,6 +1544,9 @@ const Map<String, String> _en = {
   'delete_needs_confirmation': 'Delete needs confirmation in production.',
   'attached_files_for_review': 'Attached files for review.',
   'default_api_error': 'Something went wrong. Please try again.',
+  'error_unexpected_response':
+      "The server sent something this app didn't understand. Update to the "
+          'latest version, and contact support if it keeps happening.',
   'loading': 'Loading…',
   // ── Typed error categories ──
   'error_network': "Couldn't reach the server. Check your connection.",
@@ -1466,6 +1561,14 @@ const Map<String, String> _en = {
   'error_rate_limited_with_retry': 'Too many attempts. Try again in {seconds}s.',
   'error_payload_too_large':
       'That file is too large. The limit is 25 MB (500 MB for archives).',
+  // Says "wait or upgrade" rather than "try again" — retrying a spent
+  // quota just reproduces the same error.
+  'error_quota_exceeded':
+      'You\'ve used up your allowance for now. It resets at the start of '
+          'your next window.',
+  'error_unsupported_media':
+      'That file type isn\'t supported. Try a document, spreadsheet, image '
+          'or PDF.',
   'error_server': 'The server hit a problem. Please try again in a moment.',
   'error_unknown': 'Something went wrong. Please try again.',
   'crash_screen_title': 'Something went wrong',
@@ -1503,6 +1606,10 @@ const Map<String, String> _en = {
   'chat_action_upload_failed': "Couldn't upload the attachment",
   'chat_action_stop_failed': "Couldn't stop the agent",
   'chat_action_share_failed': "Couldn't share the conversation",
+  // Names the consequence, not just the failure: the user needs to know
+  // the link is still live so they can retry rather than assume it's dead.
+  'chat_action_revoke_share_failed':
+      "Couldn't revoke the link — it may still be public",
   'chat_action_credential_failed': "Couldn't update the credential",
   'chat_action_dismiss_failed': "Couldn't dismiss the request",
   'filter_all': 'All',
@@ -1523,6 +1630,15 @@ const Map<String, String> _en = {
   'notifications_setting_title': 'Notifications',
   'notifications_setting_subtitle':
       'Get notified about approvals, finished tasks, and ready reports.',
+  'push_channel_approvals_name': 'Approvals',
+  'push_channel_approvals_description':
+      'Actions that are waiting for your approval',
+  'push_channel_updates_name': 'Updates',
+  'push_channel_updates_description': 'Finished tasks and ready reports',
+  'watch_error_no_speech': 'Didn\'t catch that — try again.',
+  'watch_error_unreachable': 'Couldn\'t reach Saqqar. Try again.',
+  'watch_error_projects_load': 'Couldn\'t load projects.',
+  'watch_error_project_setup': 'Couldn\'t set up a database.',
   'account_usage': 'Usage',
   'account_see_plans': 'See plans',
   'usage_title': 'Usage',
@@ -1806,7 +1922,9 @@ const Map<String, String> _en = {
       'Add your Odoo credentials to this environment to connect.',
   'env_hint_failed': 'Could not set up your database. Try again.',
   'addon_hint': 'Saqqar can read, edit, and rebuild this Odoo addon.',
-  'voice_locked_pro': 'Voice input is a Pro feature.',
+  // Names no tier and sells nothing — the same copy ships on iOS, where
+  // naming a paid plan would be an App Store 3.1.1 upsell.
+  'voice_locked_pro': "Voice input isn't available on your account.",
   'upgrade_sheet_title': 'Upgrade your plan',
   'upgrade_sheet_body':
       'Self-serve upgrades are coming soon. To raise your limits now, contact the Digital Harbor team and we\'ll set you up.',
@@ -2047,7 +2165,8 @@ const Map<String, String> _en = {
   'pick_environment_subtitle':
       'The credential the agent uses for this conversation.',
   'no_environment_picked': '— No environment —',
-  'pick_environment_to_start': 'Pick an environment to start.',
+  'pick_environment_to_start':
+      'Choose a project and environment at the top of the screen to start.',
   'environment_set_for_chat': 'Environment set for this chat.',
   'live_badge': 'LIVE',
   'read_only_badge': 'READ-ONLY',
@@ -2103,6 +2222,49 @@ const Map<String, String> _en = {
   'activity_building_pdf': 'Building PDF document',
   'activity_building_word': 'Building Word document',
   'activity_preparing_approval': 'Preparing approval',
+
+  // Interpolated copy — `{placeholder}` slots are filled by `_f`. These
+  // were inline `_isArabic ? … : …` ternaries until they were moved here
+  // so `i18n_parity_test` can see both sides.
+  'env_multi_selected_count': '{n} selected',
+  'env_multi_extra': '+{n} more',
+  'more_pending_approvals': '+ {n} more pending approvals',
+  'last_verified_at': 'Last verified {at}',
+  'similar_requests_count': '{count} similar requests',
+  'operation_on_model': '{operation} on `{model}`',
+  'approve_all_n': 'Approve all {count}',
+  'reject_all_n': 'Reject all {count}',
+  'approval_granted_with_preapproval':
+      'Approval granted. {count} similar request(s) pre-approved.',
+  'live_warning_title': 'Live environment: {envName}',
+  'live_warning_body':
+      'You\'re about to talk to "{envName}" in project "{projectName}" — a '
+          'LIVE environment. Destructive actions are still approval-gated, '
+          'but be careful. Continue?',
+  'share_token_label': 'Token: {token}',
+  'phase_fetching': 'Fetching {current}',
+  'phase_fetching_of_total': 'Fetching {current} / {total} · {pct}%',
+  'phase_rendering': 'Writing file…',
+  'phase_rendering_rows': 'Writing file… {rows} rows',
+  'to_approve': '{n} TO APPROVE',
+  'relative_minutes_ago': '{n} m ago',
+  'relative_hours_ago': '{n} h ago',
+  'relative_days_ago': '{n} d ago',
+  'price_per_month': '\${dollars} / month',
+  'auth_resend_in': 'Resend in {seconds} s',
+  'plan_pct_used': '{pct}% used',
+  'item_count': '{visible} of {total} {label}',
+
+  // Units. Digits stay Western in both locales (see `AppDateFormat`), but
+  // the unit *word* localizes — `2.4 MB` / `2.4 م.ب`.
+  'unit_bytes': 'B',
+  'unit_kilobytes': 'KB',
+  'unit_megabytes': 'MB',
+  'compact_thousands': 'K',
+  'compact_millions': 'M',
+
+  'file_kind_image': 'Image',
+  'auth_otp_placeholder': '1 2 3 4 5 6',
 };
 
 const Map<String, String> _ar = {
@@ -2172,6 +2334,7 @@ const Map<String, String> _ar = {
   'artifact_no_viewer': 'مفيش تطبيق مثبت يقدر يفتح الملف ده.',
   'artifact_open_failed': 'تعذّر فتح الملف.',
   'default_project_label': 'الافتراضي',
+  'conversation_preview_unavailable': 'في إجراء منتظر في هذه المحادثة.',
   'artifact_download_failed': 'تعذّر تنزيل الملف. حاول مرة أخرى.',
   'artifact_download_offline': 'لا يوجد اتصال بالإنترنت. تحقّق من اتصالك وحاول مرة أخرى.',
   'artifact_download_gone': 'هذا الملف لم يعد متاحًا.',
@@ -2293,6 +2456,9 @@ const Map<String, String> _ar = {
   'delete_needs_confirmation': 'الحذف يحتاج تأكيد في الإنتاج.',
   'attached_files_for_review': 'تم إرفاق الملفات للمراجعة.',
   'default_api_error': 'حدث خطأ. حاول مرة أخرى.',
+  'error_unexpected_response':
+      'وصل من الخادم رد لا يفهمه التطبيق. حدّث التطبيق إلى آخر إصدار، '
+          'وتواصل مع الدعم إذا تكرر الأمر.',
   'loading': 'جارٍ التحميل…',
   // ── Typed error categories ──
   'error_network': 'تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.',
@@ -2307,6 +2473,10 @@ const Map<String, String> _ar = {
   'error_rate_limited_with_retry': 'محاولات كثيرة. حاول بعد {seconds} ثانية.',
   'error_payload_too_large':
       'الملف كبير جداً. الحد الأقصى 25 ميجابايت (500 ميجابايت للأرشيف).',
+  'error_quota_exceeded':
+      'استهلكت حصتك الحالية. تُجدَّد مع بداية الفترة التالية.',
+  'error_unsupported_media':
+      'نوع الملف غير مدعوم. جرّب مستنداً أو جدولاً أو صورة أو PDF.',
   'error_server': 'وقعت مشكلة في الخادم. حاول بعد قليل.',
   'error_unknown': 'حدث خطأ. حاول مرة أخرى.',
   'crash_screen_title': 'حدث خطأ ما',
@@ -2343,6 +2513,8 @@ const Map<String, String> _ar = {
   'chat_action_upload_failed': 'تعذّر رفع المرفق',
   'chat_action_stop_failed': 'تعذّر إيقاف الوكيل',
   'chat_action_share_failed': 'تعذّر مشاركة المحادثة',
+  'chat_action_revoke_share_failed':
+      'تعذّر إلغاء الرابط — قد يكون ما زال عاماً',
   'chat_action_credential_failed': 'تعذّر تحديث بيانات الاعتماد',
   'chat_action_dismiss_failed': 'تعذّر تجاهل الطلب',
   'filter_all': 'الكل',
@@ -2363,6 +2535,14 @@ const Map<String, String> _ar = {
   'notifications_setting_title': 'الإشعارات',
   'notifications_setting_subtitle':
       'استقبل تنبيهات الموافقات والمهام المكتملة والتقارير الجاهزة.',
+  'push_channel_approvals_name': 'الموافقات',
+  'push_channel_approvals_description': 'إجراءات في انتظار موافقتك',
+  'push_channel_updates_name': 'التحديثات',
+  'push_channel_updates_description': 'المهام المكتملة والتقارير الجاهزة',
+  'watch_error_no_speech': 'لم يصلنا صوت واضح. حاول مرة أخرى.',
+  'watch_error_unreachable': 'تعذّر الوصول إلى صقّار. حاول مرة أخرى.',
+  'watch_error_projects_load': 'تعذّر تحميل المشاريع.',
+  'watch_error_project_setup': 'تعذّر إنشاء قاعدة بيانات.',
   'account_usage': 'الاستخدام',
   'account_see_plans': 'عرض الخطط',
   'usage_title': 'الاستخدام',
@@ -2631,7 +2811,7 @@ const Map<String, String> _ar = {
       'أضِف بيانات اعتماد Odoo لهذه البيئة للاتصال.',
   'env_hint_failed': 'تعذّر إعداد قاعدة بياناتك. حاول مرة أخرى.',
   'addon_hint': 'يستطيع صقّار قراءة وتعديل وإعادة بناء إضافة Odoo هذه.',
-  'voice_locked_pro': 'الإدخال الصوتي ميزة في باقة Pro.',
+  'voice_locked_pro': 'الإدخال الصوتي غير متاح في حسابك.',
   'upgrade_sheet_title': 'ترقية خطتك',
   'upgrade_sheet_body':
       'الترقية الذاتية قادمة قريبًا. لرفع حدودك الآن، تواصل مع فريق Digital Harbor وسنقوم بإعدادها لك.',
@@ -2867,7 +3047,7 @@ const Map<String, String> _ar = {
   'pick_environment': 'اختر بيئة',
   'pick_environment_subtitle': 'بيانات الدخول التي سيستخدمها الوكيل لهذه المحادثة.',
   'no_environment_picked': '— لا توجد بيئة —',
-  'pick_environment_to_start': 'اختر بيئة للبدء.',
+  'pick_environment_to_start': 'اختر المشروع والبيئة من أعلى الشاشة للبدء.',
   'environment_set_for_chat': 'تم تعيين البيئة لهذه المحادثة.',
   'live_badge': 'مباشر',
   'read_only_badge': 'قراءة فقط',
@@ -2922,4 +3102,44 @@ const Map<String, String> _ar = {
   'activity_building_pdf': 'يُجهز مستند PDF',
   'activity_building_word': 'يُجهز مستند Word',
   'activity_preparing_approval': 'يُجهّز طلب موافقة',
+
+  // النصوص ذات المتغيّرات — خانات `{placeholder}` يملؤها `_f`.
+  'env_multi_selected_count': '{n} بيئة مختارة',
+  'env_multi_extra': '+{n} أخرى',
+  'more_pending_approvals': '+ {n} موافقات أخرى معلّقة',
+  'last_verified_at': 'آخر تحقق: {at}',
+  'similar_requests_count': '{count} طلب مشابه',
+  'operation_on_model': '{operation} على `{model}`',
+  'approve_all_n': 'وافق على الكل ({count})',
+  'reject_all_n': 'ارفض الكل ({count})',
+  'approval_granted_with_preapproval':
+      'تمت الموافقة. {count} طلب مماثل تمت الموافقة عليه مسبقاً.',
+  'live_warning_title': 'بيئة مباشرة: {envName}',
+  'live_warning_body':
+      'أنت على وشك التحدث مع "{envName}" في مشروع "{projectName}" — بيئة '
+          'مباشرة. الإجراءات المؤذية لا تزال تحت الموافقة، لكن انتبه. هل تريد '
+          'المتابعة؟',
+  'share_token_label': 'الرمز: {token}',
+  'phase_fetching': 'جلب {current}',
+  'phase_fetching_of_total': 'جلب {current} / {total} · {pct}%',
+  'phase_rendering': 'كتابة الملف…',
+  'phase_rendering_rows': 'كتابة الملف… {rows} صف',
+  'to_approve': '{n} للموافقة',
+  'relative_minutes_ago': 'منذ {n} د',
+  'relative_hours_ago': 'منذ {n} س',
+  'relative_days_ago': 'منذ {n} أيام',
+  'price_per_month': '\${dollars} / شهرياً',
+  'auth_resend_in': 'إعادة الإرسال خلال {seconds} ث',
+  'plan_pct_used': 'مُستخدَم {pct}٪',
+  'item_count': '{visible} من {total} {label}',
+
+  // الوحدات — الأرقام تبقى غربية في اللغتين، والكلمة وحدها تُترجم.
+  'unit_bytes': 'بايت',
+  'unit_kilobytes': 'ك.ب',
+  'unit_megabytes': 'م.ب',
+  'compact_thousands': 'ألف',
+  'compact_millions': 'م',
+
+  'file_kind_image': 'صورة',
+  'auth_otp_placeholder': '١ ٢ ٣ ٤ ٥ ٦',
 };

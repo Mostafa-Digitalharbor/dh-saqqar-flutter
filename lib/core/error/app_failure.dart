@@ -109,6 +109,36 @@ class PayloadTooLargeFailure extends AppFailure {
   List<Object?> get props => const [];
 }
 
+/// 402. The account is out of quota for this billing window.
+///
+/// Distinct from [ForbiddenFailure]: nothing is wrong with the user's
+/// permissions and retrying won't help — the fix is to wait for the window
+/// to roll or move to a larger plan. It used to fall through to
+/// [UnknownFailure] ("Something went wrong. Please try again."), which is
+/// both unactionable and, for a quota, untrue.
+///
+/// [serverMessage] carries the backend's own wording when it sent one —
+/// that's where a specific cap or reset time would come from.
+class QuotaExceededFailure extends AppFailure {
+  const QuotaExceededFailure({this.serverMessage});
+  final String? serverMessage;
+  @override
+  List<Object?> get props => [serverMessage];
+}
+
+/// 415. The server refuses this file type.
+///
+/// Reachable from the attachment and voice-note upload paths. Separate from
+/// [ValidationFailure] because there is no field to attach the message to —
+/// the user needs to hear "that kind of file isn't supported", not "some
+/// fields need your attention".
+class UnsupportedMediaFailure extends AppFailure {
+  const UnsupportedMediaFailure({this.serverMessage});
+  final String? serverMessage;
+  @override
+  List<Object?> get props => [serverMessage];
+}
+
 /// 5xx. The server hit an internal problem.
 class ServerFailure extends AppFailure {
   const ServerFailure({this.statusCode, this.serverMessage});
@@ -116,6 +146,25 @@ class ServerFailure extends AppFailure {
   final String? serverMessage;
   @override
   List<Object?> get props => [statusCode, serverMessage];
+}
+
+/// The request succeeded at the transport layer but the body wasn't the
+/// shape we expect — a field changed type, a required key vanished, a list
+/// became an object.
+///
+/// Distinct from [ServerFailure] on purpose: the server is healthy and
+/// answering, so "try again later" is the wrong advice — retrying replays
+/// the same mismatch forever. This is a client/server contract drift, and
+/// the actionable fix is usually "update the app".
+///
+/// Raised by [ApiErrorMapper.toFailure] when a `TypeError` / `CastError` /
+/// `FormatException` escapes a model's `fromJson`. [detail] is for logs and
+/// Sentry only — never rendered.
+class ParseFailure extends AppFailure {
+  const ParseFailure({this.detail});
+  final String? detail;
+  @override
+  List<Object?> get props => [detail];
 }
 
 /// Default fallback for anything that doesn't fit the categories above.

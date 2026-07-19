@@ -16,11 +16,6 @@ import 'conversation_action.dart';
 import 'conversation_actions_sheet.dart';
 import 'conversation_row_menu.dart';
 
-/// A conversation counts as "live" (green status ring) when it was active
-/// within this window — mirrors the Chats screen's triage signal. Kept local
-/// so the card stays decoupled from the screen file.
-const Duration _kLiveWindow = Duration(hours: 2);
-
 /// Card corner radius — a touch softer than the global row radius so each
 /// conversation reads as a distinct, well-rounded card (design parity with
 /// the Chats mock).
@@ -90,12 +85,13 @@ class ConversationCard extends StatelessWidget {
     final isThinking = localRunning || conversation.isRunning;
     final status = isThinking
         ? _ConvStatus.thinking
-        : (DateTime.now().difference(conversation.updatedAt) <= _kLiveWindow
-              ? _ConvStatus.live
-              : _ConvStatus.idle);
+        : (conversation.isLive ? _ConvStatus.live : _ConvStatus.idle);
 
     final title = conversation.title.trim();
-    final preview = conversation.lastMessagePreview.trim();
+    final preview = _humanPreview(
+      conversation.lastMessagePreview.trim(),
+      context,
+    );
     // Localized fallback only for the avatar's gradient seed when a
     // conversation has no title yet — never shown as text.
     final projectLabel = context.tr.defaultProjectLabel;
@@ -334,6 +330,27 @@ class ConversationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The last-message preview, or a localized stand-in when the backend's
+/// preview is a machine payload rather than something a person wrote.
+///
+/// `last_message_preview` is whatever the last message contained, and when
+/// that message is a tool result or an approval request it is raw JSON. The
+/// conversations list was rendering it verbatim — real users saw
+/// `{"status": "approval_required", "app…` as the summary of their chat.
+///
+/// Detection is deliberately narrow: only text that OPENS as JSON is
+/// replaced. A message that merely mentions a brace, or quotes a snippet
+/// mid-sentence, is still the user's own content and stays untouched.
+String _humanPreview(String raw, BuildContext context) {
+  if (raw.isEmpty) return raw;
+  final first = raw[0];
+  if (first != '{' && first != '[') return raw;
+  // A bare "{" that never closes is prose, not a payload.
+  final looksStructured = raw.contains('":') || raw.contains('" :');
+  if (!looksStructured) return raw;
+  return context.tr.conversationPreviewUnavailable;
 }
 
 /// Distinct calm gradient per conversation, derived from its project/title —

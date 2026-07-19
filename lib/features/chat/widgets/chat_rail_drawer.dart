@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/ui_strings.dart';
+import '../../../core/format/byte_size.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/view_model/locale_cubit.dart';
@@ -311,12 +312,15 @@ String _riskFor(inbox_api.ApprovalActionType t) {
   };
 }
 
-DemoArtifact _adaptApiArtifact(inbox_api.Artifact a) {
+DemoArtifact _adaptApiArtifact(inbox_api.Artifact a, AppStrings tr) {
+  final bytes = a.sizeBytes;
   return DemoArtifact(
     id: a.id,
     name: a.name,
     kind: a.kind.toUpperCase(),
-    size: a.sizeKb == null ? '' : '${a.sizeKb} KB',
+    // Through `humanBytes` so the unit scales and localizes. Rendering
+    // `'${a.sizeKb} KB'` here showed a 40 MB addon bundle as "40960 KB".
+    size: bytes == null ? '' : humanBytes(bytes, tr),
     conversation: a.conversation?.title ?? '',
     conversationId: a.conversation?.id ?? '',
     createdLabel: '',
@@ -461,8 +465,8 @@ class _ArtifactsTab extends StatelessWidget {
       cacheExtent: 1500,
       itemCount: artifacts.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => ChatArtifactTile(
-        artifact: _adaptApiArtifact(artifacts[i]),
+      itemBuilder: (context, i) => ChatArtifactTile(
+        artifact: _adaptApiArtifact(artifacts[i], context.tr),
         onOpen: () => onOpen(artifacts[i]),
       ),
     );

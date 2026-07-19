@@ -5,6 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/accent_banner.dart';
 import '../../../shared/widgets/ghost_button.dart';
+import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/plan_models.dart';
 
 /// Chat banner for plan/quota state (Gap A near-limit + Gap B exceeded):
@@ -36,16 +37,23 @@ class ChatPlanBanner extends StatelessWidget {
 
     if (exceededWindow != null) {
       final word = tr.planWindowWord(exceededWindow!.wire);
+      // On iOS the banner states the limit and stops there (App Store 3.1.1):
+      // no "upgrade your plan" nudge, no CTA into the tier catalogue. The reset
+      // is still the honest way out on every platform.
       return AccentBanner(
         color: s.danger,
         icon: AppIcons.warning,
         title: tr.quotaExceededTitle,
-        body: tr.quotaExceededBody(word),
-        action: GhostButton(
-          label: tr.quotaUpgradeCta,
-          icon: AppIcons.sparkles,
-          onPressed: onUpgrade,
-        ),
+        body: showPaidUpsell
+            ? tr.quotaExceededBody(word)
+            : tr.quotaExceededBodyPlain(word),
+        action: showPaidUpsell
+            ? GhostButton(
+                label: tr.quotaUpgradeCta,
+                icon: AppIcons.sparkles,
+                onPressed: onUpgrade,
+              )
+            : null,
       );
     }
 

@@ -46,60 +46,75 @@ class _AppLockScreenState extends State<AppLockScreen> {
       color: s.bg,
       child: AmbientBackground(
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SaqqarLogo(height: 34),
-                const SizedBox(height: 36),
-                Container(
-                  width: 76,
-                  height: 76,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: s.brandCyan.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: s.brandCyan.withValues(alpha: 0.30),
+          // Scrolls only when it has to. The column is ~360dp tall, which
+          // fits any portrait phone but NOT a landscape one (~320dp of
+          // viewport) — and nothing pins this screen to portrait, so a
+          // returning user rotating their phone hit a RenderFlex overflow on
+          // the very first surface they see. `minHeight: maxHeight` keeps
+          // `MainAxisAlignment.center` behaving exactly as before wherever
+          // there's room; past that the content scrolls instead of clipping.
+          // Also covers the 1.4× text-scale case, where the subtitle wraps to
+          // three lines and overflows portrait too.
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SaqqarLogo(height: 34),
+                    const SizedBox(height: 36),
+                    Container(
+                      width: 76,
+                      height: 76,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: s.brandCyan.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: s.brandCyan.withValues(alpha: 0.30),
+                        ),
+                      ),
+                      child: Icon(AppIcons.lock, size: 32, color: s.brandCyan),
                     ),
-                  ),
-                  child: Icon(AppIcons.lock, size: 32, color: s.brandCyan),
+                    const SizedBox(height: 24),
+                    Text(
+                      tr.appLockTitle,
+                      style: context.text.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      tr.appLockSubtitle,
+                      style: context.text.bodyMedium?.copyWith(color: s.muted),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    BlocBuilder<AppLockCubit, AppLockState>(
+                      buildWhen: (a, b) => a.authenticating != b.authenticating,
+                      builder: (context, state) => PrimaryButton(
+                        label: tr.appLockUnlock,
+                        icon: Icons.fingerprint,
+                        expand: true,
+                        loading: state.authenticating,
+                        onPressed: state.authenticating ? null : _unlock,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Escape hatch — never strand a user who can't
+                    // authenticate.
+                    GhostButton(
+                      label: tr.signOut,
+                      icon: AppIcons.signOut,
+                      tone: GhostButtonTone.danger,
+                      expand: true,
+                      onPressed: () => showSignOutFlow(context),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  tr.appLockTitle,
-                  style: context.text.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  tr.appLockSubtitle,
-                  style: context.text.bodyMedium?.copyWith(color: s.muted),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                BlocBuilder<AppLockCubit, AppLockState>(
-                  buildWhen: (a, b) => a.authenticating != b.authenticating,
-                  builder: (context, state) => PrimaryButton(
-                    label: tr.appLockUnlock,
-                    icon: Icons.fingerprint,
-                    expand: true,
-                    loading: state.authenticating,
-                    onPressed: state.authenticating ? null : _unlock,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Escape hatch — never strand a user who can't authenticate.
-                GhostButton(
-                  label: tr.signOut,
-                  icon: AppIcons.signOut,
-                  tone: GhostButtonTone.danger,
-                  expand: true,
-                  onPressed: () => showSignOutFlow(context),
-                ),
-              ],
+              ),
             ),
           ),
         ),

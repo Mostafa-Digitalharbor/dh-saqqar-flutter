@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
+import '../../../core/constants/ui_strings.dart';
 import '../../../shared/widgets/code_plate.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
@@ -146,13 +147,13 @@ class _ServerActivityCardState extends State<ServerActivityCard> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (a.stdout.isNotEmpty) ...[
-                          const _SectionLabel(text: 'stdout'),
+                          const _SectionLabel(text: UiStrings.streamStdout),
                           const SizedBox(height: 6),
                           CodePlate(text: a.stdout, accent: s.text),
                           const SizedBox(height: 10),
                         ],
                         if (a.stderr.isNotEmpty) ...[
-                          const _SectionLabel(text: 'stderr', danger: true),
+                          const _SectionLabel(text: UiStrings.streamStderr, danger: true),
                           const SizedBox(height: 6),
                           CodePlate(text: a.stderr, accent: AppColors.danger),
                           const SizedBox(height: 10),

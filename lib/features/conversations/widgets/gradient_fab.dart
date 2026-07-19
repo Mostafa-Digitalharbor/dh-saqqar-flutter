@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Pill-shaped floating action button used on the Conversations screen.
 /// Gradient fill + cyan glow shadow + leading [AppIcons.plus] glyph.
@@ -21,15 +22,15 @@ class GradientFab extends StatelessWidget {
     final s = context.saqqar;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppRadius.pillR,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.pillR,
         child: Ink(
           padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 22, 14),
           decoration: BoxDecoration(
             gradient: AppGradients.primaryCta,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppRadius.pillR,
             boxShadow: [
               BoxShadow(
                 color: s.brandCyan.withValues(alpha: 0.36),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/i18n/app_localizations.dart';
-import '../../core/theme/app_gradients.dart';
 import '../extensions/context_extensions.dart';
+import 'app_dialog_shell.dart';
+import 'colored_icon_box.dart';
 import 'ghost_button.dart';
 import 'primary_button.dart';
 
@@ -63,79 +64,43 @@ class ConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      // `vertical: 24` is load-bearing, not cosmetic: passing only
-      // `horizontal` here sets the vertical inset to 0, which lets the
-      // dialog claim the FULL viewport height. The unscrollable column
-      // below then has nothing to push back against and overflows — e.g.
-      // in landscape (~320 px tall), or with a long user-supplied name in
-      // `body` at 1.4× Arabic. Keep both axes.
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: s.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: s.cardBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF020617).withValues(alpha: 0.55),
-                  blurRadius: 36,
-                  offset: const Offset(0, 16),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 3 px gradient hairline along the top — same accent used on
-                // the chat bottom sheets so the visual family stays tight.
-                Container(
-                  height: 3,
-                  decoration: BoxDecoration(
-                    gradient: destructive
-                        ? LinearGradient(
-                            colors: [s.danger, s.danger.withValues(alpha: 0.7)],
-                          )
-                        : AppGradients.primaryCta,
-                  ),
-                ),
-                // Scrolls rather than overflows when the content can't fit
-                // the height the inset leaves us — `body` carries
-                // user-supplied names (project / environment) and Arabic at
-                // 1.4× is materially taller than English. Mirrors
-                // `RenameConversationDialog`. `Flexible` keeps the gradient
-                // hairline above pinned while only the content scrolls; on
-                // a normal device everything fits and no scrollbar shows.
-                Flexible(
-                  child: SingleChildScrollView(
+    return AppDialogShell(
+      elevated: true,
+      accent: destructive ? AppDialogShell.dangerAccent(context) : null,
+      // Scrolls rather than overflows when the content can't fit the
+      // height the inset leaves us — `body` carries user-supplied names
+      // (project / environment) and Arabic at 1.4× is materially taller
+      // than English. Mirrors `RenameConversationDialog`. The shell keeps
+      // the gradient hairline pinned while only this scrolls; on a normal
+      // device everything fits and no scrollbar shows.
+      child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (icon != null) ...[
-                          Container(
-                            width: 46,
-                            height: 46,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: (destructive ? s.danger : s.brandCyan)
-                                  .withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: (destructive ? s.danger : s.brandCyan)
-                                    .withValues(alpha: 0.28),
-                              ),
-                            ),
-                            child: Icon(
-                              icon,
+                        if (icon case final iconData?) ...[
+                          // Align is load-bearing, not decoration. The Column
+                          // above is `CrossAxisAlignment.stretch` (the title,
+                          // body and button row all want full width), which
+                          // hands EVERY child a tight full-width constraint —
+                          // and a tight parent constraint beats a child's own
+                          // `width: 46`. Without this the 46×46 badge rendered
+                          // as a 336px-wide bar with a lone icon floating in
+                          // the middle. Align passes loose constraints down,
+                          // so the box gets to be the size it asks for.
+                          // `centerStart` keeps it edge-aligned with the
+                          // left-aligned title beneath it (and mirrors in RTL).
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: ColoredIconBox(
+                              icon: iconData,
                               color: destructive ? s.danger : s.brandCyan,
-                              size: 22,
+                              size: 46,
+                              radius: 14,
+                              iconSize: 22,
+                              backgroundAlpha: 0.14,
+                              borderAlpha: 0.28,
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -183,12 +148,6 @@ class ConfirmDialog extends StatelessWidget {
                           ],
                         ),
                       ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

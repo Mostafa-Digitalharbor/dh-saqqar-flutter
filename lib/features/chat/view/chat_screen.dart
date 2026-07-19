@@ -19,8 +19,11 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 import '../../../core/constants/ui_strings.dart';
+import '../../../core/format/byte_size.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/error/app_failure.dart';
@@ -823,7 +826,7 @@ class _ChatScreenState extends State<ChatScreen>
       chips.add(DemoAttachment(
         name: name,
         kind: _kindForExtension(ext),
-        size: _formatBytes(size),
+        size: humanBytes(size, context.tr),
         imageUrl: _isImageExt(ext) ? f.path : null,
       ));
       keptFiles.add(f);
@@ -1178,6 +1181,12 @@ class _ChatScreenState extends State<ChatScreen>
     if (shownBefore >= loadedBefore && cubit.state.hasMoreOlder) {
       await cubit.loadOlder();
       if (!mounted) return;
+      // Surface a failed fetch instead of silently widening the window
+      // over messages that never arrived.
+      if (cubit.state.actionFailure != null) {
+        _surfaceActionFailure();
+        return;
+      }
     }
     setState(() => _visibleLimit = shownBefore + _visibleStep);
   }
@@ -1231,8 +1240,11 @@ class _ChatScreenState extends State<ChatScreen>
     // back to demo env lookup for legacy seeded conversations.
     final env = _resolveEnv();
     if (env == null) {
+      // One toast, not two. This used to toast here AND then `await
+      // _openEnvironmentPicker()`, whose body is a stub that fires the very
+      // same toast — so tapping send with no environment showed the user the
+      // identical message twice and opened nothing.
       _toast(context.tr.pickEnvironmentToStart);
-      await _openEnvironmentPicker();
       return;
     }
 
@@ -1581,7 +1593,7 @@ class _ChatScreenState extends State<ChatScreen>
                               Text(
                                 c.$2,
                                 style: context.text.titleSmall?.copyWith(
-                                  fontFamily: 'JetBrainsMono',
+                                  fontFamily: AppTypography.fontMono,
                                   color: s.brandCyan,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1709,14 +1721,14 @@ class _ChatScreenState extends State<ChatScreen>
       // Kind-aware size cap (Gap F): archives up to 500 MB (addon zips),
       // everything else 25 MB. Matches the server, which 413s over the cap.
       final capMb = _isArchiveExt(picked.extension) ? 500 : 25;
-      if (picked.size > capMb * 1024 * 1024) {
+      if (picked.size > capMb * kBytesPerMb) {
         tooLarge.add(picked.name);
         continue;
       }
       newChips.add(DemoAttachment(
         name: picked.name,
         kind: _kindForExtension(picked.extension),
-        size: _formatBytes(picked.size),
+        size: humanBytes(picked.size, context.tr),
         imageUrl: _isImageExt(picked.extension) ? picked.path : null,
       ));
       newFiles.add(File(path));
@@ -1770,12 +1782,14 @@ class _ChatScreenState extends State<ChatScreen>
   /// the chat bubble + attachment chip already know how to render.
   String _kindForExtension(String? ext) {
     final e = (ext ?? '').toLowerCase();
-    if (['png', 'jpg', 'jpeg', 'gif', 'webp'].contains(e)) return 'Image';
-    if (e == 'pdf') return 'PDF';
-    if (['xlsx', 'xls', 'xlsm'].contains(e)) return 'XLSX';
-    if (['csv', 'tsv'].contains(e)) return 'CSV';
-    if (['docx', 'doc'].contains(e)) return 'DOCX';
-    if (['zip', 'tar', 'gz', 'tgz'].contains(e)) return 'ZIP';
+    // "Image" is a category word, so it translates; the rest are format
+    // identifiers that read the same in every locale and live in UiStrings.
+    if (_isImageExt(e)) return context.tr.fileKindImage;
+    if (e == 'pdf') return UiStrings.formatPdf;
+    if (['xlsx', 'xls', 'xlsm'].contains(e)) return UiStrings.formatXlsx;
+    if (['csv', 'tsv'].contains(e)) return UiStrings.formatCsv;
+    if (['docx', 'doc'].contains(e)) return UiStrings.formatDocx;
+    if (_isArchiveExt(e)) return UiStrings.formatZip;
     return e.toUpperCase().padRight(3, ' ').trimRight();
   }
 
@@ -1791,15 +1805,6 @@ class _ChatScreenState extends State<ChatScreen>
   /// Human-readable file size — "184 KB" / "2.4 MB". Used in the
   /// attachment chip subtitle so the user gets a sense of upload cost
   /// before tapping Send.
-  String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).round()} KB';
-    }
-    final mb = bytes / (1024 * 1024);
-    return '${mb.toStringAsFixed(mb < 10 ? 1 : 0)} MB';
-  }
-
   // Bell trigger is inlined below as a private widget so the AppBar
   // `actions` slot stays terse.
 
@@ -2269,7 +2274,14 @@ class _ChatScreenState extends State<ChatScreen>
                 // on its next poll and vice versa.
                 context.read<DeepThinkCubit>().set(value);
                 if (!_isNewChat) {
-                  context.read<ChatCubit>().setDeepThink(value);
+                  // Awaited so a refused PATCH surfaces. Fire-and-forget
+                  // here meant the switch visibly snapped back with no
+                  // explanation, and left a stale `ChatAction.patch`
+                  // failure on the state that a later, unrelated error
+                  // would then surface under the wrong label.
+                  _applyToggle(
+                    () => context.read<ChatCubit>().setDeepThink(value),
+                  );
                 }
                 _toast(
                   value ? context.tr.deepThinkOn : context.tr.deepThinkOff,
@@ -2282,7 +2294,9 @@ class _ChatScreenState extends State<ChatScreen>
                   // Optimistic local mirror so the switch animates
                   // before the snapshot poll catches up.
                   setState(() => _autoApprove = value);
-                  context.read<ChatCubit>().setAutoApprove(value);
+                  _applyToggle(
+                    () => context.read<ChatCubit>().setAutoApprove(value),
+                  );
                 }
                 _toast(
                   value
@@ -2529,7 +2543,7 @@ class _ChatScreenState extends State<ChatScreen>
                         height: 4,
                         decoration: BoxDecoration(
                           color: s.surface3,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: AppRadius.pillR,
                         ),
                       ),
                       Padding(
@@ -2980,6 +2994,16 @@ class _ChatScreenState extends State<ChatScreen>
   /// never re-fires on a later rebuild. Falls back to the generic message
   /// only when there's no classified failure on the cubit (or no cubit yet,
   /// for a brand-new chat).
+  /// Runs a conversation-flag PATCH and surfaces the reason if it fails.
+  ///
+  /// The cubit already rolls the optimistic value back; without this the
+  /// user only saw the switch flick back to where it was, with no toast
+  /// and no way to tell a refusal from a mis-tap.
+  Future<void> _applyToggle(Future<bool> Function() patch) async {
+    final ok = await patch();
+    if (!ok && mounted) _surfaceActionFailure();
+  }
+
   void _surfaceActionFailure() {
     if (_isNewChat) {
       _toast(context.tr.defaultApiError);
@@ -3008,6 +3032,7 @@ class _ChatScreenState extends State<ChatScreen>
       ChatAction.uploadAttachment => tr.chatActionUploadFailed,
       ChatAction.stop => tr.chatActionStopFailed,
       ChatAction.share => tr.chatActionShareFailed,
+      ChatAction.revokeShare => tr.chatActionRevokeShareFailed,
       ChatAction.setActiveCredential ||
       ChatAction.toggleCredential =>
         tr.chatActionCredentialFailed,
@@ -3120,7 +3145,7 @@ class _InboxBellTrigger extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: s.warning,
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: AppRadius.pillR,
                         border: Border.all(color: s.surface, width: 1.5),
                       ),
                       child: Text(
@@ -3246,28 +3271,23 @@ DemoMessage _adaptApiMessage(api.Message m, BuildContext context) {
     time: AppDateFormat.fullDateTime(context, m.createdAt),
     createdAt: m.createdAt,
     toolName: (m.toolName ?? '').isEmpty ? null : m.toolName,
-    attachments: m.attachments.map(_adaptApiAttachment).toList(),
+    attachments: m.attachments
+        .map((a) => _adaptApiAttachment(a, context.tr))
+        .toList(),
   );
 }
 
-DemoAttachment _adaptApiAttachment(api.Attachment a) {
+DemoAttachment _adaptApiAttachment(api.Attachment a, AppStrings tr) {
   return DemoAttachment(
     name: a.originalName,
     kind: a.kind.toUpperCase(),
-    size: _humanSize(a.sizeBytes),
+    size: humanBytes(a.sizeBytes, tr),
     imageUrl: a.kind == 'image' ? a.absoluteUrl : null,
     // Carry the server-side id + absolute URL so the AttachmentChip
     // tap handler can download + open the file via [ArtifactDownloader].
     serverId: a.id,
     downloadUrl: a.absoluteUrl,
   );
-}
-
-String _humanSize(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).round()} KB';
-  final mb = bytes / (1024 * 1024);
-  return '${mb.toStringAsFixed(mb < 10 ? 1 : 0)} MB';
 }
 
 /// Source-agnostic env reference resolved by [_ChatScreenState._resolveEnv].

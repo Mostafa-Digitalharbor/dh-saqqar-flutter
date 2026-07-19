@@ -338,28 +338,46 @@ class _ResendRowState extends State<_ResendRow> {
     final s = context.saqqar;
     final tr = context.tr;
     final ready = _remaining <= 0;
+    // Two translated phrases plus a TextButton's own 16 px insets sit
+    // tight at 320 px — "لم يصلك الرمز؟" + "إعادة الإرسال الآن" reaches the
+    // edge before any text scaling. `Flexible` on both lets the prompt
+    // ellipsize rather than overflow, and keeps the action reachable.
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          tr.authDidntGetCode,
-          style: context.text.labelMedium?.copyWith(color: s.muted),
+        Flexible(
+          child: Text(
+            tr.authDidntGetCode,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.labelMedium?.copyWith(color: s.muted),
+          ),
         ),
         const SizedBox(width: 6),
         if (ready)
-          TextButton(
-            onPressed: () {
-              widget.onResend();
-              _start();
-            },
-            child: Text(tr.authResendNow),
+          Flexible(
+            child: TextButton(
+              onPressed: () {
+                widget.onResend();
+                _start();
+              },
+              child: Text(
+                tr.authResendNow,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           )
         else
-          Text(
-            tr.authResendIn(_remaining),
-            style: context.text.labelMedium?.copyWith(
-              color: s.text,
-              fontWeight: FontWeight.w700,
+          Flexible(
+            child: Text(
+              tr.authResendIn(_remaining),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.labelMedium?.copyWith(
+                color: s.text,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
       ],
@@ -1044,7 +1062,7 @@ class _OtpBodyState extends State<_OtpBody> {
         AppTextField(
           label: tr.authOtpLabel,
           controller: _code,
-          hint: '1 2 3 4 5 6',
+          hint: tr.authOtpPlaceholder,
           errorText: _error,
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.go,

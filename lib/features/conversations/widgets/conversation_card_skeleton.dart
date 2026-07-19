@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/skeleton_block.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Placeholder shimmer card matching the [ConversationCard] silhouette —
 /// 44-px round avatar + title bar + preview bar + meta dots row.
@@ -18,7 +19,7 @@ class ConversationCardSkeleton extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.88),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.modalR,
         border: Border.all(color: s.cardBorder),
       ),
       child: const Row(

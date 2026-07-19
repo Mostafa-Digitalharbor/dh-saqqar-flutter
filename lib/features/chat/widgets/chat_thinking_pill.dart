@@ -92,12 +92,25 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    context.tr.saqqarThinking,
-                    style: context.text.labelMedium?.copyWith(
-                      color: accent,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12.5,
+                  // Both copy-bearing labels are `Flexible` + ellipsis: the
+                  // row is `mainAxisSize.min`, which only means "don't
+                  // expand" — it does NOT stop the children overflowing the
+                  // incoming constraint. At 320 px the Arabic rendering
+                  // ("صقّار يفكّر · 3 خطوات تفكير · 1m 23s") plus the chevron
+                  // exceeds the ~280 px the list leaves this pill, so
+                  // without these the row throws a RenderFlex overflow.
+                  // The separators, duration and chevron stay rigid — they
+                  // are a few glyphs each and are what the user needs most.
+                  Flexible(
+                    child: Text(
+                      context.tr.saqqarThinking,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelMedium?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
                   Text(
@@ -107,12 +120,16 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                       fontSize: 12.5,
                     ),
                   ),
-                  Text(
-                    '${widget.steps.length} ${context.tr.thinkingStepsLabel}',
-                    style: context.text.labelSmall?.copyWith(
-                      color: accent.withValues(alpha: 0.85),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11.5,
+                  Flexible(
+                    child: Text(
+                      '${widget.steps.length} ${context.tr.thinkingStepsLabel}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelSmall?.copyWith(
+                        color: accent.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11.5,
+                      ),
                     ),
                   ),
                   if (widget.totalDuration != null) ...[

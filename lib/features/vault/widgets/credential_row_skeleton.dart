@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/skeleton_block.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Placeholder shimmer matching the [CredentialRow] silhouette — kind-icon
 /// plate + label + bundle name + two pill chips.
@@ -15,7 +16,7 @@ class CredentialRowSkeleton extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.88),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.bubbleR,
         border: Border.all(color: s.cardBorder),
       ),
       child: const Row(

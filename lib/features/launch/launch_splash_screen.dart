@@ -6,6 +6,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
 import '../../shared/widgets/saqqar_logo.dart';
+import '../../core/theme/app_radius.dart';
 
 /// Custom in-app launch screen.
 ///
@@ -301,7 +302,7 @@ class _ProgressBar extends StatelessWidget {
         width: 160,
         height: 3,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppRadius.pillR,
           child: ColoredBox(
             color: AppColors.brandCyan.withValues(alpha: 0.18),
             child: AnimatedBuilder(

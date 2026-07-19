@@ -9,6 +9,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/chip_strip.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../data/notifications_store.dart';
@@ -112,22 +113,18 @@ class _FilterRow extends StatelessWidget {
       (_NotifFilter.tasks, tr.notifFilterTasks),
       (_NotifFilter.reports, tr.notifFilterReports),
     ];
-    return SizedBox(
-      height: 52,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        itemCount: entries.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final (value, label) = entries[i];
-          return _FilterChip(
+    // Sizes to the chips rather than pinning `height: 52`, which clipped
+    // Arabic descenders at large text scales with no overflow warning.
+    return ChipStrip(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      children: [
+        for (final (value, label) in entries)
+          _FilterChip(
             label: label,
             selected: value == selected,
             onTap: () => onSelected(value),
-          );
-        },
-      ),
+          ),
+      ],
     );
   }
 }

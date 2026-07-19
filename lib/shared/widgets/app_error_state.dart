@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../extensions/context_extensions.dart';
+import 'colored_icon_box.dart';
 import 'ghost_button.dart';
 
 /// Standard "something went wrong" surface with an optional retry button.
@@ -56,16 +57,16 @@ class AppErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: s.danger.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-                border: Border.all(color: s.danger.withValues(alpha: 0.32)),
-              ),
-              child: Icon(icon ?? AppIcons.warning, color: s.danger, size: 26),
+            ColoredIconBox(
+              icon: icon ?? AppIcons.warning,
+              color: s.danger,
+              size: 56,
+              // A square with a half-side radius IS a circle — same pixels
+              // as the `BoxShape.circle` this replaced.
+              radius: 28,
+              iconSize: 26,
+              backgroundAlpha: 0.12,
+              borderAlpha: 0.32,
             ),
             const SizedBox(height: 14),
             Text(

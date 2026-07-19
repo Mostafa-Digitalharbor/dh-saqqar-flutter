@@ -38,13 +38,9 @@ import '../widgets/widgets.dart';
 /// conversations (representative — derived from `updatedAt` recency).
 enum ChatsFilterMode { all, pending, live }
 
-/// A conversation counts as "live" for the triage filter / status ring when it
-/// was last active within this window. Representative signal (the summary API
-/// doesn't carry a per-conversation live flag yet).
-const Duration kLiveWindow = Duration(hours: 2);
-
-bool conversationIsLive(ConversationSummary c) =>
-    DateTime.now().difference(c.updatedAt) <= kLiveWindow;
+/// See [ConversationSummary.isLive] — the window itself lives on the model
+/// so the card and this screen can't drift apart on what "live" means.
+bool conversationIsLive(ConversationSummary c) => c.isLive;
 
 /// Conversations list — search + archive filter + paginated rows, with
 /// a gradient FAB to start a fresh chat. Pinned conversations float to
@@ -515,6 +511,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 '$pendingCount ${context.tr.pending}'
             : '$totalCount ${context.tr.conversations}';
 
+        // `ConversationsEmptyState` renders its own prominent "New
+        // conversation" CTA, so keeping the FAB up as well stacks two
+        // identical buttons on the same screen — the FAB even overlaps the
+        // empty-state artwork. Drop the FAB for exactly the case the empty
+        // state owns; mirrors its own condition below.
+        final showsEmptyState = data != null && data.conversations.isEmpty;
+
         return PageScaffold(
           title: context.tr.tabChats,
           subtitle: subtitleText,
@@ -529,10 +532,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             ),
             const SizedBox(width: 6),
           ],
-          floatingActionButton: GradientFab(
-            onPressed: _openFreshConversation,
-            label: context.tr.newConversation,
-          ),
+          floatingActionButton: showsEmptyState
+              ? null
+              : GradientFab(
+                  onPressed: _openFreshConversation,
+                  label: context.tr.newConversation,
+                ),
           children: [
             DataStateRefreshableView<ConversationsData>(
               state: state.data,
@@ -850,7 +855,7 @@ class _FilterChip extends StatelessWidget {
                         : (warn
                             ? s.warning.withValues(alpha: 0.20)
                             : s.surface3),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: AppRadius.pillR,
                   ),
                   child: Text(
                     '$badge',
@@ -901,7 +906,7 @@ class _ArchivedSection extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.85),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.inputR,
         border: Border.all(color: s.cardBorder),
       ),
       child: Column(
@@ -909,10 +914,10 @@ class _ArchivedSection extends StatelessWidget {
         children: [
           Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.inputR,
             child: InkWell(
               onTap: onToggle,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppRadius.inputR,
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_gradients.dart';
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_radius.dart';
 
 /// Hero card used at the top of each main screen (Conversations, Vault, etc.).
 /// Subtle cyan→purple gradient overlay to feel premium.
@@ -134,9 +135,9 @@ class FeatureIntroCard extends StatelessWidget {
             child: Container(
               width: 38,
               height: 4,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppGradients.primaryCta,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: AppRadius.pillR,
               ),
             ),
           ),

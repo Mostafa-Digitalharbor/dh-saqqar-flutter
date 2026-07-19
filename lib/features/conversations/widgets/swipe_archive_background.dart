@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Coloured background revealed behind a conversation row while the
 /// user is dragging it horizontally to archive (or un-archive). Shape
@@ -41,7 +42,7 @@ class SwipeArchiveBackground extends StatelessWidget {
       padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: base.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.modalR,
         border: Border.all(color: base.withValues(alpha: 0.40)),
       ),
       child: Align(
@@ -89,7 +90,7 @@ class SwipeDeleteBackground extends StatelessWidget {
       padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: base.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.modalR,
         border: Border.all(color: base.withValues(alpha: 0.40)),
       ),
       child: Align(

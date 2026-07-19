@@ -143,8 +143,13 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
       return;
     }
     if (failure is ValidationFailure) {
-      final newErr = failure.firstError('new_password');
-      final oldErr = failure.firstError('old_password');
+      // Through `fieldMessage`, not `firstError` — the raw field strings
+      // are unscreened server text, so a DB constraint name could land
+      // verbatim under an Arabic input.
+      final newErr =
+          ApiErrorMapper.fieldMessage(context, failure, 'new_password');
+      final oldErr =
+          ApiErrorMapper.fieldMessage(context, failure, 'old_password');
       setState(() {
         if (oldErr != null) _currentError = oldErr;
         if (newErr != null) _nextError = newErr;

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_radius.dart';
 
 class PaginationBar extends StatelessWidget {
   const PaginationBar({
@@ -41,7 +42,7 @@ class PaginationBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: s.surface2,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.inputR,
         border: Border.all(color: s.border),
       ),
       child: Row(

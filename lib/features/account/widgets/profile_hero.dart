@@ -94,9 +94,17 @@ class ProfileHero extends StatelessWidget {
                             // full email — which doesn't fit next to the
                             // 64 px avatar on phones. Marquee so the user
                             // sees their whole identifier without cropping.
+                            //
+                            // NOT `alwaysScroll`: marquee mode lays out TWO
+                            // copies of the text for its seamless loop, and a
+                            // name short enough to fit shows both of them side
+                            // by side — on screen that reads as "Mostafa Badr
+                            // Mostafa Ba", i.e. a rendering glitch. Letting it
+                            // fall back to static Text keeps the scrolling for
+                            // the long-identifier case this was built for and
+                            // costs nothing when it fits.
                             child: MarqueeText(
                               text: displayName,
-                              alwaysScroll: true,
                               style: context.text.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.3,
@@ -114,13 +122,14 @@ class ProfileHero extends StatelessWidget {
                         user.email.isNotEmpty &&
                         user.email != displayName) ...[
                       const SizedBox(height: 2),
-                      // alwaysScroll: true — even when the email
-                      // appears to fit, force the right-to-left
-                      // ticker so the user always sees the full
-                      // address as it cycles past.
+                      // Same reasoning as the headline above: no
+                      // `alwaysScroll`. An address that fits rendered as a
+                      // doubled, overlapping string; one that doesn't still
+                      // scrolls. The full address is also spelled out in the
+                      // EMAIL (LOGIN) field further down this same screen, so
+                      // nothing is hidden either way.
                       MarqueeText(
                         text: user.email,
-                        alwaysScroll: true,
                         style:
                             context.text.bodySmall?.copyWith(color: s.muted),
                       ),

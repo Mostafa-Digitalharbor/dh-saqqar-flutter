@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Floating chevron button that appears when the chat is scrolled away from
 /// the latest message. Fades + slides in/out over 180 ms.
@@ -30,10 +31,10 @@ class ChatScrollDownButton extends StatelessWidget {
           curve: Curves.easeOutCubic,
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppRadius.pillR,
             child: InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppRadius.pillR,
               child: Container(
                 width: 40,
                 height: 40,

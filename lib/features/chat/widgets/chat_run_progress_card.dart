@@ -135,7 +135,7 @@ class ChatRunProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppRadius.pillR,
             child: LinearProgressIndicator(
               value: progress.fraction,
               minHeight: 4,

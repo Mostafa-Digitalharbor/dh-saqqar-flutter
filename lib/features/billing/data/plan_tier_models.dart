@@ -43,6 +43,12 @@ class PlanTier {
 
   bool get isFree => slug == 'free';
 
+  /// Whether a plan-name badge should render for this tier — mirrors
+  /// [PlanSnapshot.showBadge]. Free tiers get none: naming the only tier a
+  /// user can have implies a paid one exists to buy. The `name.isNotEmpty`
+  /// half keeps an empty server name from falling back to the raw slug.
+  bool get showBadge => !isFree && name.isNotEmpty;
+
   factory PlanTier.fromJson(Map<String, dynamic> json) {
     int i(String k) => (json[k] as num?)?.toInt() ?? 0;
     int? nullableInt(String k) => (json[k] as num?)?.toInt();

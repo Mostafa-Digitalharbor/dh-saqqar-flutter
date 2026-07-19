@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/format/byte_size.dart';
 import '../../../core/network/api_endpoints.dart';
 
 /// Pointer to the conversation an artifact came from. Only present on the
@@ -64,10 +65,15 @@ class Artifact {
     return '${ApiEndpoints.baseUrl}$url';
   }
 
-  /// Convenience: `metadata.size_kb` when present.
-  int? get sizeKb {
+  /// Size in bytes, from the server's `metadata.size_kb`.
+  ///
+  /// Exposed in bytes rather than KB so the view can hand it straight to
+  /// `humanBytes` and get the right unit. The previous `sizeKb` getter
+  /// pushed the caller into rendering `'$sizeKb KB'`, which showed a 40 MB
+  /// addon bundle as "40960 KB".
+  int? get sizeBytes {
     final v = metadata['size_kb'];
-    if (v is num) return v.toInt();
+    if (v is num) return v.toInt() * kBytesPerKb;
     return null;
   }
 

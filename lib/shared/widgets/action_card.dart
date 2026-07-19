@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../extensions/context_extensions.dart';
 import 'colored_icon_box.dart';
 import '../extensions/responsive_breakpoints.dart';
+import '../../core/theme/app_radius.dart';
 
 class ActionCard extends StatelessWidget {
   const ActionCard({
@@ -32,7 +33,7 @@ class ActionCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.bubbleR,
         border: Border.all(color: s.cardBorder),
         boxShadow: context.isDark
             ? null

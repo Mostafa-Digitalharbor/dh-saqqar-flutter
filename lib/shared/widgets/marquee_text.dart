@@ -22,6 +22,7 @@ class MarqueeText extends StatefulWidget {
     this.pixelsPerSecond = 36,
     this.startDelay = const Duration(milliseconds: 800),
     this.alwaysScroll = false,
+    this.maxCycles = 3,
   });
 
   final String text;
@@ -49,6 +50,19 @@ class MarqueeText extends StatefulWidget {
   /// then reads.
   final Duration startDelay;
 
+  /// How many times the text scrolls past before settling back at its start
+  /// and stopping for good.
+  ///
+  /// A marquee is an animation, and an animation that never ends means the
+  /// app never stops producing frames: an idle Account screen was measured
+  /// rendering ~62 frames per second with nobody touching it, purely because
+  /// two labels were scrolling. Three passes is plenty to read a label, and
+  /// the screen goes quiet afterwards.
+  ///
+  /// Set higher for a surface that genuinely needs a continuous ticker, but
+  /// know that you are trading battery for it.
+  final int maxCycles;
+
   @override
   State<MarqueeText> createState() => _MarqueeTextState();
 }
@@ -58,15 +72,21 @@ class _MarqueeTextState extends State<MarqueeText>
   late final AnimationController _controller;
   double _lastCycleDistance = 0;
 
+  /// Completed passes since the current geometry was configured.
+  int _cyclesRun = 0;
+
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this);
+    _controller = AnimationController(vsync: this)
+      ..addStatusListener(_onCycleComplete);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller
+      ..removeStatusListener(_onCycleComplete)
+      ..dispose();
     super.dispose();
   }
 
@@ -94,20 +114,53 @@ class _MarqueeTextState extends State<MarqueeText>
   /// the geometry doesn't restart the animation (which would snap the
   /// text back to its start every frame).
   void _ensureRunning(Duration cycleDuration, double cycleDistance) {
-    if (_lastCycleDistance == cycleDistance && _controller.isAnimating) {
-      return;
-    }
+    // Same geometry as the run we already configured? Leave it alone —
+    // whether it's still mid-scroll OR has finished its cycles and settled.
+    //
+    // Testing `_controller.isAnimating` alone is NOT enough, and getting this
+    // wrong silently restores the very bug this class is trying to avoid:
+    // once the marquee settles, `isAnimating` is false, so the next parent
+    // rebuild (ProfileHero watches two cubits, so it rebuilds often) would
+    // fall through and start the whole thing again — forever, a few cycles at
+    // a time. The screen never goes quiet and the fix reads as working while
+    // measuring identically to the bug.
+    if (_lastCycleDistance == cycleDistance) return;
+
     _lastCycleDistance = cycleDistance;
+    _cyclesRun = 0;
     _controller
       ..stop()
       ..duration = cycleDuration
       ..reset()
-      ..repeat();
+      ..forward();
+  }
+
+  /// Advances to the next cycle, or settles for good once [maxCycles] have
+  /// played.
+  ///
+  /// This is what keeps a marquee from pinning the whole app at the display
+  /// refresh rate forever. `repeat()` used to drive this, and an idle Account
+  /// screen measured ~62 rendered frames per second with the user touching
+  /// nothing — the UI thread never got to sleep, which costs battery on every
+  /// screen a marquee appears on. A few passes is all anyone needs to read a
+  /// label; after that the text parks at its start and the screen goes quiet.
+  void _onCycleComplete(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    _cyclesRun++;
+    if (_cyclesRun >= widget.maxCycles) {
+      // Park at the natural reading position rather than mid-scroll.
+      _controller.reset();
+      return;
+    }
+    _controller
+      ..reset()
+      ..forward();
   }
 
   void _ensureStopped() {
     if (_controller.isAnimating) _controller.stop();
     _lastCycleDistance = 0;
+    _cyclesRun = 0;
   }
 
   @override

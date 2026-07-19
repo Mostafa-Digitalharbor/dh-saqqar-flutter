@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/asset_paths.dart';
+import '../../core/constants/ui_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
 
@@ -33,7 +35,7 @@ class SaqqarLogo extends StatelessWidget {
   /// light system theme).
   final Brightness? forceVariant;
 
-  static const String asset = 'assets/img/logo-light.png';
+  static const String asset = AssetPaths.logo;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +78,7 @@ class _FallbackWordmark extends StatelessWidget {
           AppGradients.vivid.createShader(Offset.zero & rect.size),
       blendMode: BlendMode.srcIn,
       child: Text(
-        'SAQQAR',
+        UiStrings.brandWordmark,
         style: TextStyle(
           color: AppColors.brandNavy, // overridden by ShaderMask
           fontSize: fontSize,

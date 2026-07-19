@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../extensions/context_extensions.dart';
+import 'chip_strip.dart';
+import '../../core/theme/app_radius.dart';
 
 class SearchFilterOption<T> {
   const SearchFilterOption({required this.value, required this.label});
@@ -41,7 +43,7 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
         DecoratedBox(
           decoration: BoxDecoration(
             color: s.surface2.withValues(alpha: context.isDark ? 0.62 : 0.86),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.inputR,
             border: Border.all(color: s.cardBorder),
           ),
           child: TextField(
@@ -73,23 +75,18 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
         ),
         if (filters.isNotEmpty) ...[
           const SizedBox(height: 10),
-          SizedBox(
-            height: 38,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.zero,
-              itemBuilder: (context, index) {
-                final filter = filters[index];
-                final isSelected = filter.value == selectedFilter;
-                return _FilterChip(
+          // Sizes to the chips rather than pinning `height: 38`, which
+          // clipped Arabic descenders at large text scales with no overflow
+          // warning.
+          ChipStrip(
+            children: [
+              for (final filter in filters)
+                _FilterChip(
                   label: filter.label,
-                  selected: isSelected,
+                  selected: filter.value == selectedFilter,
                   onTap: () => onFilterSelected?.call(filter.value),
-                );
-              },
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemCount: filters.length,
-            ),
+                ),
+            ],
           ),
         ],
       ],
@@ -113,10 +110,10 @@ class _FilterChip extends StatelessWidget {
     final s = context.saqqar;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppRadius.pillR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.pillR,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
@@ -125,7 +122,7 @@ class _FilterChip extends StatelessWidget {
             color: selected
                 ? s.brandCyan.withValues(alpha: context.isDark ? 0.16 : 0.12)
                 : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppRadius.pillR,
             border: Border.all(
               color: selected
                   ? s.brandCyan.withValues(alpha: 0.4)

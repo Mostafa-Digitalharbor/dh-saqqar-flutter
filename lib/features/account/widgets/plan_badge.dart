@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Plan-name pill — cyan accent, matches the web's plan badge. Shown top-right
 /// of the "Plan & usage" card and beside the user name in the profile hero
@@ -22,7 +23,7 @@ class PlanBadge extends StatelessWidget {
           : const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: s.brandCyan.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.pillR,
         border: Border.all(color: s.brandCyan.withValues(alpha: 0.35)),
       ),
       child: Text(

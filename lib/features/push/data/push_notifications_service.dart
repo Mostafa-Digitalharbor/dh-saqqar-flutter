@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../../core/i18n/app_strings.dart';
+import '../../../core/i18n/platform_strings.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/routing/route_names.dart';
@@ -64,18 +66,32 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 /// Android notification channels — ids MUST match
 /// docs/PUSH_NOTIFICATIONS_BACKEND.md §3 (`android.notification.channel_id`).
-const _approvalsChannel = AndroidNotificationChannel(
-  'saqqar_approvals',
-  'Approvals',
-  description: 'Actions that are waiting for your approval',
-  importance: Importance.high,
-);
-const _updatesChannel = AndroidNotificationChannel(
-  'saqqar_updates',
-  'Updates',
-  description: 'Finished tasks and ready reports',
-  importance: Importance.defaultImportance,
-);
+///
+/// The ids are a technical contract with the backend and never change. The
+/// name/description are the opposite: Android renders them to the user in
+/// system Settings, so they resolve through i18n rather than being pinned
+/// to English. There's no `BuildContext` out here — see [PlatformStrings].
+///
+/// Android re-reads name/description when a channel is re-created under an
+/// existing id, so [PushNotificationsService.start] refreshes them. A locale
+/// change therefore lands on the next `start()` (i.e. next launch or
+/// sign-in), not instantly — the channel is a system-owned surface the app
+/// can't repaint on demand.
+AndroidNotificationChannel _approvalsChannel(AppStrings tr) =>
+    AndroidNotificationChannel(
+      'saqqar_approvals',
+      tr.pushChannelApprovalsName,
+      description: tr.pushChannelApprovalsDescription,
+      importance: Importance.high,
+    );
+
+AndroidNotificationChannel _updatesChannel(AppStrings tr) =>
+    AndroidNotificationChannel(
+      'saqqar_updates',
+      tr.pushChannelUpdatesName,
+      description: tr.pushChannelUpdatesDescription,
+      importance: Importance.defaultImportance,
+    );
 
 /// Wires Firebase Cloud Messaging into the app: permission, token
 /// registration (via [DevicesApi]), foreground display (via
@@ -86,12 +102,16 @@ const _updatesChannel = AndroidNotificationChannel(
 /// [stop] on logout (which also unregisters the device server-side so a
 /// signed-out phone stops receiving that user's pushes).
 class PushNotificationsService {
-  PushNotificationsService(this._devices, this._store);
+  PushNotificationsService(this._devices, this._store, this._platformStrings);
 
   static const _tag = 'PushNotificationsService';
 
   final DevicesApi _devices;
   final NotificationsStore _store;
+
+  /// Resolves notification copy for the OS-facing surfaces below, which run
+  /// with no `BuildContext` and would otherwise be pinned to English.
+  final PlatformStrings _platformStrings;
   final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
 
@@ -291,8 +311,9 @@ class PushNotificationsService {
     // NOTE: Android only shows the dialog ONCE; if the user previously denied
     // it, this returns false silently and they must enable it in Settings.
     await android?.requestNotificationsPermission();
-    await android?.createNotificationChannel(_approvalsChannel);
-    await android?.createNotificationChannel(_updatesChannel);
+    final tr = _platformStrings.strings;
+    await android?.createNotificationChannel(_approvalsChannel(tr));
+    await android?.createNotificationChannel(_updatesChannel(tr));
   }
 
   /// Foreground messages aren't auto-displayed by FCM on Android, so mirror
@@ -314,7 +335,8 @@ class PushNotificationsService {
     // Keep it in the in-app inbox so the user can review it later.
     _store.add(appNotificationFrom(message));
     final isApproval = message.data['type'] == 'approval_required';
-    final channel = isApproval ? _approvalsChannel : _updatesChannel;
+    final tr = _platformStrings.strings;
+    final channel = isApproval ? _approvalsChannel(tr) : _updatesChannel(tr);
     _local.show(
       notification.hashCode,
       notification.title,

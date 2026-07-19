@@ -1,7 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/error/app_failure.dart';
 import '../../../core/logging/app_logger.dart';
+import '../../../core/network/api_error_mapper.dart';
 import '../data/auth_api.dart';
 import '../data/auth_models.dart';
 import '../data/social_auth_service.dart';
@@ -295,11 +297,26 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
     try {
       final s = await _api.login(email: state.email, password: password);
       await _auth.adoptSession(s);
-    } catch (_) {
+    } catch (e) {
+      // The password IS set by now — `complete` already succeeded — so the
+      // success notice is true, and a failed AUTO-login is the expected
+      // case: the password login endpoint matches by username, not email.
+      //
+      // But `catch (_)` couldn't tell that apart from the connection dying
+      // between the two calls, or `login` itself returning a 5xx. In those,
+      // "Password set — sign in" is technically true and practically
+      // useless: it sends the user into a sign-in the app already knows
+      // will fail, with no hint why. Show the notice AND the reason.
+      final failure = ApiErrorMapper.toFailure(e);
+      final isTransport = failure is NetworkFailure ||
+          failure is TimeoutFailure ||
+          failure is ServerFailure;
       emit(state.copyWith(
         step: AuthFlowStep.signInPassword,
         loading: false,
         noticeKey: 'auth_password_set',
+        failure: isTransport ? e : null,
+        clearFailure: !isTransport,
       ));
     }
   }

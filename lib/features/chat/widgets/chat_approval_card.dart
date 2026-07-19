@@ -8,6 +8,7 @@ import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Approval card shown inside the chat "Pending approvals" sheet.
 /// Neutral surface + 4 px amber start-side stripe + Reject / Approve actions.
@@ -41,7 +42,7 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.bubbleR,
         border: Border.all(color: s.cardBorder),
       ),
       child: Stack(

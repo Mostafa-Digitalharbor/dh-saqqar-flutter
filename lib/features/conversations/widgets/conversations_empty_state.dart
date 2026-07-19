@@ -6,6 +6,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../shared/animations/floating_bob.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Friendly empty state for the Conversations list — vivid Saqqar mark,
 /// inviting headline, supporting copy, and a primary "Start a conversation"
@@ -140,7 +141,7 @@ class _BreathingGlowState extends State<_BreathingGlow>
               : Curves.easeInOut.transform(_controller.value);
           return DecoratedBox(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppRadius.inputR,
               boxShadow: [
                 BoxShadow(
                   color: widget.color.withValues(alpha: 0.18 + 0.22 * t),

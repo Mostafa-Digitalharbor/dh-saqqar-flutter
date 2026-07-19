@@ -13,6 +13,7 @@ import '../data/billing_visibility.dart';
 import '../data/plan_tier_models.dart';
 import '../data/plans_api.dart';
 import '../view_model/plan_cubit.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Pricing screen (Gap L) — renders the live tiers from `GET /api/v1/plans/`
 /// and marks the caller's current tier. Self-serve payments aren't built yet
@@ -153,7 +154,7 @@ class _PlanTierCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: s.brandCyan.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: AppRadius.pillR,
                     border:
                         Border.all(color: s.brandCyan.withValues(alpha: 0.35)),
                   ),
@@ -182,12 +183,12 @@ class _PlanTierCard extends StatelessWidget {
           const SizedBox(height: 14),
           _CapRow(
             label: tr.pricingDailyCap,
-            value: '${compactCount(tier.dailyBurstTokens)} ${tr.pricingStUnit}',
+            value: '${compactCount(tier.dailyBurstTokens, tr)} ${tr.pricingStUnit}',
           ),
           const SizedBox(height: 6),
           _CapRow(
             label: tr.pricingMonthlyCap,
-            value: '${compactCount(tier.monthlyTokens)} ${tr.pricingStUnit}',
+            value: '${compactCount(tier.monthlyTokens, tr)} ${tr.pricingStUnit}',
           ),
           const SizedBox(height: 6),
           _CapRow(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
@@ -32,35 +33,35 @@ _ArtifactStyle _styleFor(String name, String kindRaw) {
       : kindRaw.toLowerCase();
   if (['xlsx', 'xls', 'xlsm'].contains(ext)) {
     return const _ArtifactStyle(
-      label: 'XLSX',
+      label: UiStrings.formatXlsx,
       icon: AppIcons.table,
       accent: AppColors.success,
     );
   }
   if (ext == 'pdf') {
     return const _ArtifactStyle(
-      label: 'PDF',
+      label: UiStrings.formatPdf,
       icon: AppIcons.fileText,
       accent: AppColors.danger,
     );
   }
   if (['docx', 'doc'].contains(ext)) {
     return const _ArtifactStyle(
-      label: 'DOCX',
+      label: UiStrings.formatDocx,
       icon: AppIcons.fileText,
       accent: AppColors.brandCyan,
     );
   }
   if (['csv', 'tsv'].contains(ext)) {
     return const _ArtifactStyle(
-      label: 'CSV',
+      label: UiStrings.formatCsv,
       icon: AppIcons.table,
       accent: AppColors.warning,
     );
   }
   if (ext == 'json') {
     return const _ArtifactStyle(
-      label: 'JSON',
+      label: UiStrings.formatJson,
       icon: AppIcons.code,
       accent: AppColors.brandPurple,
     );
@@ -91,7 +92,7 @@ _ArtifactStyle _styleFor(String name, String kindRaw) {
   }
   // Fallback — first 5 chars of the extension uppercased, neutral colour.
   final fallback = ext.isEmpty
-      ? (kindRaw.isEmpty ? 'FILE' : kindRaw)
+      ? (kindRaw.isEmpty ? UiStrings.formatUnknown : kindRaw)
       : ext;
   return _ArtifactStyle(
     label: fallback.length > 5

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Compact card used inside the chat Action Center sheet. Distinct from the
 /// shared [ActionCard] used on the Inbox screen — this one is denser, single
@@ -29,7 +30,7 @@ class ChatActionCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: s.surface2,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.inputR,
         border: Border.all(color: s.cardBorder),
       ),
       child: Row(

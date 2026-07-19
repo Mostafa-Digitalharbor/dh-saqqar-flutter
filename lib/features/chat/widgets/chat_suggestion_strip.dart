@@ -5,6 +5,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/chip_strip.dart';
 import '../../../shared/widgets/responsive_content.dart';
 
 /// Horizontal strip of quick-action suggestion chips shown directly above
@@ -47,24 +48,20 @@ class ChatSuggestionStrip extends StatelessWidget {
       child: ResponsiveContent(
         maxWidth: 980,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-        child: SizedBox(
-          height: 34,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              for (final p in prompts) ...[
-                _SuggestionChip(
-                  label: p,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onSelect(p);
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
-            ],
-          ),
+        // Sizes to the chips rather than pinning `height: 34`, which clipped
+        // Arabic descenders at large text scales with no overflow warning.
+        child: ChipStrip(
+          physics: const BouncingScrollPhysics(),
+          children: [
+            for (final p in prompts)
+              _SuggestionChip(
+                label: p,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onSelect(p);
+                },
+              ),
+          ],
         ),
       ),
     );

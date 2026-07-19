@@ -7,6 +7,7 @@ import '../core/routing/route_names.dart';
 import '../core/theme/app_icons.dart';
 import '../shared/extensions/context_extensions.dart';
 import '../shared/widgets/confirm_dialog.dart';
+import '../core/theme/app_radius.dart';
 
 /// 3-tab bottom shell — Chats / Vault / Account. Inbox + Files were folded
 /// into the chat's own ⋯ menu (approvals and artifacts now live per-chat).
@@ -167,10 +168,10 @@ class _NavTab extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadius.bubbleR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.bubbleR,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
@@ -179,7 +180,7 @@ class _NavTab extends StatelessWidget {
             color: selected
                 ? s.brandCyan.withValues(alpha: context.isDark ? 0.14 : 0.10)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.bubbleR,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

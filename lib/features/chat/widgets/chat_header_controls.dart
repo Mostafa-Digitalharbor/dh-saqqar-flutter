@@ -417,7 +417,7 @@ class _MultiEnvPill extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: s.brandCyan.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: AppRadius.pillR,
                   ),
                   child: Text(
                     '+$extraCount',

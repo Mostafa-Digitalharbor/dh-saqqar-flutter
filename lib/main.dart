@@ -14,6 +14,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/foundation.dart';
 
 import 'app.dart';
+import 'core/i18n/platform_strings.dart';
 import 'core/i18n/remote_i18n_api.dart';
 import 'core/logging/app_bloc_observer.dart';
 import 'core/logging/app_logger.dart';
@@ -254,6 +255,11 @@ Future<void> _bootApp() async {
   final remoteI18nApi = RemoteI18nApi(dio);
   final devicesApi = DevicesApi(dio);
   final transcribeApi = TranscribeApi(dio);
+  // Resolves localized copy for the surfaces that render OUTSIDE the widget
+  // tree — Android's notification channels (shown in system Settings) and
+  // the Apple Watch face. Neither has a BuildContext, so neither can reach
+  // `context.tr`; without this they'd be hardcoded English.
+  final platformStrings = PlatformStrings(prefs);
   // Companion Apple Watch bridge — pushes the pending-approvals feed to a
   // paired watch, relays approve/deny taps back to this same
   // ApprovalsApi, and turns a watch-recorded voice note into a normal
@@ -264,6 +270,7 @@ Future<void> _bootApp() async {
     transcribeApi: transcribeApi,
     conversationsApi: conversationsApi,
     projectsApi: projectsApi,
+    platformStrings: platformStrings,
   );
   // In-app inbox of received notifications (persisted); the header bell reads
   // it, the push service + background isolate write to it.
@@ -271,7 +278,8 @@ Future<void> _bootApp() async {
   // FCM push: registers the device token, displays foreground messages,
   // records them to the inbox, and routes notification taps. Started/stopped
   // by the auth listener in app.dart.
-  final pushService = PushNotificationsService(devicesApi, notificationsStore);
+  final pushService =
+      PushNotificationsService(devicesApi, notificationsStore, platformStrings);
   final liveEnvAckService = LiveEnvAckService(prefs);
   // In-memory hand-off between Android's ACTION_SEND intent-filter and
   // the chat screen. Lives at boot scope so files survive the

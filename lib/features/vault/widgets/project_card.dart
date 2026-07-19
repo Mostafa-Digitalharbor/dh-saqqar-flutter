@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../data/project_models.dart';
 
@@ -239,7 +240,7 @@ class _EnvironmentRow extends StatelessWidget {
                         textDirection: TextDirection.ltr,
                         style: context.text.bodySmall?.copyWith(
                           color: s.muted,
-                          fontFamily: 'JetBrainsMono',
+                          fontFamily: AppTypography.fontMono,
                           fontSize: 12,
                         ),
                       ),

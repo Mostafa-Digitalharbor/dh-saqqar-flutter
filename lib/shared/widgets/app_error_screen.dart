@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/i18n/app_localizations.dart';
 import '../../core/i18n/app_strings.dart';
+import '../../core/constants/ui_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 
@@ -143,7 +144,7 @@ class AppErrorScreen extends StatelessWidget {
                           details.exceptionAsString(),
                           style: const TextStyle(
                             color: muted,
-                            fontFamily: 'monospace',
+                            fontFamily: UiStrings.monospaceFontFamily,
                             fontSize: 12,
                             height: 1.4,
                           ),

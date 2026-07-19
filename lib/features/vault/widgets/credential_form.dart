@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
@@ -363,7 +364,7 @@ class _CredentialFormState extends State<CredentialForm> {
       hint = context.tr.notSavedYet;
     } else {
       hint = context.tr.lastVerifiedAt(
-        context.tr.relativeTime(saved.lastVerifiedAt!),
+        AppDateFormat.relative(context, saved.lastVerifiedAt!),
       );
     }
 

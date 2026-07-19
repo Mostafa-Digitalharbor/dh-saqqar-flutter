@@ -214,6 +214,22 @@ class ConversationSummary {
   final String? projectName;
   final String? environmentName;
 
+  /// A conversation counts as "live" — green status ring on the card, and
+  /// the `live` triage filter on the Chats screen — when it was last active
+  /// within this window.
+  ///
+  /// Representative signal: the summary API carries no per-conversation
+  /// live flag yet, so recency stands in for one.
+  ///
+  /// Lives on the model because the card and the screen each declared their
+  /// own copy (`_kLiveWindow` and `kLiveWindow`) of the same two hours. The
+  /// card's was deliberately private to keep it decoupled from the screen
+  /// file — right instinct, wrong owner: the concept belongs to the data,
+  /// so both can depend on it without depending on each other.
+  static const liveWindow = Duration(hours: 2);
+
+  bool get isLive => DateTime.now().difference(updatedAt) <= liveWindow;
+
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     return ConversationSummary(
       // Null-safe id — one malformed row must not throw and fail the WHOLE

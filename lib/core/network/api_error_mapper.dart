@@ -46,13 +46,30 @@ class ApiErrorMapper {
     if (error is DioException) {
       final inner = error.error;
       if (inner is ApiException) return _fromApiException(inner);
+      // A model's `fromJson` that throws while Dio is still on the stack
+      // arrives wrapped — unwrap before falling back to transport
+      // classification, or a schema change reads as a network error.
+      if (_isParseError(inner)) return ParseFailure(detail: inner.toString());
       // Connection-level failures (no response, DNS, handshake) never
       // pass through the ErrorInterceptor wrap — classify from Dio's
       // own type so the user still sees the right network message.
       return _fromDioType(error);
     }
+    // The response arrived fine and then didn't match our models: a field
+    // changed type, a required key vanished, `attachments: []` became `{}`.
+    // Without this these land in UnknownFailure → "Something went wrong",
+    // the vaguest message we have, for the one failure with a specific and
+    // actionable cause.
+    if (_isParseError(error)) return ParseFailure(detail: error.toString());
     return const UnknownFailure();
   }
+
+  /// Errors that mean "the body wasn't the shape we expect".
+  ///
+  /// `as`-cast failures surface as [TypeError] and are what a schema change
+  /// actually throws; [FormatException] covers malformed JSON and the
+  /// `int.parse`/`DateTime.parse` family.
+  static bool _isParseError(Object? e) => e is TypeError || e is FormatException;
 
   static AppFailure _fromDioType(DioException e) {
     return switch (e.type) {
@@ -76,10 +93,12 @@ class ApiErrorMapper {
   static AppFailure _fromStatus(int? code) {
     return switch (code) {
       401 => const UnauthorizedFailure(),
+      402 => const QuotaExceededFailure(),
       403 => const ForbiddenFailure(),
       404 => const NotFoundFailure(),
       409 => const ConflictFailure(),
       413 => const PayloadTooLargeFailure(),
+      415 => const UnsupportedMediaFailure(),
       400 || 422 => const ValidationFailure(),
       429 => const RateLimitFailure(),
       final c when c != null && c >= 500 => ServerFailure(statusCode: c),
@@ -90,6 +109,16 @@ class ApiErrorMapper {
   static AppFailure _fromApiException(ApiException e) {
     // Order matters — most specific first.
     if (e.statusCode == 413) return const PayloadTooLargeFailure();
+    if (e.statusCode == 402) {
+      return QuotaExceededFailure(
+        serverMessage: e.message.isNotEmpty ? e.message : null,
+      );
+    }
+    if (e.statusCode == 415) {
+      return UnsupportedMediaFailure(
+        serverMessage: e.message.isNotEmpty ? e.message : null,
+      );
+    }
     if (e.isUnauthorized) return const UnauthorizedFailure();
     if (e.isForbidden) return const ForbiddenFailure();
     if (e.isNotFound) return const NotFoundFailure();
@@ -158,6 +187,29 @@ class ApiErrorMapper {
     return '$actionContext · $base';
   }
 
+  /// Inline error for one form field, screened and localized.
+  ///
+  /// Use this instead of `failure.firstError('email')` at render time.
+  /// `fieldErrors` is populated from arbitrary body keys by
+  /// `ErrorInterceptor`, so unlike `AppFailure.message` it never passed
+  /// through [AppStrings.presentableServerMessage] — meaning a DRF
+  /// `IntegrityError: duplicate key value violates unique constraint
+  /// "auth_user_email_key"` rendered verbatim, in English, under an Arabic
+  /// text field.
+  ///
+  /// Returns null when there is no error on [field], or when what the
+  /// server sent is unfit to show. Callers should treat null as "no inline
+  /// error" and fall back to their own copy if the field is known bad —
+  /// silence beats a traceback.
+  static String? fieldMessage(
+    BuildContext context,
+    AppFailure? failure,
+    String field,
+  ) {
+    if (failure is! ValidationFailure) return null;
+    return context.tr.presentableServerMessage(failure.firstError(field));
+  }
+
   /// Same as [message] but takes an [AppStrings] directly — useful from
   /// surfaces without a `BuildContext` (e.g. tests, background services).
   static String messageForLocale(
@@ -173,9 +225,16 @@ class ApiErrorMapper {
 
   static String _baseMessage(AppStrings tr, AppFailure failure) {
     // Server-supplied messages are developer-facing English. Route them
-    // through [localizeServerMessage] so an Arabic UI shows a localized
-    // line for the common cases (auth, missing fields, bad request, …)
-    // instead of leaking English. Unknown messages pass through verbatim.
+    // through [AppStrings.presentableServerMessage], which localizes the
+    // common cases (auth, missing fields, bad request, …) for Arabic AND
+    // screens out text no user should ever read — tracebacks, driver
+    // exceptions, SQL constraint names.
+    //
+    // It returns null for both "the server said nothing" and "what it said
+    // is unfit to show", which collapses two guards into one and lets each
+    // arm keep the fallback that actually fits it: a 409 says "refresh and
+    // try again", a 5xx says "server problem". A single shared fallback
+    // would tell the user the wrong thing half the time.
     return switch (failure) {
       NetworkFailure() => tr.errorNetwork,
       TimeoutFailure() => tr.errorTimeout,
@@ -184,16 +243,26 @@ class ApiErrorMapper {
       ForbiddenFailure() => tr.errorForbidden,
       NotFoundFailure() => tr.errorNotFound,
       ValidationFailure(message: final m) =>
-        (m != null && m.isNotEmpty) ? tr.localizeServerMessage(m) : tr.errorValidation,
+        tr.presentableServerMessage(m) ?? tr.errorValidation,
       ConflictFailure(serverMessage: final m) =>
-        (m != null && m.isNotEmpty) ? tr.localizeServerMessage(m) : tr.errorConflict,
+        tr.presentableServerMessage(m) ?? tr.errorConflict,
       RateLimitFailure(retryAfterSeconds: final s) =>
         s != null && s > 0 ? tr.errorRateLimitedWithRetry(s) : tr.errorRateLimited,
       PayloadTooLargeFailure() => tr.errorPayloadTooLarge,
+      // Both prefer the server's wording — it's the only source that can
+      // name the actual cap, reset time or accepted formats.
+      QuotaExceededFailure(serverMessage: final m) =>
+        tr.presentableServerMessage(m) ?? tr.errorQuotaExceeded,
+      UnsupportedMediaFailure(serverMessage: final m) =>
+        tr.presentableServerMessage(m) ?? tr.errorUnsupportedMedia,
+      // Deliberately NOT `errorServer`: the server is up and answering, so
+      // "try again later" would be a lie the user follows into an infinite
+      // retry. `detail` stays out of the UI — it's a Dart type error.
+      ParseFailure() => tr.errorUnexpectedResponse,
       ServerFailure(serverMessage: final m) =>
-        (m != null && m.isNotEmpty) ? tr.localizeServerMessage(m) : tr.errorServer,
+        tr.presentableServerMessage(m) ?? tr.errorServer,
       UnknownFailure(serverMessage: final m) =>
-        (m != null && m.isNotEmpty) ? tr.localizeServerMessage(m) : tr.errorUnknown,
+        tr.presentableServerMessage(m) ?? tr.errorUnknown,
     };
   }
 }

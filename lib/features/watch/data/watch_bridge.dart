@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+import '../../../core/i18n/platform_strings.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../chat/data/transcribe_api.dart';
 import '../../conversations/data/conversation_models.dart';
@@ -26,9 +27,11 @@ class WatchBridge {
     required TranscribeApi transcribeApi,
     required ConversationsApi conversationsApi,
     required ProjectsApi projectsApi,
+    required PlatformStrings platformStrings,
   })  : _transcribeApi = transcribeApi,
         _conversationsApi = conversationsApi,
-        _projectsApi = projectsApi {
+        _projectsApi = projectsApi,
+        _platformStrings = platformStrings {
     if (Platform.isIOS) {
       _channel.setMethodCallHandler(_handleCall);
     }
@@ -58,6 +61,11 @@ class WatchBridge {
   final TranscribeApi _transcribeApi;
   final ConversationsApi _conversationsApi;
   final ProjectsApi _projectsApi;
+
+  /// The watch draws whatever strings we hand back, and there's no
+  /// `BuildContext` on this side of the `MethodChannel` — so error copy
+  /// resolves through here rather than being hardcoded English.
+  final PlatformStrings _platformStrings;
 
   /// Pushes the current pending-approvals snapshot to the watch via
   /// `WCSession.updateApplicationContext` (native side). Best-effort and
@@ -150,7 +158,7 @@ class WatchBridge {
       AppLogger.info(_tag, 'voiceCommand(conversationId=$conversationId) from watch');
       final transcript = await _transcribeApi.transcribe(audio: file);
       if (transcript.isEmpty) {
-        return {'error': 'Didn\'t catch that — try again.'};
+        return {'error': _platformStrings.strings.watchErrorNoSpeech};
       }
       String id;
       if (conversationId != null) {
@@ -190,7 +198,7 @@ class WatchBridge {
       };
     } catch (e, st) {
       AppLogger.warn(_tag, 'voiceCommand failed', error: e, stackTrace: st);
-      return {'error': 'Couldn\'t reach Saqqar. Try again.'};
+      return {'error': _platformStrings.strings.watchErrorUnreachable};
     } finally {
       unawaited(file.delete().catchError((_) => file));
     }
@@ -308,7 +316,7 @@ class WatchBridge {
       };
     } catch (e, st) {
       AppLogger.warn(_tag, 'listProjects failed', error: e, stackTrace: st);
-      return {'error': 'Couldn\'t load projects.'};
+      return {'error': _platformStrings.strings.watchErrorProjectsLoad};
     }
   }
 
@@ -327,7 +335,7 @@ class WatchBridge {
       };
     } catch (e, st) {
       AppLogger.warn(_tag, 'useDefaultProject failed', error: e, stackTrace: st);
-      return {'error': 'Couldn\'t set up a database.'};
+      return {'error': _platformStrings.strings.watchErrorProjectSetup};
     }
   }
 

@@ -13,6 +13,7 @@ import '../extensions/context_extensions.dart';
 import 'offline_banner.dart';
 import 'saqqar_logo.dart';
 import 'saqqar_screen.dart';
+import '../../core/theme/app_radius.dart';
 
 /// Lightweight single-row chrome for every root tab:
 ///
@@ -286,7 +287,7 @@ class _NotificationsBell extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: s.danger,
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: AppRadius.pillR,
                       border: Border.all(color: s.surface, width: 1.5),
                     ),
                     child: Text(

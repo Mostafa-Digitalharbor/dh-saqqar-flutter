@@ -107,7 +107,9 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
       if (!mounted) return;
       final failure = ApiErrorMapper.toFailure(e);
       if (failure is ValidationFailure) {
-        final fErr = failure.firstError('first_name');
+        // Screened + localized; see `ApiErrorMapper.fieldMessage`.
+        final fErr =
+            ApiErrorMapper.fieldMessage(context, failure, 'first_name');
         if (fErr != null) {
           setState(() => _firstError = fErr);
           return;

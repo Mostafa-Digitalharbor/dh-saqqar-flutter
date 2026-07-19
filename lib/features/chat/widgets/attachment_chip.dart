@@ -7,6 +7,7 @@ import '../../../core/theme/saqqar_theme_extension.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Attachment row used both inside chat bubbles and in the composer preview
 /// tray.
@@ -227,7 +228,7 @@ class _ImageAttachment extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: s.brandCyan.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: AppRadius.pillR,
                       border: Border.all(
                         color: s.brandCyan.withValues(alpha: 0.26),
                       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/skeleton_block.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Placeholder shimmer matching the silhouette of a [MessageBubble] row:
 /// avatar slot + bubble plate with two text lines. Renders on the assistant
@@ -34,7 +35,7 @@ class MessageBubbleSkeleton extends StatelessWidget {
         color: isUser
             ? s.brandCyan.withValues(alpha: 0.08)
             : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.modalR,
         border: Border.all(
           color: isUser ? s.brandCyan.withValues(alpha: 0.18) : s.border,
         ),

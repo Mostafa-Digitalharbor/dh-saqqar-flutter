@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
@@ -91,6 +94,24 @@ class _DevicesScreenState extends State<DevicesScreen> {
                       strokeWidth: 2.4, color: s.muted),
                 );
               }
+              // Errors MUST be caught before the empty check. `snap.data` is
+              // null on failure, so falling straight through to `?? []` would
+              // render the "No devices yet" empty state — telling the user, as
+              // a statement of fact, that they have no registered devices when
+              // the truth is we couldn't ask. A false success is worse than an
+              // error: it's confidently wrong, and it hides the retry.
+              if (snap.hasError) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    const SizedBox(height: 80),
+                    AppErrorState(
+                      message: ApiErrorMapper.message(context, snap.error),
+                      onRetry: _reload,
+                    ),
+                  ],
+                );
+              }
               final devices = snap.data ?? const <DeviceRow>[];
               if (devices.isEmpty) {
                 return ListView(
@@ -162,10 +183,12 @@ class _DeviceRowTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${isIos ? 'iOS' : 'Android'}'
+                  '${isIos ? UiStrings.platformIos : UiStrings.platformAndroid}'
                   '${device.appVersion != null ? ' · v${device.appVersion}' : ''}',
                   style: context.text.titleSmall
                       ?.copyWith(fontWeight: FontWeight.w700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(

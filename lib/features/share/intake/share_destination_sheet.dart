@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/network/api_error_mapper.dart';
+import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/app_error_state.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../../conversations/view_model/conversations_cubit.dart';
 import '../../conversations/view_model/conversations_state.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Result returned by [ShareDestinationSheet.show]. Drives the bootstrap's
 /// post-pick navigation:
@@ -180,6 +184,24 @@ class _ShareDestinationOverlayContentState
                         ),
                       );
                     }
+                    // A FAILED load must not render "no conversations".
+                    // That states as fact something we never found out,
+                    // and it hides the retry — the user assumes an empty
+                    // account and gives up on sharing.
+                    final failure = state.data;
+                    if (failure is DataFailure<ConversationsData>) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: AppErrorState(
+                          message: ApiErrorMapper.message(
+                            context,
+                            failure.error ?? failure.message,
+                          ),
+                          onRetry: () =>
+                              context.read<ConversationsCubit>().load(),
+                        ),
+                      );
+                    }
                     return _EmptyHint(text: tr.shareNoConversations);
                   }
                   final active = data.conversations
@@ -224,14 +246,14 @@ class _NewChatRow extends StatelessWidget {
     final s = context.saqqar;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadius.inputR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.inputR,
         child: Container(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.inputR,
             border: Border.all(color: s.brandCyan.withValues(alpha: 0.45)),
             color: s.brandCyan.withValues(alpha: 0.08),
           ),

@@ -170,21 +170,23 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   /// reflect the new value in our snapshot optimistically. Same shape
   /// the web uses, so flipping the switch on either device shows up on
   /// the other after the next poll.
-  Future<void> setAutoApprove(bool value) =>
+  /// Returns false when the server refused and the toggle was rolled back,
+  /// so the view can explain why the switch snapped back.
+  Future<bool> setAutoApprove(bool value) =>
       _patchConversationFlag(autoApprove: value);
 
   /// PATCH the per-conversation `deep_think` flag. Servers that don't
   /// surface the field yet silently ignore the key — the next poll
   /// just returns the previous value and the local UI flips back.
-  Future<void> setDeepThink(bool value) =>
+  Future<bool> setDeepThink(bool value) =>
       _patchConversationFlag(deepThink: value);
 
-  Future<void> _patchConversationFlag({
+  Future<bool> _patchConversationFlag({
     bool? autoApprove,
     bool? deepThink,
   }) async {
     final current = state.data.dataOrNull;
-    if (current == null) return;
+    if (current == null) return false;
     // Optimistic: paint the new value in the snapshot before the
     // server round-trip lands so the toggle responds instantly.
     // Also stash `deep_think` into context so a backend that still
@@ -226,6 +228,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       // the server normalising auto_approve when the env is read_only)
       // wins over the optimistic value.
       await _pollOnce();
+      return true;
     } catch (e, st) {
       AppLogger.warn(
         _tag,
@@ -242,6 +245,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
           failure: ApiErrorMapper.toFailure(e),
         ),
       ));
+      return false;
     }
   }
 
@@ -412,7 +416,17 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       _repo.cacheSnapshot(conversationId, snapshot);
     } catch (e, st) {
       AppLogger.warn(_tag, 'loadOlder failed', error: e, stackTrace: st);
-      emit(state.copyWith(isLoadingOlder: false));
+      // Records the failure as well as clearing the spinner. Clearing it
+      // alone left the user tapping "Load earlier", watching the spinner
+      // stop, and seeing no new messages and no reason — indistinguishable
+      // from "you've reached the beginning".
+      emit(state.copyWith(
+        isLoadingOlder: false,
+        actionFailure: ChatActionFailure(
+          action: ChatAction.load,
+          failure: ApiErrorMapper.toFailure(e),
+        ),
+      ));
     }
   }
 
@@ -720,11 +734,26 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
     }
   }
 
-  Future<void> revokeShare() async {
+  /// Revokes the public share link. Returns false when the server refused.
+  ///
+  /// This one MUST surface. Swallowing it told the user their link was dead
+  /// while it stayed live and publicly readable — a silent failure with a
+  /// privacy consequence, and the only way to notice was to open the link
+  /// again in a browser.
+  Future<bool> revokeShare() async {
     try {
       await _repo.revokeShare(conversationId);
+      emit(state.copyWith(clearShareUrl: true));
+      return true;
     } catch (e, st) {
       AppLogger.warn(_tag, 'revokeShare failed', error: e, stackTrace: st);
+      emit(state.copyWith(
+        actionFailure: ChatActionFailure(
+          action: ChatAction.revokeShare,
+          failure: ApiErrorMapper.toFailure(e),
+        ),
+      ));
+      return false;
     }
   }
 

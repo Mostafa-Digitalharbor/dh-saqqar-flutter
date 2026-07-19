@@ -4,6 +4,7 @@ import '../../../shared/animations/scanline_overlay.dart';
 import '../../../shared/animations/typing_dots.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import 'chat_avatar.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// The "Saqqar is typing…" row — assistant avatar (only on the first row of
 /// a group) + a neutral bubble containing three pulsing [TypingDots]. When
@@ -39,12 +40,12 @@ class ChatTypingRow extends StatelessWidget {
 
     final bubble = ScanlineOverlay(
       color: s.brandCyan,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: AppRadius.modalR,
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 12, 18, 12),
         decoration: BoxDecoration(
           color: s.surface2,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppRadius.modalR,
           border: Border.all(color: s.brandCyan.withValues(alpha: 0.28)),
         ),
         child: Row(

@@ -5,6 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
 
@@ -94,15 +95,15 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: s.brandCyan.withValues(alpha: 0.14),
-                        borderRadius: AppRadius.buttonR,
-                      ),
-                      child: Icon(AppIcons.edit, color: s.brandCyan, size: 16),
+                    ColoredIconBox(
+                      icon: AppIcons.edit,
+                      color: s.brandCyan,
+                      size: 32,
+                      radius: AppRadius.button,
+                      iconSize: 16,
+                      backgroundAlpha: 0.14,
+                      // This one has no hairline — that's what null means.
+                      borderAlpha: null,
                     ),
                     const SizedBox(width: 10),
                     Expanded(

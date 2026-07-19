@@ -10,14 +10,28 @@ import 'app_localizations.dart';
 /// language without each caller threading the locale through.
 ///
 /// Three formatters:
-///   * [time] — "11:42 AM" (en) / "١١:٤٢ ص" (ar)
-///   * [date] — "May 18, 2026" (en) / "١٨ مايو ٢٠٢٦" (ar)
+///   * [time] — "11:42 AM" (en) / "11:42 ص" (ar)
+///   * [date] — "May 18, 2026" (en) / "18 مايو 2026" (ar)
 ///   * [dateTime] — "May 18, 2026 · 11:42 AM"
 ///   * [relative] — "just now" / "5 m ago" / "yesterday" / "3 d ago"
 ///     in EN, with the matching AR phrasing.
 ///
 /// Use [relative] for chat / artifact / approval timestamps; [date] for
 /// formal headers; [time] inline where the date is implicit (today).
+///
+/// ## Digits
+///
+/// Arabic renders WESTERN digits (`18 مايو 2026`, not `١٨ مايو ٢٠٢٦`) — the
+/// month and meridiem localize, the numerals don't. That's CLDR's own
+/// default for `ar` and `ar_SA`: only `ar_EG` selects Arabic-Indic. It also
+/// matches the app-wide convention `compactCount` documents, and the Gulf
+/// market this ships to.
+///
+/// So don't "fix" it by forcing an Arabic-Indic numbering system — the whole
+/// app would have to move together, and the market doesn't want it. This
+/// paragraph exists because the doc here used to CLAIM Arabic-Indic output
+/// while the code always produced Western, which sent a reviewer hunting a
+/// bug that was never there.
 class AppDateFormat {
   AppDateFormat._();
 
@@ -52,16 +66,47 @@ class AppDateFormat {
     return '${date(context, when)} $connector ${time(context, when)}';
   }
 
+  /// Calendar-day header for a grouped list — "Today" / "Yesterday" /
+  /// "May 18" within the current year / "May 18, 2025" outside it.
+  ///
+  /// Unlike [relative], this buckets by CALENDAR day rather than elapsed
+  /// time: a message sent at 23:50 reads "Yesterday" at 00:10, not "20 m
+  /// ago". That's what a date separator in a message list needs.
+  ///
+  /// Lives here so the skeletons stay locale-aware. The chat separator used
+  /// to build its own `DateFormat('MMM d', locale)` inline — the only
+  /// `DateFormat` constructed outside this file — which pinned an en-US
+  /// field order that reads wrong in Arabic.
+  static String dayLabel(BuildContext context, DateTime when) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final local = when.toLocal();
+    final stamp = DateTime(local.year, local.month, local.day);
+    final delta = today.difference(stamp).inDays;
+
+    if (delta == 0) return context.tr.dateToday;
+    if (delta == 1) return context.tr.dateYesterday;
+    final loc = _locale(context);
+    // Same-year dates drop the year — it's redundant and costs width on
+    // the 320 px tier where this pill is centred.
+    return stamp.year == today.year
+        ? DateFormat.MMMd(loc).format(stamp)
+        : DateFormat.yMMMd(loc).format(stamp);
+  }
+
   /// Human relative-time. Buckets:
   ///   * <60 s → "just now" / "الآن"
-  ///   * <60 m → "5 m ago" / "منذ ٥ د"
-  ///   * <24 h → "3 h ago" / "منذ ٣ س"
+  ///   * <60 m → "5 m ago" / "منذ 5 د"
+  ///   * <24 h → "3 h ago" / "منذ 3 س"
   ///   * <48 h → "yesterday" / "أمس"
-  ///   * <7 d  → "3 d ago" / "منذ ٣ أيام"
+  ///   * <7 d  → "3 d ago" / "منذ 3 أيام"
   ///   * else  → falls back to [date] (absolute).
   ///
-  /// All numeric values are rendered through `NumberFormat` so AR locales
-  /// see Arabic-Indic digits (١٢٣) rather than Western (123).
+  /// Counts go through `NumberFormat` rather than raw interpolation so the
+  /// numbering system follows the locale rather than being hardcoded. For
+  /// `ar` that resolves to Western digits (see the class doc) — the point is
+  /// that the DECISION lives in CLDR, so shipping `ar_EG` later would pick
+  /// up Arabic-Indic here for free instead of needing a code change.
   static String relative(BuildContext context, DateTime when) {
     final now = DateTime.now();
     final delta = now.difference(when.toLocal());

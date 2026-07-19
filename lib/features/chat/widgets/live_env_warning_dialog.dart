@@ -4,8 +4,10 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/app_dialog_shell.dart';
 
 /// One-shot confirmation that fires the first time the user sends a message
 /// to a `is_live: true` environment in a conversation. Wording matches the
@@ -55,61 +57,33 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      // Both axes matter — `horizontal`-only leaves a 0 vertical inset, so
-      // the dialog may claim the full viewport height and the column below
-      // has nothing to push back against. This is the tallest dialog in the
-      // app (env name in a titleLarge + env AND project name in the body +
-      // a 48 px checkbox row), so it's the first to overflow in landscape.
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: s.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: s.cardBorder),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  height: 3,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [s.danger, s.danger.withValues(alpha: 0.7)],
-                    ),
-                  ),
-                ),
-                // Scrolls instead of overflowing once the inset-bounded
-                // height can't hold the content — see `ConfirmDialog` for
-                // the same guard. `Flexible` keeps the danger hairline
-                // pinned while only the content scrolls.
-                Flexible(
-                  child: SingleChildScrollView(
+    // This is the tallest dialog in the app (env name in a titleLarge +
+    // env AND project name in the body + a 48 px checkbox row), so it is
+    // the first to overflow in landscape — the shell's vertical inset and
+    // this scroll view are both load-bearing here.
+    return AppDialogShell(
+      accent: AppDialogShell.dangerAccent(context),
+      child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: s.danger.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: s.danger.withValues(alpha: 0.28),
-                            ),
-                          ),
-                          child: Icon(
-                            AppIcons.warning,
+                        // Align, not decoration — the Column is
+                        // `CrossAxisAlignment.stretch`, whose tight
+                        // full-width constraint overrides the box's own
+                        // `size: 46` and renders it as a wide bar. Same fix
+                        // and same reason as `ConfirmDialog`.
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: ColoredIconBox(
+                            icon: AppIcons.warning,
                             color: s.danger,
-                            size: 22,
+                            size: 46,
+                            radius: 14,
+                            iconSize: 22,
+                            backgroundAlpha: 0.14,
+                            borderAlpha: 0.28,
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -186,12 +160,6 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                           ],
                         ),
                       ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

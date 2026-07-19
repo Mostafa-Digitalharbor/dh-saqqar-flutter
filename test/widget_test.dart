@@ -6,6 +6,7 @@ import 'package:provider/provider.dart' show ChangeNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:saqqar_app/app.dart';
+import 'package:saqqar_app/core/i18n/platform_strings.dart';
 import 'package:saqqar_app/core/i18n/remote_i18n_api.dart';
 import 'package:saqqar_app/core/i18n/view_model/locale_cubit.dart';
 import 'package:saqqar_app/core/network/dio_client.dart';
@@ -156,7 +157,11 @@ Future<void> _pumpApp(WidgetTester tester) async {
   // user, and this harness boots with no token, so no platform channel is
   // touched.
   final notificationsStore = NotificationsStore(prefs);
-  final pushService = PushNotificationsService(devicesApi, notificationsStore);
+  final pushService = PushNotificationsService(
+    devicesApi,
+    notificationsStore,
+    PlatformStrings(prefs),
+  );
   final vaultRepository = VaultRepository(
     projectsApi: projectsApi,
     credentialsApi: credentialsApi,

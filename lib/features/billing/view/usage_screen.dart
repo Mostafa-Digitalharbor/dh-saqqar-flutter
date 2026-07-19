@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/network/api_error_mapper.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/app_error_state.dart';
 import '../../account/widgets/current_plan_card.dart';
 import '../../account/widgets/plan_usage_card.dart';
 import '../data/plan_models.dart';
@@ -24,6 +26,11 @@ class UsageScreen extends StatefulWidget {
 }
 
 class _UsageScreenState extends State<UsageScreen> {
+  /// The last fetch failure, kept ONLY to render an error state when there
+  /// is nothing else to show. Cleared on every new attempt.
+  Object? _failure;
+  bool _loading = true;
+
   @override
   void initState() {
     super.initState();
@@ -32,12 +39,30 @@ class _UsageScreenState extends State<UsageScreen> {
 
   Future<void> _fetchUsage() async {
     if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _failure = null;
+    });
     try {
       final usage = await context.read<UsageApi>().fetch();
-      if (mounted) context.read<PlanCubit>().update(usage);
-    } catch (_) {
-      // Leave whatever PlanCubit already holds (snapshot-derived, or the
-      // CurrentPlanCard /plans/ fallback).
+      if (!mounted) return;
+      context.read<PlanCubit>().update(usage);
+      setState(() => _loading = false);
+    } catch (e) {
+      // Deliberately RECORDED, not swallowed. This used to be `catch (_) {}`,
+      // which left PlanCubit null → the view fell back to CurrentPlanCard →
+      // whose own /plans/ call had failed in the same outage → which renders
+      // SizedBox.shrink(). Net effect: tapping "Usage" offline produced an
+      // app bar over a totally blank page. No spinner, no error, no hint that
+      // anything had failed — the worst surface in the app.
+      //
+      // Whatever PlanCubit already holds still wins (see `build`), so a
+      // failed REFRESH never blanks data the user can already see.
+      if (!mounted) return;
+      setState(() {
+        _failure = e;
+        _loading = false;
+      });
     }
   }
 
@@ -57,8 +82,37 @@ class _UsageScreenState extends State<UsageScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               BlocBuilder<PlanCubit, PlanSnapshot?>(
-                builder: (context, plan) =>
-                    plan == null ? const CurrentPlanCard() : const PlanUsageCard(),
+                builder: (context, plan) {
+                  // Real usage data wins outright — a failed refresh must
+                  // never replace numbers the user can already read.
+                  if (plan != null) return const PlanUsageCard();
+                  // Nothing to show AND the fetch failed: say so, and give
+                  // them a way out. `RefreshIndicator` alone isn't an
+                  // affordance — nothing on a blank page invites a pull.
+                  if (_failure != null) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 64),
+                      child: AppErrorState(
+                        message: ApiErrorMapper.message(context, _failure),
+                        onRetry: _fetchUsage,
+                      ),
+                    );
+                  }
+                  if (_loading) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 64),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: s.muted,
+                        ),
+                      ),
+                    );
+                  }
+                  // Fetch succeeded but carried no snapshot — fall back to
+                  // the public plan catalogue, as before.
+                  return const CurrentPlanCard();
+                },
               ),
             ],
           ),

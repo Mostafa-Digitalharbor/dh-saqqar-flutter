@@ -116,7 +116,10 @@ void main() {
     // `_t('key')` falls through to returning the raw `key` string when it
     // resolves nowhere — which leaks an identifier like `sign_in_subtitle`
     // into the UI instead of copy. Catch the typo here instead of on screen.
-    final referenced = RegExp(r"_t\(\s*'([A-Za-z][A-Za-z0-9_]*)'\s*\)")
+    // Both readers: `_t('key')` and `_f('key', {...})`. Missing `_f` here
+    // would leave every interpolated string unguarded — which is most of
+    // the copy that carries a user's own data.
+    final referenced = RegExp(r"_[tf]\(\s*'([A-Za-z][A-Za-z0-9_]*)'")
         .allMatches(source)
         .map((m) => m.group(1)!)
         .toSet();
@@ -128,6 +131,50 @@ void main() {
       reason: 'These keys are read via `_t(...)` but have no `_en` entry, '
           'so `_t` would render the raw key string to the user:\n'
           '${undefined.join('\n')}',
+    );
+  });
+
+  test('a translation keeps every placeholder its English source declares',
+      () {
+    // `_f` substitutes `{name}` slots. If `_ar` drops one, nothing throws —
+    // the sentence just renders without the user's value ("Resend in  s",
+    // "منذ  د"), which reads as a rendering glitch and is impossible to
+    // spot in a 3,000-line table by eye. An *extra* placeholder is worse:
+    // `_f` leaves unknown slots verbatim, so the user sees a literal
+    // `{count}` on screen.
+    String? valueOf(String body, String key) {
+      final m = RegExp("'$key'\\s*:\\s*(.+?)(?=\\n\\s*'[A-Za-z]|\\n\\s*\\}\$)",
+              dotAll: true)
+          .firstMatch(body);
+      return m?.group(1);
+    }
+
+    final enBody = mapBody('en');
+    final arBody = mapBody('ar');
+    final slots = RegExp(r'\{([A-Za-z][A-Za-z0-9_]*)\}');
+
+    final mismatches = <String>[];
+    for (final key in enKeys) {
+      final en = valueOf(enBody, key);
+      final ar = valueOf(arBody, key);
+      if (en == null || ar == null) continue;
+      final enSlots = slots.allMatches(en).map((m) => m.group(1)!).toSet();
+      final arSlots = slots.allMatches(ar).map((m) => m.group(1)!).toSet();
+      if (enSlots.length != arSlots.length ||
+          !enSlots.containsAll(arSlots)) {
+        mismatches.add(
+          '$key — en: ${enSlots.toList()..sort()}, '
+          'ar: ${arSlots.toList()..sort()}',
+        );
+      }
+    }
+
+    expect(
+      mismatches,
+      isEmpty,
+      reason: 'These Arabic templates declare a different placeholder set '
+          'than their English source, so a value goes missing (or a raw '
+          '{slot} renders) for Arabic users:\n${mismatches.join('\n')}',
     );
   });
 
