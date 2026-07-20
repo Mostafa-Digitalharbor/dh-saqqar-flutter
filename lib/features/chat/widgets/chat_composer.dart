@@ -56,8 +56,9 @@ class ChatComposer extends StatelessWidget {
   final FocusNode? focusNode;
 
   /// Currently staged attachments — empty when nothing is picked. Each
-  /// item renders as its own [AttachmentChip] in a wrap above the pill so
-  /// the user can stage and review several files before sending.
+  /// item renders as its own [AttachmentChip] in a single horizontally
+  /// scrolling row above the pill, so staging 20 files costs the same
+  /// vertical space as staging one.
   final List<DemoAttachment> attachments;
 
   /// Tapped on the paperclip icon. The chat screen opens the native
@@ -70,10 +71,9 @@ class ChatComposer extends StatelessWidget {
   final ValueChanged<int> onRemoveAttachment;
 
   /// Tapped on a staged attachment thumbnail (the chip itself, not the
-  /// remove badge). The screen wires this to open the local file —
-  /// fullscreen image dialog for pictures, `OpenFilex` system viewer
-  /// for everything else — so the user can verify they staged the right
-  /// file before sending.
+  /// remove badge). The screen wires this to Saqqar's in-app attachment
+  /// viewer so the user can verify they staged the right file before
+  /// sending, without being ejected into another app.
   final ValueChanged<int> onPreviewAttachment;
 
   final VoidCallback? onSend;
@@ -153,22 +153,37 @@ class ChatComposer extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // One horizontally-scrolling row, never a grid. A `Wrap` here
+              // reflowed into a new run every 4 thumbnails, so staging 10
+              // files grew the composer by three rows and pushed the
+              // conversation off screen. A fixed-height strip keeps the
+              // composer the same size for 1 attachment or 50, and the
+              // overflow becomes a horizontal scroll instead of vertical
+              // growth.
               if (attachments.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.start,
-                    children: [
-                      for (var i = 0; i < attachments.length; i++)
-                        _StagedAttachment(
-                          attachment: attachments[i],
-                          tooltip: context.tr.removeAttachment,
-                          onRemove: () => onRemoveAttachment(i),
-                          onPreview: () => onPreviewAttachment(i),
-                        ),
-                    ],
+                  child: SizedBox(
+                    // 72 chip + 10 top inset for the `×` that hangs off the
+                    // corner + 6 slack, so nothing clips against the viewport.
+                    height: 88,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      // End inset gives the last chip's `×` room to render
+                      // inside the viewport; directional so RTL flips it.
+                      padding: const EdgeInsetsDirectional.only(
+                        top: 10,
+                        end: 10,
+                      ),
+                      itemCount: attachments.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) => _StagedAttachment(
+                        attachment: attachments[i],
+                        tooltip: context.tr.removeAttachment,
+                        onRemove: () => onRemoveAttachment(i),
+                        onPreview: () => onPreviewAttachment(i),
+                      ),
+                    ),
                   ),
                 ),
               // Addon authoring hint (Gap M) — when an addon `.zip` is staged,

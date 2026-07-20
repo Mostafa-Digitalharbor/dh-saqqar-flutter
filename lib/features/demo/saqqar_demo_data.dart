@@ -134,6 +134,7 @@ class DemoAttachment {
     required this.kind,
     required this.size,
     this.imageUrl,
+    this.localPath,
     this.downloadUrl,
     this.serverId,
     this.source = AttachmentSource.userUpload,
@@ -148,6 +149,15 @@ class DemoAttachment {
   /// null for non-image kinds.
   final String? imageUrl;
 
+  /// On-disk path of a file that is already on this device — set for every
+  /// attachment staged in the composer, whatever its kind.
+  ///
+  /// [imageUrl] only ever points at pictures, so it can't be used to preview
+  /// a document. This is what lets a staged PDF render its own first page as
+  /// a thumbnail instead of falling back to a generic file glyph. Null for
+  /// attachments that live only on the server.
+  final String? localPath;
+
   /// Absolute URL of the underlying file on the server (PDF, DOCX, image,
   /// etc.). When non-null the attachment chip becomes tappable and the
   /// download flow opens the file with the OS's matching viewer.
@@ -159,7 +169,23 @@ class DemoAttachment {
 
   final AttachmentSource source;
 
+  /// Whether this attachment should render as a picture rather than a file
+  /// chip.
+  ///
+  /// Decided by the FILENAME first, deliberately. [kind] is a *display*
+  /// label — the composer fills it from `tr.fileKindImage`, which is
+  /// "Image" in English but "صورة" in Arabic — so matching English tokens
+  /// against it meant every image attached in Arabic failed the check and
+  /// fell back to the generic file glyph. The bug was invisible on an
+  /// English emulator and reproduced on every Arabic device.
   bool get isImage {
+    final dot = name.lastIndexOf('.');
+    if (dot != -1 && dot < name.length - 1) {
+      final ext = name.substring(dot + 1).toLowerCase();
+      if (_imageExtensions.contains(ext)) return true;
+    }
+    // Fallback for server-supplied rows: the API's `kind` is a machine
+    // token ('image'), never localized, and a name may lack an extension.
     final k = kind.toUpperCase();
     return k == 'IMAGE' ||
         k == 'PNG' ||
@@ -168,6 +194,10 @@ class DemoAttachment {
         k == 'GIF' ||
         k == 'WEBP';
   }
+
+  static const Set<String> _imageExtensions = {
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'heic', 'heif',
+  };
 
   bool get isAgentGenerated => source == AttachmentSource.generatedOutput;
 }

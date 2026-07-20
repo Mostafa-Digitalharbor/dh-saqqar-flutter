@@ -15,6 +15,7 @@ import '../../../shared/widgets/saqqar_logo.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../inbox/data/artifact_downloader.dart';
+import '../view/attachment_viewer_screen.dart';
 import 'artifact_pill.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
@@ -87,15 +88,10 @@ class _UserBubble extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ChatMarkdown(data: message.content, isUser: true),
-                for (final attachment in message.attachments) ...[
-                  const SizedBox(height: 8),
-                  AttachmentChip(
-                    attachment: attachment,
-                    onTap: attachment.downloadUrl == null
-                        ? null
-                        : () => _openAttachment(context, attachment),
-                  ),
-                ],
+                _MessageAttachments(
+                  attachments: message.attachments,
+                  spacing: 8,
+                ),
               ],
             ),
           ),
@@ -214,23 +210,10 @@ class _AgentMessage extends StatelessWidget {
           ],
           // Body — bubble-less, just raw markdown.
           ChatMarkdown(data: message.content, isUser: false),
-          for (final attachment in message.attachments) ...[
-            const SizedBox(height: 10),
-            if (attachment.isAgentGenerated)
-              ArtifactPill(
-                attachment: attachment,
-                onOpen: attachment.downloadUrl == null
-                    ? () {}
-                    : () => _openAttachment(context, attachment),
-              )
-            else
-              AttachmentChip(
-                attachment: attachment,
-                onTap: attachment.downloadUrl == null
-                    ? null
-                    : () => _openAttachment(context, attachment),
-              ),
-          ],
+          _MessageAttachments(
+            attachments: message.attachments,
+            spacing: 10,
+          ),
         ],
       ),
     );
@@ -286,7 +269,13 @@ Future<void> _shareMessage(
   // Skip on the share-plus return value — Android always reports
   // `ShareResultStatus.unavailable` once the sheet closes because the
   // system picker doesn't report a chosen target back to us.
-  await Share.share(message.content, subject: subject);
+  await Share.share(
+    message.content,
+    subject: subject,
+    // iPad presents the share sheet as a popover and errors out without an
+    // anchor. See `sharePositionOrigin`.
+    sharePositionOrigin: context.sharePositionOrigin,
+  );
 }
 
 enum _MessageAction { copy, share }
@@ -392,12 +381,107 @@ class _SheetRow extends StatelessWidget {
   }
 }
 
-/// Downloads the attachment (or reuses the cached copy under the
-/// app's documents directory) and hands it off to the OS's matching
-/// viewer — PDF reader for PDFs, Word for DOCX, Excel for XLSX,
-/// gallery for images, etc. Same flow the artifact downloader uses
-/// in the rail drawer, just keyed by the attachment's server id so
-/// the cache stays per-file.
+/// Renders a message's attachments, shared by the user bubble and the
+/// agent reply.
+///
+/// Agent-generated artifacts keep their full-width "Artifact ready" pill —
+/// those are the deliverable, not a thumbnail. Everything else collapses
+/// into a horizontal strip as soon as there is more than one: a message
+/// carrying 10 images used to stack 10 full previews down the bubble and
+/// bury the rest of the conversation, so past a single attachment they
+/// become fixed-size cards you scroll sideways through.
+class _MessageAttachments extends StatelessWidget {
+  const _MessageAttachments({
+    required this.attachments,
+    required this.spacing,
+  });
+
+  final List<DemoAttachment> attachments;
+
+  /// Gap above each attachment block. The user bubble is tighter (8) than
+  /// the bubble-less agent reply (10).
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    if (attachments.isEmpty) return const SizedBox.shrink();
+
+    final artifacts = <DemoAttachment>[];
+    final plain = <DemoAttachment>[];
+    for (final a in attachments) {
+      (a.isAgentGenerated ? artifacts : plain).add(a);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final a in artifacts) ...[
+          SizedBox(height: spacing),
+          ArtifactPill(
+            attachment: a,
+            onOpen: a.downloadUrl == null
+                ? () {}
+                : () => _openAttachment(context, a),
+          ),
+        ],
+        if (plain.length == 1) ...[
+          SizedBox(height: spacing),
+          AttachmentChip(
+            attachment: plain.first,
+            onTap: plain.first.downloadUrl == null
+                ? null
+                : () => _openAttachment(context, plain.first),
+          ),
+        ] else if (plain.length > 1) ...[
+          SizedBox(height: spacing),
+          _AttachmentStrip(attachments: plain),
+        ],
+      ],
+    );
+  }
+}
+
+/// Fixed-height, horizontally-scrolling row of attachment cards. Height is
+/// driven by [AttachmentChip.galleryHeight] so the strip and the cards can
+/// never disagree.
+class _AttachmentStrip extends StatelessWidget {
+  const _AttachmentStrip({required this.attachments});
+
+  final List<DemoAttachment> attachments;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: AttachmentChip.galleryHeight,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        itemCount: attachments.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final a = attachments[i];
+          return AttachmentChip(
+            attachment: a,
+            gallery: true,
+            onTap: a.downloadUrl == null
+                ? null
+                : () => _openAttachment(context, a),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Downloads the attachment (or reuses the cached copy under the app's
+/// documents directory) and opens it in Saqqar's own viewer.
+///
+/// This used to end in `OpenFilex.open`, which threw the user into
+/// Acrobat / the gallery / Files and lost their place in the chat.
+/// [AttachmentViewerScreen] renders images, PDFs and text files inline;
+/// the kinds it can't render still reach another app, but only behind an
+/// explicit button there instead of automatically.
 ///
 /// Caller must guard with `attachment.downloadUrl != null`; this
 /// function asserts both [downloadUrl] and [serverId] are set.
@@ -415,7 +499,7 @@ Future<void> _openAttachment(
     variant: ToastVariant.info,
   );
   final downloader = ArtifactDownloader(context.read<Dio>());
-  final result = await downloader.downloadAndOpenUrl(
+  final result = await downloader.fetch(
     url: url,
     cacheKey: cacheKey,
     originalName: attachment.name,
@@ -423,22 +507,15 @@ Future<void> _openAttachment(
   );
   if (!context.mounted) return;
   switch (result) {
-    case ArtifactOpenSuccess():
-      // System viewer is now on screen — no extra toast needed.
-      break;
-    case ArtifactOpenNoViewer():
-      AppToast.show(
+    case ArtifactFetchSuccess(:final file):
+      await AttachmentViewerScreen.open(
         context,
-        message: tr.artifactNoViewer,
-        variant: ToastVariant.error,
+        file: file,
+        name: attachment.name,
+        kindLabel: attachment.kind,
+        sizeLabel: attachment.size,
       );
-    case ArtifactOpenFailed():
-      AppToast.show(
-        context,
-        message: tr.artifactOpenFailed,
-        variant: ToastVariant.error,
-      );
-    case ArtifactDownloadFailed(:final statusCode):
+    case ArtifactFetchFailed(:final statusCode):
       AppToast.show(
         context,
         message: tr.artifactDownloadMessage(statusCode),

@@ -47,6 +47,49 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+
+      # permission_handler_apple compiles each permission behind a
+      # PERMISSION_* macro that defaults to **0** (see its
+      # PermissionHandlerEnums.h). With every macro off,
+      # AudioVideoPermissionStrategy.m compiles down to a bare
+      # `@implementation ... @end` — an empty class — while
+      # PermissionManager.m still hands that class back for
+      # PermissionGroupMicrophone. `Permission.microphone.status` /
+      # `.request()` (chat voice input) then send a selector the shipped
+      # class does not implement, which is an unrecognized-selector crash
+      # on the first tap of the mic button.
+      #
+      # Turn microphone ON — it is the only permission the app requests
+      # through this plugin. The rest stay 0 so the binary keeps no
+      # reference to location / speech / contacts / tracking APIs we never
+      # use, which is what would otherwise force matching (and reviewable)
+      # purpose strings into Info.plist.
+      #
+      # NOTE: camera + photo-library stay 0 here on purpose. image_picker
+      # drives those through its own APIs, not permission_handler, so their
+      # Info.plist strings are still required and must NOT be removed.
+      defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+      defs = defs.split(' ') if defs.is_a?(String)
+      defs |= [
+        'PERMISSION_MICROPHONE=1',
+        'PERMISSION_CAMERA=0',
+        'PERMISSION_PHOTOS=0',
+        'PERMISSION_PHOTOS_ADD_ONLY=0',
+        'PERMISSION_LOCATION=0',
+        'PERMISSION_SPEECH_RECOGNIZER=0',
+        'PERMISSION_NOTIFICATIONS=0',
+        'PERMISSION_CONTACTS=0',
+        'PERMISSION_EVENTS=0',
+        'PERMISSION_EVENTS_FULL_ACCESS=0',
+        'PERMISSION_REMINDERS=0',
+        'PERMISSION_MEDIA_LIBRARY=0',
+        'PERMISSION_SENSORS=0',
+        'PERMISSION_BLUETOOTH=0',
+        'PERMISSION_APP_TRACKING_TRANSPARENCY=0',
+        'PERMISSION_CRITICAL_ALERTS=0',
+        'PERMISSION_ASSISTANT=0',
+      ]
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
       # receive_sharing_intent's SwiftReceiveSharingIntentPlugin calls
       # addApplicationDelegate, which the compiler forbids in extension targets.
       # Disabling the extension-only API check for this pod lets it compile for

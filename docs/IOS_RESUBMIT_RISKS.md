@@ -30,7 +30,33 @@ not cited this round, but it's a live risk for the next review.
 
 ---
 
-## 🟠 2. Permissions declared but never used (Guideline 5.1.1 / privacy)
+## ✅ 2. Permissions declared but never used — **APPLIED 2026-07-20**
+
+> Everything in this section is now done in the repo. Kept for the reasoning.
+>
+> - `ios/Podfile` `post_install` now sets the `PERMISSION_*` macros, with
+>   `PERMISSION_MICROPHONE=1` and everything else `0`.
+> - `NSSpeechRecognitionUsageDescription` and
+>   `NSLocationWhenInUseUsageDescription` removed from `ios/Runner/Info.plist`.
+>   Verified first that **no** pod in the build references `CoreLocation`,
+>   `CLLocationManager`, `SFSpeechRecognizer` or `import Speech`.
+> - `NSCameraUsageDescription` and `NSPhotoLibraryUsageDescription` **kept** —
+>   `image_picker` / `file_picker` drive those through their own APIs, not
+>   through `permission_handler`, so the macros being `0` does not remove the
+>   need for the strings.
+> - `NSMicrophoneUsageDescription` was rewritten: it claimed "Audio is
+>   processed on-device and never uploaded", but `TranscribeApi` POSTs the
+>   recording to `/api/v1/transcribe/`, which runs OpenAI Whisper server-side.
+>   A purpose string that misstates where the data goes is a privacy problem
+>   independent of review.
+>
+> The macros were not optional cleanup: with all of them defaulting to `0`,
+> `AudioVideoPermissionStrategy.m` compiled to an empty `@implementation`
+> while `PermissionManager.m` still returned that class for
+> `PermissionGroupMicrophone` — so the chat mic button hit an
+> unrecognized selector and crashed the app on iOS.
+
+### Original analysis
 
 `permission_handler` compiles **every** permission handler by default, which forces
 matching usage strings in `Info.plist`. The app actually uses only:
@@ -38,16 +64,21 @@ matching usage strings in `Info.plist`. The app actually uses only:
 - **Microphone** — `record` (voice input) ✅ keep
 - **Face ID** — `local_auth` (app lock) ✅ keep
 
-These are **not** used by any Dart code (attachments go through `file_picker` /
-`receive_sharing_intent`, transcription is server-side Whisper — no camera capture,
-no on-device speech, no location):
+- **Camera** — `image_picker` (the attach sheet's "Camera" row) ✅ keep
+
+These are **not** used by any Dart code (documents go through `file_picker` /
+`receive_sharing_intent`, transcription is server-side Whisper — no on-device
+speech, no location):
 
 - `NSSpeechRecognitionUsageDescription` — **remove** (no speech recognition in app)
 - `NSLocationWhenInUseUsageDescription` — **remove** (no location anywhere)
-- `NSCameraUsageDescription` — verify: `file_picker` uses PHPicker (no camera). Remove
-  unless a device test shows a camera prompt is genuinely needed.
 - `NSPhotoLibraryUsageDescription` — verify: modern `file_picker` image pick uses
   PHPicker (no permission needed). Remove if the device test confirms no prompt.
+
+> `NSCameraUsageDescription` was on this list until the attach sheet shipped
+> (Photos / Camera / Files). `_pickFromCamera` in `chat_screen.dart` now calls
+> `ImagePicker().pickImage(source: ImageSource.camera)`, so the key is load-bearing
+> — deleting it crashes the capture on first tap.
 
 ### Fix (do together, in this order, on Mac)
 

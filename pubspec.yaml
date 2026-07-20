@@ -99,12 +99,28 @@ dependencies:
   # locally and ships bytes to the backend once the attachments API lands.
   file_picker: ^8.1.4
 
+  # Camera capture for the attach sheet's "Camera" row. `file_picker` is
+  # PHPicker/SAF-backed and can't reach the camera at all, so shooting a
+  # photo straight into a chat needs its own plugin. Gallery + documents
+  # still go through `file_picker` above — this is camera-only, which is
+  # why no gallery entry point calls it.
+  image_picker: ^1.1.2
+
   # Artifact download + open. `path_provider` gives us the app's
   # documents directory (no runtime permission needed), `open_filex`
   # hands the saved file off to the OS's matching viewer — Adobe PDF,
-  # Word, Excel, image gallery, etc.
+  # Word, Excel, image gallery, etc. `open_filex` is now the LAST
+  # resort: tapping an attachment opens it inside Saqqar (see
+  # AttachmentViewerScreen) and only hands off to another app for the
+  # kinds we can't render ourselves, or when the user asks explicitly.
   path_provider: ^2.1.4
   open_filex: ^4.5.0
+
+  # In-app PDF rendering for the attachment viewer. Backed by the
+  # platform renderers already on the device — Android's `PdfRenderer`
+  # (API 21+) and iOS `PDFKit`/CoreGraphics — so it adds no bundled
+  # engine and needs no new permission on either platform.
+  pdfx: ^2.9.1
 
   # Crash + error reporting. Wired in `main.dart` via `SentryFlutter.init`;
   # the DSN comes from `--dart-define=SAQQAR_SENTRY_DSN=...` so it stays

@@ -8,6 +8,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../../core/theme/app_radius.dart';
+import 'pdf_thumbnail.dart';
 
 /// Attachment row used both inside chat bubbles and in the composer preview
 /// tray.
@@ -34,6 +35,7 @@ class AttachmentChip extends StatelessWidget {
     required this.attachment,
     this.onTap,
     this.compact = false,
+    this.gallery = false,
   });
 
   final DemoAttachment attachment;
@@ -43,11 +45,25 @@ class AttachmentChip extends StatelessWidget {
   /// wide preview. See class doc for context.
   final bool compact;
 
+  /// When true, renders the fixed-size card used inside a multi-attachment
+  /// horizontal strip. Takes precedence over nothing — [compact] wins if
+  /// both are set, since the composer tray is the tighter constraint.
+  final bool gallery;
+
+  /// Card width of the [gallery] variant. Exposed so the strip that hosts
+  /// these can size its viewport without guessing.
+  static const double galleryWidth = 150;
+
+  /// Card height of the [gallery] variant.
+  static const double galleryHeight = 176;
+
   @override
   Widget build(BuildContext context) {
     final Widget child;
     if (compact) {
       child = _CompactAttachment(attachment: attachment);
+    } else if (gallery) {
+      child = _GalleryAttachment(attachment: attachment);
     } else {
       child = attachment.isImage && attachment.imageUrl != null
           ? _ImageAttachment(attachment: attachment)
@@ -93,20 +109,24 @@ class _CompactAttachment extends StatelessWidget {
           border: Border.all(color: s.border),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: _isLocalImagePath(attachment.imageUrl)
+        child: _isLocalImage(attachment)
             ? _localImageThumb(attachment.imageUrl!, s)
-            : _fileGlyph(s),
+            : _localPdfThumb(s) ?? _fileGlyph(s),
       ),
     );
   }
 
-  bool _isLocalImagePath(String? url) {
-    if (url == null || url.isEmpty) return false;
-    if (!attachment.isImage) return false;
-    // The composer always stages a local file path. Sent-bubble
-    // attachments use http(s) URLs — those should fall through to the
-    // file-glyph branch here (the composer never renders them anyway).
-    return !url.startsWith('http');
+  /// First page of a staged PDF, or null when this isn't a local PDF and
+  /// the caller should fall back to the generic glyph.
+  Widget? _localPdfThumb(SaqqarThemeExtension s) {
+    final path = _localPdfPath(attachment);
+    if (path == null) return null;
+    return PdfThumbnail(
+      path: path,
+      width: 72,
+      height: 72,
+      placeholder: _fileGlyph(s),
+    );
   }
 
   Widget _localImageThumb(String path, SaqqarThemeExtension s) {
@@ -157,6 +177,136 @@ class _CompactAttachment extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Path of a PDF that is already on this device, or null.
+///
+/// Only staged attachments carry [DemoAttachment.localPath]; one that lives
+/// on the server has nothing to render until it is downloaded, so those keep
+/// the glyph rather than triggering a fetch just to draw a thumbnail.
+String? _localPdfPath(DemoAttachment attachment) {
+  final path = attachment.localPath;
+  if (path == null || path.isEmpty) return null;
+  if (!isPdfName(attachment.name)) return null;
+  return path;
+}
+
+/// True when the attachment's pixels are already on this device.
+///
+/// The composer stages local file paths; sent-bubble attachments carry
+/// http(s) URLs. `Image.file` and `Image.network` are not interchangeable,
+/// so every thumbnail site has to make this call the same way.
+bool _isLocalImage(DemoAttachment attachment) {
+  final url = attachment.imageUrl;
+  if (url == null || url.isEmpty) return false;
+  if (!attachment.isImage) return false;
+  return !url.startsWith('http');
+}
+
+/// Fixed-size card used inside a multi-attachment horizontal strip.
+/// Sized so a row of them scrolls sideways instead of stacking down the
+/// chat: 10 images cost one strip's height, not ten previews.
+class _GalleryAttachment extends StatelessWidget {
+  const _GalleryAttachment({required this.attachment});
+
+  final DemoAttachment attachment;
+
+  static const double _thumbHeight = 104;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: AttachmentChip.galleryWidth,
+        height: AttachmentChip.galleryHeight,
+        decoration: BoxDecoration(
+          color: s.surface,
+          border: Border.all(color: s.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: _thumbHeight, child: _thumb(s)),
+            // Expanded rather than min-sized: the card height is fixed, so
+            // letting the footer take the remainder is what keeps a large
+            // system text scale from overflowing the card.
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      attachment.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${attachment.kind} · ${attachment.size}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelSmall?.copyWith(
+                        color: s.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _thumb(SaqqarThemeExtension s) {
+    final url = attachment.imageUrl;
+    if (attachment.isImage && url != null && url.isNotEmpty) {
+      final image = _isLocalImage(attachment)
+          ? Image.file(
+              File(url),
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stack) => _glyph(s),
+            )
+          : Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stack) => _glyph(s),
+            );
+      return SizedBox.expand(child: image);
+    }
+    final pdfPath = _localPdfPath(attachment);
+    if (pdfPath != null) {
+      return PdfThumbnail(
+        path: pdfPath,
+        width: AttachmentChip.galleryWidth,
+        height: _thumbHeight,
+        placeholder: _glyph(s),
+      );
+    }
+    return _glyph(s);
+  }
+
+  Widget _glyph(SaqqarThemeExtension s) {
+    return Container(
+      color: s.surface2,
+      alignment: Alignment.center,
+      child: Icon(
+        attachment.isImage ? AppIcons.image : AppIcons.fileText,
+        size: 26,
+        color: s.brandCyan,
+      ),
     );
   }
 }
@@ -217,39 +367,59 @@ class _ImageAttachment extends StatelessWidget {
                 },
               ),
             ),
+            // Footer carries the filename as well as the format + size.
+            // It used to show only the kind pill and the size, which left
+            // an image attachment as the one kind you couldn't identify by
+            // name — testers asked for the same detail line a file chip
+            // gets, since two screenshots look alike as thumbnails.
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: s.brandCyan.withValues(alpha: 0.12),
-                      borderRadius: AppRadius.pillR,
-                      border: Border.all(
-                        color: s.brandCyan.withValues(alpha: 0.26),
-                      ),
-                    ),
-                    child: Text(
-                      attachment.kind,
-                      style: context.text.labelSmall?.copyWith(
-                        color: s.brandCyan,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
-                        fontSize: 10,
-                      ),
+                  Text(
+                    attachment.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const Spacer(),
-                  Text(
-                    attachment.size,
-                    style: context.text.labelSmall?.copyWith(
-                      color: s.muted,
-                      fontSize: 10,
-                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: s.brandCyan.withValues(alpha: 0.12),
+                          borderRadius: AppRadius.pillR,
+                          border: Border.all(
+                            color: s.brandCyan.withValues(alpha: 0.26),
+                          ),
+                        ),
+                        child: Text(
+                          attachment.kind,
+                          style: context.text.labelSmall?.copyWith(
+                            color: s.brandCyan,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        attachment.size,
+                        style: context.text.labelSmall?.copyWith(
+                          color: s.muted,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

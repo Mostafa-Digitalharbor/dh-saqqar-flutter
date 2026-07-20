@@ -272,6 +272,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     await Share.share(
       url,
       subject: c.title.trim().isEmpty ? context.tr.appName : c.title.trim(),
+      // iPad presents the share sheet as a popover and errors out without an
+      // anchor. See `sharePositionOrigin`.
+      sharePositionOrigin: context.sharePositionOrigin,
     );
   }
 

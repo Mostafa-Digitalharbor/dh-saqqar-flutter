@@ -3,6 +3,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../data/conversation_models.dart';
 import '../view_model/conversations_cubit.dart';
@@ -44,6 +45,9 @@ Future<void> runConversationAction(
       await Share.share(
         url,
         subject: c.title.trim().isEmpty ? context.tr.appName : c.title.trim(),
+        // iPad presents the share sheet as a popover and errors out without
+        // an anchor. See `sharePositionOrigin`.
+        sharePositionOrigin: context.sharePositionOrigin,
       );
     case ConversationAction.archive:
       if (c.isArchived) {

@@ -64,6 +64,7 @@ class AppIcons {
   static const IconData fileText = LucideIcons.fileText;
   static const IconData table = LucideIcons.table2;
   static const IconData image = LucideIcons.image;
+  static const IconData camera = LucideIcons.camera;
   static const IconData code = LucideIcons.braces;
   static const IconData grid = LucideIcons.grid2x2;
   static const IconData bolt = LucideIcons.bolt;

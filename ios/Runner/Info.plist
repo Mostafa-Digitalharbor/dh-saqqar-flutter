@@ -73,14 +73,10 @@
 	<string>Saqqar can use the camera to capture a photo to attach to a chat message so the AI assistant can read it.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Saqqar uses Face ID to unlock the app and protect your saved Odoo credentials.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Saqqar does not use your location. This entry is required by a system library and is never accessed.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Saqqar uses the microphone for voice input in chat. Audio is processed on-device and never uploaded.</string>
+	<string>Saqqar uses the microphone for voice input in chat. Your recording is sent to Saqqar's servers to be transcribed into text, and is not kept afterwards.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Saqqar lets you attach photos to chat messages so the AI assistant can read them.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Saqqar transcribes your voice into chat text using the system speech recognizer. Recognition runs on-device.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

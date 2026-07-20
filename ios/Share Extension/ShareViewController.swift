@@ -44,6 +44,15 @@ final class ShareViewController: SLComposeServiceViewController {
             // a plain link — its bytes never get copied into the app group,
             // and the host app's Dart-side intake explicitly drops `url` items.
             return [
+                // `public.jpeg` before `public.image`: an iPhone photo is
+                // HEIC on disk, and Flutter's image decoder has no HEIC
+                // support — a shared photo would reach the chat as a file
+                // the app cannot draw. Photos registers a JPEG
+                // representation alongside the HEIC one, so asking for it
+                // first gets a decodable file. Providers that offer no JPEG
+                // simply fail the conformance check and fall through to
+                // `public.image` below, unchanged.
+                ShareAttachmentType(identifier: UTType.jpeg.identifier, type: .image),
                 ShareAttachmentType(identifier: UTType.image.identifier, type: .image),
                 ShareAttachmentType(identifier: UTType.movie.identifier, type: .video),
                 ShareAttachmentType(identifier: UTType.fileURL.identifier, type: .file),
@@ -152,7 +161,15 @@ final class ShareViewController: SLComposeServiceViewController {
         attachmentType: ShareAttachmentType,
         completion: @escaping (SharedMediaFile?) -> Void
     ) {
-        if attachmentType.type == .file || attachmentType.type == .image || attachmentType.type == .video {
+        let carriesBytes = attachmentType.type == .file
+            || attachmentType.type == .image
+            || attachmentType.type == .video
+        let urlBacked = isURLBackedItem(
+            attachment,
+            matching: attachmentType.identifier
+        )
+
+        if carriesBytes && !urlBacked {
             attachment.loadFileRepresentation(forTypeIdentifier: attachmentType.identifier) { [weak self] url, _ in
                 guard let self else {
                     completion(nil)
@@ -164,7 +181,8 @@ final class ShareViewController: SLComposeServiceViewController {
                     from: url as NSSecureCoding,
                     type: attachmentType.type,
                     suggestedName: attachment.suggestedName,
-                    typeIdentifier: attachmentType.identifier
+                    typeIdentifier: attachmentType.identifier,
+                    urlBacked: false
                    ) {
                     completion(file)
                     return
@@ -173,6 +191,7 @@ final class ShareViewController: SLComposeServiceViewController {
                 self.loadSharedMediaItem(
                     from: attachment,
                     attachmentType: attachmentType,
+                    urlBacked: urlBacked,
                     completion: completion
                 )
             }
@@ -182,6 +201,7 @@ final class ShareViewController: SLComposeServiceViewController {
         loadSharedMediaItem(
             from: attachment,
             attachmentType: attachmentType,
+            urlBacked: urlBacked,
             completion: completion
         )
     }
@@ -189,6 +209,7 @@ final class ShareViewController: SLComposeServiceViewController {
     private func loadSharedMediaItem(
         from attachment: NSItemProvider,
         attachmentType: ShareAttachmentType,
+        urlBacked: Bool,
         completion: @escaping (SharedMediaFile?) -> Void
     ) {
         attachment.loadItem(forTypeIdentifier: attachmentType.identifier, options: nil) { [weak self] item, _ in
@@ -201,17 +222,111 @@ final class ShareViewController: SLComposeServiceViewController {
                 from: item,
                 type: attachmentType.type,
                 suggestedName: attachment.suggestedName,
-                typeIdentifier: attachmentType.identifier
+                typeIdentifier: attachmentType.identifier,
+                urlBacked: urlBacked
             ))
         }
+    }
+
+    /// Whether the bytes behind this attachment are unreachable through
+    /// `loadFileRepresentation`.
+    ///
+    /// That call asks the provider for the *data* representation of an
+    /// identifier. When the item is really a URL, that data is the URL string —
+    /// `NSURL`'s item-provider payload is `url.dataRepresentation` — so iOS
+    /// writes a temp file whose CONTENTS are the text `file:///…/report.pdf`
+    /// and we'd copy that one-line file into the app group as if it were the
+    /// document. That is the "a link arrives instead of the file" report.
+    ///
+    /// There are two ways to land there, and the first check alone misses the
+    /// second:
+    ///   * the matched identifier is a URL type outright (`public.file-url`);
+    ///   * the item registers only `public.url`, which conforms to
+    ///     `public.data` — so the generic `.data` row in `supportedTypes`
+    ///     matches first and hides the URL-ness behind a data identifier.
+    ///
+    /// Both have to go through `loadItem`, which hands back a real `URL` whose
+    /// bytes we can copy. The `allSatisfy` is deliberately strict: an item that
+    /// registers a concrete type *alongside* a URL type (a PDF that also offers
+    /// `public.file-url`) does have real bytes, and stays on the fast path.
+    private func isURLBackedItem(
+        _ attachment: NSItemProvider,
+        matching identifier: String
+    ) -> Bool {
+        if isURLTypeIdentifier(identifier) {
+            return true
+        }
+
+        let registered = attachment.registeredTypeIdentifiers
+        return !registered.isEmpty && registered.allSatisfy { isURLTypeIdentifier($0) }
+    }
+
+    /// True for `public.url` and everything conforming to it, `public.file-url`
+    /// included. Those identifiers name a URL *object*, never the bytes behind
+    /// it.
+    private func isURLTypeIdentifier(_ identifier: String) -> Bool {
+        if #available(iOS 14.0, *) {
+            guard let type = UTType(identifier) else {
+                return false
+            }
+            return type.conforms(to: .url)
+        }
+
+        return UTTypeConformsTo(identifier as CFString, kUTTypeURL)
+    }
+
+    /// Recovers the file URL from a `public.file-url` item that arrived in a
+    /// shape other than `URL`. Providers may deliver it as `NSURL`, as the raw
+    /// UTF-8 bytes of the absolute string, or as the string itself; only the
+    /// first reaches the `URL` branch of `makeSharedMediaFile` unaided, and the
+    /// other two would otherwise be persisted verbatim — a "file" containing a
+    /// link, the same defect from the other direction.
+    private func fileURL(from item: NSSecureCoding?) -> URL? {
+        switch item {
+        case let url as URL:
+            return url.isFileURL ? url : nil
+        case let data as Data:
+            guard let text = String(data: data, encoding: .utf8) else {
+                return nil
+            }
+            return fileURL(fromString: text)
+        case let text as String:
+            return fileURL(fromString: text)
+        default:
+            return nil
+        }
+    }
+
+    private func fileURL(fromString text: String) -> URL? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+
+        if let url = URL(string: trimmed), url.isFileURL {
+            return url
+        }
+
+        return trimmed.hasPrefix("/") ? URL(fileURLWithPath: trimmed) : nil
     }
 
     private func makeSharedMediaFile(
         from item: NSSecureCoding?,
         type: SharedMediaType,
         suggestedName: String?,
-        typeIdentifier: String
+        typeIdentifier: String,
+        urlBacked: Bool
     ) -> SharedMediaFile? {
+        var item = item
+
+        // Normalise a file-URL payload back to a `URL` before the switch, so a
+        // provider that hands it over as bytes or as a string still copies the
+        // document rather than the link that points at it. Gated on `urlBacked`
+        // so a genuine document's bytes are never reinterpreted as a path.
+        if type != .url, urlBacked, let resolved = fileURL(from: item) {
+            item = resolved as NSSecureCoding
+        }
+
         switch item {
         case let url as URL:
             if type == .url {

@@ -19,6 +19,7 @@ import '../../inbox/data/approval_models.dart' as inbox_api;
 import '../../inbox/data/approvals_api.dart';
 import '../../inbox/data/artifact_downloader.dart';
 import '../../inbox/data/artifact_models.dart' as inbox_api;
+import '../view/attachment_viewer_screen.dart';
 import '../view_model/chat_cubit.dart';
 import 'chat_approval_card.dart';
 import 'chat_artifact_tile.dart';
@@ -113,10 +114,10 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
   }
 
   /// Downloads the artifact (or reuses the cached copy under the app's
-  /// documents directory) and hands it off to the OS's matching
-  /// viewer — Adobe / Drive for PDF, Word for DOCX, Excel for XLSX,
-  /// gallery for images, etc. Surfaces a "Downloading…" toast on
-  /// first fetch and a localized error if either step fails.
+  /// documents directory) and opens it in Saqqar's own viewer rather than
+  /// handing it to Adobe / Word / the gallery. Surfaces a "Downloading…"
+  /// toast on first fetch and a localized error if the fetch fails; the
+  /// viewer itself owns the "open in another app" escape hatch.
   Future<void> _openArtifact(inbox_api.Artifact artifact) async {
     final tr = context.tr;
     final downloader = ArtifactDownloader(context.read<Dio>());
@@ -125,26 +126,22 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
       message: tr.downloadingArtifact,
       variant: ToastVariant.info,
     );
-    final result = await downloader.downloadAndOpen(artifact);
+    final result = await downloader.fetch(
+      url: artifact.absoluteUrl,
+      cacheKey: artifact.id,
+      originalName: artifact.name,
+      kindHint: artifact.kind,
+    );
     if (!mounted) return;
     switch (result) {
-      case ArtifactOpenSuccess():
-        // OS now owns the viewer — no extra toast, the file's on
-        // screen.
-        break;
-      case ArtifactOpenNoViewer():
-        AppToast.show(
+      case ArtifactFetchSuccess(:final file):
+        await AttachmentViewerScreen.open(
           context,
-          message: tr.artifactNoViewer,
-          variant: ToastVariant.error,
+          file: file,
+          name: artifact.name,
+          kindLabel: artifact.kind.toUpperCase(),
         );
-      case ArtifactOpenFailed():
-        AppToast.show(
-          context,
-          message: tr.artifactOpenFailed,
-          variant: ToastVariant.error,
-        );
-      case ArtifactDownloadFailed(:final statusCode):
+      case ArtifactFetchFailed(:final statusCode):
         AppToast.show(
           context,
           message: tr.artifactDownloadMessage(statusCode),

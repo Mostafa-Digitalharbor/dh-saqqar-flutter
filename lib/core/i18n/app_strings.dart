@@ -441,6 +441,19 @@ class AppStrings {
   String get conversationActions => _t('conversation_actions');
   String get credentialActions => _t('credential_actions');
   String get attachFiles => _t('attach_files');
+  String get attachSourceTitle => _t('attach_source_title');
+  String get attachSourcePhotos => _t('attach_source_photos');
+  String get attachSourcePhotosHint => _t('attach_source_photos_hint');
+  String get attachSourceCamera => _t('attach_source_camera');
+  String get attachSourceCameraHint => _t('attach_source_camera_hint');
+  String get attachSourceFiles => _t('attach_source_files');
+  String get attachSourceFilesHint => _t('attach_source_files_hint');
+  String get attachCameraDenied => _t('attach_camera_denied');
+  String get viewerOpenExternally => _t('viewer_open_externally');
+  String get viewerUnsupportedTitle => _t('viewer_unsupported_title');
+  String get viewerUnsupportedBody => _t('viewer_unsupported_body');
+  String get viewerLoadFailed => _t('viewer_load_failed');
+  String get viewerTruncated => _t('viewer_truncated');
   String get showPassword => _t('show_password');
   String get hidePassword => _t('hide_password');
   String get activeCredentialUpdated => _t('active_credential_updated');
@@ -1482,6 +1495,22 @@ const Map<String, String> _en = {
   'conversation_actions': 'Conversation actions',
   'credential_actions': 'Credential actions',
   'attach_files': 'Attach screenshots, PDFs, or spreadsheets',
+  'attach_source_title': 'Attach',
+  'attach_source_photos': 'Photos',
+  'attach_source_photos_hint': 'Pick from your photo library',
+  'attach_source_camera': 'Camera',
+  'attach_source_camera_hint': 'Take a photo now',
+  'attach_source_files': 'Files',
+  'attach_source_files_hint': 'PDF, Excel, Word, CSV, ZIP',
+  'attach_camera_denied':
+      'Camera access is off. Turn it on in Settings to take photos.',
+  'viewer_open_externally': 'Open in another app',
+  'viewer_unsupported_title': "Can't preview this file here",
+  'viewer_unsupported_body':
+      'Saqqar shows images, PDFs and text files in the app. This one needs '
+          'another app to open it.',
+  'viewer_load_failed': "This file couldn't be opened",
+  'viewer_truncated': 'Showing the first part of this file only.',
   'show_password': 'Show password',
   'hide_password': 'Hide password',
   'active_credential_updated': 'Active credential updated.',
@@ -2395,6 +2424,22 @@ const Map<String, String> _ar = {
   'conversation_actions': 'إجراءات المحادثة',
   'credential_actions': 'إجراءات بيانات الدخول',
   'attach_files': 'إرفاق صور أو PDF أو جداول',
+  'attach_source_title': 'إرفاق',
+  'attach_source_photos': 'الصور',
+  'attach_source_photos_hint': 'اختر من مكتبة الصور',
+  'attach_source_camera': 'الكاميرا',
+  'attach_source_camera_hint': 'التقط صورة الآن',
+  'attach_source_files': 'الملفات',
+  'attach_source_files_hint': 'PDF وExcel وWord وCSV وZIP',
+  'attach_camera_denied':
+      'الوصول إلى الكاميرا مغلق. فعّله من الإعدادات لالتقاط الصور.',
+  'viewer_open_externally': 'فتح في تطبيق آخر',
+  'viewer_unsupported_title': 'لا يمكن عرض هذا الملف هنا',
+  'viewer_unsupported_body':
+      'يعرض صقار الصور وملفات PDF والملفات النصية داخل التطبيق. هذا الملف '
+          'يحتاج تطبيقًا آخر لفتحه.',
+  'viewer_load_failed': 'تعذّر فتح هذا الملف',
+  'viewer_truncated': 'يتم عرض الجزء الأول من الملف فقط.',
   'show_password': 'إظهار كلمة المرور',
   'hide_password': 'إخفاء كلمة المرور',
   'active_credential_updated': 'تم تحديث بيانات الدخول النشطة.',

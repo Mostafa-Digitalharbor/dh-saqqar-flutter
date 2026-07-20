@@ -31,6 +31,38 @@ class ArtifactDownloader {
     );
   }
 
+  /// Fetches [url] to disk (or reuses the cached copy) and hands the
+  /// caller the [File] **without** opening anything.
+  ///
+  /// This is the path the in-app viewer uses: it needs the bytes local so
+  /// it can render them itself, and leaving the open step to the caller is
+  /// what keeps the user inside Saqqar instead of being thrown into
+  /// Acrobat or the system gallery. [downloadAndOpenUrl] still exists for
+  /// the hand-off-to-another-app fallback.
+  Future<ArtifactFetchResult> fetch({
+    required String url,
+    required String cacheKey,
+    required String originalName,
+    String kindHint = '',
+  }) async {
+    try {
+      final file = await _ensureDownloaded(
+        url: url,
+        cacheKey: cacheKey,
+        originalName: originalName,
+        kindHint: kindHint,
+      );
+      return ArtifactFetchResult.success(file);
+    } on DioException catch (e) {
+      return ArtifactFetchResult.failed(
+        e.response?.statusCode,
+        e.message ?? e.toString(),
+      );
+    } catch (e) {
+      return ArtifactFetchResult.failed(null, e.toString());
+    }
+  }
+
   /// Generic variant — both artifacts and message attachments use it.
   /// Caches by [cacheKey] so the same id won't re-download even across
   /// app restarts. [originalName] supplies the extension; [kindHint]
@@ -145,6 +177,30 @@ class ArtifactDownloader {
     final safeKey = cacheKey.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
     return '$safeKey.$ext';
   }
+}
+
+/// Typed outcome of a download-only [ArtifactDownloader.fetch]. Split from
+/// [ArtifactOpenResult] because there is no "no viewer" case here — nothing
+/// is opened, so the only ways to fail are network and disk.
+sealed class ArtifactFetchResult {
+  const ArtifactFetchResult();
+
+  const factory ArtifactFetchResult.success(File file) = ArtifactFetchSuccess;
+  const factory ArtifactFetchResult.failed(
+    int? statusCode,
+    String message,
+  ) = ArtifactFetchFailed;
+}
+
+class ArtifactFetchSuccess extends ArtifactFetchResult {
+  const ArtifactFetchSuccess(this.file);
+  final File file;
+}
+
+class ArtifactFetchFailed extends ArtifactFetchResult {
+  const ArtifactFetchFailed(this.statusCode, this.message);
+  final int? statusCode;
+  final String message;
 }
 
 /// Typed outcome of an "open this artifact" attempt. The view uses

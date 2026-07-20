@@ -8,6 +8,7 @@ library;
 
 export 'artifact_pill.dart';
 export 'attachment_chip.dart';
+export 'attachment_source_sheet.dart';
 export 'chat_action_card.dart';
 export 'chat_app_bar_title.dart';
 export 'chat_approval_card.dart';

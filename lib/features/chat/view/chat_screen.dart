@@ -11,9 +11,11 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+// `PlatformException` — the camera picker's permission-denied signal.
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:open_filex/open_filex.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
@@ -49,6 +51,7 @@ import '../data/transcribe_api.dart';
 import '../view_model/running_agents_cubit.dart';
 import '../data/tool_status.dart';
 import '../widgets/widgets.dart';
+import 'attachment_viewer_screen.dart';
 import '../../conversations/data/attachment_models.dart' as api;
 import '../../conversations/data/conversation_models.dart' as api;
 import '../../conversations/data/conversations_repository.dart';
@@ -828,6 +831,7 @@ class _ChatScreenState extends State<ChatScreen>
         kind: _kindForExtension(ext),
         size: humanBytes(size, context.tr),
         imageUrl: _isImageExt(ext) ? f.path : null,
+        localPath: f.path,
       ));
       keptFiles.add(f);
     }
@@ -1665,33 +1669,97 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   /// Opens a staged attachment so the user can verify they picked the
-  /// right file before tapping Send. Images get a fullscreen
-  /// [InteractiveViewer] dialog (pinch to zoom, tap outside to close);
-  /// PDFs / Office docs / CSVs hand off to the OS's matching viewer via
-  /// `OpenFilex`. Skips silently for indices that don't map to a real
-  /// on-disk file (a row mid-upload that hasn't reached `_pendingFiles`
-  /// yet — shouldn't happen given our pick flow, but defensive).
+  /// right file before tapping Send. Goes through the same in-app
+  /// [AttachmentViewerScreen] a sent attachment uses, so the preview a
+  /// user gets before Send matches what they get after. Skips silently
+  /// for indices that don't map to a real on-disk file (a row mid-upload
+  /// that hasn't reached `_pendingFiles` yet — shouldn't happen given our
+  /// pick flow, but defensive).
   Future<void> _previewAttachmentAt(int index) async {
     if (index < 0 || index >= _pendingFiles.length) return;
     final file = _pendingFiles[index];
     final chip = (index < _attachments.length) ? _attachments[index] : null;
-    final isImage = chip?.isImage ?? false;
-    if (isImage) {
-      await showDialog<void>(
-        context: context,
-        barrierColor: Colors.black.withValues(alpha: 0.92),
-        builder: (dialogContext) => _LocalImagePreviewDialog(file: file),
-      );
-      return;
-    }
-    final result = await OpenFilex.open(file.path);
-    if (!mounted) return;
-    if (result.type != ResultType.done) {
-      _toast(context.tr.defaultApiError);
+    await AttachmentViewerScreen.open(
+      context,
+      file: file,
+      // The staged chip carries the display name; fall back to the path's
+      // basename so the viewer can still pick a render mode by extension.
+      name: chip?.name ?? file.uri.pathSegments.last,
+      kindLabel: chip?.kind,
+      sizeLabel: chip?.size,
+    );
+  }
+
+  /// Entry point for the composer's paperclip. Asks *where* the attachment
+  /// comes from before opening a picker — one `FileType.custom` dialog that
+  /// mixed images with PDFs and archives resolved to the Files browser on
+  /// iOS, so attaching a photo meant navigating Files → Photos. Each branch
+  /// funnels into [_stagePickedFiles], which owns the size caps, the chips
+  /// and the upload, so no source can bypass them.
+  Future<void> _pickAttachment() async {
+    final source = await AttachmentPickerSourceSheet.show(context);
+    if (!mounted || source == null) return;
+    switch (source) {
+      case AttachmentPickerSource.photos:
+        await _pickFromPhotos();
+      case AttachmentPickerSource.camera:
+        await _pickFromCamera();
+      case AttachmentPickerSource.files:
+        await _pickFromFiles();
     }
   }
 
-  Future<void> _pickAttachment() async {
+  /// Native photo library (PHPicker on iOS, the photo picker on Android) —
+  /// no `allowedExtensions`, because `FileType.image` already restricts the
+  /// dialog and pairing the two throws in `file_picker`.
+  Future<void> _pickFromPhotos() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: false,
+      allowMultiple: true,
+    );
+    if (!mounted || result == null || result.files.isEmpty) return;
+    await _stagePickedFiles(result.files);
+  }
+
+  /// Single shot straight from the camera. `file_picker` is PHPicker/SAF
+  /// backed and can't reach the camera, hence `image_picker` here.
+  /// `imageQuality` re-encodes to keep a 12 MP capture under the 25 MB cap.
+  Future<void> _pickFromCamera() async {
+    XFile? shot;
+    try {
+      shot = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+    } on PlatformException catch (e, st) {
+      AppLogger.warn(
+        'ChatAttachments',
+        'camera capture failed',
+        error: e,
+        stackTrace: st,
+      );
+      if (!mounted) return;
+      // The user declined the permission prompt (or has it off in Settings);
+      // anything else is a real device/plugin failure.
+      _toast(
+        e.code == 'camera_access_denied'
+            ? context.tr.attachCameraDenied
+            : context.tr.defaultApiError,
+      );
+      return;
+    }
+    if (!mounted || shot == null) return;
+    final length = await shot.length();
+    if (!mounted) return;
+    await _stagePickedFiles([
+      PlatformFile(name: shot.name, path: shot.path, size: length),
+    ]);
+  }
+
+  /// Documents: the original allow-list, minus nothing. Images stay in the
+  /// list so a user who keeps screenshots in Files can still reach them.
+  Future<void> _pickFromFiles() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: const [
@@ -1711,11 +1779,16 @@ class _ChatScreenState extends State<ChatScreen>
       allowMultiple: true,
     );
     if (!mounted || result == null || result.files.isEmpty) return;
+    await _stagePickedFiles(result.files);
+  }
 
+  /// Shared tail for every attachment source: enforces the per-kind size
+  /// cap, builds the composer chips, and stages the upload.
+  Future<void> _stagePickedFiles(List<PlatformFile> pickedFiles) async {
     final newChips = <DemoAttachment>[];
     final newFiles = <File>[];
     final tooLarge = <String>[];
-    for (final picked in result.files) {
+    for (final picked in pickedFiles) {
       final path = picked.path;
       if (path == null || path.isEmpty) continue;
       // Kind-aware size cap (Gap F): archives up to 500 MB (addon zips),
@@ -1730,12 +1803,13 @@ class _ChatScreenState extends State<ChatScreen>
         kind: _kindForExtension(picked.extension),
         size: humanBytes(picked.size, context.tr),
         imageUrl: _isImageExt(picked.extension) ? picked.path : null,
+        localPath: path,
       ));
       newFiles.add(File(path));
     }
     if (tooLarge.isNotEmpty) {
       // Name the cap of the first rejected file; the rest were skipped too.
-      final firstExt = result.files
+      final firstExt = pickedFiles
           .firstWhere((f) => f.name == tooLarge.first)
           .extension;
       _toast(context.tr.attachmentTooLarge(
@@ -3385,65 +3459,3 @@ class _AgentTurnEntry extends _TimelineEntry {
   }
 }
 
-/// Fullscreen preview for a locally-staged image attachment. Backed by
-/// [InteractiveViewer] so the user can pinch-to-zoom (up to 4×) and
-/// swipe-to-pan the picture. A subtle `×` button in the top-end corner
-/// closes the dialog explicitly; tapping the dim background does the
-/// same. Used by [_ChatScreenState._previewAttachmentAt] for the
-/// "tap a staged image to see what I just attached" feedback testers
-/// asked for on 2026-05-23.
-class _LocalImagePreviewDialog extends StatelessWidget {
-  const _LocalImagePreviewDialog({required this.file});
-
-  final File file;
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.zero,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: InteractiveViewer(
-                maxScale: 4,
-                minScale: 1,
-                child: Center(
-                  child: Image.file(
-                    file,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.broken_image,
-                      color: Colors.white54,
-                      size: 64,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            top: 24,
-            end: 16,
-            child: SafeArea(
-              child: Material(
-                color: Colors.black.withValues(alpha: 0.4),
-                shape: const CircleBorder(),
-                child: InkWell(
-                  onTap: () => Navigator.of(context).pop(),
-                  customBorder: const CircleBorder(),
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(Icons.close, color: Colors.white, size: 22),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

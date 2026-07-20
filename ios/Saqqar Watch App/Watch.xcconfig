@@ -1,0 +1,17 @@
+// Build settings shared by the watch app and its complication.
+//
+// Exists for one reason: Apple rejects an upload whose embedded watch app
+// carries a different CFBundleVersion / CFBundleShortVersionString than the
+// host iOS app. Those two targets had them hardcoded to 1 / 1.0 while the
+// host tracked pubspec, so every archive shipped a mismatch.
+//
+// The version numbers live in Flutter's generated config, which is regenerated
+// from pubspec.yaml on each build. Runner and the Share Extension already pull
+// them in the same way; the watch targets had no xcconfig at all, which is why
+// $(FLUTTER_BUILD_NAME) resolved to nothing for them and the values had to be
+// written out by hand in the first place.
+//
+// Safe for a watchOS target: Generated.xcconfig only defines variables, and its
+// only conditional settings (EXCLUDED_ARCHS) are scoped to iphoneos /
+// iphonesimulator SDKs, so they never apply here.
+#include "../Flutter/Generated.xcconfig"
