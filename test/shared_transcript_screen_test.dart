@@ -60,9 +60,9 @@ void main() {
         _msg('2', MessageRole.assistant, 'Here is Q3.'),
       ],
     );
-    final cubit = SharedTranscriptCubit(_FakeSharesApi(result: transcript))
-      ..load('tok-1');
+    final cubit = SharedTranscriptCubit(_FakeSharesApi(result: transcript));
     addTearDown(cubit.close);
+    await cubit.load('tok-1');
 
     await tester.pumpWidget(_host(cubit));
     await tester.pump(); // resolve the load future
@@ -81,9 +81,9 @@ void main() {
 
   testWidgets('shows an error surface with retry when the fetch fails',
       (tester) async {
-    final cubit = SharedTranscriptCubit(_FakeSharesApi(error: Exception('x')))
-      ..load('tok-1');
+    final cubit = SharedTranscriptCubit(_FakeSharesApi(error: Exception('x')));
     addTearDown(cubit.close);
+    await cubit.load('tok-1');
 
     await tester.pumpWidget(_host(cubit));
     await tester.pump();
@@ -104,8 +104,9 @@ void main() {
           messages: const [],
         ),
       ),
-    )..load('tok-1');
+    );
     addTearDown(cubit.close);
+    await cubit.load('tok-1');
 
     await tester.pumpWidget(_host(cubit));
     await tester.pump();

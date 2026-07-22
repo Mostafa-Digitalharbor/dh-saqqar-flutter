@@ -78,6 +78,15 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Legacy custom-scheme deep links (push notifications), see
+                 lib/core/routing/deep_links.dart. Mirrors the CFBundleURLTypes
+                 entry already declared in ios/Runner/Info.plist. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="saqqar"/>
+            </intent-filter>
             <!-- Verified App Links (docs/SAQQAR_DEEP_LINKS_FLUTTER.md §2).
                  A tapped https://saqqaar.com/... link opens the app directly,
                  with no "open with" chooser, because android:autoVerify makes
