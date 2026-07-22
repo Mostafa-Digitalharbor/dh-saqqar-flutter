@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Network access. INTERNET is what every Dio request to
          saqqaar.com needs; ACCESS_NETWORK_STATE is what the
          connectivity_plus plugin reads to drive the OfflineBanner.
@@ -25,6 +26,22 @@
          the user the first time they tap the mic; subsequent taps reuse
          the granted permission. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <!-- Strip the broad photo/video permissions that the image_picker_android
+         plugin injects for its gallery feature. This app never uses that path:
+         "Photos" and "Files" both go through file_picker (the Android Photo
+         Picker / SAF, which needs NO media permission), and image_picker is
+         used ONLY for the camera. Declaring READ_MEDIA_IMAGES/VIDEO would trip
+         Google Play's Photo & Video Permissions policy ("use the system photo
+         picker instead") and force an unwinnable declaration. tools:node="remove"
+         deletes them from the merged manifest so the shipped bundle requests
+         neither. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
+    <!-- READ_MEDIA_AUDIO rides in from the same plugin. The app never reads
+         audio FILES — voice input is live mic capture (RECORD_AUDIO) handed
+         straight to SpeechRecognizer, and no attachment path selects audio.
+         Drop it too so the bundle carries no unused media permission. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove"/>
     <application
         android:label="Saqqar"
         android:name="${applicationName}"
@@ -61,6 +78,43 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Verified App Links (docs/SAQQAR_DEEP_LINKS_FLUTTER.md §2).
+                 A tapped https://saqqaar.com/... link opens the app directly,
+                 with no "open with" chooser, because android:autoVerify makes
+                 Android fetch and check
+                 https://saqqaar.com/.well-known/assetlinks.json against this
+                 build's signing SHA-256 (published by the backend). If the app
+                 isn't installed the link just opens in the browser.
+
+                 The URI is received in Dart by the app_links plugin and routed
+                 via DeepLinks (see lib/core/routing/deep_link_service.dart) —
+                 NOT by the Flutter engine's built-in deep-linking, which is
+                 turned off below so the two never double-handle a link. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Claim ONLY the paths the app actually has a screen for.
+                     autoVerify still verifies the whole host against
+                     assetlinks.json; these <data> entries just scope WHICH
+                     paths open the app. Everything not listed (/privacy,
+                     /terms, /auth/*, marketing/blog pages, …) is left to the
+                     browser — which is exactly the "stays in the browser"
+                     intent of spec §4, achieved natively instead of bouncing
+                     the link in and back out through a Custom Tab. -->
+                <data android:scheme="https" android:host="saqqaar.com" android:path="/" />
+                <data android:scheme="https" android:host="saqqaar.com" android:path="/new" />
+                <data android:scheme="https" android:host="saqqaar.com" android:pathPrefix="/chats" />
+                <data android:scheme="https" android:host="saqqaar.com" android:pathPrefix="/share" />
+            </intent-filter>
+            <!-- Disable the Flutter engine's own platform deep-linking so it
+                 never forwards the tapped URL to go_router in parallel with the
+                 app_links plugin (which would flash an error page for paths go_
+                 router has no route for, e.g. /new or /privacy). app_links is a
+                 plugin and receives the intent regardless of this flag. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false" />
             <!-- "Share to Saqqar" entry point. Surfaces the app in the
                  system share sheet (WhatsApp, Photos, Files, etc.).
 

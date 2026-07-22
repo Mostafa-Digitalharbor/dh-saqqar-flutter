@@ -14,6 +14,13 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<!-- Disable the Flutter engine's built-in deep-linking so it doesn't forward
+	     Universal Links to go_router alongside the app_links plugin. app_links
+	     receives the link via the plugin openURL/continueUserActivity callbacks
+	     regardless of this flag, and is the single handler (routes via
+	     DeepLinks). See docs/SAQQAR_DEEP_LINKS_FLUTTER.md §3. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>CFBundleName</key>
 	<string>Saqqar</string>
 	<key>CFBundlePackageType</key>

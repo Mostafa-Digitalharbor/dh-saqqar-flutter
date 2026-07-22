@@ -421,16 +421,23 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         currentGroup = group;
       }
       widgets.add(
-        FadeSlideIn(
-          // Two keys are nested here on purpose. The outer `ValueKey`
-          // identifies the FadeSlideIn slot in its parent Column so the
-          // intro animation only fires for genuinely new rows. The
-          // inner `Dismissible` needs its OWN unique key because the
-          // Dismissible widget tracks gesture state per-key and asserts
-          // on duplicates.
-          key: ValueKey('fade-${c.id}'),
-          index: entry.key,
-          child: Dismissible(
+        // Per-row RepaintBoundary: rows live in a plain Column (one sliver
+        // child), so without this they share one layer — every card's shadow
+        // blur re-rasterizes together on any rebuild, and a poll landing
+        // mid-scroll repaints the whole list. Keyed by row id so the boundary
+        // element (and the FadeSlideIn under it) is reused across rebuilds,
+        // keeping the intro-once behaviour and caching each card's raster.
+        RepaintBoundary(
+          key: ValueKey('row-${c.id}'),
+          child: FadeSlideIn(
+            // Two keys are nested here on purpose. The outer `ValueKey`
+            // identifies the FadeSlideIn slot so the intro animation only
+            // fires for genuinely new rows. The inner `Dismissible` needs its
+            // OWN unique key because the Dismissible widget tracks gesture
+            // state per-key and asserts on duplicates.
+            key: ValueKey('fade-${c.id}'),
+            index: entry.key,
+            child: Dismissible(
             key: ValueKey('dismiss-${c.id}'),
             // Two distinct horizontal gestures (request 2026-07-06):
             //   • swipe RIGHT → archive / unarchive
@@ -480,6 +487,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               onTap: () => context.go(RouteNames.chatPath(c.id)),
               onAction: (action) => _handleRowAction(c, action),
             ),
+            ),
           ),
         ),
       );
@@ -497,6 +505,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           a.actionFailure != b.actionFailure ||
           a.actionToast != b.actionToast,
       listener: _onCubitChange,
+      // The builder derives everything it renders from `state.data` (counts,
+      // empty-state, the row list). Gate rebuilds on that alone so a poll that
+      // only touches action-toast/failure state — or re-emits an equal data
+      // snapshot — doesn't rebuild the whole list mid-scroll. Local filter /
+      // search / page changes go through setState, not the cubit, so they
+      // still rebuild independently of this predicate.
+      buildWhen: (a, b) => a.data != b.data,
       builder: (context, state) {
         final data = state.data.dataOrNull;
         // REAL "needs approval" total — the number of conversations with at
@@ -957,23 +972,31 @@ class _ArchivedSection extends StatelessWidget {
             child: AnimatedCrossFade(
               duration: const Duration(milliseconds: 180),
               firstChild: const SizedBox(width: double.infinity, height: 0),
-              secondChild: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final c in archived) ...[
-                      ConversationCard(
-                        key: ValueKey('archived-${c.id}'),
-                        conversation: c,
-                        onTap: () => context.go(RouteNames.chatPath(c.id)),
-                        onAction: (action) => onRowAction(c, action),
+              // AnimatedCrossFade builds BOTH children every frame. While the
+              // section is collapsed we therefore skip building the archived
+              // cards entirely (each carries a blurred-shadow card) — they only
+              // materialize when the user actually expands the section, and get
+              // disposed again on collapse. Was: the full archived list built
+              // and rebuilt on every poll even while hidden.
+              secondChild: !expanded
+                  ? const SizedBox(width: double.infinity, height: 0)
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final c in archived) ...[
+                            ConversationCard(
+                              key: ValueKey('archived-${c.id}'),
+                              conversation: c,
+                              onTap: () => context.go(RouteNames.chatPath(c.id)),
+                              onAction: (action) => onRowAction(c, action),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                    ],
-                  ],
-                ),
-              ),
+                    ),
               crossFadeState: expanded
                   ? CrossFadeState.showSecond
                   : CrossFadeState.showFirst,

@@ -10,6 +10,7 @@ import 'core/i18n/app_localizations.dart';
 import 'core/i18n/app_strings.dart';
 import 'core/i18n/view_model/locale_cubit.dart';
 import 'core/routing/app_router.dart';
+import 'core/routing/deep_link_service.dart';
 import 'features/notifications/view_model/notifications_settings_cubit.dart';
 import 'features/push/data/push_notifications_service.dart';
 import 'features/security/view/app_lock_gate.dart';
@@ -32,10 +33,22 @@ class SaqqarApp extends StatefulWidget {
 class _SaqqarAppState extends State<SaqqarApp> {
   bool _splashDone = false;
   bool _nativeRemoved = false;
+  bool _deepLinksStarted = false;
 
   /// The router is built once, lazily, the moment the splash finishes —
   /// kept in `late final` so theme/locale rebuilds don't tear it down.
   late final _router = buildAppRouter(context.read<AuthCubit>());
+
+  /// Universal / App Links + `saqqar://` handler. Started after the router
+  /// mounts (see the post-splash `onComplete` below) so a cold-start link has
+  /// a live [appRouter] to navigate through.
+  final DeepLinkService _deepLinks = DeepLinkService();
+
+  @override
+  void dispose() {
+    _deepLinks.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +125,18 @@ class _SaqqarAppState extends State<SaqqarApp> {
           onComplete: () {
             if (!mounted) return;
             setState(() => _splashDone = true);
+            // Start deep-link handling once, AFTER this rebuild mounts the
+            // router (the `_router` getter — and therefore the global
+            // `appRouter` — is evaluated during the rebuild that `setState`
+            // triggers, before this post-frame callback runs). Doing it here
+            // rather than at boot guarantees a cold-start link has a live
+            // router to navigate through.
+            if (!_deepLinksStarted) {
+              _deepLinksStarted = true;
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _deepLinks.start(),
+              );
+            }
           },
         ),
       );

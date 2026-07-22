@@ -135,6 +135,13 @@ class _CompactAttachment extends StatelessWidget {
       fit: BoxFit.cover,
       width: 72,
       height: 72,
+      // Decode to the thumbnail's pixel size (72 logical × ~3 DPR), NOT the
+      // camera's full bitmap: a 4000×3000 photo is ~48 MB of RGBA in memory
+      // when painted into a 72 px box. Without this cap, scrolling a chat with
+      // several image attachments decodes each at full res → GC pauses + jank.
+      // Only cacheWidth (not both) so decode keeps the source aspect ratio —
+      // passing both would squish the bitmap before BoxFit.cover crops it.
+      cacheWidth: 216,
       errorBuilder: (context, error, stack) => _fileGlyph(s),
     );
   }
@@ -273,15 +280,21 @@ class _GalleryAttachment extends StatelessWidget {
   Widget _thumb(SaqqarThemeExtension s) {
     final url = attachment.imageUrl;
     if (attachment.isImage && url != null && url.isNotEmpty) {
+      // Cap decode to the card width (× ~3 DPR) so a full-res photo isn't
+      // decoded whole just to fill a small gallery thumb — the memory + decode
+      // cost that janks a horizontal image strip on weak devices.
+      final decodeWidth = (AttachmentChip.galleryWidth * 3).round();
       final image = _isLocalImage(attachment)
           ? Image.file(
               File(url),
               fit: BoxFit.cover,
+              cacheWidth: decodeWidth,
               errorBuilder: (context, error, stack) => _glyph(s),
             )
           : Image.network(
               url,
               fit: BoxFit.cover,
+              cacheWidth: decodeWidth,
               errorBuilder: (context, error, stack) => _glyph(s),
             );
       return SizedBox.expand(child: image);
@@ -337,6 +350,10 @@ class _ImageAttachment extends StatelessWidget {
               child: Image.network(
                 attachment.imageUrl!,
                 fit: BoxFit.cover,
+                // Decode at the display width (× device DPR), capped by the
+                // 360 px bubble max — not the source's full resolution.
+                cacheWidth:
+                    (360 * MediaQuery.devicePixelRatioOf(context)).round(),
                 errorBuilder: (context, error, stack) {
                   return Container(
                     height: 120,

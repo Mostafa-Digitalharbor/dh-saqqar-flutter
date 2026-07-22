@@ -1,73 +1,250 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/routing/route_names.dart';
+import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/data_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/eyebrow_label.dart';
-import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/responsive_content.dart';
+import '../../chat/widgets/chat_markdown.dart';
+import '../../conversations/data/conversation_models.dart';
+import '../data/shared_transcript_models.dart';
+import '../view_model/shared_transcript_cubit.dart';
 
-/// Public, read-only view of a shared conversation. Reached via either the
-/// in-app push from a "Share link" action or the `saqqar://share/<token>`
-/// deep link.
+/// Public, read-only view of a shared conversation. Reached via the
+/// `https://saqqaar.com/share/<token>` Universal / App Link or the legacy
+/// `saqqar://share/<token>` scheme.
 ///
-/// The full read-only renderer lands in Sprint 3 alongside the chat data
-/// fetch (it can reuse `MessageRow` wrapped in a `ReadOnly` modifier). For
-/// now this screen is a labelled placeholder so deep links always land
-/// somewhere meaningful.
+/// A share link is a snapshot meant to be opened by anyone (they may not even
+/// have an account — the backend endpoint is unauthenticated), so this screen
+/// is strictly read-only: no composer, no editing. The [SharedTranscriptCubit]
+/// (provided by the router) fetches `GET /api/v1/shares/<token>/`, and
+/// [DataStateView] renders the loading / data / error branches.
 class SharedTranscriptScreen extends StatelessWidget {
   const SharedTranscriptScreen({super.key, required this.token});
 
   final String token;
 
+  /// Leave the screen. When this route was reached from inside the app there's
+  /// something to pop back to; when it was the deep-link entry point (the app
+  /// was launched straight into `/share/...`) there's nothing below it, so
+  /// popping would exit the app — go to Home instead so the app stays open.
+  void _leave(BuildContext context) {
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
+    } else {
+      context.go(RouteNames.chatsPath);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Intercept the system back on the deep-link entry (nothing to pop) so it
+    // lands on Home instead of finishing the task and bouncing the user back
+    // to whatever app opened the link.
+    return PopScope(
+      canPop: Navigator.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) context.go(RouteNames.chatsPath);
+      },
+      child: BlocBuilder<SharedTranscriptCubit, DataState<SharedTranscript>>(
+        builder: (context, state) {
+          final transcript = state.dataOrNull;
+          final title =
+              (transcript != null && transcript.title.trim().isNotEmpty)
+              ? transcript.title
+              : context.tr.sharedConversationTitle;
+          return Scaffold(
+            appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(AppIcons.close),
+                tooltip: context.tr.cancel,
+                onPressed: () => _leave(context),
+              ),
+              title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+              actions: const [
+                Padding(
+                  padding: EdgeInsetsDirectional.only(end: 12),
+                  child: Center(child: _ReadOnlyBadge()),
+                ),
+              ],
+            ),
+            body: AmbientBackground(
+              child: DataStateView<SharedTranscript>(
+                state: state,
+                onRetry: () =>
+                    context.read<SharedTranscriptCubit>().load(token),
+                onData: (context, data) => _TranscriptBody(transcript: data),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Small pill that makes the "you can look but not touch" nature explicit.
+class _ReadOnlyBadge extends StatelessWidget {
+  const _ReadOnlyBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: s.muted.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: s.muted.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        context.tr.readOnlyBadge,
+        style: context.text.labelSmall?.copyWith(
+          color: s.muted,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _TranscriptBody extends StatelessWidget {
+  const _TranscriptBody({required this.transcript});
+
+  final SharedTranscript transcript;
+
+  @override
+  Widget build(BuildContext context) {
+    // The backend only exposes user + assistant rows, but be defensive: drop
+    // any tool/system rows and empty-content messages so the read-only view
+    // never renders a blank bubble.
+    final messages = transcript.messages
+        .where(
+          (m) =>
+              (m.role == MessageRole.user ||
+                  m.role == MessageRole.assistant) &&
+              m.content.trim().isNotEmpty,
+        )
+        .toList();
+
+    if (messages.isEmpty) {
+      return Center(
+        child: ResponsiveContent(
+          maxWidth: 560,
+          padding: const EdgeInsets.all(24),
+          child: EmptyState(
+            title: context.tr.sharedConversationTitle,
+            body: context.tr.sharedConversationEmpty,
+            icon: AppIcons.fileText,
+          ),
+        ),
+      );
+    }
+
+    return ResponsiveContent(
+      maxWidth: 720,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // User bubbles clamp to 88% of the content width (spec §8.1); the
+          // agent voice spans the full width, so it needs no cap.
+          final maxBubbleWidth = constraints.maxWidth * 0.88;
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            itemCount: messages.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _UpdatedHeader(updatedAt: transcript.updatedAt);
+              }
+              return _SharedMessage(
+                message: messages[index - 1],
+                maxBubbleWidth: maxBubbleWidth,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Muted "last active" timestamp at the top of the transcript.
+class _UpdatedHeader extends StatelessWidget {
+  const _UpdatedHeader({required this.updatedAt});
+
+  final DateTime updatedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Text(
+      AppDateFormat.dateTime(context, updatedAt),
+      style: context.text.bodySmall?.copyWith(color: s.muted),
+    );
+  }
+}
+
+/// One read-only message: a cyan user bubble (end-aligned) or the bubble-less
+/// agent voice (start-aligned), matching the live chat's §8 render paths.
+class _SharedMessage extends StatelessWidget {
+  const _SharedMessage({required this.message, required this.maxBubbleWidth});
+
+  final Message message;
+  final double maxBubbleWidth;
+
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr.share),
-        leading: IconButton(
-          icon: const Icon(AppIcons.close),
-          tooltip: context.tr.cancel,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      ),
-      body: AmbientBackground(
-        child: Center(
-          child: ResponsiveContent(
-            maxWidth: 560,
-            padding: const EdgeInsets.all(20),
-            child: GlassCard(
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  EyebrowLabel(context.tr.appName),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.tr.share,
-                    style: context.text.headlineMedium,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    context.tr.shareTokenLabel(token),
-                    style: context.text.bodySmall?.copyWith(color: s.muted),
-                  ),
-                  const SizedBox(height: 18),
-                  EmptyState(
-                    title: context.tr.placeholder,
-                    body: context.tr.actionCenterSummaryBody,
-                    icon: AppIcons.fileText,
-                  ),
-                ],
+    if (message.role == MessageRole.user) {
+      return Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: s.brandCyan.withValues(alpha: context.isDark ? 0.18 : 0.10),
+              border: Border.all(color: s.brandCyan.withValues(alpha: 0.30)),
+              borderRadius: const BorderRadiusDirectional.only(
+                topStart: Radius.circular(14),
+                topEnd: Radius.circular(4), // signature cut corner
+                bottomStart: Radius.circular(14),
+                bottomEnd: Radius.circular(14),
               ),
             ),
+            child: ChatMarkdown(data: message.content, isUser: true),
           ),
         ),
-      ),
+      );
+    }
+
+    // Assistant — no bubble; the gradient-less brand label + markdown body is
+    // what reads as "the system speaking".
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.tr.appName,
+          style: context.text.labelSmall?.copyWith(
+            color: s.brandCyan,
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 4),
+        ChatMarkdown(data: message.content, isUser: false),
+      ],
     );
   }
 }

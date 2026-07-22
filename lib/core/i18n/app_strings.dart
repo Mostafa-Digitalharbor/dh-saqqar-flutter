@@ -401,6 +401,8 @@ class AppStrings {
   String get close => _t('close');
   String get save => _t('save');
   String get share => _t('share');
+  String get sharedConversationTitle => _t('shared_conversation_title');
+  String get sharedConversationEmpty => _t('shared_conversation_empty');
 
   /// Caption under the shared-transcript header. [token] is the opaque
   /// share id from the `saqqar://share/<token>` deep link — it's an
@@ -1466,6 +1468,8 @@ const Map<String, String> _en = {
   'close': 'Close',
   'save': 'Save',
   'share': 'Share',
+  'shared_conversation_title': 'Shared conversation',
+  'shared_conversation_empty': 'This conversation has no messages to show.',
   'retry': 'Retry',
   'label': 'Label',
   'kind': 'Kind',
@@ -2395,6 +2399,8 @@ const Map<String, String> _ar = {
   'close': 'إغلاق',
   'save': 'حفظ',
   'share': 'مشاركة',
+  'shared_conversation_title': 'محادثة مُشارَكة',
+  'shared_conversation_empty': 'لا توجد رسائل لعرضها في هذه المحادثة.',
   'retry': 'إعادة المحاولة',
   'label': 'العنوان',
   'kind': 'النوع',

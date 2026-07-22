@@ -18,7 +18,11 @@ publish_to: 'none'
 #   • Multi-file attachments in the chat composer.
 #   • Receive ACTION_SEND / ACTION_SEND_MULTIPLE from WhatsApp, Files,
 #     Photos — user picks the target chat instead of auto-opening a new one.
-version: 1.1.0+107
+#
+# 1.2.0+108 — Universal Links (iOS) / App Links (Android): tapping a
+#   https://saqqaar.com/... link opens the app on the matching screen
+#   (new feature → minor bump). See docs/SAQQAR_DEEP_LINKS_FLUTTER.md.
+version: 1.2.0+109
 
 environment:
   sdk: ^3.9.2
@@ -41,6 +45,16 @@ dependencies:
 
   # Routing
   go_router: ^14.6.2
+
+  # Universal Links (iOS) / App Links (Android): receives the tapped
+  # https://saqqaar.com/... URL on both cold-start and while running, and
+  # the existing saqqar:// custom scheme, then routes it via DeepLinks.
+  # Chosen over go_router's built-in platform deep-linking because it gives
+  # explicit control over the excluded paths (spec §4) and the saqqar://
+  # scheme; the engine's own deep-linking is disabled (see
+  # AndroidManifest flutter_deeplinking_enabled + Info.plist
+  # FlutterDeepLinkingEnabled) so this plugin is the single handler.
+  app_links: ^6.3.0
 
   # Networking
   dio: ^5.7.0

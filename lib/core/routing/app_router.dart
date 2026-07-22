@@ -20,7 +20,9 @@ import '../../features/conversations/data/conversations_repository.dart';
 import '../../features/conversations/view/conversations_screen.dart';
 import '../../features/notifications/view/notifications_inbox_screen.dart';
 import '../../features/push/view/devices_screen.dart';
+import '../../features/share/data/shares_api.dart';
 import '../../features/share/view/shared_transcript_screen.dart';
+import '../../features/share/view_model/shared_transcript_cubit.dart';
 import '../../features/storybook/storybook_screen.dart';
 import '../../features/vault/view/vault_screen.dart';
 import '../constants/ui_strings.dart';
@@ -159,11 +161,21 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
       GoRoute(
         path: RouteNames.sharedTranscriptPattern,
         name: RouteNames.sharedTranscript,
-        pageBuilder: (_, state) => _transitionPage(
-          state: state,
-          child: SharedTranscriptScreen(token: state.pathParameters['token']!),
-          kind: _RouteTransitionKind.fade,
-        ),
+        pageBuilder: (context, state) {
+          final token = state.pathParameters['token']!;
+          return _transitionPage(
+            state: state,
+            // Per-route cubit: fetches the public read-only transcript for
+            // this token on mount and closes on pop. `SharesApi` is the
+            // boot-scoped instance from main.dart's RepositoryProvider.
+            child: BlocProvider<SharedTranscriptCubit>(
+              create: (ctx) =>
+                  SharedTranscriptCubit(ctx.read<SharesApi>())..load(token),
+              child: SharedTranscriptScreen(token: token),
+            ),
+            kind: _RouteTransitionKind.fade,
+          );
+        },
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

@@ -104,24 +104,54 @@ class _BreathingGlowState extends State<_BreathingGlow>
     duration: const Duration(milliseconds: 2200),
   );
 
+  /// Breathes this many full in-out cycles, then parks at rest. A `repeat()`
+  /// glow never stopped, so the empty Conversations screen — a RESTING state a
+  /// user with no chats can sit on indefinitely — rendered ~60 fps forever,
+  /// re-rasterizing an animated `BoxShadow` blur every frame purely for
+  /// decoration. Mirrors the bounded [FloatingBob] / marquee lesson: a few
+  /// pulses draw the eye to the CTA, then the screen goes quiet.
+  static const _maxCycles = 4;
+  int _cyclesDone = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addStatusListener(_onStatus);
+  }
+
+  void _onStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      // Reached full glow — breathe back down.
+      _controller.reverse();
+    } else if (status == AnimationStatus.dismissed) {
+      // Back at rest = one full cycle. Park once we've pulsed enough.
+      _cyclesDone++;
+      if (_cyclesDone < _maxCycles) {
+        _controller.forward();
+      }
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Under Reduce Motion the glow holds at a constant `t = 0.5`, so a
-    // repeating controller would rebuild identical frames forever. Stop it;
-    // otherwise breathe as before.
+    // Under Reduce Motion the glow holds at a constant `t = 0.5`, so any
+    // controller motion would rebuild identical frames. Stop it; otherwise
+    // breathe for a bounded number of cycles.
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (reduceMotion) {
       _controller.stop();
-    } else if (!_controller.isAnimating) {
-      _controller.repeat(reverse: true);
+    } else if (!_controller.isAnimating && _cyclesDone < _maxCycles) {
+      _controller.forward();
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller
+      ..removeStatusListener(_onStatus)
+      ..dispose();
     super.dispose();
   }
 

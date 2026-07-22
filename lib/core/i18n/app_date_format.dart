@@ -38,18 +38,44 @@ class AppDateFormat {
   static String _locale(BuildContext context) =>
       Localizations.localeOf(context).toString();
 
+  // ── Formatter caches ──────────────────────────────────────────────────
+  // `DateFormat.xxx(locale)` and `NumberFormat.decimalPattern(locale)` each
+  // parse an ICU/CLDR pattern on construction — not free, and these are hit
+  // on the hot path: the chat re-adapts every message on each ~1.5 s poll
+  // tick, and every conversation card formats a relative time on every list
+  // rebuild. Constructing a fresh formatter per call meant dozens of ICU
+  // pattern parses per frame. The formatters are stateless once built, so we
+  // cache one instance per (kind, locale) and reuse it. Keyed by locale
+  // string — at most a handful of locales are ever seen in one session.
+  static final _timeJm = <String, DateFormat>{};
+  static final _timeHm = <String, DateFormat>{};
+  static final _dateYMMMd = <String, DateFormat>{};
+  static final _dateMMMd = <String, DateFormat>{};
+  static final _decimal = <String, NumberFormat>{};
+
+  static DateFormat _jm(String loc) =>
+      _timeJm[loc] ??= DateFormat.jm(loc);
+  static DateFormat _hm(String loc) =>
+      _timeHm[loc] ??= DateFormat.Hm(loc);
+  static DateFormat _yMMMd(String loc) =>
+      _dateYMMMd[loc] ??= DateFormat.yMMMd(loc);
+  static DateFormat _mMMd(String loc) =>
+      _dateMMMd[loc] ??= DateFormat.MMMd(loc);
+  static NumberFormat _decimalFor(String loc) =>
+      _decimal[loc] ??= NumberFormat.decimalPattern(loc);
+
   /// "11:42 AM" / "١١:٤٢ ص". When [twentyFour] is true, renders as
   /// "11:42" without the meridiem.
   static String time(BuildContext context, DateTime when,
       {bool twentyFour = false}) {
     final loc = _locale(context);
-    final pattern = twentyFour ? DateFormat.Hm(loc) : DateFormat.jm(loc);
+    final pattern = twentyFour ? _hm(loc) : _jm(loc);
     return pattern.format(when.toLocal());
   }
 
   /// "May 18, 2026" / "١٨ مايو ٢٠٢٦".
   static String date(BuildContext context, DateTime when) {
-    return DateFormat.yMMMd(_locale(context)).format(when.toLocal());
+    return _yMMMd(_locale(context)).format(when.toLocal());
   }
 
   /// "May 18, 2026 · 11:42 AM".
@@ -90,8 +116,8 @@ class AppDateFormat {
     // Same-year dates drop the year — it's redundant and costs width on
     // the 320 px tier where this pill is centred.
     return stamp.year == today.year
-        ? DateFormat.MMMd(loc).format(stamp)
-        : DateFormat.yMMMd(loc).format(stamp);
+        ? _mMMd(loc).format(stamp)
+        : _yMMMd(loc).format(stamp);
   }
 
   /// Human relative-time. Buckets:
@@ -112,7 +138,7 @@ class AppDateFormat {
     final delta = now.difference(when.toLocal());
     final tr = context.tr;
     final loc = _locale(context);
-    final n = NumberFormat.decimalPattern(loc);
+    final n = _decimalFor(loc);
 
     if (delta.inSeconds < 60) return tr.now;
     if (delta.inMinutes < 60) return tr.relativeMinutesAgo(n.format(delta.inMinutes));

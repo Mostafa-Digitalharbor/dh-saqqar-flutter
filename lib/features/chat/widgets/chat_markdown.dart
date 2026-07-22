@@ -143,7 +143,14 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
 
     return MarkdownBody(
       data: data,
-      selectable: true,
+      // selectable was `true`, which builds a full per-span selection tree
+      // for every bubble — much heavier to parse + lay out than static
+      // markdown, and re-created for each row as it recycles back into the
+      // viewport on scroll (the single biggest chat-scroll cost). Whole-
+      // message Copy + Share already live on the bubble's long-press menu
+      // (message_bubble `_showMessageActions` / `_copyMessage`), so dropping
+      // in-bubble text selection loses no real capability.
+      selectable: false,
       softLineBreak: true,
       styleSheet: styleSheet,
       onTapLink: (text, href, title) => _openLink(context, href),
