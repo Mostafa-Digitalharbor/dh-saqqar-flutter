@@ -10,6 +10,7 @@ import 'core/i18n/app_localizations.dart';
 import 'core/i18n/app_strings.dart';
 import 'core/i18n/view_model/locale_cubit.dart';
 import 'core/routing/app_router.dart';
+import 'core/routing/universal_link_bootstrap.dart';
 import 'features/notifications/view_model/notifications_settings_cubit.dart';
 import 'features/push/data/push_notifications_service.dart';
 import 'features/security/view/app_lock_gate.dart';
@@ -201,14 +202,16 @@ class _SaqqarAppState extends State<SaqqarApp> {
             // background. Sits inside the builder so it's below the root
             // Navigator — the lock screen's sign-out dialog still resolves.
             child: AppLockGate(
-              child: ShareIntentBootstrap(
-                // Global "tap a blank area to dismiss the keyboard". iOS has
-                // no system button to hide the soft keyboard (Android's back
-                // gesture does), so without this a user can get stuck with
-                // the keyboard covering the UI on any screen that lacks an
-                // obvious "done" affordance.
-                child: _DismissKeyboardOnTap(
-                  child: child ?? const SizedBox.shrink(),
+              child: UniversalLinkBootstrap(
+                child: ShareIntentBootstrap(
+                  // Global "tap a blank area to dismiss the keyboard". iOS
+                  // has no system button to hide the soft keyboard (Android's
+                  // back gesture does), so without this a user can get stuck
+                  // with the keyboard covering the UI on any screen that
+                  // lacks an obvious "done" affordance.
+                  child: _DismissKeyboardOnTap(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),

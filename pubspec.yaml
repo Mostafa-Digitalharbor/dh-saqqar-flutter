@@ -18,7 +18,7 @@ publish_to: 'none'
 #   • Multi-file attachments in the chat composer.
 #   • Receive ACTION_SEND / ACTION_SEND_MULTIPLE from WhatsApp, Files,
 #     Photos — user picks the target chat instead of auto-opening a new one.
-version: 1.1.0+107
+version: 1.1.1+108
 
 environment:
   sdk: ^3.9.2
@@ -41,6 +41,11 @@ dependencies:
 
   # Routing
   go_router: ^14.6.2
+
+  # Universal / App Links (https://saqqaar.com/...) + the legacy `saqqar://`
+  # custom scheme, both cold-start and while running. See
+  # lib/core/routing/deep_links.dart + universal_link_bootstrap.dart.
+  app_links: ^6.3.2
 
   # Networking
   dio: ^5.7.0

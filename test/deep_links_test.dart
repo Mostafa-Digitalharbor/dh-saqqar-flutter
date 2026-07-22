@@ -54,16 +54,104 @@ void main() {
       );
     });
 
-    test('rejects wrong scheme', () {
+    test('rejects missing id segment', () {
       expect(
-        DeepLinks.resolve(Uri.parse('https://saqqaar.com/foo')),
+        DeepLinks.resolve(Uri.parse('saqqar://conversation/')),
         isNull,
       );
     });
 
-    test('rejects missing id segment', () {
+    test('rejects an unrelated scheme/host entirely', () {
       expect(
-        DeepLinks.resolve(Uri.parse('saqqar://conversation/')),
+        DeepLinks.resolve(Uri.parse('https://example.com/foo')),
+        isNull,
+      );
+    });
+  });
+
+  group('DeepLinks.resolve — https://saqqaar.com universal links', () {
+    test('root path opens Home', () {
+      expect(
+        DeepLinks.resolve(Uri.parse('https://saqqaar.com/')),
+        '/chats',
+      );
+      expect(
+        DeepLinks.resolve(Uri.parse('https://saqqaar.com')),
+        '/chats',
+      );
+    });
+
+    test('/new opens a new conversation', () {
+      expect(
+        DeepLinks.resolve(Uri.parse('https://saqqaar.com/new')),
+        '/chats/new',
+      );
+    });
+
+    test('/chats/<id> opens that conversation', () {
+      expect(
+        DeepLinks.resolve(Uri.parse('https://saqqaar.com/chats/abc-123')),
+        '/chats/abc-123',
+      );
+    });
+
+    test('/chats with no id falls back to Home', () {
+      expect(
+        DeepLinks.resolve(Uri.parse('https://saqqaar.com/chats')),
+        '/chats',
+      );
+    });
+
+    test('/share/<token> opens the shared transcript', () {
+      expect(
+        DeepLinks.resolve(Uri.parse('https://saqqaar.com/share/tok-abc')),
+        '/share/tok-abc',
+      );
+    });
+
+    test('unrecognized path falls back to Home', () {
+      expect(
+        DeepLinks.resolve(Uri.parse('https://saqqaar.com/foo')),
+        '/chats',
+      );
+    });
+
+    test('browser-only prefixes are not routed', () {
+      for (final path in [
+        '/auth/callback',
+        '/excel-addin/manifest.xml',
+        '/settings/profile',
+        '/admin/dashboard',
+        '/static/app.js',
+        '/media/logo.png',
+      ]) {
+        expect(
+          DeepLinks.resolve(Uri.parse('https://saqqaar.com$path')),
+          isNull,
+          reason: '$path should not open the app',
+        );
+      }
+    });
+
+    test('exact browser-only pages are not routed', () {
+      for (final path in [
+        '/privacy',
+        '/terms',
+        '/support',
+        '/refund',
+        '/cancellation',
+      ]) {
+        expect(
+          DeepLinks.resolve(Uri.parse('https://saqqaar.com$path')),
+          isNull,
+          reason: '$path should not open the app',
+        );
+      }
+    });
+
+    test('http (non-https) saqqaar.com is not handled', () {
+      expect(
+        DeepLinks.resolve(Uri.parse('http://saqqaar.com/new')),
         isNull,
       );
     });

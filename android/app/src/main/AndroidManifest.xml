@@ -61,6 +61,25 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Legacy custom-scheme deep links (push notifications), see
+                 lib/core/routing/deep_links.dart. Mirrors the CFBundleURLTypes
+                 entry already declared in ios/Runner/Info.plist. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="saqqar"/>
+            </intent-filter>
+            <!-- Verified App Links for https://saqqaar.com/... . autoVerify
+                 makes Android fetch /.well-known/assetlinks.json (already
+                 published + verified server-side) and open the app directly
+                 on a tapped link, no "open with" chooser. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="saqqaar.com"/>
+            </intent-filter>
             <!-- "Share to Saqqar" entry point. Surfaces the app in the
                  system share sheet (WhatsApp, Photos, Files, etc.).
 
