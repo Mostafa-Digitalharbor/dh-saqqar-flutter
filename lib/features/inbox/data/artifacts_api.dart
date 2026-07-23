@@ -20,5 +20,18 @@ class ArtifactsApi {
     );
     return ArtifactsPage.fromJson(res.data!);
   }
+
+  /// `GET /api/v1/artifacts/<id>/` — one artifact's detail/metadata
+  /// (API_MOBILE_NEW_ENDPOINTS.md §4.4). Tolerates both a bare artifact
+  /// object and an `{ artifact: {…} }` envelope so a minor server-shape
+  /// choice doesn't break the parse.
+  Future<Artifact> detail(String id) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.artifactDetail(id),
+    );
+    final body = res.data ?? const <String, dynamic>{};
+    final obj = (body['artifact'] as Map?)?.cast<String, dynamic>() ?? body;
+    return Artifact.fromJson(obj);
+  }
 }
 

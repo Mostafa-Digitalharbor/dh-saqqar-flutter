@@ -111,10 +111,15 @@ class ChatArtifactTile extends StatelessWidget {
     super.key,
     required this.artifact,
     required this.onOpen,
+    this.onLongPress,
   });
 
   final DemoArtifact artifact;
   final VoidCallback onOpen;
+
+  /// Optional long-press (e.g. "show details"). Additive — the tap/download
+  /// behaviour is unchanged when this is null.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -125,6 +130,7 @@ class ChatArtifactTile extends StatelessWidget {
       borderRadius: AppRadius.cardR,
       child: InkWell(
         onTap: onOpen,
+        onLongPress: onLongPress,
         borderRadius: AppRadius.cardR,
         child: Container(
           decoration: BoxDecoration(

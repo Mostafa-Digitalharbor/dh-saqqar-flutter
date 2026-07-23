@@ -43,6 +43,30 @@ class RouteNames {
   static const devices = 'devices';
   static const devicesPath = '/devices';
 
+  // Saqqar Apps gallery (API_MOBILE_NEW_ENDPOINTS.md §1) — opened from Account.
+  static const apps = 'apps';
+  static const appsPath = '/apps';
+
+  // Managed Odoo trial (§2) — opened from Account.
+  static const trial = 'trial';
+  static const trialPath = '/trial';
+
+  // Billing history & receipts (§3) — opened from Account.
+  static const billingHistory = 'billing_history';
+  static const billingHistoryPath = '/billing/history';
+
+  // Meetings transcription (§4.1) — opened from Account.
+  static const meetings = 'meetings';
+  static const meetingsPath = '/meetings';
+
+  // Read-only Odoo data explorer (§4.2) — opened from Account.
+  static const dataExplorer = 'data_explorer';
+  static const dataExplorerPath = '/data-explorer';
+
+  // Billing checkout (§4.3) — Android-only (gated behind showPaidUpsell).
+  static const checkout = 'checkout';
+  static const checkoutPath = '/billing/checkout';
+
   // Approval deep links now resolve into the chat that raised them, because
   // approvals live per-conversation (Inbox tab was retired). Format:
   //   /chats/<conversationId>?approval=<approvalId>

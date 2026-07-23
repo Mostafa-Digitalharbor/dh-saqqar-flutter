@@ -1339,6 +1339,96 @@ class AppStrings {
   String get invalidValue => _t('invalid_value');
   String get conversationTitle => _t('conversation_title');
 
+  // ── New endpoints (API_MOBILE_NEW_ENDPOINTS.md) ──────────────────────
+  // Saqqar Apps (§1)
+  String get appsTitle => _t('apps_title');
+  String get appsEmptyTitle => _t('apps_empty_title');
+  String get appsEmptyBody => _t('apps_empty_body');
+  String get appsOpening => _t('apps_opening');
+  String get appsNeedsEnv => _t('apps_needs_env');
+
+  // Billing history & receipts (§3)
+  String get billingHistoryTitle => _t('billing_history_title');
+  String get billingBalance => _t('billing_balance');
+  String get billingTotalPurchased => _t('billing_total_purchased');
+  String get billingEmptyTitle => _t('billing_empty_title');
+  String get billingEmptyBody => _t('billing_empty_body');
+  String get billingReceipt => _t('billing_receipt');
+  String get billingReceiptFailed => _t('billing_receipt_failed');
+  String get billingReceiptNoViewer => _t('billing_receipt_no_viewer');
+  String get billingPaid => _t('billing_paid');
+  String get billingFailed => _t('billing_failed');
+
+  // Managed Odoo trial (§2)
+  String get trialTitle => _t('trial_title');
+  String get trialIntro => _t('trial_intro');
+  String get trialCompanyName => _t('trial_company_name');
+  String get trialCompanyRequired => _t('trial_company_required');
+  String get trialWorkEmail => _t('trial_work_email');
+  String get trialPhone => _t('trial_phone');
+  String get trialRequestButton => _t('trial_request_button');
+  String get trialPendingTitle => _t('trial_pending_title');
+  String get trialProvisioningTitle => _t('trial_provisioning_title');
+  String get trialProvisioningBody => _t('trial_provisioning_body');
+  String get trialReadyTitle => _t('trial_ready_title');
+  String get trialFailedTitle => _t('trial_failed_title');
+  String get trialFailedBody => _t('trial_failed_body');
+  String get trialUrl => _t('trial_url');
+  String get trialDb => _t('trial_db');
+  String get trialLogin => _t('trial_login');
+  String get trialPassword => _t('trial_password');
+  String get trialOpen => _t('trial_open');
+  String get trialOpenFailed => _t('trial_open_failed');
+  String get trialCopied => _t('trial_copied');
+  String get trialCredentialsWarning => _t('trial_credentials_warning');
+
+  // Shared
+  String get copy => _t('copy');
+  String get artifactDetailsTitle => _t('artifact_details_title');
+
+  // Meetings (§4.1)
+  String get meetingsTitle => _t('meetings_title');
+  String get meetingsIntro => _t('meetings_intro');
+  String get meetingsPreviewNote => _t('meetings_preview_note');
+  String get meetingsUrlLabel => _t('meetings_url_label');
+  String get meetingsUrlRequired => _t('meetings_url_required');
+  String get meetingsStart => _t('meetings_start');
+  String get meetingsStatus => _t('meetings_status');
+  String get meetingsStop => _t('meetings_stop');
+  String get meetingsSummarize => _t('meetings_summarize');
+  String get meetingsTranscript => _t('meetings_transcript');
+  String get meetingsTranscriptEmpty => _t('meetings_transcript_empty');
+  String get meetingsSummary => _t('meetings_summary');
+  String get meetingsAskLabel => _t('meetings_ask_label');
+  String get meetingsAsk => _t('meetings_ask');
+  String get meetingsReply => _t('meetings_reply');
+
+  // Direct data explorer (§4.2)
+  String get dataExplorerTitle => _t('data_explorer_title');
+  String get dataExplorerPreviewNote => _t('data_explorer_preview_note');
+  String get dataExplorerEnv => _t('data_explorer_env');
+  String get dataExplorerNoEnvs => _t('data_explorer_no_envs');
+  String get dataExplorerModel => _t('data_explorer_model');
+  String get dataExplorerModelRequired => _t('data_explorer_model_required');
+  String get dataExplorerDomain => _t('data_explorer_domain');
+  String get dataExplorerCount => _t('data_explorer_count');
+  String get dataExplorerSearch => _t('data_explorer_search');
+  String get dataExplorerResult => _t('data_explorer_result');
+  String get dataExplorerOperation => _t('data_explorer_operation');
+  String get dataExplorerBody => _t('data_explorer_body');
+  String get dataExplorerRun => _t('data_explorer_run');
+  String get dataExplorerInvalidJson => _t('data_explorer_invalid_json');
+
+  // Billing checkout (§4.3)
+  String get checkoutTitle => _t('checkout_title');
+  String get checkoutPreviewNote => _t('checkout_preview_note');
+  String get checkoutBuy => _t('checkout_buy');
+  String get checkoutWaiting => _t('checkout_waiting');
+  String get checkoutPaid => _t('checkout_paid');
+  String get checkoutFailed => _t('checkout_failed');
+  String get checkoutOpenFailed => _t('checkout_open_failed');
+  String get checkoutEmpty => _t('checkout_empty');
+
   // Formatters
   String routeNotFound(Uri uri) => '${_t('route_not_found')}: $uri';
 
@@ -2298,6 +2388,96 @@ const Map<String, String> _en = {
 
   'file_kind_image': 'Image',
   'auth_otp_placeholder': '1 2 3 4 5 6',
+
+  // New endpoints (API_MOBILE_NEW_ENDPOINTS.md)
+  'apps_title': 'Saqqar Apps',
+  'apps_empty_title': 'No apps yet',
+  'apps_empty_body': 'Guided setups will appear here once they\'re available.',
+  'apps_opening': 'Opening…',
+  'apps_needs_env': 'Needs a connected environment',
+  'billing_history_title': 'Billing history',
+  'billing_balance': 'Token balance',
+  'billing_total_purchased': 'Total purchased',
+  'billing_empty_title': 'No payments yet',
+  'billing_empty_body': 'Your past payments and receipts will show up here.',
+  'billing_receipt': 'Receipt',
+  'billing_receipt_failed': 'Couldn\'t open the receipt. Try again.',
+  'billing_receipt_no_viewer': 'No PDF viewer found on this device.',
+  'billing_paid': 'Paid',
+  'billing_failed': 'Failed',
+  'trial_title': 'Managed Odoo trial',
+  'trial_intro':
+      'Request a hosted Odoo trial and we\'ll set it up for you — no self-hosting needed.',
+  'trial_company_name': 'Company name',
+  'trial_company_required': 'Company name is required',
+  'trial_work_email': 'Work email (optional)',
+  'trial_phone': 'Phone (optional)',
+  'trial_request_button': 'Request trial',
+  'trial_pending_title': 'Queued…',
+  'trial_provisioning_title': 'Building your trial…',
+  'trial_provisioning_body':
+      'This can take a few minutes. You can leave this screen and come back.',
+  'trial_ready_title': 'Your trial is ready',
+  'trial_failed_title': 'Provisioning failed',
+  'trial_failed_body': 'Something went wrong while building your trial.',
+  'trial_url': 'URL',
+  'trial_db': 'Database',
+  'trial_login': 'Login',
+  'trial_password': 'Password',
+  'trial_open': 'Open Odoo',
+  'trial_open_failed': 'Couldn\'t open the link.',
+  'trial_copied': 'Copied',
+  'trial_credentials_warning':
+      'These are live admin credentials — keep them private and don\'t share them.',
+  'copy': 'Copy',
+  'artifact_details_title': 'Artifact details',
+
+  // §4 — Meetings
+  'meetings_title': 'Meeting transcription',
+  'meetings_intro':
+      'Paste an online meeting link to start live transcription.',
+  'meetings_preview_note':
+      'Preview — the meetings API shapes aren\'t finalised in the spec; confirm with the backend.',
+  'meetings_url_label': 'Meeting link',
+  'meetings_url_required': 'A meeting link is required',
+  'meetings_start': 'Start transcription',
+  'meetings_status': 'Status',
+  'meetings_stop': 'Stop',
+  'meetings_summarize': 'Summarize',
+  'meetings_transcript': 'Transcript',
+  'meetings_transcript_empty': 'Waiting for the transcript…',
+  'meetings_summary': 'Summary',
+  'meetings_ask_label': 'Ask about this meeting',
+  'meetings_ask': 'Ask',
+  'meetings_reply': 'Answer',
+
+  // §4 — Direct data explorer
+  'data_explorer_title': 'Data explorer',
+  'data_explorer_preview_note':
+      'Read-only Odoo queries — no agent, no token cost. Request shapes follow Odoo conventions; confirm with the backend.',
+  'data_explorer_env': 'Environment',
+  'data_explorer_no_envs': 'No environments — set one up in Vault first.',
+  'data_explorer_model': 'Model',
+  'data_explorer_model_required': 'A model is required',
+  'data_explorer_domain': 'Domain (optional JSON)',
+  'data_explorer_count': 'Count',
+  'data_explorer_search': 'Search',
+  'data_explorer_result': 'Result',
+  'data_explorer_operation': 'Operation',
+  'data_explorer_body': 'Request body (JSON)',
+  'data_explorer_run': 'Run',
+  'data_explorer_invalid_json': 'The request body isn\'t valid JSON.',
+
+  // §4 — Billing checkout
+  'checkout_title': 'Buy tokens',
+  'checkout_preview_note':
+      'In-app purchase may conflict with App Store / Play billing rules — confirm before release. Hidden on iOS.',
+  'checkout_buy': 'Buy',
+  'checkout_waiting': 'Waiting for payment — complete it in your browser.',
+  'checkout_paid': 'Payment complete. Thank you!',
+  'checkout_failed': 'Payment failed or was cancelled.',
+  'checkout_open_failed': 'Couldn\'t open the payment page.',
+  'checkout_empty': 'No plans available right now.',
 };
 
 const Map<String, String> _ar = {
@@ -3193,4 +3373,93 @@ const Map<String, String> _ar = {
 
   'file_kind_image': 'صورة',
   'auth_otp_placeholder': '١ ٢ ٣ ٤ ٥ ٦',
+
+  // نقاط النهاية الجديدة (API_MOBILE_NEW_ENDPOINTS.md)
+  'apps_title': 'تطبيقات صقّار',
+  'apps_empty_title': 'لا توجد تطبيقات بعد',
+  'apps_empty_body': 'ستظهر الإعدادات الموجّهة هنا عند توفّرها.',
+  'apps_opening': 'جارٍ الفتح…',
+  'apps_needs_env': 'يحتاج بيئة متصلة',
+  'billing_history_title': 'سجل الفواتير',
+  'billing_balance': 'رصيد التوكنز',
+  'billing_total_purchased': 'إجمالي المشتراة',
+  'billing_empty_title': 'لا مدفوعات بعد',
+  'billing_empty_body': 'ستظهر مدفوعاتك السابقة وإيصالاتها هنا.',
+  'billing_receipt': 'الإيصال',
+  'billing_receipt_failed': 'تعذّر فتح الإيصال. حاول مرة أخرى.',
+  'billing_receipt_no_viewer': 'لا يوجد عارض PDF على هذا الجهاز.',
+  'billing_paid': 'مدفوع',
+  'billing_failed': 'فشل',
+  'trial_title': 'تجربة أودو المُدارة',
+  'trial_intro':
+      'اطلب تجربة أودو مستضافة وسنجهّزها لك — دون الحاجة للاستضافة الذاتية.',
+  'trial_company_name': 'اسم الشركة',
+  'trial_company_required': 'اسم الشركة مطلوب',
+  'trial_work_email': 'البريد المهني (اختياري)',
+  'trial_phone': 'الهاتف (اختياري)',
+  'trial_request_button': 'اطلب التجربة',
+  'trial_pending_title': 'في قائمة الانتظار…',
+  'trial_provisioning_title': 'جارٍ تجهيز تجربتك…',
+  'trial_provisioning_body':
+      'قد يستغرق ذلك بضع دقائق. يمكنك مغادرة هذه الشاشة والعودة لاحقًا.',
+  'trial_ready_title': 'تجربتك جاهزة',
+  'trial_failed_title': 'فشل التجهيز',
+  'trial_failed_body': 'حدث خطأ أثناء تجهيز تجربتك.',
+  'trial_url': 'الرابط',
+  'trial_db': 'قاعدة البيانات',
+  'trial_login': 'المستخدم',
+  'trial_password': 'كلمة المرور',
+  'trial_open': 'افتح أودو',
+  'trial_open_failed': 'تعذّر فتح الرابط.',
+  'trial_copied': 'تم النسخ',
+  'trial_credentials_warning':
+      'هذه بيانات دخول مسؤول حيّة — احتفظ بها لنفسك ولا تشاركها.',
+  'copy': 'نسخ',
+  'artifact_details_title': 'تفاصيل الملف',
+
+  // §4 — الاجتماعات
+  'meetings_title': 'تفريغ الاجتماعات',
+  'meetings_intro': 'الصق رابط اجتماع أونلاين لبدء التفريغ المباشر.',
+  'meetings_preview_note':
+      'معاينة — أشكال واجهة الاجتماعات غير نهائية في المواصفة؛ أكّدها مع الباك-إند.',
+  'meetings_url_label': 'رابط الاجتماع',
+  'meetings_url_required': 'رابط الاجتماع مطلوب',
+  'meetings_start': 'ابدأ التفريغ',
+  'meetings_status': 'الحالة',
+  'meetings_stop': 'إيقاف',
+  'meetings_summarize': 'تلخيص',
+  'meetings_transcript': 'النص',
+  'meetings_transcript_empty': 'في انتظار النص…',
+  'meetings_summary': 'الملخّص',
+  'meetings_ask_label': 'اسأل عن هذا الاجتماع',
+  'meetings_ask': 'اسأل',
+  'meetings_reply': 'الإجابة',
+
+  // §4 — مستكشف البيانات
+  'data_explorer_title': 'مستكشف البيانات',
+  'data_explorer_preview_note':
+      'استعلامات Odoo للقراءة فقط — بدون agent وبدون تكلفة توكنز. أشكال الطلب تتبع أعراف Odoo؛ أكّدها مع الباك-إند.',
+  'data_explorer_env': 'البيئة',
+  'data_explorer_no_envs': 'لا توجد بيئات — جهّز واحدة في الخزنة أولاً.',
+  'data_explorer_model': 'الموديل',
+  'data_explorer_model_required': 'الموديل مطلوب',
+  'data_explorer_domain': 'الـ Domain (JSON اختياري)',
+  'data_explorer_count': 'عدّ',
+  'data_explorer_search': 'بحث',
+  'data_explorer_result': 'النتيجة',
+  'data_explorer_operation': 'العملية',
+  'data_explorer_body': 'جسم الطلب (JSON)',
+  'data_explorer_run': 'تشغيل',
+  'data_explorer_invalid_json': 'جسم الطلب مش JSON صالح.',
+
+  // §4 — الدفع
+  'checkout_title': 'شراء توكنز',
+  'checkout_preview_note':
+      'الشراء داخل التطبيق قد يتعارض مع سياسة متاجر Apple/Google — أكّد قبل الإصدار. مخفي على iOS.',
+  'checkout_buy': 'شراء',
+  'checkout_waiting': 'في انتظار الدفع — أكمِله في المتصفح.',
+  'checkout_paid': 'تم الدفع. شكرًا لك!',
+  'checkout_failed': 'فشل الدفع أو تم إلغاؤه.',
+  'checkout_open_failed': 'تعذّر فتح صفحة الدفع.',
+  'checkout_empty': 'لا توجد باقات متاحة حاليًا.',
 };

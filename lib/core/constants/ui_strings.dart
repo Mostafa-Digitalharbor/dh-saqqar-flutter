@@ -57,4 +57,9 @@ class UiStrings {
   /// Brand wordmark. Rendered as the fallback lockup when the logo asset
   /// fails to decode — a trademark, so it is never translated.
   static const brandWordmark = 'SAQQAR';
+
+  /// Placeholder shown in the meeting-link field (API_MOBILE_NEW_ENDPOINTS.md
+  /// §4.1). A URL example — reads the same in every locale, so it lives here
+  /// rather than in `app_strings`.
+  static const meetingUrlExample = 'https://meet.google.com/…';
 }

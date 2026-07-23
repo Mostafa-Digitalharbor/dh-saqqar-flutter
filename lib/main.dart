@@ -25,11 +25,17 @@ import 'core/network/dio_client.dart';
 import 'core/network/view_model/connectivity_cubit.dart';
 import 'core/storage/secure_token_store.dart';
 import 'core/theme/view_model/theme_cubit.dart';
+import 'features/apps/data/apps_api.dart';
 import 'features/auth/data/auth_api.dart';
 import 'features/auth/data/social_auth_service.dart';
 import 'features/auth/view_model/auth_cubit.dart';
+import 'features/billing/data/billing_history_api.dart';
+import 'features/billing/data/checkout_api.dart';
 import 'features/billing/data/plans_api.dart';
 import 'features/billing/data/usage_api.dart';
+import 'features/data_api/data/odoo_data_api.dart';
+import 'features/meetings/data/meetings_api.dart';
+import 'features/trial/data/trial_api.dart';
 import 'features/billing/view_model/plan_cubit.dart';
 import 'features/chat/data/live_env_ack_service.dart';
 import 'features/chat/data/transcribe_api.dart';
@@ -247,6 +253,15 @@ Future<void> _bootApp() async {
   final projectsApi = ProjectsApi(dio);
   final plansApi = PlansApi(dio);
   final usageApi = UsageApi(dio);
+  // New endpoints (API_MOBILE_NEW_ENDPOINTS.md). Cheap to build (no I/O);
+  // the §4 clients (meetings / direct-data) are data-layer-only seams with
+  // no UI yet, provided so a future feature can `context.read` them.
+  final appsApi = AppsApi(dio);
+  final trialApi = TrialApi(dio);
+  final billingHistoryApi = BillingHistoryApi(dio);
+  final checkoutApi = CheckoutApi(dio);
+  final meetingsApi = MeetingsApi(dio);
+  final odooDataApi = OdooDataApi(dio);
   final credentialsApi = CredentialsApi(dio);
   final conversationsApi = ConversationsApi(dio);
   final approvalsApi = ApprovalsApi(dio);
@@ -322,6 +337,13 @@ Future<void> _bootApp() async {
         RepositoryProvider<ProjectsApi>.value(value: projectsApi),
         RepositoryProvider<PlansApi>.value(value: plansApi),
         RepositoryProvider<UsageApi>.value(value: usageApi),
+        // New endpoints (API_MOBILE_NEW_ENDPOINTS.md).
+        RepositoryProvider<AppsApi>.value(value: appsApi),
+        RepositoryProvider<TrialApi>.value(value: trialApi),
+        RepositoryProvider<BillingHistoryApi>.value(value: billingHistoryApi),
+        RepositoryProvider<CheckoutApi>.value(value: checkoutApi),
+        RepositoryProvider<MeetingsApi>.value(value: meetingsApi),
+        RepositoryProvider<OdooDataApi>.value(value: odooDataApi),
         RepositoryProvider<CredentialsApi>.value(value: credentialsApi),
         RepositoryProvider<ConversationsApi>.value(value: conversationsApi),
         RepositoryProvider<ApprovalsApi>.value(value: approvalsApi),

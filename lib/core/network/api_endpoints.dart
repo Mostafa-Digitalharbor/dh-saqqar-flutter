@@ -166,4 +166,75 @@ class ApiEndpoints {
   /// api }`. Useful as a connectivity pre-flight before the splash hands
   /// off to the auth gate.
   static const String health = '/api/v1/health/';
+
+  // ── Saqqar Apps (API_MOBILE_NEW_ENDPOINTS.md §1) ─────────────────────
+  /// `GET /api/v1/apps/` — the guided implementation packages (ZATCA,
+  /// WhatsApp, Chart of Accounts …). Each tile launches a package-tagged
+  /// conversation; there is no per-app backend, the agent drives the task.
+  static const String apps = '/api/v1/apps/';
+
+  /// `POST /api/v1/apps/<slug>/launch/ { environment_id? }` — creates a
+  /// package-tagged conversation seeded with the agent's opening turn and
+  /// returns its `conversation_id`. Open that conversation to start.
+  static String appLaunch(String slug) => '/api/v1/apps/$slug/launch/';
+
+  // ── Managed Odoo Trial (API_MOBILE_NEW_ENDPOINTS.md §2) ──────────────
+  /// `POST /api/v1/trial/ { company_name, … }` — request a hosted trial
+  /// Odoo. Idempotent: one trial per user (a second call returns the
+  /// existing one).
+  static const String trial = '/api/v1/trial/';
+
+  /// `GET /api/v1/trial/status/` — poll provisioning (also kicks it off on
+  /// the first call). When `ready`, the body carries live admin credentials
+  /// — treat them as a secret.
+  static const String trialStatus = '/api/v1/trial/status/';
+
+  // ── Billing history & receipts (API_MOBILE_NEW_ENDPOINTS.md §3) ──────
+  /// `GET /api/v1/billing/history/` — the caller's own payments + balances.
+  /// Read-only, so store-policy-safe (unlike checkout, which we don't wire).
+  static const String billingHistory = '/api/v1/billing/history/';
+
+  /// `GET /api/v1/billing/receipt/<ref>/` — a PDF receipt for a PAID row.
+  /// Strictly scoped to the caller; a foreign/unpaid ref returns 404.
+  static String billingReceipt(String receiptRef) =>
+      '/api/v1/billing/receipt/$receiptRef/';
+
+  // ── Billing checkout (API_MOBILE_NEW_ENDPOINTS.md §4.3) — Paymob ──────
+  // ⚠️ Buying in-app may conflict with App Store / Google Play IAP rules.
+  // The UI is GATED behind `showPaidUpsell` (hidden on iOS); confirm store
+  // compliance before shipping the purchase surface on any platform.
+  static const String billingPlans = '/api/v1/billing/plans/';
+  static const String billingCheckout = '/api/v1/billing/checkout/';
+  static String billingPaymentStatus(String ref) =>
+      '/api/v1/billing/payment/$ref/status/';
+
+  // ── Artifact detail (API_MOBILE_NEW_ENDPOINTS.md §4.4) ───────────────
+  /// `GET /api/v1/artifacts/<id>/` — one artifact's detail/metadata.
+  static String artifactDetail(String id) => '/api/v1/artifacts/$id/';
+
+  // ── Meetings · Vexa transcription (API_MOBILE_NEW_ENDPOINTS.md §4.1) ──
+  // Data layer only for now — no UI surface yet. Paths pinned here so the
+  // MeetingsApi client has one source of truth.
+  static const String meetings = '/api/v1/meetings/';
+  static String meetingTranscript(String id) =>
+      '/api/v1/meetings/$id/transcript';
+  static String meetingStop(String id) => '/api/v1/meetings/$id/stop';
+  static String meetingSummarize(String id) => '/api/v1/meetings/$id/summarize';
+  static String meetingChat(String id) => '/api/v1/meetings/$id/chat';
+
+  // ── Direct data API · read-only Odoo (API_MOBILE_NEW_ENDPOINTS.md §4.2) ─
+  // Deterministic reads against a bound environment — cheaper than an agent
+  // turn (no LLM cost). Data layer only for now.
+  static String odooSearch(String envId) =>
+      '/api/v1/environments/$envId/odoo/search/';
+  static String odooCount(String envId) =>
+      '/api/v1/environments/$envId/odoo/count/';
+  static String odooReadGroup(String envId) =>
+      '/api/v1/environments/$envId/odoo/read-group/';
+  static String odooRead(String envId) =>
+      '/api/v1/environments/$envId/odoo/read/';
+  static String odooFields(String envId) =>
+      '/api/v1/environments/$envId/odoo/fields/';
+  static String envSql(String envId) => '/api/v1/environments/$envId/sql/';
+  static const String reportEntities = '/api/v1/report-entities/';
 }

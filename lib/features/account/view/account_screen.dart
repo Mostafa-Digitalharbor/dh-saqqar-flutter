@@ -141,6 +141,59 @@ class _AccountScreenState extends State<AccountScreen> {
                 onPressed: () => context.pushNamed(RouteNames.devices),
               ),
               const SizedBox(height: 14),
+              // Saqqar Apps — guided setups (API_MOBILE_NEW_ENDPOINTS.md §1).
+              GhostButton(
+                label: context.tr.appsTitle,
+                icon: Icons.grid_view_rounded,
+                expand: true,
+                onPressed: () => context.pushNamed(RouteNames.apps),
+              ),
+              const SizedBox(height: 14),
+              // Managed Odoo trial (§2).
+              GhostButton(
+                label: context.tr.trialTitle,
+                icon: Icons.rocket_launch_outlined,
+                expand: true,
+                onPressed: () => context.pushNamed(RouteNames.trial),
+              ),
+              const SizedBox(height: 14),
+              // Meeting transcription (§4.1).
+              GhostButton(
+                label: context.tr.meetingsTitle,
+                icon: Icons.mic_none_outlined,
+                expand: true,
+                onPressed: () => context.pushNamed(RouteNames.meetings),
+              ),
+              const SizedBox(height: 14),
+              // Read-only Odoo data explorer (§4.2).
+              GhostButton(
+                label: context.tr.dataExplorerTitle,
+                icon: Icons.table_chart_outlined,
+                expand: true,
+                onPressed: () => context.pushNamed(RouteNames.dataExplorer),
+              ),
+              const SizedBox(height: 14),
+              // Billing history (§3) + checkout (§4.3) — gated behind
+              // [showPaidUpsell] so they stay hidden on iOS, matching how
+              // prices / plans are suppressed there (App Store paid-surface
+              // caution). Checkout additionally needs store-IAP sign-off.
+              if (showPaidUpsell) ...[
+                GhostButton(
+                  label: context.tr.billingHistoryTitle,
+                  icon: Icons.receipt_long_outlined,
+                  expand: true,
+                  onPressed: () =>
+                      context.pushNamed(RouteNames.billingHistory),
+                ),
+                const SizedBox(height: 14),
+                GhostButton(
+                  label: context.tr.checkoutTitle,
+                  icon: Icons.shopping_bag_outlined,
+                  expand: true,
+                  onPressed: () => context.pushNamed(RouteNames.checkout),
+                ),
+                const SizedBox(height: 14),
+              ],
               GhostButton(
                 label: context.tr.signOut,
                 icon: AppIcons.signOut,

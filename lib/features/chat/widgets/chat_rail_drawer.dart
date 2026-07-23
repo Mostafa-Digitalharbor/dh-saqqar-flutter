@@ -19,6 +19,7 @@ import '../../inbox/data/approval_models.dart' as inbox_api;
 import '../../inbox/data/approvals_api.dart';
 import '../../inbox/data/artifact_downloader.dart';
 import '../../inbox/data/artifact_models.dart' as inbox_api;
+import '../../inbox/view/artifact_details_sheet.dart';
 import '../view/attachment_viewer_screen.dart';
 import '../view_model/chat_cubit.dart';
 import 'chat_approval_card.dart';
@@ -150,6 +151,12 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
     }
   }
 
+  /// Long-press on an artifact → its detail/metadata sheet (API §4.4).
+  /// Fetches `GET /artifacts/<id>/` inside the sheet.
+  void _showArtifactDetails(inbox_api.Artifact artifact) {
+    showArtifactDetailsSheet(context, id: artifact.id, name: artifact.name);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
@@ -250,6 +257,7 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
                   _ArtifactsTab(
                     artifacts: artifacts,
                     onOpen: _openArtifact,
+                    onDetails: _showArtifactDetails,
                   ),
                   // Activity tab is a placeholder until the backend
                   // surfaces a server-activity feed.
@@ -443,10 +451,15 @@ class _ApprovalsTab extends StatelessWidget {
 }
 
 class _ArtifactsTab extends StatelessWidget {
-  const _ArtifactsTab({required this.artifacts, required this.onOpen});
+  const _ArtifactsTab({
+    required this.artifacts,
+    required this.onOpen,
+    required this.onDetails,
+  });
 
   final List<inbox_api.Artifact> artifacts;
   final void Function(inbox_api.Artifact) onOpen;
+  final void Function(inbox_api.Artifact) onDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -465,6 +478,9 @@ class _ArtifactsTab extends StatelessWidget {
       itemBuilder: (context, i) => ChatArtifactTile(
         artifact: _adaptApiArtifact(artifacts[i], context.tr),
         onOpen: () => onOpen(artifacts[i]),
+        // Long-press → artifact detail metadata (API §4.4). Additive; the
+        // tap still downloads/opens as before.
+        onLongPress: () => onDetails(artifacts[i]),
       ),
     );
   }

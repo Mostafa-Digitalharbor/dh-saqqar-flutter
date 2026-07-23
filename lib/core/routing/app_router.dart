@@ -7,13 +7,24 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../features/account/view/account_screen.dart';
+import '../../features/apps/data/apps_api.dart';
+import '../../features/apps/view/apps_screen.dart';
+import '../../features/apps/view_model/apps_cubit.dart';
 import '../../features/auth/view/auth_flow_screen.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/auth/view_model/auth_flow_cubit.dart';
 import '../../features/auth/view_model/auth_state.dart';
 import '../../features/billing/data/billing_visibility.dart';
+import '../../features/billing/view/billing_history_screen.dart';
+import '../../features/billing/view/checkout_screen.dart';
 import '../../features/billing/view/pricing_screen.dart';
 import '../../features/billing/view/usage_screen.dart';
+import '../../features/data_api/data/odoo_data_api.dart';
+import '../../features/data_api/view/data_explorer_screen.dart';
+import '../../features/data_api/view_model/data_explorer_cubit.dart';
+import '../../features/meetings/data/meetings_api.dart';
+import '../../features/meetings/view/meetings_screen.dart';
+import '../../features/meetings/view_model/meetings_cubit.dart';
 import '../../features/chat/view/chat_screen.dart';
 import '../../features/chat/view_model/chat_cubit.dart';
 import '../../features/conversations/data/conversations_repository.dart';
@@ -24,6 +35,10 @@ import '../../features/share/data/shares_api.dart';
 import '../../features/share/view/shared_transcript_screen.dart';
 import '../../features/share/view_model/shared_transcript_cubit.dart';
 import '../../features/storybook/storybook_screen.dart';
+import '../../features/trial/data/trial_api.dart';
+import '../../features/trial/view/trial_screen.dart';
+import '../../features/trial/view_model/trial_cubit.dart';
+import '../../features/vault/data/projects_api.dart';
 import '../../features/vault/view/vault_screen.dart';
 import '../constants/ui_strings.dart';
 import '../../navigation/home_shell.dart';
@@ -155,6 +170,89 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
         pageBuilder: (_, state) => _transitionPage(
           state: state,
           child: const DevicesScreen(),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      // Saqqar Apps gallery (API_MOBILE_NEW_ENDPOINTS.md §1). Per-route
+      // AppsCubit so its lifetime matches the screen; AppsApi is the
+      // boot-scoped instance from main.dart's RepositoryProvider.
+      GoRoute(
+        path: RouteNames.appsPath,
+        name: RouteNames.apps,
+        pageBuilder: (context, state) => _transitionPage(
+          state: state,
+          child: BlocProvider<AppsCubit>(
+            create: (ctx) => AppsCubit(ctx.read<AppsApi>()),
+            child: const AppsScreen(),
+          ),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      // Managed Odoo trial (§2). Per-route TrialCubit so its poll timer is
+      // cancelled on pop (close()).
+      GoRoute(
+        path: RouteNames.trialPath,
+        name: RouteNames.trial,
+        pageBuilder: (context, state) => _transitionPage(
+          state: state,
+          child: BlocProvider<TrialCubit>(
+            create: (ctx) => TrialCubit(ctx.read<TrialApi>()),
+            child: const TrialScreen(),
+          ),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      // Billing history & receipts (§3). Read-only; uses local screen state
+      // + the boot-scoped BillingHistoryApi, so no cubit provider needed.
+      GoRoute(
+        path: RouteNames.billingHistoryPath,
+        name: RouteNames.billingHistory,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const BillingHistoryScreen(),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      // Meetings transcription (§4.1). Per-route MeetingsCubit cancels its
+      // poll timer on pop.
+      GoRoute(
+        path: RouteNames.meetingsPath,
+        name: RouteNames.meetings,
+        pageBuilder: (context, state) => _transitionPage(
+          state: state,
+          child: BlocProvider<MeetingsCubit>(
+            create: (ctx) => MeetingsCubit(ctx.read<MeetingsApi>()),
+            child: const MeetingsScreen(),
+          ),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      // Read-only Odoo data explorer (§4.2).
+      GoRoute(
+        path: RouteNames.dataExplorerPath,
+        name: RouteNames.dataExplorer,
+        pageBuilder: (context, state) => _transitionPage(
+          state: state,
+          child: BlocProvider<DataExplorerCubit>(
+            create: (ctx) => DataExplorerCubit(
+              projects: ctx.read<ProjectsApi>(),
+              data: ctx.read<OdooDataApi>(),
+            ),
+            child: const DataExplorerScreen(),
+          ),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      // Billing checkout (§4.3) — Paymob. Same iOS guard as /pricing: the
+      // redirect closes the deep-link path so the purchase surface can't
+      // appear on iOS at all (App Store IAP caution).
+      GoRoute(
+        path: RouteNames.checkoutPath,
+        name: RouteNames.checkout,
+        redirect: (_, __) => showPaidUpsell ? null : RouteNames.chatsPath,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const CheckoutScreen(),
           kind: _RouteTransitionKind.detail,
         ),
       ),
