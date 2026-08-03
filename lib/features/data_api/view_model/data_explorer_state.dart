@@ -11,8 +11,21 @@ enum DataOp {
   sql,
   reportEntities;
 
-  /// `report-entities` is a bodyless GET; every other op POSTs a JSON body.
-  bool get needsBody => this != DataOp.reportEntities;
+  /// Every op takes a JSON object. `report-entities` is the odd one out in
+  /// *transport* only — it's a GET, so its object is sent as query
+  /// parameters rather than a body.
+  ///
+  /// It used to be modelled as bodyless, which made it the one operation in
+  /// the explorer that could never succeed: the server answers a bare
+  /// `GET /report-entities/` with `400 conversation_id is required and must
+  /// belong to you` (verified against production 2026-07-29). The parameter
+  /// is conversation-scoped, not environment-scoped, and the explorer has no
+  /// conversation context of its own — so the user supplies it, exactly like
+  /// every other request shape on this screen.
+  bool get needsBody => true;
+
+  /// GET ops send their JSON object as query parameters instead of a body.
+  bool get isGet => this == DataOp.reportEntities;
 
   /// Odoo-ORM operation name shown in the picker. These are the backend's own
   /// vocabulary (technical terms), so they stay English in both locales — same
@@ -45,7 +58,9 @@ enum DataOp {
       case DataOp.sql:
         return '{\n  "query": "SELECT id, name FROM res_partner LIMIT 5"\n}';
       case DataOp.reportEntities:
-        return '';
+        // Sent as `?conversation_id=…`. Paste the id of any conversation you
+        // own — the server scopes the entity list to it.
+        return '{\n  "conversation_id": ""\n}';
     }
   }
 }

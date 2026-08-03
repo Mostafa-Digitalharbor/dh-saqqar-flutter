@@ -9,6 +9,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../shared/animations/typing_dots.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
+import '../../../shared/widgets/title_trailing_row.dart';
 import '../../chat/view_model/running_agents_cubit.dart';
 import '../data/conversation_models.dart';
 import '../view_model/conversations_cubit.dart';
@@ -172,9 +173,12 @@ class ConversationCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
+                            // Time sits inline at the end of the title line,
+                            // matching the design's ConversationRow.
+                            // `TitleTrailingRow` keeps the stamp from starving
+                            // the title on a 320 px screen — see its doc.
+                            TitleTrailingRow.stamp(
+                              leading: [
                                 if (isPinned) ...[
                                   Icon(
                                     Icons.push_pin,
@@ -183,31 +187,24 @@ class ConversationCard extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 6),
                                 ],
-                                Expanded(
-                                  child: Text(
-                                    title.isEmpty
-                                        ? context.tr.untitledConversation
-                                        : title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.text.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                // Time sits inline at the end of the title
-                                // line, matching the design's ConversationRow.
-                                Text(
-                                  AppDateFormat.relative(
-                                    context,
-                                    conversation.updatedAt,
-                                  ),
-                                  style: context.text.labelMedium?.copyWith(
-                                    color: s.muted,
-                                  ),
-                                ),
                               ],
+                              title: Text(
+                                title.isEmpty
+                                    ? context.tr.untitledConversation
+                                    : title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.text.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              stamp: AppDateFormat.relative(
+                                context,
+                                conversation.updatedAt,
+                              ),
+                              stampStyle: context.text.labelMedium?.copyWith(
+                                color: s.muted,
+                              ),
                             ),
                             // While the agent is running for THIS chat the
                             // preview line becomes a live "Saqqar is working"
@@ -345,6 +342,23 @@ class ConversationCard extends StatelessWidget {
 /// mid-sentence, is still the user's own content and stays untouched.
 String _humanPreview(String raw, BuildContext context) {
   if (raw.isEmpty) return raw;
+  // Model control-token envelope — `<｜｜DSML｜tool_calls｜>…`.
+  //
+  // Those bars are U+FF5C FULLWIDTH VERTICAL LINE, not ASCII `|`: they are
+  // the special tokens the model wraps a tool call in, and the backend copies
+  // whatever the last message held into `last_message_preview` verbatim. When
+  // the newest message is a tool call — which is most of the time while an
+  // agent is mid-run — that envelope is what the user reads as the summary of
+  // their chat. Caught on a live conversation, whose card read
+  // `<｜｜DSML｜tool_calls｜>` for the whole run.
+  //
+  // Keyed on the fullwidth bar rather than the tag name: `DSML` is one
+  // model's vocabulary and would change with the model, whereas U+FF5C in a
+  // string that opens with `<` is a control token in any of them — it does
+  // not occur in Arabic or English prose.
+  if (raw.startsWith('<') && raw.contains('｜')) {
+    return context.tr.conversationPreviewUnavailable;
+  }
   final first = raw[0];
   if (first != '{' && first != '[') return raw;
   // A bare "{" that never closes is prose, not a payload.
@@ -463,14 +477,26 @@ class _WarnPill extends StatelessWidget {
         children: [
           Icon(AppIcons.shieldAlert, size: 12, color: s.warning),
           const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              height: 1.2,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-              color: s.warning,
+          // `Flexible` + ellipsis, matching [_MetaInline]. `mainAxisSize.min`
+          // does NOT stop a child exceeding the incoming constraint — it only
+          // stops the Row from expanding — so an unbounded `Text` here
+          // overflowed the card by ~2 px at 320 px wide once the count went
+          // double-digit (the label is uppercase with 0.6 letter-spacing, so
+          // it grows faster than it looks). Shrinking beats clipping: the
+          // count is the load-bearing part and it sits at the start.
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.2,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+                color: s.warning,
+              ),
             ),
           ),
         ],

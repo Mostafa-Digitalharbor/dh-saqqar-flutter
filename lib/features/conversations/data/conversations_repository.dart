@@ -8,7 +8,6 @@ import '../../../core/logging/app_logger.dart';
 import '../../chat/data/chat_snapshot_disk_cache.dart';
 import '../../inbox/data/approval_models.dart';
 import '../../inbox/data/approvals_api.dart';
-import '../../inbox/data/artifacts_api.dart';
 import '../../watch/data/watch_bridge.dart';
 import 'attachment_models.dart';
 import 'conversation_models.dart';
@@ -32,12 +31,10 @@ class ConversationsRepository {
   ConversationsRepository(
     this._api, {
     ApprovalsApi? approvalsApi,
-    ArtifactsApi? artifactsApi,
     ConversationsCache? listCache,
     ChatSnapshotDiskCache? snapshotDiskCache,
     WatchBridge? watchBridge,
   })  : _approvalsApi = approvalsApi,
-        _artifactsApi = artifactsApi,
         _listCache = listCache,
         _diskCache = snapshotDiskCache,
         _watchBridge = watchBridge;
@@ -46,12 +43,14 @@ class ConversationsRepository {
 
   final ConversationsApi _api;
 
-  /// Optional cross-conversation feeds used to enrich the list rows with
-  /// REAL per-conversation pending-approval and file counts (§8 / §9).
-  /// Nullable so test/stub construction stays one-arg — when absent the
-  /// meta maps come back empty and the rows simply omit those counts.
+  /// Flat approvals feed, used to derive each row's pending-approval count —
+  /// the one piece of per-row meta `GET /conversations/` still doesn't carry.
+  /// Nullable so test/stub construction stays one-arg; when absent the count
+  /// is simply omitted rather than guessed.
+  ///
+  /// The matching artifacts dependency was dropped when the list started
+  /// carrying `files_count`; see [conversationMeta].
   final ApprovalsApi? _approvalsApi;
-  final ArtifactsApi? _artifactsApi;
 
   /// Offline disk cache for the Chats list (stale-while-revalidate).
   /// Nullable so test/stub construction stays cache-free — when absent the
@@ -66,7 +65,7 @@ class ConversationsRepository {
   /// Pushes the pending-approvals feed to a paired Apple Watch after every
   /// list refresh. Nullable for tests / platforms without the bridge (it's
   /// a no-op off iOS anyway) — same optional-dependency shape as
-  /// [_approvalsApi] / [_artifactsApi] above.
+  /// [_approvalsApi] above.
   final WatchBridge? _watchBridge;
 
   /// Guards the background prefetch so list reloads don't stack passes.
@@ -164,7 +163,14 @@ class ConversationsRepository {
     }
     final map = await compute(decodeSnapshotJson, body);
     final snapshot = ConversationSnapshot.fromJson(map);
-    if (!snapshot.delta) {
+    // Persist only a page that represents the LATEST state of the chat.
+    //
+    // A `?before=` page is non-delta but is a window into old history, so
+    // caching it would replace the cold-start transcript with a fragment
+    // from the middle of the conversation — the user reopens the chat and
+    // finds it starts and ends in the wrong place. `?since=` deltas are
+    // excluded for the same reason: they carry only the newest rows.
+    if (!snapshot.delta && before == null) {
       final cache = _diskCache;
       if (cache != null) unawaited(cache.writeBody(id, body));
     }
@@ -241,23 +247,26 @@ class ConversationsRepository {
     return _api.list(limit: limit, includeArchived: includeArchived);
   }
 
-  /// Real per-conversation meta for the Chats list, fetched from the flat
-  /// cross-conversation feeds and grouped by conversation id:
-  ///   * `pendingByConv` — count of **pending** approvals
-  ///     (`GET /approvals/?status=pending`). Drives the "N to approve" pill
-  ///     and the "Needs approval" filter — there's no per-row approval API,
-  ///     so this flat feed is the real signal.
-  ///   * `filesByConv` — count of produced files
-  ///     (`GET /artifacts/`). Drives the file count on each row.
+  /// Per-conversation meta for the Chats list that the list endpoint doesn't
+  /// carry: the count of **pending** approvals, grouped from
+  /// `GET /approvals/?status=pending`.
   ///
-  /// Best-effort: a failure on either feed yields an empty map rather than
-  /// failing the whole list load. Counts are honest — never fabricated —
-  /// though they reflect the first page (server-capped) of each feed.
+  /// The matching `/artifacts/` fetch was removed on 2026-07-25. The list row
+  /// now carries `files_count` directly, and the flat feed was not merely
+  /// redundant but *wrong*: capped at 100 artifacts account-wide, it
+  /// disagreed with the server's own per-row count on 41 of 100 rows. Dropping
+  /// it also takes the 20 s Chats poll from three requests to two.
+  ///
+  /// The approvals feed carries the same 100-row ceiling and so has the same
+  /// flaw; it stays only because there is no `pending_approvals` on the row
+  /// yet (docs/MOBILE_BACKEND_GAPS_CORE.md §1). Retire it the moment there is.
+  ///
+  /// Best-effort: a failure yields an empty map rather than failing the whole
+  /// list load. Counts are honest — never fabricated.
   Future<({Map<String, int> pendingByConv, Map<String, int> filesByConv})>
       conversationMeta() async {
     final pending = await _pendingByConversation();
-    final files = await _filesByConversation();
-    return (pendingByConv: pending, filesByConv: files);
+    return (pendingByConv: pending, filesByConv: const <String, int>{});
   }
 
   Future<Map<String, int>> _pendingByConversation() async {
@@ -277,59 +286,6 @@ class ConversationsRepository {
       return counts;
     } catch (e, st) {
       AppLogger.warn(_tag, 'pending-approvals meta failed', error: e, stackTrace: st);
-      return const {};
-    }
-  }
-
-  /// Best-effort per-conversation **project / environment** names, fetched
-  /// from each conversation's snapshot — the flat list endpoint doesn't
-  /// carry them. Bounded to [concurrency] in-flight requests so a long list
-  /// doesn't fire a request storm; a per-row failure (or a conversation with
-  /// no bound environment) simply skips that row. Never fabricated.
-  ///
-  /// [since] is forwarded as `?since=` so the server returns a delta snapshot
-  /// (no message backlog) — we only need the `conversation` object's
-  /// project / environment, not the transcript.
-  Future<({Map<String, String> projectByConv, Map<String, String> envByConv})>
-      conversationContext(
-    List<String> ids, {
-    int concurrency = 6,
-  }) async {
-    final projects = <String, String>{};
-    final envs = <String, String>{};
-    final now = DateTime.now();
-    for (var i = 0; i < ids.length; i += concurrency) {
-      final chunk = ids.skip(i).take(concurrency);
-      await Future.wait(chunk.map((id) async {
-        try {
-          final snap = await _api.getSnapshot(id, since: now);
-          final p = snap.conversation.project?.name.trim();
-          final e = snap.conversation.environment?.name.trim();
-          if (p != null && p.isNotEmpty) projects[id] = p;
-          if (e != null && e.isNotEmpty) envs[id] = e;
-        } catch (e) {
-          // Best-effort — one row's failure must not block the rest, and we
-          // never substitute a placeholder.
-          AppLogger.debug(_tag, 'context fetch failed for $id: $e');
-        }
-      }));
-    }
-    return (projectByConv: projects, envByConv: envs);
-  }
-
-  Future<Map<String, int>> _filesByConversation() async {
-    final api = _artifactsApi;
-    if (api == null) return const {};
-    try {
-      final page = await api.list(limit: 100);
-      final counts = <String, int>{};
-      for (final a in page.artifacts) {
-        final id = a.conversation?.id;
-        if (id != null) counts[id] = (counts[id] ?? 0) + 1;
-      }
-      return counts;
-    } catch (e, st) {
-      AppLogger.warn(_tag, 'artifacts meta failed', error: e, stackTrace: st);
       return const {};
     }
   }

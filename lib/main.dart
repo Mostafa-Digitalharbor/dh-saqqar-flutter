@@ -315,7 +315,6 @@ Future<void> _bootApp() async {
   final conversationsRepository = ConversationsRepository(
     conversationsApi,
     approvalsApi: approvalsApi,
-    artifactsApi: artifactsApi,
     watchBridge: watchBridge,
     // Offline cache: persists the Chats list + counts so the tab paints
     // instantly on cold start while a fresh fetch runs in the background.
@@ -325,6 +324,7 @@ Future<void> _bootApp() async {
     // costs nothing at startup.
     snapshotDiskCache: ChatSnapshotDiskCache(),
   );
+
 
   runApp(
     MultiRepositoryProvider(

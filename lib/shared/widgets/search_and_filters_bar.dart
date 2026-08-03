@@ -4,6 +4,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../extensions/context_extensions.dart';
 import 'chip_strip.dart';
+import 'filter_pill.dart';
 import '../../core/theme/app_radius.dart';
 
 class SearchFilterOption<T> {
@@ -81,7 +82,7 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
           ChipStrip(
             children: [
               for (final filter in filters)
-                _FilterChip(
+                FilterPill(
                   label: filter.label,
                   selected: filter.value == selectedFilter,
                   onTap: () => onFilterSelected?.call(filter.value),
@@ -90,54 +91,6 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.pillR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.pillR,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? s.brandCyan.withValues(alpha: context.isDark ? 0.16 : 0.12)
-                : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
-            borderRadius: AppRadius.pillR,
-            border: Border.all(
-              color: selected
-                  ? s.brandCyan.withValues(alpha: 0.4)
-                  : s.cardBorder,
-            ),
-          ),
-          child: Text(
-            label,
-            style: context.text.labelMedium?.copyWith(
-              color: selected ? s.brandCyan : s.text,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

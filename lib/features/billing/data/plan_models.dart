@@ -1,10 +1,11 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 /// One usage window (day / week / month) from `conversation.plan`. Values are
 /// in Saqqar-Token (ST) — an opaque cost-weighted credit. Caps are
 /// admin-editable; NEVER hardcode them, always read [cap] from the server.
 @immutable
-class UsageWindow {
+class UsageWindow extends Equatable {
   const UsageWindow({
     required this.used,
     required this.cap,
@@ -38,12 +39,15 @@ class UsageWindow {
       remaining: (json['remaining'] as num?)?.toInt() ?? 0,
     );
   }
+
+  @override
+  List<Object?> get props => [used, cap, pct, remaining];
 }
 
 /// Per-plan feature gates from `plan.features`. A `false` flag means the tool
 /// is locked on the caller's plan (the server 403s if called anyway).
 @immutable
-class PlanFeatures {
+class PlanFeatures extends Equatable {
   const PlanFeatures({
     this.voice = false,
     this.postgres = false,
@@ -74,13 +78,16 @@ class PlanFeatures {
       serverShell: json['server_shell'] as bool? ?? false,
     );
   }
+
+  @override
+  List<Object?> get props => [voice, postgres, github, serverShell];
 }
 
 /// The `conversation.plan` object — plan identity, the three usage windows,
 /// and feature gates. Surfaced app-wide via `PlanCubit` so the account
 /// screen, chat banners, and feature gating all read one source of truth.
 @immutable
-class PlanSnapshot {
+class PlanSnapshot extends Equatable {
   const PlanSnapshot({
     required this.slug,
     required this.name,
@@ -137,6 +144,9 @@ class PlanSnapshot {
       features: PlanFeatures.fromJson(sub('features')),
     );
   }
+
+  @override
+  List<Object?> get props => [slug, name, exempt, day, week, month, features];
 }
 
 /// Identifies which usage window was exceeded on a blocked send.

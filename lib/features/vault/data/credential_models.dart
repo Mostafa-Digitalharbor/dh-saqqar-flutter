@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 /// The four credential kinds the backend currently supports. Mobile API §7.
@@ -49,7 +50,7 @@ enum CredentialFieldType {
 /// switcher (api_key vs password). Both are additive; old schemas (and
 /// kinds that don't ship them) continue to render correctly.
 @immutable
-class CredentialField {
+class CredentialField extends Equatable {
   const CredentialField({
     required this.name,
     required this.label,
@@ -141,6 +142,22 @@ class CredentialField {
         if (helpKeyByAuthType != null)
           'help_key_by_auth_type': helpKeyByAuthType,
       };
+
+  @override
+  List<Object?> get props => [
+        name,
+        label,
+        type,
+        required,
+        placeholder,
+        help,
+        options,
+        defaultValue,
+        labelKey,
+        labelKeyByAuthType,
+        placeholderKeyByAuthType,
+        helpKeyByAuthType,
+      ];
 }
 
 /// Form descriptor for one [CredentialKind] — the contract for what the
@@ -179,7 +196,7 @@ class CredentialSchema {
 /// A stored credential bundle. `payload` is only populated on the detail
 /// GET (`/credentials/<name>/`) — list responses omit it for security.
 @immutable
-class Credential {
+class Credential extends Equatable {
   const Credential({
     required this.name,
     required this.kind,
@@ -220,6 +237,17 @@ class Credential {
       payload: (json['payload'] as Map?)?.cast<String, dynamic>(),
     );
   }
+
+  @override
+  List<Object?> get props => [
+        name,
+        kind,
+        label,
+        isMemorized,
+        metadata,
+        lastVerifiedAt,
+        payload,
+      ];
 
   static DateTime? _parseDate(Object? value) {
     if (value is String && value.isNotEmpty) {

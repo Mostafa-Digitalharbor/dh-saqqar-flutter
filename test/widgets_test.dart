@@ -43,13 +43,6 @@ class _StubConversationsRepository implements ConversationsRepository {
           );
 
   @override
-  Future<({Map<String, String> projectByConv, Map<String, String> envByConv})>
-      conversationContext(List<String> ids, {int concurrency = 6}) async => (
-            projectByConv: const <String, String>{},
-            envByConv: const <String, String>{},
-          );
-
-  @override
   Future<String> create({String? title}) async => 'stub-id';
 
   @override

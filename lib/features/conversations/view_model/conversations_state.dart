@@ -70,15 +70,33 @@ class ConversationsData extends Equatable {
   /// no pending approvals for that conversation.
   final Map<String, int> pendingByConv;
 
-  /// REAL per-conversation file counts, grouped from the flat `/artifacts/`
-  /// feed. Drives the row's file count. Missing key = no files.
+  /// Legacy per-conversation file counts, grouped from the flat `/artifacts/`
+  /// feed. Superseded by `ConversationSummary.filesCount` on the row and no
+  /// longer populated — kept so a cached payload written before the switch
+  /// still renders. See [filesFor].
   final Map<String, int> filesByConv;
 
   /// Real pending-approval count for [id] (0 when none).
   int pendingApprovalsFor(String id) => pendingByConv[id] ?? 0;
 
-  /// Real produced-file count for [id] (0 when none).
-  int filesFor(String id) => filesByConv[id] ?? 0;
+  /// Produced-file count for [id] (0 when none).
+  ///
+  /// Prefers the server's `files_count` on the row. The old fallback — group
+  /// the flat `/artifacts/` feed by conversation — is only consulted for
+  /// rows that predate the field, because that feed is capped at 100
+  /// artifacts *account-wide*: on a real account it disagreed with the
+  /// server's own count on 41 of 100 rows, under-reporting a conversation
+  /// with 188 files as 90. A truncated feed cannot count what it can't see.
+  int filesFor(String id) {
+    for (final c in conversations) {
+      if (c.id == id) {
+        final fromRow = c.filesCount;
+        if (fromRow != null) return fromRow;
+        break;
+      }
+    }
+    return filesByConv[id] ?? 0;
+  }
 
   /// Whether the conversation has at least one pending approval — the real
   /// signal behind the "Needs approval" filter.

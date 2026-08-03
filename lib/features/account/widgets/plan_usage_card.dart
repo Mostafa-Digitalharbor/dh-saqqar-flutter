@@ -67,7 +67,7 @@ class PlanUsageCard extends StatelessWidget {
             const SizedBox(height: 14),
             _UsageRow(label: context.tr.planWindowMonth, window: plan.month),
           ],
-          // Upgrade CTA → pricing catalogue. Hidden on iOS (App Store 3.1.1);
+          // Upgrade CTA → pricing catalogue. Hidden while sales are web-only;
           // the usage bars above stay (informational).
           if (showPaidUpsell) ...[
             const SizedBox(height: 14),

@@ -27,6 +27,19 @@ class ApiEndpoints {
   /// `POST /api/v1/auth/google/ { id_token }`
   static const String authGoogle = '/api/v1/auth/google/';
 
+  /// `POST /api/v1/auth/web-session/ { next }` → `{ ok, url }`
+  ///
+  /// One-time login hand-off: exchanges the app's bearer for a short-lived
+  /// URL that signs the **browser** in and redirects to `next`. Used before
+  /// sending the user to the web checkout so they don't arrive anonymous and
+  /// risk signing up a second time on a different provider.
+  ///
+  /// **Not built yet** — requested in `docs/MOBILE_BACKEND_OPEN_ITEMS.md`
+  /// §3.5, currently 404. [WebCheckout] treats any non-200 as "not available"
+  /// and falls back to the plain pricing URL, so this starts working the day
+  /// the endpoint ships without an app release.
+  static const String authWebSession = '/api/v1/auth/web-session/';
+
   /// `POST /api/v1/auth/apple/ { id_token, user? }` — `user` (name) only on
   /// the first Apple sign-in.
   static const String authApple = '/api/v1/auth/apple/';
@@ -200,9 +213,10 @@ class ApiEndpoints {
       '/api/v1/billing/receipt/$receiptRef/';
 
   // ── Billing checkout (API_MOBILE_NEW_ENDPOINTS.md §4.3) — Paymob ──────
-  // ⚠️ Buying in-app may conflict with App Store / Google Play IAP rules.
-  // The UI is GATED behind `showPaidUpsell` (hidden on iOS); confirm store
-  // compliance before shipping the purchase surface on any platform.
+  // ⚠️ NOT CALLED by the shipped app. Buying in-app conflicts with App Store
+  // 3.1.1 and the Google Play Payments policy, so tokens are sold on
+  // saqqaar.com only and the whole purchase surface is gated off behind
+  // `showPaidUpsell` (false on every platform).
   static const String billingPlans = '/api/v1/billing/plans/';
   static const String billingCheckout = '/api/v1/billing/checkout/';
   static String billingPaymentStatus(String ref) =>

@@ -33,6 +33,17 @@ class LoggingInterceptor extends Interceptor {
 
   static const _bar = '──────────────────────────────────────────────';
 
+  /// Cap on a single logged body, in characters.
+  ///
+  /// Only raw String bodies were being truncated; a Map/List body went
+  /// through `JsonEncoder.withIndent` unbounded. The chat snapshot endpoint
+  /// is polled every 1.5 s and returns the whole transcript, so a long
+  /// conversation meant pretty-printing hundreds of KB of JSON on the UI
+  /// isolate, ~40×/min, purely to write it to a console nobody is reading
+  /// that closely. Debug-only cost, but debug is exactly where on-device
+  /// performance gets judged — and an untruncated dump is also unreadable.
+  static const _maxLoggedBodyChars = 800;
+
   // Stopwatches indexed by request hashCode so we can report request→response
   // latency. We don't hold the RequestOptions itself because Dio mutates it
   // between callbacks (e.g. `extra.didRetry`).
@@ -141,18 +152,26 @@ class LoggingInterceptor extends Interceptor {
       if (redact) payload = _deepRedact(payload);
       if (payload is String) {
         // Probably a pre-encoded JSON string; try to pretty-print, else dump
-        // the raw string truncated to a reasonable length.
+        // the raw string.
         try {
-          final decoded = jsonDecode(payload);
-          return const JsonEncoder.withIndent('  ').convert(decoded);
+          return _truncate(
+            const JsonEncoder.withIndent('  ').convert(jsonDecode(payload)),
+          );
         } catch (_) {
-          return payload.length > 800 ? '${payload.substring(0, 800)}…' : payload;
+          return _truncate(payload);
         }
       }
-      return const JsonEncoder.withIndent('  ').convert(payload);
+      return _truncate(const JsonEncoder.withIndent('  ').convert(payload));
     } catch (_) {
-      return body.toString();
+      return _truncate(body.toString());
     }
+  }
+
+  String _truncate(String text) {
+    if (text.length <= _maxLoggedBodyChars) return text;
+    final dropped = text.length - _maxLoggedBodyChars;
+    return '${text.substring(0, _maxLoggedBodyChars)}… '
+        '<$dropped more chars elided>';
   }
 
   /// Recursively walks Maps/Lists and replaces sensitive map values with

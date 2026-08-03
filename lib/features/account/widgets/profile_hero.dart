@@ -5,7 +5,6 @@ import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/marquee_text.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../auth/data/auth_models.dart';
@@ -14,9 +13,16 @@ import '../../billing/view_model/plan_cubit.dart';
 import 'plan_badge.dart';
 import 'stats_line.dart';
 
-/// Identity card at the top of the Account tab — gradient avatar, username
-/// headline, role chip, compact stats line, and the
-/// "Powered by Digital Harbor" footer.
+/// Identity card at the top of the Account tab.
+///
+/// Three regions separated by hairlines, in descending importance:
+///   1. **Identity** — avatar, name, email, role chip, plan badge.
+///   2. **Stats** — the four workspace counts, as figures rather than prose.
+///   3. **Meta** — joined / last-login, the quietest thing on the card.
+///
+/// Before this split it was six muted lines stacked at roughly equal weight,
+/// which made the counts (the only real data) read as footnotes. The product
+/// attribution moved to the bottom of the screen, where a footer belongs.
 ///
 /// All identity + counts come from [AuthCubit] — `username`/`email` from
 /// `/auth/me/`, `isStaff`/`isSuperuser` to pick the role chip, and
@@ -53,35 +59,20 @@ class ProfileHero extends StatelessWidget {
       // — the Account tab stacked ~6, the single biggest GPU cost on low-end
       // phones — with pixel-identical output.
       blur: false,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Identity ────────────────────────────────────────────────
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: AppGradients.vivid,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-                ),
-                child: Text(
-                  initial,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
+              _Avatar(initial: initial),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
@@ -89,25 +80,24 @@ class ProfileHero extends StatelessWidget {
                           child: GestureDetector(
                             onLongPress: onLongPress,
                             behavior: HitTestBehavior.opaque,
-                            // Django often sets `username = email` on register,
-                            // so the headline below is frequently the user's
-                            // full email — which doesn't fit next to the
-                            // 64 px avatar on phones. Marquee so the user
-                            // sees their whole identifier without cropping.
-                            //
-                            // NOT `alwaysScroll`: marquee mode lays out TWO
-                            // copies of the text for its seamless loop, and a
-                            // name short enough to fit shows both of them side
-                            // by side — on screen that reads as "Mostafa Badr
-                            // Mostafa Ba", i.e. a rendering glitch. Letting it
-                            // fall back to static Text keeps the scrolling for
-                            // the long-identifier case this was built for and
-                            // costs nothing when it fits.
-                            child: MarqueeText(
-                              text: displayName,
-                              style: context.text.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.3,
+                            // Plain Text, not MarqueeText. Django often sets
+                            // `username = email`, so this line is frequently a
+                            // long address and the marquee was meant to reveal
+                            // it — but the marquee lays out TWO copies for its
+                            // seamless loop, so mid-cycle the card reads
+                            // "Mostafa Ahme … ahmed@x.com" and looks broken.
+                            // The full address is spelled out verbatim in the
+                            // EMAIL (LOGIN) field further down this same
+                            // screen, so ellipsis costs the user nothing and
+                            // the card stops moving on its own.
+                            child: Text(
+                              displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.text.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                                height: 1.15,
                               ),
                             ),
                           ),
@@ -121,30 +111,28 @@ class ProfileHero extends StatelessWidget {
                     if (user != null &&
                         user.email.isNotEmpty &&
                         user.email != displayName) ...[
-                      const SizedBox(height: 2),
-                      // Same reasoning as the headline above: no
-                      // `alwaysScroll`. An address that fits rendered as a
-                      // doubled, overlapping string; one that doesn't still
-                      // scrolls. The full address is also spelled out in the
-                      // EMAIL (LOGIN) field further down this same screen, so
-                      // nothing is hidden either way.
-                      MarqueeText(
-                        text: user.email,
-                        style:
-                            context.text.bodySmall?.copyWith(color: s.muted),
+                      const SizedBox(height: 3),
+                      Text(
+                        user.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.bodySmall?.copyWith(color: s.muted),
                       ),
                     ],
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     MiniChip(roleLabel),
                   ],
                 ),
               ),
             ],
           ),
-          if (user != null && (user.dateJoined != null || user.lastLogin != null)) ...[
-            const SizedBox(height: 10),
-            _AccountMetaLine(user: user),
-          ],
+
+          // ── Stats ───────────────────────────────────────────────────
+          // A rule above the counts is what turns this from six stacked
+          // grey lines into two labelled regions: who you are, then what
+          // you have.
+          const SizedBox(height: 16),
+          _Hairline(),
           const SizedBox(height: 14),
           StatsLine(
             conversations: counts.conversations,
@@ -152,14 +140,19 @@ class ProfileHero extends StatelessWidget {
             approvals: counts.approvals,
             artifacts: counts.artifacts,
           ),
-          const SizedBox(height: 6),
-          Text(
-            context.tr.poweredByDigitalHarbor,
-            style: context.text.labelSmall?.copyWith(
-              color: s.muted,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+
+          // ── Meta footer ─────────────────────────────────────────────
+          // Joined / last-login used to sit directly ABOVE the counts in
+          // the same muted style, so the timestamps competed with the only
+          // real numbers on the card. Demoted to a footer under its own
+          // rule, where a timestamp belongs.
+          if (user != null &&
+              (user.dateJoined != null || user.lastLogin != null)) ...[
+            const SizedBox(height: 14),
+            _Hairline(),
+            const SizedBox(height: 10),
+            _AccountMetaLine(user: user),
+          ],
         ],
       ),
     );
@@ -192,6 +185,58 @@ class ProfileHero extends StatelessWidget {
   }
 }
 
+/// Gradient initial avatar with a soft outer ring.
+///
+/// The ring is a second circle behind the disc rather than a border on it:
+/// a border eats into the 64 px gradient and makes the initial look
+/// off-centre at small text scales.
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.initial});
+
+  final String initial;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Container(
+      width: 68,
+      height: 68,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        // 0.10 was invisible against the light card. This reads as a halo in
+        // both themes without competing with the gradient disc inside it.
+        color: s.brandCyan.withValues(alpha: context.isDark ? 0.18 : 0.16),
+      ),
+      child: Container(
+        width: 58,
+        height: 58,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: AppGradients.vivid,
+        ),
+        child: Text(
+          initial,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 1 px rule used to separate the card's three regions.
+class _Hairline extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      Container(height: 1, color: context.saqqar.cardBorder);
+}
+
 /// Web-parity meta line: "Joined 2026-05-18 · Last login 2026-05-18 22:39".
 ///
 /// Renders each piece inside a [Wrap] so on narrow phones the "Last login"
@@ -221,15 +266,36 @@ class _AccountMetaLine extends StatelessWidget {
         '${context.tr.accountLastLoginLabel} ${AppDateFormat.dateTime(context, lastLogin)}',
     ];
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 2,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < parts.length; i++) ...[
-          if (i > 0)
-            Text('·', style: style?.copyWith(color: s.muted.withValues(alpha: 0.7))),
-          Text(parts[i], style: style),
-        ],
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(
+            Icons.schedule_rounded,
+            size: 13,
+            color: s.muted.withValues(alpha: 0.8),
+          ),
+        ),
+        const SizedBox(width: 6),
+        // Wrap so the "Last login" segment flows to a second line on narrow
+        // phones instead of clipping; Expanded so the Wrap gets a bounded
+        // width to lay out against.
+        Expanded(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 2,
+            children: [
+              for (var i = 0; i < parts.length; i++) ...[
+                if (i > 0)
+                  Text('·',
+                      style: style?.copyWith(
+                          color: s.muted.withValues(alpha: 0.7))),
+                Text(parts[i], style: style),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }

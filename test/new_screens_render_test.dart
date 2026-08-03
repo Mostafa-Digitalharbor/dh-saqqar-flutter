@@ -118,7 +118,7 @@ class _FakeCheckoutApi implements CheckoutApi {
         ),
       ];
   @override
-  Future<CheckoutSession> start(String planId) async =>
+  Future<CheckoutSession> start(String planId, {String cycle = 'monthly'}) async =>
       const CheckoutSession(url: 'https://pay/x', ref: 'R1');
   @override
   Future<PaymentStatus> status(String ref) async =>

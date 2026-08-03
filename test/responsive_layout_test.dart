@@ -26,6 +26,7 @@ import 'package:saqqar_app/features/security/data/biometric_auth.dart';
 import 'package:saqqar_app/features/security/view/app_lock_screen.dart';
 import 'package:saqqar_app/features/security/view_model/app_lock_cubit.dart';
 import 'package:saqqar_app/shared/extensions/responsive_breakpoints.dart';
+import 'package:saqqar_app/shared/widgets/title_trailing_row.dart';
 
 /// Named phone profiles spanning the support matrix. `tiny` covers the
 /// 320 px Android slice the responsive system was built for; `regular`
@@ -334,6 +335,64 @@ void main() {
     });
   });
 
+  // The invariant behind `TitleTrailingRow`, pinned directly rather than
+  // only through the four widgets that use it.
+  //
+  // The bug it replaced: a `Row` lays out non-flexible children with an
+  // UNBOUNDED main-axis constraint, so a bare trailing `Text` took whatever
+  // width it wanted and the `Expanded` title collapsed to zero — the row
+  // overflowed AND the title vanished. Reproduced on a conversation card at
+  // 320 px × 1.3× text, where the timestamp measured 187 px in a 173 px lane.
+  group('TitleTrailingRow', () {
+    testWidgets('a hostile trailing label never starves the title',
+        (tester) async {
+      await _pumpAtAllSizes(
+        tester,
+        () => TitleTrailingRow.stamp(
+          title: const Text('A conversation title that wants the whole row'),
+          // Far longer than any real timestamp, so the cap is what is under
+          // test rather than the string.
+          stamp: 'an unreasonably long trailing stamp value',
+        ),
+      );
+
+      // Beyond "no exception": prove the title still got real width. A row
+      // that clamps the title to zero is technically overflow-free and
+      // completely useless.
+      final titleWidth = tester.getSize(find.text(
+        'A conversation title that wants the whole row',
+      ));
+      expect(titleWidth.width, greaterThan(0));
+    });
+
+    testWidgets('a short stamp leaves the title its full share',
+        (tester) async {
+      // The reason the trailing child is width-capped instead of being a
+      // second flex child: two `Flexible`s would split the row evenly and
+      // truncate the title even when the stamp needs almost nothing.
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _harness(
+          SizedBox(
+            width: 300,
+            child: TitleTrailingRow.stamp(
+              title: const Text('Title', maxLines: 1),
+              stamp: 'now',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final row = tester.getSize(find.byType(TitleTrailingRow));
+      final stamp = tester.getSize(find.text('now'));
+      // The title's Expanded should hold everything the short stamp and the
+      // gap don't need.
+      expect(stamp.width, lessThan(row.width * 0.45 + 1));
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
 
 /// Never touches the platform channel — the lock screen fires an unlock

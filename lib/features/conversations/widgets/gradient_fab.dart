@@ -44,12 +44,26 @@ class GradientFab extends StatelessWidget {
             children: [
               const Icon(AppIcons.plus, color: Colors.white, size: 20),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
+              // `mainAxisSize.min` keeps the pill hugging its label, but it
+              // does NOT stop the label itself from exceeding the incoming
+              // width — an extended FAB with a long label ("New
+              // conversation" / "محادثة جديدة") overflowed a 320 px screen
+              // by 42 px at 1.3× text. `Flexible` lets the label give way
+              // there while keeping the pill at its natural size everywhere
+              // else. Safe because both call sites mount this as a
+              // `Scaffold.floatingActionButton`, which lays it out against
+              // bounded (screen-sized) constraints.
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
                 ),
               ),
             ],

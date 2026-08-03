@@ -16,6 +16,23 @@ import '../data/plan_models.dart';
 class PlanCubit extends Cubit<PlanSnapshot?> {
   PlanCubit() : super(null);
 
+  // NOTE: an earlier pass seeded this from `GET /api/v1/usage/` when no
+  // conversation snapshot had supplied a plan. That was reverted, and the
+  // reason is worth keeping so nobody re-adds it:
+  //
+  // `/usage/` returns `{ok, plan, windows}` — it carries the usage windows
+  // but NOT `features` or `exempt`. Re-keying that into a `PlanSnapshot`
+  // therefore produces `PlanFeatures` with every flag `false`, and
+  // `feature(k)` is `exempt || features.enabled(k)`. Every feature gate in
+  // the app reads `state?.feature(x) ?? true` — permissive while the plan is
+  // unknown — so seeding a features-less plan flips those gates from
+  // "unknown, allow" to "known, deny". Concretely: the mic disappears from
+  // the composer until a chat snapshot lands.
+  //
+  // The snapshot's `plan` object is complete (verified against production
+  // 2026-07-25: `day week month features exempt plan plan_name token_balance`)
+  // and is the only source that can drive feature gates safely.
+
   /// Replace the held plan. Cheap no-op guard: skip the emit when the new
   /// snapshot is identical-by-identity to avoid spurious rebuilds on the
   /// 1.5 s polling cadence (the parser builds a fresh object each poll, so
@@ -25,7 +42,11 @@ class PlanCubit extends Cubit<PlanSnapshot?> {
     emit(plan);
   }
 
-  /// Clear on sign-out so a different account doesn't briefly inherit the
-  /// previous user's plan/feature gates.
+  /// Clear on sign-out.
+  ///
+  /// The cubit is app-scoped and never closed, so without this the previous
+  /// account's plan — and its feature gates — stay live across a sign-out.
+  /// A Pro user signing out followed by a Free user signing in would leave
+  /// the Free user on Pro gates until they happened to open a chat.
   void clear() => emit(null);
 }

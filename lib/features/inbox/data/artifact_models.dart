@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/format/byte_size.dart';
@@ -6,7 +7,7 @@ import '../../../core/network/api_endpoints.dart';
 /// Pointer to the conversation an artifact came from. Only present on the
 /// flat `/api/v1/artifacts/` list response.
 @immutable
-class ArtifactConversationRef {
+class ArtifactConversationRef extends Equatable {
   const ArtifactConversationRef({required this.id, required this.title});
   final String id;
   final String title;
@@ -17,6 +18,9 @@ class ArtifactConversationRef {
       title: json['title'] as String? ?? '',
     );
   }
+
+  @override
+  List<Object?> get props => [id, title];
 }
 
 /// A file the agent produced — xlsx, pdf, docx, json reports.
@@ -26,7 +30,7 @@ class ArtifactConversationRef {
 /// for download / share. The URL itself is the auth token — anyone with
 /// the link can fetch the file. Paths are UUID-segmented and unguessable.
 @immutable
-class Artifact {
+class Artifact extends Equatable {
   const Artifact({
     required this.id,
     required this.name,
@@ -95,6 +99,19 @@ class Artifact {
           : null,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        name,
+        kind,
+        mimeType,
+        url,
+        filePath,
+        metadata,
+        createdAt,
+        conversation,
+      ];
 
   static DateTime? _parseDate(Object? value) {
     if (value is String && value.isNotEmpty) {

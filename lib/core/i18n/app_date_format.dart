@@ -126,7 +126,14 @@ class AppDateFormat {
   ///   * <24 h → "3 h ago" / "منذ 3 س"
   ///   * <48 h → "yesterday" / "أمس"
   ///   * <7 d  → "3 d ago" / "منذ 3 أيام"
-  ///   * else  → falls back to [date] (absolute).
+  ///   * else  → an absolute date, with the year dropped inside the
+  ///     current year ("Jul 25" rather than "Jul 25, 2026").
+  ///
+  /// That last bucket drops the year for the same reason [dayLabel] does:
+  /// it is redundant for a date a few weeks old and it costs width on the
+  /// 320 px tier, where this stamp shares a row with the title it must not
+  /// starve. Dates in another year keep the year, because there it is the
+  /// only part that disambiguates them.
   ///
   /// Counts go through `NumberFormat` rather than raw interpolation so the
   /// numbering system follows the locale rather than being hardcoded. For
@@ -145,6 +152,9 @@ class AppDateFormat {
     if (delta.inHours < 24) return tr.relativeHoursAgo(n.format(delta.inHours));
     if (delta.inHours < 48) return tr.dateYesterday;
     if (delta.inDays < 7) return tr.relativeDaysAgo(n.format(delta.inDays));
-    return date(context, when);
+    final local = when.toLocal();
+    return local.year == now.year
+        ? _mMMd(loc).format(local)
+        : _yMMMd(loc).format(local);
   }
 }

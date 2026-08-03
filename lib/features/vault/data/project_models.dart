@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 /// A deployment target (live / staging / dev) inside a Project. Owns up to
@@ -7,7 +8,7 @@ import 'package:flutter/foundation.dart';
 /// served both as a standalone resource and nested inside [Project] and the
 /// conversation snapshot.
 @immutable
-class Environment {
+class Environment extends Equatable {
   const Environment({
     required this.id,
     required this.name,
@@ -90,11 +91,23 @@ class Environment {
       hasXmlrpc: hasXmlrpc ?? this.hasXmlrpc,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        name,
+        slug,
+        isLive,
+        readOnly,
+        autoApprove,
+        projectId,
+        hasXmlrpc,
+      ];
 }
 
 /// Logical grouping of environments — typically one per client / customer.
 @immutable
-class Project {
+class Project extends Equatable {
   const Project({
     required this.id,
     required this.name,
@@ -127,4 +140,7 @@ class Project {
         'slug': slug,
         'environments': environments.map((e) => e.toJson()).toList(),
       };
+
+  @override
+  List<Object?> get props => [id, name, slug, environments];
 }

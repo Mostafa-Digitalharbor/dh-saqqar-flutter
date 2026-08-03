@@ -22,11 +22,32 @@ import 'package:equatable/equatable.dart';
 sealed class DataState<T> extends Equatable {
   const DataState();
 
-  /// Convenience: the wrapped data when present, otherwise null. Useful
-  /// when the view wants to keep stale data visible during a refresh.
+  /// The wrapped data when this state is a *success*, otherwise null.
+  ///
+  /// Deliberately strict: this answers "is the data I'm holding current?".
+  /// For "do I have anything at all to show the user?" — which is what a
+  /// refresh path wants — use [dataOrPrevious].
   T? get dataOrNull => switch (this) {
         DataSuccess<T>(data: final d) => d,
         _ => null,
+      };
+
+  /// The freshest data available, *including* the stale copy that a loading
+  /// or failed state carries forward.
+  ///
+  /// Both [DataLoading] and [DataFailure] have a `previous` field precisely so
+  /// a transient error doesn't throw away what the user was already looking
+  /// at — but [dataOrNull] can't see it, and a cubit that decides "should I
+  /// show a skeleton?" with `dataOrNull == null` will answer *yes* the moment
+  /// one refresh fails. That is how a flaky network turns a populated list
+  /// into full-screen shimmers that never come back: the failure clears the
+  /// data, the next poll sees nothing, paints a skeleton, fails again, and
+  /// stores `previous: null`. Reach for this getter in that decision.
+  T? get dataOrPrevious => switch (this) {
+        DataSuccess<T>(data: final d) => d,
+        DataLoading<T>(previous: final p) => p,
+        DataFailure<T>(previous: final p) => p,
+        DataIdle<T>() => null,
       };
 
   bool get isLoading => this is DataLoading<T>;

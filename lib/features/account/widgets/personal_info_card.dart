@@ -5,6 +5,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
+import 'account_card_header.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -139,21 +140,11 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(AppIcons.account, size: 18, color: s.brandPurple),
-              const SizedBox(width: 10),
-              Text(
-                tr.personalInfoTitle,
-                style: context.text.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            tr.personalInfoHint,
-            style: context.text.bodySmall?.copyWith(color: s.muted, height: 1.4),
+          AccountCardHeader(
+            icon: AppIcons.account,
+            title: tr.personalInfoTitle,
+            subtitle: tr.personalInfoHint,
+            tint: s.brandPurple,
           ),
           const SizedBox(height: 16),
           Row(

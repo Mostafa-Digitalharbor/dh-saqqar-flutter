@@ -50,8 +50,9 @@ class _FakeOdooDataApi implements OdooDataApi {
   Future<Map<String, dynamic>> sql(String e, Map<String, dynamic> q) =>
       _record('sql', q);
   @override
-  Future<Map<String, dynamic>> reportEntities() async {
+  Future<Map<String, dynamic>> reportEntities(Map<String, dynamic> q) async {
     lastCalled = 'report-entities';
+    lastQuery = q;
     return {'entities': <dynamic>[]};
   }
 
@@ -85,8 +86,12 @@ DataExplorerCubit _cubit(_FakeOdooDataApi data) => DataExplorerCubit(
 void main() {
   test('DataOp.count is the default operation', () {
     expect(const DataExplorerState().operation, DataOp.count);
-    expect(DataOp.reportEntities.needsBody, isFalse);
+    // Every op takes a JSON object now — report-entities differs only in
+    // transport (GET, so the object rides as query parameters).
+    expect(DataOp.reportEntities.needsBody, isTrue);
+    expect(DataOp.reportEntities.isGet, isTrue);
     expect(DataOp.count.needsBody, isTrue);
+    expect(DataOp.count.isGet, isFalse);
   });
 
   group('loadEnvironments', () {
@@ -118,17 +123,28 @@ void main() {
       expect(cubit.state.result, contains('"op": "search"'));
     });
 
-    test('report-entities ignores the body and hits the GET', () async {
+    // `GET /report-entities/` with no parameters answers
+    // `400 conversation_id is required and must belong to you` (verified
+    // against production 2026-07-29), so the op used to be the one operation
+    // on this screen that could never succeed. It is conversation-scoped, and
+    // the explorer only knows about environments — so the id is part of the
+    // request the user writes, like every other shape here.
+    test('report-entities forwards conversation_id to the GET', () async {
       final data = _FakeOdooDataApi();
       final cubit = _cubit(data);
       addTearDown(cubit.close);
       await cubit.loadEnvironments();
 
       cubit.selectOperation(DataOp.reportEntities);
-      await cubit.run('anything');
+      await cubit.run('{"conversation_id": "abc-123"}');
 
       expect(data.lastCalled, 'report-entities');
+      expect(data.lastQuery, {'conversation_id': 'abc-123'});
       expect(cubit.state.result, contains('entities'));
+    });
+
+    test('report-entities template names the required parameter', () {
+      expect(DataOp.reportEntities.template, contains('conversation_id'));
     });
 
     test('invalid JSON body yields a FormatException, no call', () async {

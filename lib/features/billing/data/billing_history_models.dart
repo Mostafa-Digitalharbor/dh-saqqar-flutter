@@ -45,6 +45,26 @@ class PaymentRow {
   /// Whether a receipt PDF can be fetched for this row.
   bool get hasReceipt => isPaid && (receiptRef?.isNotEmpty ?? false);
 
+  /// The money is genuinely still in flight — worth telling the user to wait.
+  ///
+  /// NOT simply `!isPaid && !isFailed`. The backend contract
+  /// (`PAYMOB_WEB_CHECKOUT_BACKEND.md`) also allows `expired`, `refunded` and
+  /// `chargeback`, none of which are paid or failed and none of which are
+  /// waiting for anything. Telling someone their refund is "awaiting
+  /// confirmation from the payment provider" would be worse than saying
+  /// nothing.
+  ///
+  /// An empty or unrecognised status counts as awaiting: the row exists, the
+  /// server hasn't called it settled, and "we're still checking" is the
+  /// honest reading of a state we don't know.
+  bool get isAwaitingConfirmation {
+    if (isPaid || isFailed) return false;
+    return const {'expired', 'refunded', 'chargeback'}
+        .contains(status.toLowerCase())
+        ? false
+        : true;
+  }
+
   factory PaymentRow.fromJson(Map<String, dynamic> json) {
     return PaymentRow(
       when: _parseDate(json['when']),

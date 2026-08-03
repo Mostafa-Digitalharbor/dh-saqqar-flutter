@@ -14,7 +14,6 @@ import '../../features/auth/view/auth_flow_screen.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/auth/view_model/auth_flow_cubit.dart';
 import '../../features/auth/view_model/auth_state.dart';
-import '../../features/billing/data/billing_visibility.dart';
 import '../../features/billing/view/billing_history_screen.dart';
 import '../../features/billing/view/checkout_screen.dart';
 import '../../features/billing/view/pricing_screen.dart';
@@ -136,10 +135,12 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
       GoRoute(
         path: RouteNames.pricingPath,
         name: RouteNames.pricing,
-        // Unreachable on iOS (App Store 3.1.1) — every CTA that pushes here is
-        // already behind [showPaidUpsell], and this guard closes the deep-link
-        // path too so the tier catalogue can't surface there at all.
-        redirect: (_, __) => showPaidUpsell ? null : RouteNames.chatsPath,
+        // No guard: the screen self-censors. With [showPaidUpsell] off it
+        // still renders the tier comparison — caps, limits, which features
+        // each plan unlocks — and drops only the prices, the cycle switch and
+        // the Subscribe button. That is informational, not a purchase path,
+        // so the route is safe to leave open for a `saqqaar.com/pricing`
+        // universal link even in the most conservative build.
         pageBuilder: (_, state) => _transitionPage(
           state: state,
           child: const PricingScreen(),
@@ -243,13 +244,19 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
           kind: _RouteTransitionKind.detail,
         ),
       ),
-      // Billing checkout (§4.3) — Paymob. Same iOS guard as /pricing: the
-      // redirect closes the deep-link path so the purchase surface can't
-      // appear on iOS at all (App Store IAP caution).
+      // Billing checkout (§4.3) — the in-app Paymob flow. **Permanently
+      // closed**: payment happens on saqqaar.com, so anything that reaches for
+      // this route lands on the plan catalogue instead of a purchase form.
+      //
+      // Registered rather than deleted so the redirect exists: an old deep
+      // link, a push payload or a stale shortcut pointing here should arrive
+      // somewhere sensible, not at a "no route" error. The screen behind it is
+      // kept for the same reason [showPaidUpsell] is a switch — see
+      // billing_visibility.dart.
       GoRoute(
         path: RouteNames.checkoutPath,
         name: RouteNames.checkout,
-        redirect: (_, __) => showPaidUpsell ? null : RouteNames.chatsPath,
+        redirect: (_, __) => RouteNames.pricingPath,
         pageBuilder: (_, state) => _transitionPage(
           state: state,
           child: const CheckoutScreen(),

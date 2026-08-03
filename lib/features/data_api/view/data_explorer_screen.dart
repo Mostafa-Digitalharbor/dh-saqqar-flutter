@@ -144,7 +144,7 @@ class _Body extends StatelessWidget {
           onChanged: (v) => v == null ? null : cubit.selectOperation(v),
         ),
         const SizedBox(height: 14),
-        // Request body — hidden for the bodyless report-entities GET.
+        // Every op takes a JSON object; GET ops send theirs as query params.
         if (state.operation.needsBody)
           AppTextField(
             label: context.tr.dataExplorerBody,

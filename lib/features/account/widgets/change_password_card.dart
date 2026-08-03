@@ -5,6 +5,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
+import 'account_card_header.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -184,19 +185,12 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-              child: Row(
-                children: [
-                  Icon(AppIcons.lock, size: 18, color: s.muted),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      context.tr.changePassword,
-                      style: context.text.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  AnimatedRotation(
+              child: AccountCardHeader(
+                icon: AppIcons.lock,
+                title: context.tr.changePassword,
+                trailing: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: AnimatedRotation(
                     duration: const Duration(milliseconds: 180),
                     turns: _expanded ? 0.5 : 0,
                     child: Icon(
@@ -205,7 +199,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                       color: s.muted,
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),

@@ -8,6 +8,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
+import '../../../shared/widgets/title_trailing_row.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../../conversations/view_model/conversations_cubit.dart';
 import '../../conversations/view_model/conversations_state.dart';
@@ -400,51 +401,44 @@ class _DrawerConversationRow extends StatelessWidget {
                   : Colors.transparent,
             ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      conversation.title.trim().isEmpty
-                          ? context.tr.untitledConversation
-                          : conversation.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.bodyMedium?.copyWith(
-                        color: isActive ? s.text : s.text,
-                        fontWeight:
-                            isActive ? FontWeight.w800 : FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      conversation.lastMessagePreview,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.labelSmall?.copyWith(
-                        color: s.muted,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+          child: TitleTrailingRow.stamp(
+            gap: 6,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  conversation.title.trim().isEmpty
+                      ? context.tr.untitledConversation
+                      : conversation.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodyMedium?.copyWith(
+                    color: s.text,
+                    fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                // Locale-aware relative timestamp ("5 m ago" / "Yesterday"
-                // / "May 8"), driven off the server's real `updatedAt`
-                // instead of the demo's pre-baked string label.
-                AppDateFormat.relative(context, conversation.updatedAt),
-                style: context.text.labelSmall?.copyWith(
-                  color: s.muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 2),
+                Text(
+                  conversation.lastMessagePreview,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelSmall?.copyWith(
+                    color: s.muted,
+                    fontSize: 11,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            // Locale-aware relative timestamp ("5 m ago" / "Yesterday" /
+            // "May 8"), driven off the server's real `updatedAt` instead of
+            // the demo's pre-baked string label.
+            stamp: AppDateFormat.relative(context, conversation.updatedAt),
+            stampStyle: context.text.labelSmall?.copyWith(
+              color: s.muted,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),

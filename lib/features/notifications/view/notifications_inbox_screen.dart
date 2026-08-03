@@ -12,6 +12,8 @@ import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/chip_strip.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/filter_pill.dart';
+import '../../../shared/widgets/title_trailing_row.dart';
 import '../data/notifications_store.dart';
 
 /// Notification type filter for the inbox chip row.
@@ -119,57 +121,12 @@ class _FilterRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       children: [
         for (final (value, label) in entries)
-          _FilterChip(
+          FilterPill(
             label: label,
             selected: value == selected,
             onTap: () => onSelected(value),
           ),
       ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: AppRadius.pillR,
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: selected
-                ? s.brandCyan.withValues(alpha: 0.16)
-                : s.cardBg,
-            borderRadius: AppRadius.pillR,
-            border: Border.all(
-              color: selected
-                  ? s.brandCyan.withValues(alpha: 0.45)
-                  : s.cardBorder,
-            ),
-          ),
-          child: Text(
-            label,
-            style: context.text.labelMedium?.copyWith(
-              color: selected ? s.brandCyan : s.muted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -320,25 +277,18 @@ class _NotificationTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                    TitleTrailingRow.stamp(
+                      title: Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppDateFormat.relative(context, item.receivedAt),
-                          style:
-                              context.text.labelSmall?.copyWith(color: s.muted),
-                        ),
-                      ],
+                      ),
+                      stamp: AppDateFormat.relative(context, item.receivedAt),
+                      stampStyle:
+                          context.text.labelSmall?.copyWith(color: s.muted),
                     ),
                     if (item.body.isNotEmpty) ...[
                       const SizedBox(height: 3),

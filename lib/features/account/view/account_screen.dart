@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -34,15 +36,36 @@ class AccountScreen extends StatefulWidget {
   State<AccountScreen> createState() => _AccountScreenState();
 }
 
-class _AccountScreenState extends State<AccountScreen> {
+class _AccountScreenState extends State<AccountScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Pull real token usage on open so the usage bars populate WITHOUT the
     // user having to open a chat first (the snapshot path only fills
     // PlanCubit once a conversation polls). Best-effort — a failure leaves
     // the CurrentPlanCard /plans/ fallback in place.
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetchUsage());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Re-read the plan the moment the app comes back to the foreground.
+    //
+    // This is the closing half of the web-checkout hand-off: subscribing
+    // sends the user out to saqqaar.com in the browser, and they return to an
+    // app that fetched its plan once, on open. Without this they land back on
+    // "Free" with the usage bars they left behind, having just paid — which
+    // reads as the payment not having worked. There is no callback to wait
+    // for; coming back IS the signal.
+    if (state == AppLifecycleState.resumed) unawaited(_fetchUsage());
   }
 
   /// Best-effort `GET /usage/` → feed [PlanCubit]. Silent on failure; the
@@ -98,8 +121,9 @@ class _AccountScreenState extends State<AccountScreen> {
                 padding: const EdgeInsets.only(bottom: 14),
                 child: Row(
                   children: [
-                    // "See plans" leads to the pricing catalogue — hidden on
-                    // iOS (App Store 3.1.1). "Usage" stays and fills the row.
+                    // "See plans" leads to the pricing catalogue — hidden
+                    // while sales are web-only. "Usage" stays (it's what you
+                    // already have, not an offer) and fills the row.
                     if (showPaidUpsell) ...[
                       Expanded(
                         child: GhostButton(
@@ -133,64 +157,124 @@ class _AccountScreenState extends State<AccountScreen> {
               const SizedBox(height: 14),
               const ChangePasswordCard(),
               const SizedBox(height: 14),
-              // Registered push devices — review + sign out a lost phone.
-              GhostButton(
-                label: context.tr.devicesManage,
-                icon: Icons.devices_other_outlined,
-                expand: true,
-                onPressed: () => context.pushNamed(RouteNames.devices),
+              // Destinations, grouped.
+              //
+              // These were seven identical full-width pills stacked down the
+              // screen — "Manage devices", "Saqqar Apps", "Managed Odoo
+              // trial", "Data explorer", "Billing history", "Buy tokens" —
+              // with nothing to distinguish an account setting from a tool
+              // from a purchase, and no clue what any of them did. A returning
+              // user skims past it; a new one has no reason to tap anything.
+              //
+              // Grouping turns one list of seven into three of one-to-three,
+              // and the per-row descriptions are what make them discoverable:
+              // "Data explorer" means nothing on its own, "Read your models
+              // and records directly" means something immediately.
+              //
+              // Devices sits first, headerless, because it continues the
+              // thought the two cards above it started (your details, your
+              // password → your devices) rather than starting a new one.
+              AccountLinkGroup(
+                links: [
+                  AccountLink(
+                    icon: Icons.devices_other_outlined,
+                    title: context.tr.devicesManage,
+                    subtitle: context.tr.devicesSubtitle,
+                    onTap: () => context.pushNamed(RouteNames.devices),
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
-              // Saqqar Apps — guided setups (API_MOBILE_NEW_ENDPOINTS.md §1).
-              GhostButton(
-                label: context.tr.appsTitle,
-                icon: Icons.grid_view_rounded,
-                expand: true,
-                onPressed: () => context.pushNamed(RouteNames.apps),
+              // Meeting transcription (§4.1) is deliberately NOT listed here.
+              //
+              // Withdrawn at the product owner's request (2026-07-28): the
+              // backend side is not being built for now, so the entry point
+              // comes out of the UI rather than shipping a door that opens
+              // onto a feature nobody is finishing. The screen, cubit, API
+              // client and route are all left in place — this is a hidden
+              // entrance, not a demolition, so restoring it is adding a row
+              // back to the Workspace group below.
+              //
+              // The route is unreachable in the app with this gone, and it is
+              // not registered as a deep link, so nothing else surfaces it.
+              AccountLinkGroup(
+                title: context.tr.accountGroupWorkspace,
+                subtitle: context.tr.accountGroupWorkspaceHint,
+                icon: AppIcons.grid,
+                tint: context.saqqar.brandPurple,
+                links: [
+                  // Saqqar Apps — guided setups (§1).
+                  AccountLink(
+                    icon: Icons.grid_view_rounded,
+                    title: context.tr.appsTitle,
+                    subtitle: context.tr.appsSubtitle,
+                    tint: context.saqqar.brandPurple,
+                    onTap: () => context.pushNamed(RouteNames.apps),
+                  ),
+                  // Managed Odoo trial (§2).
+                  AccountLink(
+                    icon: Icons.rocket_launch_outlined,
+                    title: context.tr.trialTitle,
+                    subtitle: context.tr.trialSubtitle,
+                    tint: context.saqqar.brandPurple,
+                    onTap: () => context.pushNamed(RouteNames.trial),
+                  ),
+                  // Read-only Odoo data explorer (§4.2).
+                  AccountLink(
+                    icon: Icons.table_chart_outlined,
+                    title: context.tr.dataExplorerTitle,
+                    subtitle: context.tr.dataExplorerSubtitle,
+                    tint: context.saqqar.brandPurple,
+                    onTap: () => context.pushNamed(RouteNames.dataExplorer),
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
-              // Managed Odoo trial (§2).
-              GhostButton(
-                label: context.tr.trialTitle,
-                icon: Icons.rocket_launch_outlined,
-                expand: true,
-                onPressed: () => context.pushNamed(RouteNames.trial),
-              ),
-              const SizedBox(height: 14),
-              // Meeting transcription (§4.1).
-              GhostButton(
-                label: context.tr.meetingsTitle,
-                icon: Icons.mic_none_outlined,
-                expand: true,
-                onPressed: () => context.pushNamed(RouteNames.meetings),
-              ),
-              const SizedBox(height: 14),
-              // Read-only Odoo data explorer (§4.2).
-              GhostButton(
-                label: context.tr.dataExplorerTitle,
-                icon: Icons.table_chart_outlined,
-                expand: true,
-                onPressed: () => context.pushNamed(RouteNames.dataExplorer),
-              ),
-              const SizedBox(height: 14),
-              // Billing history (§3) + checkout (§4.3) — gated behind
-              // [showPaidUpsell] so they stay hidden on iOS, matching how
-              // prices / plans are suppressed there (App Store paid-surface
-              // caution). Checkout additionally needs store-IAP sign-off.
-              if (showPaidUpsell) ...[
-                GhostButton(
-                  label: context.tr.billingHistoryTitle,
-                  icon: Icons.receipt_long_outlined,
-                  expand: true,
-                  onPressed: () =>
-                      context.pushNamed(RouteNames.billingHistory),
-                ),
-                const SizedBox(height: 14),
-                GhostButton(
-                  label: context.tr.checkoutTitle,
-                  icon: Icons.shopping_bag_outlined,
-                  expand: true,
-                  onPressed: () => context.pushNamed(RouteNames.checkout),
+              // Billing — the plan catalogue (§L) and payment history (§3).
+              //
+              // "Buy tokens" used to sit here and open the in-app Paymob
+              // checkout. It is gone for two independent reasons: selling
+              // digital content in-app needs store billing on both platforms,
+              // and it was built against `GET /billing/plans/`, a two-entry
+              // SAR catalogue that does not match what saqqaar.com actually
+              // sells (five tiers, USD — see docs/STORE_PAYMENTS_COMPLIANCE).
+              // Its replacement shows the real catalogue and hands off to the
+              // web to pay.
+              if (showPaidUpsell || showBillingRecords) ...[
+                AccountLinkGroup(
+                  title: context.tr.accountGroupBilling,
+                  // Every titled group carries a line of its own; a heading
+                  // sitting bare above its rows reads as a missing string
+                  // next to the Workspace group directly above it.
+                  subtitle: context.tr.accountGroupBillingHint,
+                  icon: AppIcons.wallet,
+                  links: [
+                    // Shown on every platform, including where prices are
+                    // suppressed. The screen behind it self-censors down to a
+                    // feature comparison — and a user who has just hit their
+                    // limit needs to know what a bigger plan would give them
+                    // even if the app can't sell it. Hiding the row entirely
+                    // left iOS with a limit message and no explanation of it.
+                    AccountLink(
+                      icon: Icons.workspace_premium_outlined,
+                      title: context.tr.pricingPlansTitle,
+                      subtitle: showPaidUpsell
+                          ? context.tr.pricingPlansSubtitle
+                          : context.tr.pricingPlansSubtitlePlain,
+                      onTap: () => context.pushNamed(RouteNames.pricing),
+                    ),
+                    // Not gated with the rest: a receipt for money already
+                    // taken is account information, and this is the only
+                    // place in the app the money is visible at all.
+                    if (showBillingRecords)
+                      AccountLink(
+                        icon: Icons.receipt_long_outlined,
+                        title: context.tr.billingHistoryTitle,
+                        subtitle: context.tr.billingHistorySubtitle,
+                        onTap: () =>
+                            context.pushNamed(RouteNames.billingHistory),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 14),
               ],
@@ -222,6 +306,21 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 ),
               ],
+              // Product attribution. Lived inside the identity card until
+              // 2026-07-25, where it was a seventh line of muted text
+              // competing with the user's own details. A footer belongs at
+              // the foot of the screen.
+              const SizedBox(height: 18),
+              Center(
+                child: Text(
+                  context.tr.poweredByDigitalHarbor,
+                  style: context.text.labelSmall?.copyWith(
+                    color: context.saqqar.muted.withValues(alpha: 0.75),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
     );
   }

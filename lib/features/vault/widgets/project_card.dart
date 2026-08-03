@@ -6,6 +6,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/title_trailing_row.dart';
 import '../data/project_models.dart';
 
 /// One [Project] rendered to the Saqqar Design System's Projects language:
@@ -203,31 +204,27 @@ class _EnvironmentRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            env.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    TitleTrailingRow(
+                      title: Text(
+                        env.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 8),
-                        if (env.isLive)
-                          _SoftPill(
-                            label: context.tr.liveBadge,
-                            tone: s.success,
-                            dot: true,
-                          )
-                        else if (env.readOnly)
-                          _SoftPill(
-                              label: context.tr.readOnlyBadge, tone: s.muted)
-                        else
-                          _SoftPill(label: _idleLabel(context), tone: s.muted),
-                      ],
+                      ),
+                      trailing: env.isLive
+                          ? _SoftPill(
+                              label: context.tr.liveBadge,
+                              tone: s.success,
+                              dot: true,
+                            )
+                          : _SoftPill(
+                              label: env.readOnly
+                                  ? context.tr.readOnlyBadge
+                                  : _idleLabel(context),
+                              tone: s.muted,
+                            ),
                     ),
                     // Real env slug (the server's stable identifier) shown in
                     // monospace, when present. No fabricated host/sync.
@@ -246,18 +243,24 @@ class _EnvironmentRow extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 7),
-                    Row(
-                      children: [
-                        if (env.hasXmlrpc)
-                          const _TypeGlyph(icon: AppIcons.database)
-                        else
-                          Text(
-                            _noCreds(context),
-                            style: context.text.labelMedium
-                                ?.copyWith(color: s.muted),
-                          ),
-                      ],
-                    ),
+                    // Deliberately not wrapped in a `Row`: it held a single
+                    // child, so it contributed nothing but an unbounded
+                    // main-axis constraint — which is exactly what let the
+                    // "No credentials" label overflow the row by 4 px at
+                    // 320 px / 1.3× text. The label ellipsizes instead.
+                    if (env.hasXmlrpc)
+                      const Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _TypeGlyph(icon: AppIcons.database),
+                      )
+                    else
+                      Text(
+                        _noCreds(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            context.text.labelMedium?.copyWith(color: s.muted),
+                      ),
                   ],
                 ),
               ),
@@ -375,14 +378,26 @@ class _SoftPill extends StatelessWidget {
             ),
             const SizedBox(width: 6),
           ],
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 10,
-              height: 1.2,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
-              color: tone,
+          // `Flexible` + ellipsis so the pill can shrink into the width cap
+          // `TitleTrailingRow` hands it. `mainAxisSize.min` only stops this
+          // Row from *expanding*; it does nothing to stop an unbounded Text
+          // from exceeding the incoming constraint — which is how every row
+          // of a project's environment list overflowed at 320 px / 1.3×
+          // text, where "READ-ONLY" is uppercase with 1.0 letter-spacing and
+          // grows faster than it looks.
+          Flexible(
+            child: Text(
+              label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.2,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+                color: tone,
+              ),
             ),
           ),
         ],

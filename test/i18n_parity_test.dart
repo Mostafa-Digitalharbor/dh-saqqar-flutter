@@ -17,6 +17,29 @@ import 'package:saqqar_app/core/i18n/app_strings.dart';
 /// because `_en` / `_ar` are private to the `app_strings` library. Parsing
 /// keeps the production file free of `@visibleForTesting` hatches opened
 /// purely for a test.
+/// The literal value for [key] inside a map [body], including every line of a
+/// multi-line adjacent-string concatenation.
+///
+/// The lookahead has to match the start of the **next key** — `'snake_case':`
+/// — and nothing else. An earlier version stopped at any line beginning
+/// `'[A-Za-z]`, which is also what a wrapped English sentence looks like:
+///
+/// ```dart
+/// 'billing_pending_note':
+///     'Waiting for confirmation. If you completed '
+///         'this payment, contact support with reference '   // ← stopped here
+///         '{ref}.',
+/// ```
+///
+/// So English values were silently truncated at their second line while
+/// Arabic ones (no Latin first letter) were captured whole — which reported a
+/// placeholder mismatch that did not exist, and, worse, would have hidden any
+/// real mismatch living past an English line break.
+String? _valueOf(String body, String key) => RegExp(
+      "'$key'\\s*:\\s*(.+?)(?=\\n\\s*'[a-z0-9_]+'\\s*:|\\n\\s*\\}\$)",
+      dotAll: true,
+    ).firstMatch(body)?.group(1);
+
 void main() {
   final source =
       File('lib/core/i18n/app_strings.dart').readAsStringSync();
@@ -142,12 +165,7 @@ void main() {
     // spot in a 3,000-line table by eye. An *extra* placeholder is worse:
     // `_f` leaves unknown slots verbatim, so the user sees a literal
     // `{count}` on screen.
-    String? valueOf(String body, String key) {
-      final m = RegExp("'$key'\\s*:\\s*(.+?)(?=\\n\\s*'[A-Za-z]|\\n\\s*\\}\$)",
-              dotAll: true)
-          .firstMatch(body);
-      return m?.group(1);
-    }
+    String? valueOf(String body, String key) => _valueOf(body, key);
 
     final enBody = mapBody('en');
     final arBody = mapBody('ar');
@@ -175,6 +193,128 @@ void main() {
       reason: 'These Arabic templates declare a different placeholder set '
           'than their English source, so a value goes missing (or a raw '
           '{slot} renders) for Arabic users:\n${mismatches.join('\n')}',
+    );
+  });
+
+  test('every Arabic entry is actually written in Arabic', () {
+    // Key parity proves an `_ar` entry EXISTS; it says nothing about whether
+    // anyone translated it. A copy-pasted English value passes every other
+    // check in this file and then renders Latin text inside an otherwise
+    // Arabic screen — which is exactly how `english` came to read 'English'
+    // beside 'العربية' on the Preferences card, and how the account footer
+    // read 'Powered by Digital Harbor'.
+    //
+    // The test is "does this value contain any Arabic script at all", not a
+    // translation-quality check. That's deliberately weak, because the
+    // failure it catches is the one that actually happens: nobody typing
+    // Arabic produces a value with zero Arabic letters.
+    //
+    // Everything below is exempt for a stated reason. Keep this list short —
+    // an entry here is a promise that the value reads correctly to an Arabic
+    // user *as Latin text*, which is only true for names and symbols.
+    const untranslatable = <String, String>{
+      // Trademarks and product names — never transliterated.
+      'digital_harbor': 'company name',
+      'credKindPostgres': 'product name',
+      'feature_github': 'product name',
+      'production_domain': 'domain name',
+      'product_initial': 'brand glyph',
+      // The language switcher deliberately labels each target language in
+      // that language, so an Arabic UI offers 'Switch language to English'.
+      // Its sibling `switch_language_to_arabic` is Arabic in BOTH tables for
+      // the same reason.
+      'switch_language_to_english': 'labelled in its target language',
+      // Format / syntax examples, identical in every locale.
+      'auth_email_placeholder': 'email example',
+      'email_hint': 'email example',
+      'header_none_option': 'em dash',
+      // A currency figure. The rest of the price UI already renders Western
+      // digits in Arabic ('$20 / شهرياً'), so a translated zero would be the
+      // one price on the screen written differently from its neighbours.
+      'pricing_zero': 'currency figure',
+      // Internal storybook screen — developer-facing, never shipped copy.
+      'storybook': 'dev screen',
+      'storybook_eyebrow_mini_chip': 'dev screen',
+      'storybook_eyebrow_label': 'dev screen',
+      'storybook_status_pills': 'dev screen',
+      'storybook_buttons': 'dev screen',
+      'storybook_inputs': 'dev screen',
+      'storybook_switches': 'dev screen',
+      'storybook_avatars': 'dev screen',
+      'storybook_glass_card': 'dev screen',
+      'storybook_empty_state': 'dev screen',
+      'field_rules_hint': 'dev screen',
+      'with_error': 'dev screen',
+      'try_again': 'dev screen',
+      'sample_username': 'dev screen sample',
+      'sample_user_sarah': 'dev screen sample',
+      'sample_password_hint': 'dev screen sample',
+    };
+
+    final arBody = mapBody('ar');
+    String? valueOf(String key) => _valueOf(arBody, key);
+
+    final arabicScript = RegExp(r'[؀-ۿ]');
+    final offenders = <String>[];
+    for (final key in arKeys) {
+      if (untranslatable.containsKey(key)) continue;
+      final value = valueOf(key);
+      if (value == null) continue;
+      if (!arabicScript.hasMatch(value)) {
+        offenders.add('$key = ${value.trim()}');
+      }
+    }
+    offenders.sort();
+
+    expect(
+      offenders,
+      isEmpty,
+      reason: 'These `_ar` entries contain no Arabic script, so an Arabic '
+          'user reads Latin text for them. Translate each one, or — if it is '
+          'a trademark, a domain or a syntax example — add it to the '
+          '`untranslatable` map above with the reason:\n'
+          '${offenders.join('\n')}',
+    );
+  });
+
+  test('the untranslatable allowlist has no stale entries', () {
+    // An exemption that outlives its key silently grants cover to whatever
+    // key is added under that name next. Fails loudly instead.
+    const allowlisted = <String>[
+      'digital_harbor',
+      'credKindPostgres',
+      'feature_github',
+      'production_domain',
+      'product_initial',
+      'switch_language_to_english',
+      'auth_email_placeholder',
+      'email_hint',
+      'header_none_option',
+      'pricing_zero',
+      'storybook',
+      'storybook_eyebrow_mini_chip',
+      'storybook_eyebrow_label',
+      'storybook_status_pills',
+      'storybook_buttons',
+      'storybook_inputs',
+      'storybook_switches',
+      'storybook_avatars',
+      'storybook_glass_card',
+      'storybook_empty_state',
+      'field_rules_hint',
+      'with_error',
+      'try_again',
+      'sample_username',
+      'sample_user_sarah',
+      'sample_password_hint',
+    ];
+    final stale = allowlisted.where((k) => !arSet.contains(k)).toList()..sort();
+    expect(
+      stale,
+      isEmpty,
+      reason: 'These keys are exempted from the Arabic-script check but no '
+          'longer exist in `_ar`. Drop them from both lists:\n'
+          '${stale.join('\n')}',
     );
   });
 

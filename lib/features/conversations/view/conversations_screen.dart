@@ -138,10 +138,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final next = pageIndex.clamp(0, pageCount - 1);
     if (next == _pageIndex) return;
     setState(() => _pageIndex = next);
-    // Paging down reveals more rows — fetch project·env tags for the next
-    // batch now (the initial load only enriched a screenful to bound the
-    // per-conversation N+1).
-    context.read<ConversationsCubit>().enrichMore();
+    // Paging down used to trigger a project·env enrichment pass for the newly
+    // revealed rows. The list endpoint carries both fields directly now, so
+    // the rows arrive already tagged and there is nothing to fetch.
     if (!_scrollController.hasClients) return;
     // Soft haptic + a slower-than-default ease so the page swap reads
     // as an intentional "you moved to a new page" rather than the list

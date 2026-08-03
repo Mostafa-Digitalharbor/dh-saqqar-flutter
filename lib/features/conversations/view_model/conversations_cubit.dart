@@ -37,16 +37,18 @@ class ConversationsCubit extends Cubit<ConversationsState> {
 
   final ConversationsRepository _repo;
 
-  /// Guards against overlapping project/environment enrichment passes when
-  /// loads fire in quick succession (mount + pull-to-refresh).
-  bool _enriching = false;
-
-  /// Rows already attempted this session — INCLUDING ones that resolved to
-  /// "no bound environment". Tracked so the progressive background pass (and
-  /// on-scroll [enrichMore]) never re-fetches a row that legitimately has no
-  /// project·env tag, which would otherwise loop forever. Cleared on [reset]
-  /// (new user) and [refresh] (user explicitly wants fresh data).
-  final Set<String> _enrichAttempted = <String>{};
+  // Removed 2026-07-25: the project·environment enrichment pass.
+  //
+  // It fetched one full conversation SNAPSHOT per list row purely to recover
+  // two label strings, because the list endpoint was believed not to carry
+  // them. It does — `project` and `environment` are on 100/100 rows in
+  // production, and have been for a while. The pass was resolving fields that
+  // `ConversationSummary.fromJson` had already parsed, so every one of those
+  // requests was wasted work against an endpoint measured at 13.5 s p50.
+  //
+  // With it went `_enriching`, `_enrichAttempted`, `_enrichBatch`,
+  // `_enrichPerCall`, `_enrichBatchGap`, `enrichMore()` and the repository's
+  // `conversationContext()`.
 
   /// Guards against overlapping [load] passes. Replaces the old
   /// `state.data is DataLoading` guard: once the offline cache is hydrated
@@ -110,8 +112,17 @@ class ConversationsCubit extends Cubit<ConversationsState> {
     // hydrated offline cache or a previous fetch — keep them on screen and
     // revalidate silently underneath, so opening Chats never blanks to
     // shimmers when we have something real to show.
-    if (state.data.dataOrNull == null) {
-      emit(state.copyWith(data: const DataLoading<ConversationsData>()));
+    // `dataOrPrevious`, not `dataOrNull`: after a failed refresh the state is
+    // a `DataFailure` that still carries the rows, and `dataOrNull` reports
+    // null for it. Deciding the skeleton on `dataOrNull` meant one failed
+    // refresh blanked the Chats list to shimmers — and kept it there, because
+    // the next poll then recorded `previous: null` and lost the rows for
+    // good. Verified on-device by killing the backend mid-session.
+    final lastGood = state.data.dataOrPrevious;
+    if (lastGood == null) {
+      emit(state.copyWith(
+        data: DataLoading<ConversationsData>(previous: lastGood),
+      ));
     }
     try {
       // Kick off the list and the real per-conversation meta (pending
@@ -122,7 +133,9 @@ class ConversationsCubit extends Cubit<ConversationsState> {
           _repo.list(limit: _listLimit, includeArchived: includeArchived);
       final metaFuture = _repo.conversationMeta();
       final res = await listFuture;
-      final previous = state.data.dataOrNull;
+      // Carry pins / counts / resolved project-env labels across a refresh
+      // that follows a failure, not just one that follows a success.
+      final previous = state.data.dataOrPrevious;
       final pinned = previous?.pinnedIds ?? const <String>{};
       // Carry over any project/environment context already resolved for a
       // row so a refresh doesn't blank the tag out before the next
@@ -172,9 +185,6 @@ class ConversationsCubit extends Cubit<ConversationsState> {
           [for (final c in conversations.take(5)) c.id],
         ));
       }
-      // Fill in project · environment per row in the background — the list
-      // is already on screen; the tags fade in as snapshots resolve.
-      unawaited(_enrichContext());
       // Fold the fresh pending-approval / file counts in when the SEPARATE
       // meta feed resolves — never blocks the list above. Best-effort:
       // conversationMeta already yields empty maps on error.
@@ -196,7 +206,9 @@ class ConversationsCubit extends Cubit<ConversationsState> {
         data: DataFailure<ConversationsData>(
           message: 'Failed to load conversations',
           error: failure,
-          previous: state.data.dataOrNull,
+          // Must be `dataOrPrevious` — otherwise the SECOND consecutive
+          // failure drops the rows the first one preserved.
+          previous: state.data.dataOrPrevious,
         ),
         actionFailure: ConversationsActionFailure(
           action: ConversationsAction.load,
@@ -218,9 +230,6 @@ class ConversationsCubit extends Cubit<ConversationsState> {
     // Drop the guard so an explicit refresh is never swallowed by an
     // in-flight background load.
     _loading = false;
-    // A user-driven refresh re-attempts project·env for every row (an env may
-    // have been bound since last pass), so clear the attempted set.
-    _enrichAttempted.clear();
     // Stale-while-revalidate: keep the current list ON SCREEN and update it
     // in place. The pull-to-refresh spinner already signals the refresh, so
     // blanking to an empty skeleton (the old behaviour) just made the app
@@ -236,98 +245,12 @@ class ConversationsCubit extends Cubit<ConversationsState> {
   /// and the "Saqqar is working" state update on their own — no manual pull.
   Future<void> poll() => load(prefetch: false);
 
-  /// Resolves the real project · environment for each row from its snapshot
-  /// (the list endpoint doesn't carry them) and folds the names back into the
-  /// summaries. Runs in the background so it never delays the list, only
-  /// fetches rows that don't already have context (so refreshes are cheap),
-  /// and is best-effort — a row that fails or has no bound environment simply
-  /// keeps its tag hidden rather than showing a fabricated value.
-  /// Rows enriched per pass. Bounds the per-conversation snapshot N+1 to a
-  /// screenful instead of firing one request for EVERY conversation on
-  /// open — the rest enrich on demand as the user pages down ([enrichMore]).
-  /// (The real fix is the backend embedding project/env in the list — see
-  /// docs/backend-requests.md §6 — at which point this whole pass is retired.)
-  static const _enrichBatch = 12;
-
-  /// Upper bound on rows enriched PER [_enrichContext] call — one screenful.
-  /// Without this the pass looped over EVERY row, so raising the list limit to
-  /// 200 turned the first open into ~200 per-conversation context requests (a
-  /// heavy N+1 that janked weak devices). Now the initial load resolves just
-  /// the first page's tags; the rest fill in a page at a time via [enrichMore]
-  /// as the user actually pages down.
-  static const _enrichPerCall = 30;
-
-  /// Enriches the next batch of rows that still lack project·env tags.
-  /// Called by the screen's pagination handler so context is only fetched
-  /// for rows the user actually scrolls to.
-  Future<void> enrichMore() => _enrichContext();
-
-  /// Breather between enrichment batches so the background pass never
-  /// competes with foreground scrolling — mirrors [prefetchSnapshots]'s gap.
-  static const _enrichBatchGap = Duration(milliseconds: 150);
-
-  Future<void> _enrichContext() async {
-    if (_enriching) return;
-    _enriching = true;
-    try {
-      // Resolve project·env batch-by-batch, but only up to ONE screenful per
-      // call (see [_enrichPerCall]) so the initial open never fires a request
-      // for every one of (up to 200) conversations at once. Rows with no bound
-      // environment resolve to nothing, are marked attempted, and are never
-      // retried. The remaining pages enrich lazily via [enrichMore] on
-      // scroll/paging. (The real fix is the backend embedding project/env in
-      // the list — see the docs/backend-request file — retiring this pass.)
-      var enrichedThisCall = 0;
-      while (enrichedThisCall < _enrichPerCall) {
-        final current = state.data.dataOrNull;
-        if (current == null) return;
-        final missing = [
-          for (final c in current.conversations)
-            if (!_enrichAttempted.contains(c.id) &&
-                (c.projectName == null || c.projectName!.isEmpty) &&
-                (c.environmentName == null || c.environmentName!.isEmpty))
-              c.id,
-        ];
-        if (missing.isEmpty) return;
-        final batch = missing.take(_enrichBatch).toList();
-        enrichedThisCall += batch.length;
-        // Mark attempted BEFORE the await so genuinely-empty rows are never
-        // re-queued by a concurrent trigger (scroll) mid-fetch.
-        _enrichAttempted.addAll(batch);
-        final ctx = await _repo.conversationContext(batch);
-        final cur = state.data.dataOrNull;
-        if (cur == null) return;
-        if (ctx.projectByConv.isNotEmpty || ctx.envByConv.isNotEmpty) {
-          // copyWith uses `?? this.x`, so rows not in this batch's result keep
-          // their existing tags — only resolved rows change.
-          final enriched = [
-            for (final c in cur.conversations)
-              c.copyWith(
-                projectName: ctx.projectByConv[c.id],
-                environmentName: ctx.envByConv[c.id],
-              ),
-          ];
-          emit(state.copyWith(
-            data: DataSuccess(cur.copyWith(conversations: enriched)),
-          ));
-          // Re-persist so the cached rows carry the resolved project · env tags.
-          _persistCache();
-        }
-        await Future<void>.delayed(_enrichBatchGap);
-      }
-    } catch (e, st) {
-      AppLogger.warn(_tag, 'context enrichment failed', error: e, stackTrace: st);
-    } finally {
-      _enriching = false;
-    }
-  }
 
   /// Drops the in-memory conversation list back to the idle state.
   /// Called from the auth boundary when the signed-in user changes
   /// (sign-out OR sign-in as a different account) so the previous
   /// user's conversations don't bleed into the new session.
   void reset() {
-    _enrichAttempted.clear();
     if (state == const ConversationsState()) return;
     emit(const ConversationsState());
   }

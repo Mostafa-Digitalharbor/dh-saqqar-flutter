@@ -166,7 +166,7 @@ class _PlanCardBody extends StatelessWidget {
             label: tr.pricingMonthlyCap,
             value: '${compactCount(tier.monthlyTokens, tr)} ${tr.pricingStUnit}',
           ),
-          // Upgrade CTA → pricing catalogue. Hidden on iOS (App Store 3.1.1);
+          // Upgrade CTA → pricing catalogue. Hidden while sales are web-only;
           // the current plan + caps above stay (informational).
           if (showPaidUpsell) ...[
             const SizedBox(height: 14),

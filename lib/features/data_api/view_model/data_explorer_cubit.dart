@@ -60,7 +60,8 @@ class DataExplorerCubit extends Cubit<DataExplorerState> {
       emit(state.copyWith(operation: op, clearQueryError: true, result: ''));
 
   /// Run the current [DataExplorerState.operation] with [bodyText] (JSON) as
-  /// the request body. `report-entities` ignores the body (it's a GET).
+  /// the request shape. `report-entities` is a GET, so its object travels as
+  /// query parameters — see [DataOp.isGet].
   Future<void> run(String bodyText) async {
     final envId = state.selectedEnvId;
     final op = state.operation;
@@ -107,7 +108,7 @@ class DataExplorerCubit extends Cubit<DataExplorerState> {
       case DataOp.sql:
         return _data.sql(envId, body);
       case DataOp.reportEntities:
-        return _data.reportEntities();
+        return _data.reportEntities(body);
     }
   }
 }

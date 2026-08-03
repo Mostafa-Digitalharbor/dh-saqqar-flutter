@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../billing/data/plan_models.dart';
@@ -29,7 +30,7 @@ enum MessageRole {
 }
 
 @immutable
-class Message {
+class Message extends Equatable {
   const Message({
     required this.id,
     required this.role,
@@ -73,6 +74,17 @@ class Message {
           .toList(),
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        role,
+        content,
+        createdAt,
+        toolName,
+        toolPayload,
+        attachments,
+      ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -81,7 +93,7 @@ class Message {
 
 /// Long-running tool progress (export jobs). Empty between runs.
 @immutable
-class RunProgress {
+class RunProgress extends Equatable {
   const RunProgress({
     required this.phase,
     this.current,
@@ -112,6 +124,9 @@ class RunProgress {
       label: json['label'] as String?,
     );
   }
+
+  @override
+  List<Object?> get props => [phase, current, total, label];
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -124,7 +139,7 @@ class RunProgress {
 /// Remove by either submitting the matching credential, or by calling
 /// `POST .../pending-actions/dismiss/` (see [ConversationsApi.dismissPendingAction]).
 @immutable
-class PendingAction {
+class PendingAction extends Equatable {
   const PendingAction({
     required this.type,
     this.credentialName,
@@ -170,12 +185,30 @@ class PendingAction {
       rememberPreference: json['remember_preference'] as String?,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        type,
+        credentialName,
+        credentialKind,
+        requiredFields,
+        fieldSchema,
+        reason,
+        rememberPreference,
+      ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────
 // Conversation summary (list row)
 // ─────────────────────────────────────────────────────────────────────────
 
+// NOTE: deliberately NOT `Equatable`. The Chats list renders a *relative*
+// timestamp ("5 min ago") and a recency-derived `isLive` ring off
+// [updatedAt], both of which are functions of the wall clock rather than of
+// the row's fields. Value equality would make an unchanged poll a no-op emit
+// and those labels would freeze until the server happened to change
+// something. The chat snapshot path (which polls 10× faster and renders no
+// clock-derived text) IS value-equal — see [ConversationSnapshot].
 @immutable
 class ConversationSummary {
   const ConversationSummary({
@@ -189,6 +222,7 @@ class ConversationSummary {
     this.isRunning = false,
     this.projectName,
     this.environmentName,
+    this.filesCount,
   });
 
   final String id;
@@ -202,17 +236,41 @@ class ConversationSummary {
   /// Whether the agent is mid-run for this conversation on the SERVER — the
   /// Chats list uses it to show the live "Saqqar is working" indicator. Not
   /// persisted to the offline cache (ephemeral), so a cold start reads it as
-  /// false until the first live fetch. Defaults false when the list endpoint
-  /// doesn't carry `is_running`.
+  /// false until the first live fetch.
+  ///
+  /// Always false in practice today: `GET /conversations/` does NOT return
+  /// `is_running` per row (verified against production 2026-07-25 — a row
+  /// carries `created_at environment files_count id is_archived
+  /// last_message_preview message_count project title updated_at`). The list
+  /// therefore cannot show a running indicator for a conversation the user
+  /// hasn't opened. See docs/MOBILE_BACKEND_GAPS_CORE.md §2.
   final bool isRunning;
 
-  /// Real project / environment context when the list endpoint includes it.
-  /// The documented `GET /conversations/` summary (SAQQAR_MOBILE_API.md §2)
-  /// doesn't carry these, so they're parsed defensively and stay `null` when
-  /// absent — the row simply omits the project · environment line rather
-  /// than ever showing a fabricated value.
+  /// Real project / environment context.
+  ///
+  /// The list endpoint DOES carry both as of 2026-07-25 (verified against
+  /// production: a row returns `project` and `environment` objects). This
+  /// used to say the opposite, and that stale comment is what led the client
+  /// to keep an N+1 enrichment pass — one snapshot fetch per row purely to
+  /// recover these two strings — long after the backend had shipped them.
+  ///
+  /// Still nullable and still parsed defensively: a row for a conversation
+  /// with no bound environment legitimately omits them, and the card must
+  /// drop the project · environment line rather than invent a value.
   final String? projectName;
   final String? environmentName;
+
+  /// Artifacts produced in THIS conversation, straight from the row.
+  ///
+  /// The client used to derive this by pulling the flat `/artifacts/` feed
+  /// with `limit=100` and grouping by conversation. That feed is capped
+  /// account-wide, so the derived number disagreed with the server's on
+  /// **41 of 100 rows** on a real account (one row reports 188 artifacts; the
+  /// truncated feed could only see 90). Measured 2026-07-25.
+  ///
+  /// Nullable so a deployment that doesn't send it renders no count rather
+  /// than a wrong one.
+  final int? filesCount;
 
   /// A conversation counts as "live" — green status ring on the card, and
   /// the `live` triage filter on the Chats screen — when it was last active
@@ -246,6 +304,7 @@ class ConversationSummary {
           _nameOf(json['project']) ?? json['project_name'] as String?,
       environmentName: _nameOf(json['environment']) ??
           json['environment_name'] as String?,
+      filesCount: (json['files_count'] as num?)?.toInt(),
     );
   }
 
@@ -264,6 +323,7 @@ class ConversationSummary {
         'last_message_preview': lastMessagePreview,
         if (projectName != null) 'project_name': projectName,
         if (environmentName != null) 'environment_name': environmentName,
+        if (filesCount != null) 'files_count': filesCount,
       };
 
   /// The list endpoint doesn't carry project / environment, so the cubit
@@ -286,6 +346,7 @@ class ConversationSummary {
       isRunning: isRunning ?? this.isRunning,
       projectName: projectName ?? this.projectName,
       environmentName: environmentName ?? this.environmentName,
+      filesCount: filesCount,
     );
   }
 }
@@ -312,7 +373,7 @@ String? _nameOf(Object? value) {
 // ─────────────────────────────────────────────────────────────────────────
 
 @immutable
-class Conversation {
+class Conversation extends Equatable {
   const Conversation({
     required this.id,
     required this.title,
@@ -485,6 +546,28 @@ class Conversation {
       needsEnvironment: needsEnvironment ?? this.needsEnvironment,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        title,
+        context,
+        createdAt,
+        updatedAt,
+        autoApprove,
+        deepThink,
+        isArchived,
+        isRunning,
+        stopRequested,
+        runProgress,
+        runError,
+        activeCredential,
+        environment,
+        environments,
+        project,
+        plan,
+        needsEnvironment,
+      ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -497,13 +580,21 @@ class Conversation {
 /// Polling rules — REPLACE local copies of every list field here on every
 /// snapshot, never merge (mobile API §4.3). Only [messages] is appended
 /// (and only when `delta=true`).
+/// Value-equal (see [props]): a poll that returns a snapshot identical to the
+/// one already on screen compares equal, so `ChatCubit`'s `emit` is a no-op
+/// and the chat screen does not rebuild. With a 1.5 s polling cadence that is
+/// the difference between rebuilding the whole chat tree ~40×/min and
+/// rebuilding it only when something actually changed — the single biggest
+/// idle-CPU saving on low-end devices.
 @immutable
-class ConversationSnapshot {
+class ConversationSnapshot extends Equatable {
   const ConversationSnapshot({
     required this.conversation,
     required this.messages,
     required this.delta,
     this.cursor,
+    this.oldestCursor,
+    this.hasMoreBefore = false,
     this.approvals = const [],
     this.artifacts = const [],
     this.availableCredentials = const [],
@@ -530,6 +621,23 @@ class ConversationSnapshot {
   /// only carries new rows). `false` for full snapshots.
   final bool delta;
 
+  /// Opaque cursor pointing at the OLDEST message in this page, in the form
+  /// `<iso-timestamp>|<message-id>`. Pass it back as `?before=` to fetch the
+  /// page before this one.
+  ///
+  /// This is how backwards paging is meant to work, and it is the only way
+  /// that scales: `?limit=` is capped at 500 server-side, so the client's old
+  /// "ask for a bigger window each time" strategy could never reach past the
+  /// most recent 500 messages of a conversation — on a 5,000-message chat
+  /// that stranded most of the history. Verified against production
+  /// 2026-07-25.
+  final String? oldestCursor;
+
+  /// Whether messages exist before [oldestCursor]. Server-authoritative, so
+  /// the client no longer has to infer "is there more?" from whether a page
+  /// came back full — an inference that broke exactly at the `limit` ceiling.
+  final bool hasMoreBefore;
+
   final List<Approval> approvals;
   final List<Artifact> artifacts;
   final List<Credential> availableCredentials;
@@ -554,6 +662,11 @@ class ConversationSnapshot {
           .map(Message.fromJson)
           .toList(),
       cursor: _parseDate(json['cursor']),
+      // Kept as a raw string, never parsed: it is an opaque
+      // `<iso-timestamp>|<message-id>` pair that goes straight back to the
+      // server as `?before=`. Splitting it would invite reformatting it.
+      oldestCursor: (json['oldest_cursor'] as String?)?.trim(),
+      hasMoreBefore: json['has_more_before'] as bool? ?? false,
       delta: json['delta'] as bool? ?? false,
       approvals: (json['approvals'] as List? ?? [])
           .whereType<Map<String, dynamic>>()
@@ -574,7 +687,22 @@ class ConversationSnapshot {
           .whereType<Map<String, dynamic>>()
           .map(PendingAction.fromJson)
           .toList(),
-      quotaExceeded: QuotaWindow.fromWire(json['quota_exceeded'] as String?),
+      // Read from `conversation.quota.kind` FIRST, with the top-level
+      // `quota_exceeded` kept only as a fallback.
+      //
+      // The top level is where this used to look, and production does not
+      // send it — verified 2026-07-25, the snapshot has no `quota_exceeded`
+      // key at all. What it does send is
+      // `conversation.quota = {kind, token_balance}`, `kind` being null while
+      // the user is under their cap. So the over-quota banner and the
+      // send-blocking it drives have never once been able to fire.
+      //
+      // `fromWire` returns null for anything it doesn't recognise, so if
+      // `kind` turns out to use different strings than day/week/month this
+      // degrades to exactly today's behaviour rather than misfiring.
+      quotaExceeded: QuotaWindow.fromWire(
+        _quotaKind(conv) ?? json['quota_exceeded'] as String?,
+      ),
     );
   }
 
@@ -585,6 +713,8 @@ class ConversationSnapshot {
     Conversation? conversation,
     List<Message>? messages,
     DateTime? cursor,
+    String? oldestCursor,
+    bool? hasMoreBefore,
     bool? delta,
     List<Approval>? approvals,
     List<Artifact>? artifacts,
@@ -597,6 +727,8 @@ class ConversationSnapshot {
       conversation: conversation ?? this.conversation,
       messages: messages ?? this.messages,
       cursor: cursor ?? this.cursor,
+      oldestCursor: oldestCursor ?? this.oldestCursor,
+      hasMoreBefore: hasMoreBefore ?? this.hasMoreBefore,
       delta: delta ?? this.delta,
       approvals: approvals ?? this.approvals,
       artifacts: artifacts ?? this.artifacts,
@@ -607,9 +739,34 @@ class ConversationSnapshot {
       quotaExceeded: quotaExceeded ?? this.quotaExceeded,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        conversation,
+        messages,
+        quotaExceeded,
+        cursor,
+        oldestCursor,
+        hasMoreBefore,
+        delta,
+        approvals,
+        artifacts,
+        availableCredentials,
+        disabledCredentials,
+        pendingActions,
+      ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+
+/// Pulls `conversation.quota.kind` out of a raw snapshot body, tolerating a
+/// missing `quota` object and a non-string `kind`.
+String? _quotaKind(Map<String, dynamic> conversation) {
+  final quota = conversation['quota'];
+  if (quota is! Map) return null;
+  final kind = quota['kind'];
+  return kind is String && kind.isNotEmpty ? kind : null;
+}
 
 DateTime? _parseDate(Object? value) {
   if (value is String && value.isNotEmpty) {

@@ -312,6 +312,20 @@ class _PaymentRowCard extends StatelessWidget {
               ),
             ],
           ),
+          // A payment stuck between "sent" and "paid" is the state that most
+          // needs explaining and had none. Verified on production 2026-08-03:
+          // three attempts pending, one of them eight days old, with a token
+          // balance of zero — a user looking at that has no way to tell
+          // "still processing" from "my money went nowhere". Say which, and
+          // hand them the reference to quote.
+          if (row.isAwaitingConfirmation) ...[
+            const SizedBox(height: 8),
+            Text(
+              context.tr.billingPendingNote(row.ref),
+              style: context.text.bodySmall
+                  ?.copyWith(color: s.muted, height: 1.35),
+            ),
+          ],
           if (row.hasReceipt) ...[
             const SizedBox(height: 10),
             Align(
@@ -360,11 +374,15 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `row.status` is the raw wire value — rendering it directly put the
+    // Latin word "PENDING" in the middle of an Arabic screen, which the i18n
+    // parity test can't catch because the string never lived in our tables.
     final (label, variant) = row.isPaid
         ? (context.tr.billingPaid, StatusPillVariant.success)
         : row.isFailed
             ? (context.tr.billingFailed, StatusPillVariant.danger)
-            : (row.status, StatusPillVariant.info);
+            : (context.tr.billingStatusLabel(row.status),
+                StatusPillVariant.info);
     if (label.isEmpty) return const SizedBox.shrink();
     return StatusPill(label: label, variant: variant);
   }

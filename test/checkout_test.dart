@@ -1,5 +1,35 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:saqqar_app/features/billing/data/checkout_api.dart';
 import 'package:saqqar_app/features/billing/data/checkout_models.dart';
+
+/// Captures the request the API layer builds without letting it leave the
+/// process — `POST /billing/checkout/` mints a real Paymob order, so it is
+/// never exercised against a live host, not even in a probe.
+class _CaptureAdapter implements HttpClientAdapter {
+  Map<String, dynamic>? body;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    body = (options.data as Map).cast<String, dynamic>();
+    return ResponseBody.fromString(
+      '{"url":"https://pay/x","ref":"R1"}',
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
 
 void main() {
   group('CheckoutPlan.fromJson', () {
@@ -53,6 +83,29 @@ void main() {
     test('is invalid when a url or ref is missing', () {
       expect(CheckoutSession.fromJson(const {'ref': 'R'}).isValid, isFalse);
       expect(CheckoutSession.fromJson(const {}).isValid, isFalse);
+    });
+  });
+
+  group('CheckoutApi.start', () {
+    // `/billing/plans/` returns a cycle-keyed catalogue and this app renders
+    // `cycles.monthly.price_sar`. Sending no cycle would let the server pick
+    // one: on the live catalogue Pro is 75 SAR monthly against 765 SAR
+    // annual, so a silent default is a ten-fold mischarge, not a mismatch.
+    Dio dioWith(_CaptureAdapter a) => Dio()..httpClientAdapter = a;
+
+    test('names the billing cycle the UI priced, defaulting to monthly', () async {
+      final adapter = _CaptureAdapter();
+      final session = await CheckoutApi(dioWith(adapter)).start('pro');
+
+      expect(adapter.body, {'plan': 'pro', 'cycle': 'monthly'});
+      expect(session.isValid, isTrue);
+    });
+
+    test('forwards an explicit cycle', () async {
+      final adapter = _CaptureAdapter();
+      await CheckoutApi(dioWith(adapter)).start('pro', cycle: 'annual');
+
+      expect(adapter.body, {'plan': 'pro', 'cycle': 'annual'});
     });
   });
 

@@ -1,5 +1,31 @@
 # Reply to App Review — Guideline 2.1(b), build 107
 
+> # ⛔ SUPERSEDED — DO NOT SEND THIS AGAIN
+>
+> **Status as of 2026-08-03: the central claim in this reply is no longer
+> true.** It was accurate when written. It is not now.
+>
+> This reply tells Apple, in writing, that Saqqar has *"no payment processor,
+> no checkout, and no billing of any kind"*, that *"every user is on our free
+> tier"*, and that *"no other tier is available to anyone, from anywhere, at
+> any price."*
+>
+> Since then **Paymob went live on saqqaar.com and the website sells five
+> tiers** (Free / Starter / Solo / Professional / Business, $0–$98 a month).
+> Re-sending this text, or reusing its wording in a new reply, would be a
+> false statement to App Review — and that is the category of mistake that
+> costs a developer account, not just a build.
+>
+> **What is still true, and what to say instead:** the *app* still sells
+> nothing and contains no IAP or payment SDK. Saqqar is a paid SaaS sold on
+> the web; the iOS app is a free client for existing accounts. The wording to
+> use, plus everything else Apple and Google need for the next update, is in
+> **`docs/STORE_PAYMENTS_COMPLIANCE.md` §3.1**.
+>
+> Kept in the repo as a record of what was filed for build 107. Nothing below
+> this line should be copied into a new submission without being re-checked
+> line by line.
+
 ## How to send it
 
 1. App Store Connect → **Apps** → *Saqqar — Odoo Copilot* → **App Review** (the page showing

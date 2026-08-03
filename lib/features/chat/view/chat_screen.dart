@@ -1,10 +1,3 @@
-// Several handlers (_togglePin, _openActionCenter, _openArtifacts,
-// _openServerActivity, _sheetToast) became unreachable when the chat ⋯
-// menu was retired in favour of the rail drawer (brief §4.1/§4.3). They
-// remain in the file as ready-to-rewire fallbacks for surfaces the brief
-// doesn't cover yet (e.g. a Pin action). Suppress the lint here rather
-// than delete code we may resurrect within the same milestone.
-// ignore_for_file: unused_element
 
 import 'dart:async';
 import 'dart:io';
@@ -36,7 +29,6 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../core/network/view_model/connectivity_cubit.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/fade_slide_in.dart';
 // Dead with the conversation menu — the rail drawer renders counts as
 // tab-label suffixes, not as mini chips on a sheet item.
@@ -46,6 +38,7 @@ import '../../../shared/widgets/responsive_content.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../view_model/deep_think_cubit.dart';
+import '../view_model/earlier_paging.dart';
 import '../data/live_env_ack_service.dart';
 import '../data/transcribe_api.dart';
 import '../view_model/running_agents_cubit.dart';
@@ -232,13 +225,37 @@ class _ChatScreenState extends State<ChatScreen>
   // surface as a 404 from the snapshot API now — DataStateView handles
   // the error rendering uniformly.
 
-  /// How many visible messages the lane currently shows. The chat opens on
-  /// the most-recent [_visibleStep]; the "Load earlier" button grows this by
-  /// [_visibleStep] each tap (revealing 10 older messages at a time) until
-  /// the whole transcript is on screen. Display-only — the cubit still holds
-  /// every loaded message; this just windows what we render.
-  static const _visibleStep = 10;
-  int _visibleLimit = _visibleStep;
+  /// How many visible messages the lane currently shows. Display-only — the
+  /// cubit holds every loaded message; this just windows what we render.
+  ///
+  /// The opening window is deliberately larger than the step. A chat used to
+  /// open on ten messages, which on a transcript where most rows are `tool`
+  /// rows is a screen and a bit: the user is already at the top and paging
+  /// before they have read anything. Opening on [_visibleOpening] means the
+  /// first screenful is history, not a starting pistol.
+  ///
+  /// Growing it is cheap. `ListView.builder` only builds what is near the
+  /// viewport, so a wider window costs the timeline pass over the extra rows
+  /// and no extra layout — the rows above the fold are never built.
+  static const _visibleOpening = 20;
+
+  /// How many more messages each reveal uncovers. Sized so one fetched page
+  /// (~40 visible rows out of 100 raw) is spent over roughly two reveals
+  /// rather than four — every reveal costs the user a separate deliberate
+  /// gesture, because the auto-load latch re-arms per drag.
+  static const _visibleStep = 25;
+  int _visibleLimit = _visibleOpening;
+
+  /// Refill the bank once fewer than this many loaded-but-unrevealed messages
+  /// remain.
+  ///
+  /// Deliberately about two pages, not one. A page yields roughly 40 visible
+  /// rows and takes seconds to arrive; at one page of headroom a user scrolling
+  /// briskly drains the bank faster than a single in-flight request refills it,
+  /// and the lane stops — which is the whole failure this is here to prevent.
+  /// Two pages means the next request starts while there is still a page left
+  /// to read, so the wait is spent reading rather than watching.
+  static const _prefetchHeadroom = 80;
 
   /// Predicate for "this server message is shown to the user" — drops the
   /// agent's internal plumbing (tool outputs, empty tool-call invocations,
@@ -264,6 +281,15 @@ class _ChatScreenState extends State<ChatScreen>
     if (_isNewChat) return _messages.length;
     final snapshot = context.read<ChatCubit>().state.data.dataOrNull;
     if (snapshot == null) return 0;
+    // Reuse the adapter memo when it is already keyed to this exact snapshot.
+    // Same predicate, same input, so the answer is identical — but this is
+    // now called from the scroll handler (every frame while the user is near
+    // the top of the transcript), and re-running the filter over the whole
+    // message list at 60 Hz is the kind of quiet waste that only shows up on
+    // a slow phone.
+    if (identical(_visibleMemoSnapshot, snapshot) && _visibleMemo != null) {
+      return _visibleMemo!.length;
+    }
     return snapshot.messages.where(_isVisibleMessage).length;
   }
 
@@ -1141,7 +1167,20 @@ class _ChatScreenState extends State<ChatScreen>
     if (_hasRestoredScroll || _isNewChat) return;
     if (!_scroll.hasClients) return;
     final position = _scroll.position;
-    if (!position.hasContentDimensions || position.maxScrollExtent <= 0) return;
+    if (!position.hasContentDimensions) return;
+    if (position.maxScrollExtent <= 0) {
+      // Nothing to restore on a lane that doesn't scroll — so the restore is
+      // trivially DONE, and saying so matters. `_loadEarlier(auto: true)`
+      // refuses to run until this flag is set, and
+      // `_fillViewportIfNotScrollable` only fires when the lane can't scroll.
+      // Returning early here made those two guards circular: a short lane
+      // couldn't auto-load, so it stayed short, so it never auto-loaded.
+      // Reproduced on a live 1,282-message conversation whose most recent
+      // page was almost entirely `tool` rows — the chat rendered ONE bubble
+      // and would not page back.
+      _hasRestoredScroll = true;
+      return;
+    }
     _hasRestoredScroll = true;
     final saved = _savedScrollOffsets[widget.conversationId];
     if (saved == null) {
@@ -1153,46 +1192,362 @@ class _ChatScreenState extends State<ChatScreen>
 
   // -------- Scroll handling --------
 
+  /// How close to the top of the transcript the user has to get before the
+  /// next page starts loading, in logical pixels.
+  ///
+  /// Deliberately not zero: firing at the very top means the user watches a
+  /// spinner. Firing ~600 px early means the rows are usually already in
+  /// place by the time they get there, which is what makes the paging feel
+  /// like it isn't happening at all. Comfortably inside the list's 1500 px
+  /// `cacheExtent`, so the prepended rows are built off-screen too.
+  static const _autoLoadEarlierThreshold = 600.0;
+
+  /// Re-entrancy guard for [_loadEarlier].
+  ///
+  /// Scroll notifications arrive on essentially every frame of a drag, so
+  /// without this a single upward flick would queue dozens of overlapping
+  /// loads. Held until the post-frame re-anchor has run, not just until the
+  /// await returns — the frame in between is exactly when the list is at its
+  /// shortest and would re-trigger.
+  bool _loadingEarlier = false;
+
+  /// Whether the scroll-driven trigger is allowed to fire. Cleared on each
+  /// automatic load and re-armed only once the user leaves the trigger zone —
+  /// see [_onScrollChanged] for why that hysteresis is load-bearing.
+  bool _autoLoadArmed = true;
+
+  /// Whether the user has taken control of the lane with a real drag.
+  ///
+  /// Until they do, the chat stays pinned to the newest message — see
+  /// [_pinToBottomIfUnscrolled]. Set from a drag start rather than from any
+  /// scroll activity, because our own corrective `jumpTo`s are scroll
+  /// activity too and would hand control away on the frame we opened.
+  bool _userHasScrolled = false;
+
+  /// Consecutive [_fillViewportIfNotScrollable] passes. Bounded because that
+  /// check consults `maxScrollExtent`, which on a lazy list is an estimate:
+  /// if it reads zero for a frame after a page lands, the fill would ask for
+  /// another. Three passes is far more than a viewport ever needs and
+  /// terminates regardless. Reset once the list actually scrolls.
+  int _viewportFillAttempts = 0;
+
+  /// Set when an automatic load fails. Auto-loading then stands down and the
+  /// header falls back to a tap-to-retry pill, so a chat that is offline or
+  /// hitting a 500 doesn't re-request on every scroll frame forever. Cleared
+  /// on the next successful load.
+  bool _autoLoadEarlierFailed = false;
+
+  /// Carried by the one message row whose on-screen position must survive the
+  /// next prepend.
+  ///
+  /// The obvious alternative is to diff scroll *metrics* — remember
+  /// `maxScrollExtent`, subtract after the insert, push the offset down by the
+  /// difference. That works only as far as `maxScrollExtent` is trustworthy,
+  /// and on a lazy `ListView.builder` it is an estimate that firms up as
+  /// layout walks into new territory rather than a measurement. Measuring this
+  /// row sidesteps the estimate entirely: whatever the sliver decides the
+  /// geometry is, the row is where it is.
+  ///
+  /// The precondition is that the row is actually laid out —
+  /// `test/chat_prepend_anchor_test.dart` pins that, and it is why the 600 px
+  /// trigger distance and the list's 1500 px `cacheExtent` are a matched pair.
+  final GlobalKey _scrollAnchorKey = GlobalKey();
+
+  /// Message id the anchor key is pinned to while a prepend is in flight.
+  ///
+  /// Normally the key rides the oldest rendered row, which is re-evaluated
+  /// every build. That's wrong mid-prepend: the insert makes some *older*
+  /// message the new oldest, so an un-pinned key would jump to a different
+  /// row between the before- and after-measurements and the correction would
+  /// be computed from two different widgets. Pinning holds it on the message
+  /// we actually measured. Cleared once the correction has been applied.
+  String? _scrollAnchorId;
+
   void _onScrollChanged() {
     if (!_scroll.hasClients) return;
+    final position = _scroll.position;
     // Show the jump button when the user has scrolled away from the latest
     // message by more than ~one screenful.
-    final shouldShow = _scroll.position.extentAfter > 240;
+    final shouldShow = position.extentAfter > 240;
     if (shouldShow != _showScrollDown) {
       setState(() => _showScrollDown = shouldShow);
     }
+
+    // Infinite scroll upward: approaching the start of the loaded transcript
+    // pulls the next page automatically, matching the web. `extentBefore` is
+    // clamped at 0, so an overscroll bounce at the top reads as 0 rather than
+    // going negative and skipping the check.
+    //
+    // Hysteresis, not a bare threshold. The trigger re-arms only once the user
+    // has moved back out of the zone, which makes the whole mechanism safe
+    // against the one thing that would otherwise runaway: an anchor
+    // correction that couldn't be applied (the anchor row wasn't laid out, so
+    // there is nothing to measure). Without re-arming, the user would still be
+    // sitting inside the threshold afterwards and the next scroll frame would
+    // fire again, and again, until the entire transcript had loaded. With it,
+    // a failed correction costs one extra page and then waits for the user.
+    if (position.extentBefore > _autoLoadEarlierThreshold * 2) {
+      _autoLoadArmed = true;
+      _viewportFillAttempts = 0;
+    }
+    if (_autoLoadArmed && position.extentBefore <= _autoLoadEarlierThreshold) {
+      _autoLoadArmed = false;
+      unawaited(_loadEarlier(auto: true));
+    }
+
+    // Top up the bank on approach, not only after a reveal lands.
+    //
+    // Refilling solely from the reveal has a hole: during one long
+    // uninterrupted scroll the reveals are what drain the bank, and if a
+    // reveal is itself waiting on a fetch, nothing asks for the page after it.
+    // Watching the approach instead means the request goes out while the user
+    // is still on their way. Cheap enough for a scroll frame — two integer
+    // reads, and it no-ops while a page is in flight.
+    if (position.extentBefore <= _autoLoadEarlierThreshold * 4) {
+      _topUpPrefetch();
+    }
   }
 
-  /// Reveals the previous [_visibleStep] (10) messages, driven by the
-  /// explicit "Load earlier messages" header button.
+  /// Reveals the previous [_visibleStep] (10) messages.
+  ///
+  /// Called automatically as the user scrolls toward the top ([auto] true),
+  /// and from the header pill when a previous automatic attempt failed.
   ///
   /// Two-tier so it's instant AND reliable:
   ///   * If the loaded snapshot still has older messages we haven't shown
   ///     yet, just grow the render window — instant, no network.
-  ///   * Otherwise (window has caught up to everything loaded) pull the FULL
-  ///     transcript once via [ChatCubit.loadOlder] (decoded off the UI
-  ///     isolate), then reveal the next 10. After that every tap is instant.
-  ///
-  /// Always advances by exactly [_visibleStep] visible messages — the list
-  /// keeps offset 0 so the button stays at the top for the next tap.
-  Future<void> _loadEarlier() async {
+  ///   * Otherwise (window has caught up to everything loaded) pull more from
+  ///     the server via [ChatCubit.loadOlder] (decoded off the UI isolate),
+  ///     then reveal the next 10.
+  Future<void> _loadEarlier({bool auto = false}) async {
     if (_isNewChat) return;
+
     final cubit = context.read<ChatCubit>();
     final loadedBefore = _loadedVisibleCount();
     final shownBefore =
         loadedBefore < _visibleLimit ? loadedBefore : _visibleLimit;
-    // Everything loaded is already on screen — fetch more from the server.
-    if (shownBefore >= loadedBefore && cubit.state.hasMoreOlder) {
+    // Every guard lives in `decideEarlierPage` so the scroll handler can call
+    // this on any frame without the caller having to know the rules — see
+    // that function for why they're kept out of the widget.
+    final action = decideEarlierPage(
+      automatic: auto,
+      alreadyLoading: _loadingEarlier,
+      scrollRestored: _hasRestoredScroll,
+      lastAttemptFailed: _autoLoadEarlierFailed,
+      shownCount: shownBefore,
+      loadedCount: loadedBefore,
+      hasMoreOlder: cubit.state.hasMoreOlder,
+    );
+    if (action == EarlierPageAction.none) return;
+    final needsFetch = action == EarlierPageAction.fetchOlder;
+
+    _loadingEarlier = true;
+    // Measure the anchor row BEFORE the prepend. Older rows are inserted above
+    // the viewport, so without a correction the content the user was reading
+    // slides down the screen by the height of everything added — and, worse
+    // for automatic paging, they stay pinned near the top, which satisfies the
+    // trigger again and walks the list to the start of the conversation in one
+    // gesture.
+    final anchorYBefore = _anchorRowY();
+    _scrollAnchorId = _anchorRowId();
+
+    if (needsFetch) {
       await cubit.loadOlder();
       if (!mounted) return;
       // Surface a failed fetch instead of silently widening the window
       // over messages that never arrived.
       if (cubit.state.actionFailure != null) {
+        // Latch on ANY failure, including a manual retry. If a failed retry
+        // cleared the flag the header would drop back to its spinner state
+        // and the user would be left watching a load that isn't running,
+        // with no way to ask again.
+        _loadingEarlier = false;
+        setState(() => _autoLoadEarlierFailed = true);
         _surfaceActionFailure();
         return;
       }
     }
-    setState(() => _visibleLimit = shownBefore + _visibleStep);
+
+    _autoLoadEarlierFailed = false;
+    // Reveal once the list has stopped moving — see [_afterScrollSettles].
+    // The network fetch above already ran, so by the time the user's flick
+    // decays the rows are in hand and appear immediately.
+    _afterScrollSettles(() {
+      if (!mounted) {
+        _loadingEarlier = false;
+        return;
+      }
+      // Re-measure: the anchor may have scrolled since we sampled it, and the
+      // correction has to be relative to where it is now.
+      final anchorYAtReveal = _anchorRowY() ?? anchorYBefore;
+      setState(() => _visibleLimit = shownBefore + _visibleStep);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _reanchorAfterPrepend(anchorYAtReveal);
+        _scrollAnchorId = null;
+        _loadingEarlier = false;
+        _fillViewportIfNotScrollable();
+        _topUpPrefetch();
+      });
+    });
+  }
+
+  /// Keeps roughly one page of un-rendered history in hand at all times.
+  ///
+  /// The cubit can't decide this for itself: it knows how much is loaded but
+  /// not how much has been revealed, and "loaded" alone would either fetch
+  /// forever or never. The view holds both numbers, so it owns the decision
+  /// and the cubit just does as it's told.
+  ///
+  /// Cheap to call on every reveal — [ChatCubit.prefetchOlder] is a no-op
+  /// while a page is in flight or once the start of the conversation is
+  /// reached, so this settles by itself.
+  void _topUpPrefetch() {
+    if (_isNewChat) return;
+    final cubit = context.read<ChatCubit>();
+    if (!cubit.state.hasMoreOlder) return;
+    final headroom = _loadedVisibleCount() - _visibleLimit;
+    if (headroom >= _prefetchHeadroom) return;
+    unawaited(cubit.prefetchOlder());
+  }
+
+  /// Runs [action] as soon as the list is not scrolling — immediately when it
+  /// is already still.
+  ///
+  /// Prepending has to be paired with a scroll correction, and the only tool
+  /// for that is `ScrollController.jumpTo`, which is **not safe during a
+  /// gesture**: `ScrollPositionWithSingleContext.beginActivity` disposes the
+  /// active drag, so correcting mid-flick makes the list stop dead under the
+  /// user's finger. (`test/chat_prepend_anchor_test.dart` demonstrates it —
+  /// the drag stops responding after the jump.)
+  ///
+  /// So the *fetch* is eager (it is the slow part and the user shouldn't wait
+  /// on it) while the *reveal* waits for the scroll to settle. Because the
+  /// trigger fires ~600 px before the top, a normal flick has already decayed
+  /// by the time the rows land and the paging still reads as instant.
+  void _afterScrollSettles(VoidCallback action) {
+    if (!_scroll.hasClients) {
+      action();
+      return;
+    }
+    final scrolling = _scroll.position.isScrollingNotifier;
+    if (!scrolling.value) {
+      action();
+      return;
+    }
+    void onSettled() {
+      if (scrolling.value) return;
+      scrolling.removeListener(onSettled);
+      action();
+    }
+
+    scrolling.addListener(onSettled);
+  }
+
+  /// Id of the message currently carrying [_scrollAnchorKey] — the oldest
+  /// rendered row unless a prepend has pinned it.
+  String? _anchorRowId() {
+    if (_scrollAnchorId != null) return _scrollAnchorId;
+    final all = _isNewChat ? _messages : (_visibleMemo ?? const []);
+    if (all.isEmpty) return null;
+    final windowed =
+        all.length <= _visibleLimit ? all : all.sublist(all.length - _visibleLimit);
+    return windowed.isEmpty ? null : windowed.first.id;
+  }
+
+  /// Vertical position of the anchor row, in the scroll view's own
+  /// coordinates. Null when the row isn't laid out — which shouldn't happen
+  /// (the anchor is the oldest rendered row and the trigger fires within the
+  /// list's 1500 px `cacheExtent` of it) but must not throw if it does.
+  double? _anchorRowY() {
+    final context = _scrollAnchorKey.currentContext;
+    if (context == null) return null;
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return null;
+    final viewport = _scroll.hasClients
+        ? _scroll.position.context.storageContext.findRenderObject()
+        : null;
+    if (viewport is! RenderBox) return null;
+    return box.localToGlobal(Offset.zero, ancestor: viewport).dy;
+  }
+
+  /// Restores the reading position after older rows were prepended, by moving
+  /// the offset exactly as far as the anchor row moved.
+  ///
+  /// Measured, not estimated — see [_scrollAnchorKey].
+  void _reanchorAfterPrepend(double? anchorYBefore) {
+    if (anchorYBefore == null) return;
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (!position.hasContentDimensions) return;
+    final anchorYAfter = _anchorRowY();
+    if (anchorYAfter == null) return;
+    // The row moved DOWN by `shift`; scrolling down by the same amount puts
+    // it back under the user's eye.
+    final shift = anchorYAfter - anchorYBefore;
+    if (shift.abs() < 0.5) return;
+    _scroll.jumpTo(
+      (position.pixels + shift).clamp(0.0, position.maxScrollExtent),
+    );
+  }
+
+  /// Pulls another page when the rendered window doesn't fill the viewport.
+  ///
+  /// Ten short messages on a tall phone produce a list that cannot scroll —
+  /// and a list that cannot scroll never emits a scroll notification, so
+  /// [_onScrollChanged] would never fire and the user would be stranded with
+  /// no way to reach older history now that the button is gone. Terminates
+  /// because each pass either grows the content (making it scrollable) or
+  /// exhausts `hasMoreOlder`, which makes [_loadEarlier] return immediately.
+  void _fillViewportIfNotScrollable() {
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (!position.hasContentDimensions) return;
+    if (position.maxScrollExtent > 0) return;
+    // Raised from 3: a page is raw rows, and the visible yield per page can be
+    // low enough (see `ChatCubit._olderPageSize`) that three passes still left
+    // a lane too short to scroll — and therefore unable to ask for more.
+    if (_viewportFillAttempts >= 6) return;
+    _viewportFillAttempts++;
+    // Bypasses the `_autoLoadArmed` latch on purpose: a list that cannot
+    // scroll emits no scroll notifications, so nothing would ever re-arm it.
+    _autoLoadArmed = true;
+    unawaited(_loadEarlier(auto: true));
+  }
+
+  /// Holds a freshly-opened chat on the newest message until the user takes
+  /// control of the lane.
+  ///
+  /// [_restoreScrollIfNeeded] is a one-shot, and on a cold open it fires on
+  /// the first frame that has content dimensions — when only a handful of rows
+  /// are laid out. `maxScrollExtent` on a lazy list is an *estimate* built
+  /// from those rows plus a guess for the rest, so jumping to it there lands
+  /// short of the true bottom, and the one-shot never corrects. The chat then
+  /// opens on a message from a day earlier with the newest content below the
+  /// fold, which reads exactly like "it didn't load" — and the natural
+  /// response is a pull-to-refresh, which is how this got reported.
+  ///
+  /// Reproduced by force-stopping the app: cold open landed on Jul 26 on a
+  /// chat whose newest message was Jul 27. Re-opening the same chat warm (the
+  /// session cache paints the full window, so the estimate is good) landed
+  /// correctly, which is why it looks intermittent.
+  ///
+  /// Re-pinning every frame until the first drag also gives the right
+  /// behaviour for free: a chat the user hasn't touched follows the tail as
+  /// new messages land. Skipped when there's a saved offset — returning to a
+  /// chat you had scrolled back through should land where you left it.
+  void _pinToBottomIfUnscrolled() {
+    if (_userHasScrolled || _isNewChat) return;
+    if (_savedScrollOffsets[widget.conversationId] != null) return;
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (!position.hasContentDimensions) return;
+    final max = position.maxScrollExtent;
+    // A lane too short to scroll has no bottom to pin to; the viewport fill
+    // owns that case.
+    if (max <= 0) return;
+    if ((position.pixels - max).abs() < 1.0) return;
+    _scroll.jumpTo(max);
   }
 
   void _scrollToBottom() {
@@ -1483,14 +1838,15 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// Maps the server-reported `conversation.run_progress` (if any) onto the
-  /// [ChatRunProgressCard]'s [RunProgress] shape so the card reflects the
-  /// REAL export progress the backend streams — no client-side simulation.
+  /// Maps the server-reported `conversation.run_progress` (an
+  /// `api.RunProgress`) onto the card's [ChatRunProgress] view-model so the
+  /// card reflects the REAL export progress the backend streams — no
+  /// client-side simulation.
   ///
   /// Returns null on new chats (no snapshot yet) and whenever the backend
   /// isn't mid-report, so the card only appears while a long-running
   /// Excel / PDF / Word job is actually running.
-  RunProgress? get _liveRunProgress {
+  ChatRunProgress? get _liveRunProgress {
     if (_isNewChat) return null;
     final rp = context
         .watch<ChatCubit>()
@@ -1505,7 +1861,7 @@ class _ChatScreenState extends State<ChatScreen>
     // maps to the indeterminate "rendering" bar; everything else is the
     // determinate "fetching N/M" bar.
     final rendering = rp.phase.toLowerCase().contains('render');
-    return RunProgress(
+    return ChatRunProgress(
       phase: rendering ? RunProgressPhase.rendering : RunProgressPhase.fetching,
       current: rp.current,
       total: rp.total,
@@ -1912,19 +2268,6 @@ class _ChatScreenState extends State<ChatScreen>
     _toast(context.tr.conversationRenamedToast);
   }
 
-  /// Toggles the conversation's pinned state. Pinned chats float to the
-  /// top of the Chats list (see `orderedConversationsProvider`).
-  void _togglePin() {
-    final cubit = context.read<ConversationsCubit>();
-    final wasPinned = cubit.isPinned(widget.conversationId);
-    cubit.togglePin(widget.conversationId);
-    _toast(
-      wasPinned
-          ? context.tr.conversationUnpinnedToast
-          : context.tr.conversationPinnedToast,
-    );
-  }
-
   /// Cancels the in-flight assistant reply. Two paths:
   ///
   ///   * **Existing chat** — delegates to [ChatCubit.stopGeneration],
@@ -1983,44 +2326,84 @@ class _ChatScreenState extends State<ChatScreen>
   /// 404 fallback — fires when a deep link or stale push lands the user on
   /// a conversation that no longer exists. Replaces the older silent
   /// "fresh chat" fallback that hid the actual state.
-  Widget _buildNotFound(BuildContext context) {
-    final s = context.saqqar;
-    return Scaffold(
-      appBar: AppBar(title: Text(context.tr.conversationNotFoundTitle)),
-      body: AmbientBackground(
-        child: Center(
-          child: ResponsiveContent(
-            maxWidth: 480,
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(AppIcons.warning, size: 40, color: s.muted),
-                const SizedBox(height: 16),
-                Text(
-                  context.tr.conversationNotFoundTitle,
-                  textAlign: TextAlign.center,
-                  style: context.text.headlineMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.tr.conversationNotFoundBody,
-                  textAlign: TextAlign.center,
-                  style: context.text.bodyMedium?.copyWith(color: s.muted),
-                ),
-                const SizedBox(height: 20),
-                PrimaryButton(
-                  label: context.tr.backToChats,
-                  icon: AppIcons.backIos,
-                  onPressed: () => context.go(RouteNames.chatsPath),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+  // -------- Drawers --------
+  //
+  // Both drawers live as siblings of the chat content inside the body Stack
+  // (spec §10 — we own the slide + scrim, not Material's `Scaffold.drawer`),
+  // which means they are part of the chat's widget tree whether or not the
+  // user ever opens them. Building them inline cost the screen a full
+  // `ChatSidebarDrawer` (a BlocBuilder-driven conversation list) and a full
+  // `ChatRailDrawer` (three tabs of approvals / artifacts / activity) on
+  // EVERY chat rebuild, for a surface that is off-screen ~99 % of the time.
+  //
+  // These two helpers fix that in the two ways that matter:
+  //
+  //   1. **Lazy** — nothing is constructed until the user first opens that
+  //      drawer. A session that never taps the hamburger or the bell pays
+  //      literally nothing for either.
+  //   2. **Stable identity** — the instance is cached in a field, so
+  //      subsequent chat rebuilds hand `updateChild` the *same* widget
+  //      object and Flutter skips the subtree entirely. The drawers still
+  //      update themselves through their own Bloc subscriptions; they just
+  //      stop being re-created by a parent that has nothing new to say to
+  //      them. Caching also preserves their internal state (the rail's
+  //      selected tab, the sidebar's scroll offset) across open/close.
+  //
+  // Both take only `widget.conversationId` plus callbacks bound to `this`,
+  // so nothing they receive can go stale between builds.
+  Widget? _cachedSidebarDrawer;
+  Widget? _cachedRailDrawer;
+
+  Widget _sidebarDrawer() {
+    if (!_sidebarOpen && _cachedSidebarDrawer == null) {
+      return const SizedBox.shrink();
+    }
+    return _cachedSidebarDrawer ??= ChatSidebarDrawer(
+      currentConversationId: widget.conversationId,
+      onPickConversation: (String id) {
+        setState(() => _sidebarOpen = false);
+        if (id != widget.conversationId) {
+          context.go(RouteNames.chatPath(id));
+        }
+      },
+      onNewConversation: () {
+        setState(() => _sidebarOpen = false);
+        context.go(RouteNames.chatPath(UiStrings.routeNewConversation));
+      },
+      onOpenVault: () {
+        setState(() => _sidebarOpen = false);
+        context.go(RouteNames.vaultPath);
+      },
+      // Tapping the wordmark closes the drawer and jumps home (the chats
+      // list). Same close-then-go pattern as the other drawer actions.
+      onGoHome: () {
+        setState(() => _sidebarOpen = false);
+        context.go(RouteNames.chatsPath);
+      },
+      // Close the drawer in-place — flipping the local flag triggers the
+      // slide-out animation. Routes don't move.
+      onClose: () => setState(() => _sidebarOpen = false),
     );
   }
+
+  Widget _railDrawer() {
+    if (!_railOpen && _cachedRailDrawer == null) {
+      return const SizedBox.shrink();
+    }
+    return _cachedRailDrawer ??= ChatRailDrawer(
+      conversationId: widget.conversationId,
+      onClose: () => setState(() => _railOpen = false),
+    );
+  }
+
+  // `_buildNotFound` used to render a dedicated "conversation not found"
+  // Scaffold, reached via an `_isUnknownChat` demo-seed lookup that was
+  // removed for producing false negatives on web-created conversations. A
+  // genuinely missing conversation now comes back as a 404 from the snapshot
+  // API and renders through `DataStateView` like every other failure, so the
+  // bespoke screen had no caller left. It was invisible for as long as it was
+  // dead because a file-level `ignore_for_file: unused_element` (added for a
+  // different, since-deleted set of handlers) suppressed the warning.
 
   @override
   Widget build(BuildContext context) {
@@ -2300,7 +2683,7 @@ class _ChatScreenState extends State<ChatScreen>
             ChatPlanBanner(
               plan: context.watch<PlanCubit>().state,
               exceededWindow: quotaWindow,
-              onUpgrade: _showUpgradeSheet,
+              onUpgrade: _openPricing,
             ),
             // Quick-action suggestion chips — seed the composer with a
             // common Odoo operation. Hidden while recording / transcribing
@@ -2420,35 +2803,7 @@ class _ChatScreenState extends State<ChatScreen>
             width: drawerWidth,
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeOutCubic,
-            child: ChatSidebarDrawer(
-              currentConversationId: widget.conversationId,
-              onPickConversation: (String id) {
-                setState(() => _sidebarOpen = false);
-                if (id != widget.conversationId) {
-                  context.go(RouteNames.chatPath(id));
-                }
-              },
-              onNewConversation: () {
-                setState(() => _sidebarOpen = false);
-                context.go(
-                  RouteNames.chatPath(UiStrings.routeNewConversation),
-                );
-              },
-              onOpenVault: () {
-                setState(() => _sidebarOpen = false);
-                context.go(RouteNames.vaultPath);
-              },
-              // Tapping the wordmark closes the drawer and jumps home
-              // (the chats list). Same close-then-go pattern as the
-              // other drawer actions.
-              onGoHome: () {
-                setState(() => _sidebarOpen = false);
-                context.go(RouteNames.chatsPath);
-              },
-              // Close the drawer in-place — flipping the local flag
-              // triggers the slide-out animation. Routes don't move.
-              onClose: () => setState(() => _sidebarOpen = false),
-            ),
+            child: _sidebarDrawer(),
           ),
           // ── Rail (end-side, slides in from right in LTR, left in
           // RTL) — holds Approvals + Artifacts + Activity tabs ──
@@ -2459,10 +2814,7 @@ class _ChatScreenState extends State<ChatScreen>
             width: drawerWidth,
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeOutCubic,
-            child: ChatRailDrawer(
-              conversationId: widget.conversationId,
-              onClose: () => setState(() => _railOpen = false),
-            ),
+            child: _railDrawer(),
           ),
         ],
       ),
@@ -2734,15 +3086,28 @@ class _ChatScreenState extends State<ChatScreen>
     // stays expanded as a normal message. Web parity per user request.
     final timeline = _buildTimeline(messages);
 
-    // "Load earlier messages" header — the FIRST list item, shown whenever
-    // there are older messages to reveal: either still buffered in the
-    // loaded snapshot (`_visibleLimit < all.length`) or fetchable from the
-    // server (`hasMoreOlder`). A real list item (not a scroll trigger) so
-    // it's reachable even when the rendered window is too short to scroll.
-    final showLoadEarlier = !_isNewChat &&
-        timeline.isNotEmpty &&
-        (_visibleLimit < all.length ||
-            context.watch<ChatCubit>().state.hasMoreOlder);
+    // Retry header — the FIRST list item, and shown ONLY when an automatic
+    // page has actually failed.
+    //
+    // It used to render whenever more history existed, which meant that on any
+    // long chat the top of the lane permanently read "Load earlier messages".
+    // That is a promise the app no longer needs to make: paging is automatic
+    // and pages ahead of the user, so an affordance asking them to fetch what
+    // is already being fetched is noise at best, and at worst reads as "the
+    // chat stopped here" every single time they scroll up. Removed at the
+    // product owner's request (2026-07-28) — the header is now purely an error
+    // state: a dropped connection or a failing endpoint, where there IS
+    // something for the user to do.
+    //
+    // `_autoLoadEarlierFailed` latches on any failure and clears on the next
+    // success, so the pill appears exactly while a retry is worth offering.
+    // Rule lives in `earlier_paging.dart` with the rest of the paging policy,
+    // and is pinned by `test/earlier_paging_test.dart`.
+    final showLoadEarlier = showEarlierRetry(
+      isNewChat: _isNewChat,
+      hasRenderedMessages: timeline.isNotEmpty,
+      lastAttemptFailed: _autoLoadEarlierFailed,
+    );
     final headerCount = showLoadEarlier ? 1 : 0;
     final thinkingIndex = headerCount + timeline.length;
 
@@ -2774,17 +3139,69 @@ class _ChatScreenState extends State<ChatScreen>
         pendingApprovals.length +
         1;
 
+    // Which message carries the scroll anchor this build. Normally the oldest
+    // rendered row — that's the one closest to where a prepend inserts, so
+    // it's guaranteed to still be laid out afterwards. While a prepend is in
+    // flight `_scrollAnchorId` pins it to the message we measured BEFORE the
+    // insert, because by then `messages.first` is a different (older) row and
+    // following it would measure the wrong thing.
+    final anchorId = _scrollAnchorId ??
+        (messages.isEmpty ? null : messages.first.id);
+
     // Schedule a one-shot restore for the first frame in which the
     // ListView has measurable content. _restoreScrollIfNeeded guards
     // itself with `_hasRestoredScroll`, so subsequent poll-driven
     // builds skip the post-frame work entirely.
-    if (!_hasRestoredScroll && totalCount > 0) {
+    if (totalCount > 0 && (!_hasRestoredScroll || !_userHasScrolled)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _restoreScrollIfNeeded();
+        if (!mounted) return;
+        final firstPass = !_hasRestoredScroll;
+        _restoreScrollIfNeeded();
+        // And immediately check whether the lane is even long enough to
+        // scroll. Without this the fill only ever ran as a follow-up to a
+        // page the user had already triggered — so a chat that opened SHORT
+        // (a recent window that is mostly `tool` rows renders as one or two
+        // bubbles) had no scroll to give and no page to follow, and simply
+        // sat there. Verified against a live 1,282-message conversation.
+        if (firstPass) _fillViewportIfNotScrollable();
+        // The restore above is a one-shot against an estimated extent; this
+        // keeps the lane on the newest message until the user drags.
+        _pinToBottomIfUnscrolled();
       });
     }
 
-    return ListView.builder(
+    return NotificationListener<ScrollStartNotification>(
+      // Re-arm on every fresh finger-down drag.
+      //
+      // The `extentBefore > threshold * 2` rule in [_onScrollChanged] re-arms
+      // by *position*, and position alone has a dead end: once the list is
+      // resting at the very top, `extentBefore` is 0 and can never climb back
+      // over the re-arm line, so the latch stays down and further upward
+      // swipes do nothing at all. Verified on a live 816-message chat — the
+      // transcript stopped paging with "Load earlier messages" still showing,
+      // and six more swipes produced a pixel-identical screen.
+      //
+      // A drag start is the other half of the signal: it means the user just
+      // asked again, deliberately. It cannot runaway the way a position-based
+      // re-arm inside the trigger zone would, because it fires once per
+      // gesture rather than once per scroll frame, and `_loadingEarlier`
+      // still collapses anything that overlaps an in-flight page.
+      //
+      // `dragDetails != null` filters out programmatic motion — the
+      // `jumpTo` in [_reanchorAfterPrepend] also opens a scroll activity, and
+      // arming off our own correction would defeat the point of the latch.
+      onNotification: (notification) {
+        if (notification.dragDetails != null) {
+          _autoLoadArmed = true;
+          // The user is driving now; stop holding the lane at the newest
+          // message. Deliberately not `setState` — nothing in the tree is
+          // built from this, and a rebuild on the first frame of every drag
+          // would be a scroll-time cost for no visual change.
+          _userHasScrolled = true;
+        }
+        return false;
+      },
+      child: ListView.builder(
       controller: _scroll,
       padding: EdgeInsets.zero,
       itemCount: totalCount,
@@ -2805,13 +3222,13 @@ class _ChatScreenState extends State<ChatScreen>
       // average list rows because of the markdown body.
       cacheExtent: 1500,
       itemBuilder: (context, index) {
-        // "Load earlier messages" header — the first item when there's
-        // older history to page in.
+        // Retry pill — the first item, and present only while a page has
+        // failed. See [_LoadEarlierHeader] for why it is an error state only.
         if (headerCount == 1 && index == 0) {
           return ResponsiveContent(
             maxWidth: 760,
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-            child: _LoadEarlierButton(onLoad: _loadEarlier),
+            child: _LoadEarlierHeader(onRetry: _loadEarlier),
           );
         }
 
@@ -2895,14 +3312,24 @@ class _ChatScreenState extends State<ChatScreen>
           previousLast: previousLast,
         );
 
-        if (!showDateSeparator) return entryWidget;
-        return Column(
-          children: [
-            ChatDateSeparator(date: entryAnchor.createdAt!),
-            entryWidget,
-          ],
-        );
+        final row = !showDateSeparator
+            ? entryWidget
+            : Column(
+                children: [
+                  ChatDateSeparator(date: entryAnchor.createdAt!),
+                  entryWidget,
+                ],
+              );
+
+        // Tag the scroll anchor. `_scrollAnchorId` names one specific message
+        // whose on-screen position must survive the next prepend; carrying
+        // the key on that row is what lets `_reanchorAfterPrepend` measure
+        // where it actually moved to. See `_loadEarlier`.
+        return entryAnchor.id == anchorId
+            ? KeyedSubtree(key: _scrollAnchorKey, child: row)
+            : row;
       },
+      ),
     );
   }
 
@@ -3053,11 +3480,6 @@ class _ChatScreenState extends State<ChatScreen>
 
   // -------- Toasts --------
 
-  void _sheetToast(BuildContext sheetContext, String message) {
-    Navigator.of(sheetContext).pop();
-    _toast(message);
-  }
-
   void _toast(String text) {
     AppToast.show(context, message: text);
   }
@@ -3116,9 +3538,10 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   /// Upgrade CTA target (Gap B) — opens the pricing screen (Gap L) with the
-  /// live tiers. Self-serve checkout isn't built yet, so the pricing screen's
-  /// own per-tier CTA is "Contact us" until a payment provider is signed.
-  void _showUpgradeSheet() {
+  /// live tiers, where each paid tier hands off to the web checkout on
+  /// saqqaar.com. Only reachable when `showPaidUpsell` is on; the banner drops
+  /// its CTA entirely otherwise, so this is never a dead end.
+  void _openPricing() {
     context.pushNamed(RouteNames.pricing);
   }
 
@@ -3250,65 +3673,67 @@ class _InboxBellTrigger extends StatelessWidget {
 /// previous batch via [ChatCubit.loadOlder]; while a page is in flight it
 /// swaps to a spinner. Rebuilds only on the `isLoadingOlder` flag so the
 /// 1.5 s poll cadence doesn't churn it.
-class _LoadEarlierButton extends StatelessWidget {
-  const _LoadEarlierButton({required this.onLoad});
+/// Tap-to-retry pill shown at the head of the message list — **only** after an
+/// automatic page has failed.
+///
+/// Two earlier versions of this were wrong in opposite directions. First it was
+/// a "Load earlier messages" button the user had to tap for every page. Then,
+/// once paging became automatic, it became a passive status row that still
+/// rendered whenever more history existed — which meant the top of every long
+/// chat permanently advertised that there was more to fetch, while the app was
+/// already fetching it. Users read that as the transcript having stopped.
+///
+/// So it is now an error state and nothing else. Auto-loading stands down after
+/// a failure rather than hammering a failing endpoint on every scroll frame,
+/// which is the one situation the automatic path cannot recover from on its
+/// own; this is the way back in. Everything else — including the wait while a
+/// page is genuinely in flight — is the app's problem, not the user's, and the
+/// page-ahead means that wait is usually already over before they reach it.
+class _LoadEarlierHeader extends StatelessWidget {
+  const _LoadEarlierHeader({required this.onRetry});
 
-  final Future<void> Function() onLoad;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
     final tr = context.tr;
-    return BlocBuilder<ChatCubit, ChatState>(
-      buildWhen: (prev, next) => prev.isLoadingOlder != next.isLoadingOlder,
-      builder: (context, state) {
-        final s = context.saqqar;
-        final loading = state.isLoadingOlder;
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
+    final s = context.saqqar;
+
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: AppRadius.pillR,
+          onTap: onRetry,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            decoration: BoxDecoration(
+              color: s.cardBg,
               borderRadius: AppRadius.pillR,
-              onTap: loading ? null : onLoad,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                decoration: BoxDecoration(
-                  color: s.cardBg,
-                  borderRadius: AppRadius.pillR,
-                  border: Border.all(color: s.cardBorder),
-                  boxShadow: s.glassShadow,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (loading)
-                      SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(s.brandCyan),
-                        ),
-                      )
-                    else
-                      Icon(Icons.keyboard_arrow_up_rounded,
-                          size: 18, color: s.brandCyan),
-                    const SizedBox(width: 8),
-                    Text(
-                      loading ? tr.chatLoadingEarlier : tr.chatLoadEarlier,
-                      style: context.text.labelMedium?.copyWith(
-                        color: loading ? s.muted : s.brandCyan,
-                        fontWeight: FontWeight.w700,
-                      ),
+              border: Border.all(color: s.cardBorder),
+              boxShadow: s.glassShadow,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.refresh_rounded, size: 18, color: s.brandCyan),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    tr.chatLoadEarlier,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelMedium?.copyWith(
+                      color: s.brandCyan,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

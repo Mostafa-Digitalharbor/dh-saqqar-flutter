@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_endpoints.dart';
@@ -24,7 +25,7 @@ enum AttachmentStatus {
 /// [status] is [AttachmentStatus.pending] until OCR / text extraction
 /// completes — the agent will eager-wait if the user sends before then.
 @immutable
-class Attachment {
+class Attachment extends Equatable {
   const Attachment({
     required this.id,
     required this.originalName,
@@ -75,4 +76,16 @@ class Attachment {
     }
     return null;
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        originalName,
+        mimeType,
+        sizeBytes,
+        kind,
+        status,
+        url,
+        createdAt,
+      ];
 }

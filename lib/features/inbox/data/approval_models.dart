@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 /// The five `action_type` values the backend emits per
@@ -43,7 +44,7 @@ enum ApprovalStatus {
 /// flat `/api/v1/approvals/` list response — approvals inside a snapshot
 /// already live in conversation scope.
 @immutable
-class ApprovalConversationRef {
+class ApprovalConversationRef extends Equatable {
   const ApprovalConversationRef({required this.id, required this.title});
   final String id;
   final String title;
@@ -54,12 +55,15 @@ class ApprovalConversationRef {
       title: json['title'] as String? ?? '',
     );
   }
+
+  @override
+  List<Object?> get props => [id, title];
 }
 
 /// Out-of-band consent request for a destructive operation. Lives in both
 /// the conversation snapshot (§3) and the flat Inbox feed (§8).
 @immutable
-class Approval {
+class Approval extends Equatable {
   const Approval({
     required this.id,
     required this.actionType,
@@ -134,6 +138,22 @@ class Approval {
       recordCount: (json['record_count'] as num?)?.toInt(),
     );
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        actionType,
+        status,
+        prompt,
+        payload,
+        resolutionNote,
+        createdAt,
+        resolvedAt,
+        conversation,
+        modelLabelEn,
+        modelLabelAr,
+        recordCount,
+      ];
 
   static DateTime? _parseDate(Object? value) {
     if (value is String && value.isNotEmpty) {

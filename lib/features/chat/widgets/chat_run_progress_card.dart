@@ -14,10 +14,18 @@ import '../../../shared/extensions/context_extensions.dart';
 ///                   indeterminate bar with "Writing file… N rows".
 enum RunProgressPhase { fetching, rendering }
 
-/// Snapshot of a long-running tool's progress. Mirrors the web's
-/// `run_progress` shape on the conversation payload.
-class RunProgress {
-  const RunProgress({
+/// View-model for [ChatRunProgressCard] — what the card needs to draw, not
+/// what the server sends.
+///
+/// Named `ChatRunProgress`, not `RunProgress`, because
+/// `conversation_models.dart` already exports an API model by that name with
+/// a *different* shape (a free-form `phase` string and a `label`, no `rows` /
+/// `fileName`). Two same-named types in one app is a trap: any file needing
+/// both had to reach for an import prefix, and a file importing only one
+/// could silently bind to the wrong one and still compile. `chat_screen.dart`
+/// adapts the API model into this one in `_liveRunProgress`.
+class ChatRunProgress {
+  const ChatRunProgress({
     required this.phase,
     this.current,
     this.total,
@@ -55,7 +63,7 @@ class RunProgress {
 class ChatRunProgressCard extends StatelessWidget {
   const ChatRunProgressCard({super.key, required this.progress});
 
-  final RunProgress progress;
+  final ChatRunProgress progress;
 
   @override
   Widget build(BuildContext context) {

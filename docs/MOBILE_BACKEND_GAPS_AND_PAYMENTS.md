@@ -1,5 +1,22 @@
 # Mobile → Backend: Gaps & Payment Requirements
 
+> ## ⚠️ SUPERSEDED — read `MOBILE_BACKEND_OPEN_ITEMS.md` instead
+>
+> Superseded on **2026-08-03**. Most of what this document asks for turned out
+> to be **already built** — we re-checked every route from inside the signed-in
+> app rather than assuming, and the corrected status is in
+> `docs/MOBILE_BACKEND_OPEN_ITEMS.md`.
+>
+> Two things here are now actively wrong:
+>
+> * The **In-App Purchase** work (`billing/iap/verify/`, store notifications,
+>   product IDs) is **withdrawn** — do not build it. Sales stay on the web.
+> * §"Tokens are sold only on the website, with no prices/buy buttons in the
+>   mobile apps" describes an older decision. What the app actually does now is
+>   in `MOBILE_BACKEND_OPEN_ITEMS.md` §2.2.
+>
+> Kept for history. Nothing in it should be worked from.
+
 **To:** Backend team lead
 **From:** Mobile
 **Date:** 2026-07-23

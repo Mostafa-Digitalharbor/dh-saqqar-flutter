@@ -63,7 +63,8 @@ class RouteNames {
   static const dataExplorer = 'data_explorer';
   static const dataExplorerPath = '/data-explorer';
 
-  // Billing checkout (§4.3) — Android-only (gated behind showPaidUpsell).
+  // Billing checkout (§4.3) — unreachable while sales are web-only; the route
+  // is registered but redirects (gated behind showPaidUpsell).
   static const checkout = 'checkout';
   static const checkoutPath = '/billing/checkout';
 

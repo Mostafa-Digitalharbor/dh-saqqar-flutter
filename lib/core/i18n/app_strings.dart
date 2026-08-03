@@ -78,7 +78,6 @@ class AppStrings {
   String get newToSaqqar => _t('new_to_saqqar');
   String get createAccount => _t('create_account');
   String get createAccountUnavailable => _t('create_account_unavailable');
-  String get authBrandTitle => _t('auth_brand_title');
   String get authBrandBody => _t('auth_brand_body');
   String get openWorkspace => _t('open_workspace');
 
@@ -1136,14 +1135,11 @@ class AppStrings {
   String get planNearLimitTitle => _t('plan_near_limit_title');
   String get quotaExceededTitle => _t('quota_exceeded_title');
   String get quotaUpgradeCta => _t('quota_upgrade_cta');
-  String get upgradeSheetTitle => _t('upgrade_sheet_title');
-  String get upgradeSheetBody => _t('upgrade_sheet_body');
 
   // Pricing screen (Gap L)
   String get pricingTitle => _t('pricing_title');
   String get pricingCurrent => _t('pricing_current');
   String get pricingFree => _t('pricing_free');
-  String get pricingContactCta => _t('pricing_contact_cta');
   String get pricingLoadError => _t('pricing_load_error');
   String get pricingStUnit => _t('pricing_st_unit');
   String get pricingDailyCap => _t('pricing_daily_cap');
@@ -1159,11 +1155,72 @@ class AppStrings {
   /// locales to match the rest of the numeric UI.
   String pricePerMonth(int cents) {
     if (cents <= 0) return pricingFree;
-    final dollars = cents % 100 == 0
-        ? '${cents ~/ 100}'
-        : (cents / 100).toStringAsFixed(2);
-    return _f('price_per_month', {'dollars': dollars});
+    return _f('price_per_month', {'dollars': _dollars(cents)});
   }
+
+  /// The annual line, quoted **per month** the way saqqaar.com quotes it —
+  /// "$10 / month, billed annually ($120/yr)". Quoting the yearly total alone
+  /// would make the annual plan look more expensive than the monthly one,
+  /// which is the opposite of what it is.
+  String priceAnnualPerMonth(int centsPerMonth) {
+    if (centsPerMonth <= 0) return pricingFree;
+    return _f('price_annual_per_month', {
+      'dollars': _dollars(centsPerMonth),
+      'yearly': _dollars(centsPerMonth * 12),
+    });
+  }
+
+  /// Cents → "20" or "2.50". Trailing `.00` reads as false precision on a
+  /// price list where most tiers are whole dollars.
+  String _dollars(int cents) => cents % 100 == 0
+      ? '${cents ~/ 100}'
+      : (cents / 100).toStringAsFixed(2);
+
+  // Pricing — cycle switch + the web hand-off.
+  String get pricingSubtitle => _t('pricing_subtitle');
+  String get pricingCycleMonthly => _t('pricing_cycle_monthly');
+  String get pricingCycleAnnual => _t('pricing_cycle_annual');
+  String get pricingCycleAnnualSave => _t('pricing_cycle_annual_save');
+  String get pricingVatNote => _t('pricing_vat_note');
+  String get pricingWebCta => _t('pricing_web_cta');
+  String get pricingWebNote => _t('pricing_web_note');
+  String get pricingOpenFailed => _t('pricing_open_failed');
+  String get pricingPlansTitle => _t('pricing_plans_title');
+  String get pricingPlansSubtitle => _t('pricing_plans_subtitle');
+  String get pricingPlansSubtitlePlain => _t('pricing_plans_subtitle_plain');
+  String get pricingManagedOnWeb => _t('pricing_managed_on_web');
+  String get pricingWebSignInNote => _t('pricing_web_signin_note');
+
+  /// Localized label for a payment's wire status.
+  ///
+  /// The states are the ones `PAYMOB_WEB_CHECKOUT_BACKEND.md` commits to:
+  /// `pending` / `paid` / `failed` / `expired` / `refunded` / `chargeback`.
+  /// Anything else falls back to the raw value — a status we don't recognise
+  /// is still better shown than swallowed, and it tells support what the
+  /// server actually said.
+  ///
+  /// Without this, an Arabic user reads the Latin word "PENDING" in an
+  /// otherwise Arabic screen; the i18n parity test can't catch it because the
+  /// string never lived in our tables.
+  String billingStatusLabel(String wire) => switch (wire.toLowerCase()) {
+        'pending' => _t('billing_status_pending'),
+        'paid' || 'succeeded' || 'success' => _t('billing_paid'),
+        'failed' || 'declined' => _t('billing_failed'),
+        'expired' => _t('billing_status_expired'),
+        'refunded' => _t('billing_status_refunded'),
+        'chargeback' => _t('billing_status_chargeback'),
+        _ => wire,
+      };
+
+  /// Explains a payment that is neither paid nor failed. Shown under the row,
+  /// because "PENDING" on its own leaves someone who has just paid with no
+  /// idea whether their money arrived.
+  ///
+  /// Carries the short [ref] so a support message can start with the one fact
+  /// that identifies the attempt, instead of "my payment didn't work".
+  String billingPendingNote(String ref) =>
+      _f('billing_pending_note', {'ref': ref});
+  String get pricingZero => _t('pricing_zero');
 
   // Addon authoring hint (Gap M) — shown when a `.zip` addon is staged.
   String get addonHint => _t('addon_hint');
@@ -1309,7 +1366,9 @@ class AppStrings {
       : "You've reached your $window usage limit. It resets when the window rolls over, or upgrade your plan.";
 
   /// [quotaExceededBody] minus the upgrade nudge — used where paid-plan upsell
-  /// is suppressed (iOS, App Store 3.1.1). Callers pick via `showPaidUpsell`.
+  /// is suppressed, which is currently everywhere: sales are web-only, so
+  /// "upgrade your plan" would point at a door the app doesn't have. Callers
+  /// pick via `showPaidUpsell`.
   String quotaExceededBodyPlain(String window) => _isArabic
       ? 'لقد بلغت حدّ الاستخدام $window. ستُعاد التهيئة عند انتهاء الفترة.'
       : "You've reached your $window usage limit. It resets when the window rolls over.";
@@ -1338,6 +1397,23 @@ class AppStrings {
   String get tryAgain => _t('try_again');
   String get invalidValue => _t('invalid_value');
   String get conversationTitle => _t('conversation_title');
+
+  // ── Account link groups ──────────────────────────────────────────────
+  // Section headings + the one-line descriptions under each destination.
+  // The descriptions are the point: a row reading only "Saqqar Apps" or
+  // "Data explorer" tells a first-time user nothing about whether it is
+  // worth tapping.
+  String get accountGroupWorkspace => _t('account_group_workspace');
+  String get accountGroupWorkspaceHint => _t('account_group_workspace_hint');
+  String get accountGroupSecurity => _t('account_group_security');
+  String get accountGroupBilling => _t('account_group_billing');
+  String get accountGroupBillingHint => _t('account_group_billing_hint');
+  String get appsSubtitle => _t('apps_subtitle');
+  String get trialSubtitle => _t('trial_subtitle');
+  String get dataExplorerSubtitle => _t('data_explorer_subtitle');
+  String get devicesSubtitle => _t('devices_subtitle');
+  String get checkoutSubtitle => _t('checkout_subtitle');
+  String get billingHistorySubtitle => _t('billing_history_subtitle');
 
   // ── New endpoints (API_MOBILE_NEW_ENDPOINTS.md) ──────────────────────
   // Saqqar Apps (§1)
@@ -1477,7 +1553,6 @@ const Map<String, String> _en = {
   'new_to_saqqar': 'New to Saqqar?',
   'create_account': 'Create an account',
   'create_account_unavailable': 'Registration is available on saqqaar.com.',
-  'auth_brand_title': 'Saqqar Operations\nCopilot',
   'auth_brand_body':
       'Live Odoo agent that diagnoses, reports, and acts with private credentials and approval gating on every risky change.',
   'open_workspace': 'Open workspace',
@@ -2022,9 +2097,35 @@ const Map<String, String> _en = {
   'quota_exceeded_title': 'Usage limit reached',
   'quota_upgrade_cta': 'See plans',
   'pricing_title': 'Plans & pricing',
+  'pricing_subtitle': 'Pick the plan that fits how you work with your Odoo.',
   'pricing_current': 'Current plan',
   'pricing_free': 'Free',
-  'pricing_contact_cta': 'Contact us to upgrade',
+  'pricing_cycle_monthly': 'Monthly',
+  'pricing_cycle_annual': 'Annual',
+  'pricing_cycle_annual_save': 'save up to 50%',
+  'pricing_vat_note': 'Prices exclude VAT. 15% VAT is added at checkout.',
+  'pricing_web_cta': 'Subscribe on the web',
+  // Says where the user is going and what happens when they come back. A CTA
+  // that silently throws you into a browser reads as the app breaking.
+  'pricing_web_note':
+      'Payment is completed on saqqaar.com in your browser. Your plan updates '
+          'here as soon as it goes through.',
+  'pricing_open_failed': "Couldn't open saqqaar.com.",
+  'pricing_plans_title': 'Plans & pricing',
+  'pricing_plans_subtitle': 'Compare plans and subscribe on saqqaar.com.',
+  // Used where the purchase surface is off: names no destination and makes no
+  // offer, so it is a description of a screen rather than a route to a sale.
+  'pricing_plans_subtitle_plain': 'See what each plan includes.',
+  // Plain text, never a link or a button. Mirrors `create_account_unavailable`
+  // ("Registration is available on saqqaar.com."), which is already shipped
+  // and already through App Review.
+  'pricing_managed_on_web': 'Plans are managed on saqqaar.com.',
+  // Shown when the browser could not be opened already signed in. Says the
+  // one thing the user needs to know before the page loads — otherwise a
+  // signed-in user taps Subscribe, gets a login form, and concludes the app
+  // logged them out.
+  'pricing_web_signin_note': 'You may need to sign in on the web to continue.',
+  'pricing_zero': '\$0',
   'pricing_load_error': "Couldn't load plans.",
   'pricing_st_unit': 'ST',
   'pricing_daily_cap': 'Daily',
@@ -2048,9 +2149,6 @@ const Map<String, String> _en = {
   // Names no tier and sells nothing — the same copy ships on iOS, where
   // naming a paid plan would be an App Store 3.1.1 upsell.
   'voice_locked_pro': "Voice input isn't available on your account.",
-  'upgrade_sheet_title': 'Upgrade your plan',
-  'upgrade_sheet_body':
-      'Self-serve upgrades are coming soon. To raise your limits now, contact the Digital Harbor team and we\'ll set you up.',
   // Email-OTP auth flow (Gap D)
   'auth_signup_email_title': 'Create your account',
   'auth_signup_email_subtitle': 'Enter your email to get started.',
@@ -2374,6 +2472,7 @@ const Map<String, String> _en = {
   'relative_hours_ago': '{n} h ago',
   'relative_days_ago': '{n} d ago',
   'price_per_month': '\${dollars} / month',
+  'price_annual_per_month': '\${dollars} / month, billed annually (\${yearly}/yr)',
   'auth_resend_in': 'Resend in {seconds} s',
   'plan_pct_used': '{pct}% used',
   'item_count': '{visible} of {total} {label}',
@@ -2388,6 +2487,19 @@ const Map<String, String> _en = {
 
   'file_kind_image': 'Image',
   'auth_otp_placeholder': '1 2 3 4 5 6',
+
+  // Account link groups
+  'account_group_workspace': 'Workspace',
+  'account_group_workspace_hint': 'Tools that work on your Odoo directly.',
+  'account_group_security': 'Security',
+  'account_group_billing': 'Billing',
+  'account_group_billing_hint': 'Your plan, payments and receipts.',
+  'apps_subtitle': 'Guided setups you can run in one tap.',
+  'trial_subtitle': 'Get a hosted Odoo to try things on.',
+  'data_explorer_subtitle': 'Read your models and records directly.',
+  'devices_subtitle': 'See where you\'re signed in, sign out a lost phone.',
+  'checkout_subtitle': 'Top up the tokens Saqqar spends on your work.',
+  'billing_history_subtitle': 'Past payments and receipts.',
 
   // New endpoints (API_MOBILE_NEW_ENDPOINTS.md)
   'apps_title': 'Saqqar Apps',
@@ -2405,6 +2517,17 @@ const Map<String, String> _en = {
   'billing_receipt_no_viewer': 'No PDF viewer found on this device.',
   'billing_paid': 'Paid',
   'billing_failed': 'Failed',
+  'billing_status_pending': 'Pending',
+  'billing_status_expired': 'Expired',
+  'billing_status_refunded': 'Refunded',
+  'billing_status_chargeback': 'Chargeback',
+  // Says what "pending" means and what to do. A payment that sits here is
+  // either still being confirmed or never completed, and the user cannot tell
+  // those apart — so give them the reference and a way to ask.
+  'billing_pending_note':
+      'Waiting for confirmation from the payment provider. If you completed '
+          'this payment and it hasn\'t updated, contact support with reference '
+          '{ref}.',
   'trial_title': 'Managed Odoo trial',
   'trial_intro':
       'Request a hosted Odoo trial and we\'ll set it up for you — no self-hosting needed.',
@@ -2454,7 +2577,7 @@ const Map<String, String> _en = {
   // §4 — Direct data explorer
   'data_explorer_title': 'Data explorer',
   'data_explorer_preview_note':
-      'Read-only Odoo queries — no agent, no token cost. Request shapes follow Odoo conventions; confirm with the backend.',
+      'Read-only Odoo queries — no agent, no token cost, and nothing here can change your data. Edit the sample request to match the model and fields you need.',
   'data_explorer_env': 'Environment',
   'data_explorer_no_envs': 'No environments — set one up in Vault first.',
   'data_explorer_model': 'Model',
@@ -2486,7 +2609,10 @@ const Map<String, String> _ar = {
   'app_tagline': 'مساعد عمليات أودو',
   'production_domain': 'saqqaar.com',
   'digital_harbor': 'Digital Harbor',
-  'powered_by_digital_harbor': 'Powered by Digital Harbor',
+  // The company name stays Latin — it is a registered trademark and is not
+  // transliterated — but the connector around it is prose and belongs in
+  // the reader's language.
+  'powered_by_digital_harbor': 'بدعم من Digital Harbor',
   'welcome_back': 'أهلا بعودتك',
   'sign_in_subtitle': 'سجّل دخولك لمتابعة مساحة العمل.',
   'username': 'الاسم',
@@ -2499,7 +2625,6 @@ const Map<String, String> _ar = {
   'new_to_saqqar': 'جديد على صقّار؟',
   'create_account': 'إنشاء حساب',
   'create_account_unavailable': 'التسجيل متاح على saqqaar.com.',
-  'auth_brand_title': 'Saqqar Operations\nCopilot',
   'auth_brand_body':
       'وكيل أودو مباشر يشخّص ويجهز التقارير وينفذ عبر بيانات دخول خاصة وموافقات قبل أي تغيير حساس.',
   'open_workspace': 'فتح مساحة العمل',
@@ -2519,7 +2644,11 @@ const Map<String, String> _ar = {
   'switch_language_to_arabic': 'التبديل إلى العربية',
   'switch_theme_to_light': 'التبديل للوضع الفاتح',
   'switch_theme_to_dark': 'التبديل للوضع الداكن',
-  'english': 'English',
+  // Exonyms, matching the English table's own convention ('English' /
+  // 'Arabic'). This entry used to read 'English', which left the language
+  // picker in an Arabic UI showing 'العربية' next to a Latin 'English' —
+  // half-translated, and the only such row on the Preferences card.
+  'english': 'الإنجليزية',
   'arabic': 'العربية',
   'system': 'النظام',
   'live': 'مباشر',
@@ -3019,9 +3148,25 @@ const Map<String, String> _ar = {
   'quota_exceeded_title': 'تم بلوغ حد الاستخدام',
   'quota_upgrade_cta': 'عرض الباقات',
   'pricing_title': 'الباقات والأسعار',
+  'pricing_subtitle': 'اختر الباقة التي تناسب طريقة عملك على أودو.',
   'pricing_current': 'باقتك الحالية',
   'pricing_free': 'مجاني',
-  'pricing_contact_cta': 'تواصل معنا للترقية',
+  'pricing_cycle_monthly': 'شهري',
+  'pricing_cycle_annual': 'سنوي',
+  'pricing_cycle_annual_save': 'وفّر حتى 50%',
+  'pricing_vat_note':
+      'الأسعار لا تشمل ضريبة القيمة المضافة. تُضاف 15% عند الدفع.',
+  'pricing_web_cta': 'الاشتراك عبر الموقع',
+  'pricing_web_note':
+      'يتم الدفع على saqqaar.com في المتصفح. تتحدّث باقتك هنا فور إتمام '
+          'العملية.',
+  'pricing_open_failed': 'تعذّر فتح saqqaar.com.',
+  'pricing_plans_title': 'الباقات والأسعار',
+  'pricing_plans_subtitle': 'قارن الباقات واشترك عبر saqqaar.com.',
+  'pricing_plans_subtitle_plain': 'اطّلع على ما تتضمنه كل باقة.',
+  'pricing_managed_on_web': 'تُدار الباقات على saqqaar.com.',
+  'pricing_web_signin_note': 'قد تحتاج إلى تسجيل الدخول على الموقع للمتابعة.',
+  'pricing_zero': '\$0',
   'pricing_load_error': 'تعذّر تحميل الباقات.',
   'pricing_st_unit': 'وحدة',
   'pricing_daily_cap': 'يومياً',
@@ -3043,9 +3188,6 @@ const Map<String, String> _ar = {
   'env_hint_failed': 'تعذّر إعداد قاعدة بياناتك. حاول مرة أخرى.',
   'addon_hint': 'يستطيع صقّار قراءة وتعديل وإعادة بناء إضافة Odoo هذه.',
   'voice_locked_pro': 'الإدخال الصوتي غير متاح في حسابك.',
-  'upgrade_sheet_title': 'ترقية خطتك',
-  'upgrade_sheet_body':
-      'الترقية الذاتية قادمة قريبًا. لرفع حدودك الآن، تواصل مع فريق Digital Harbor وسنقوم بإعدادها لك.',
   // تدفّق التسجيل عبر رمز البريد (Gap D)
   'auth_signup_email_title': 'أنشئ حسابك',
   'auth_signup_email_subtitle': 'أدخل بريدك الإلكتروني للبدء.',
@@ -3360,6 +3502,7 @@ const Map<String, String> _ar = {
   'relative_hours_ago': 'منذ {n} س',
   'relative_days_ago': 'منذ {n} أيام',
   'price_per_month': '\${dollars} / شهرياً',
+  'price_annual_per_month': '\${dollars} / شهرياً، تُدفع سنوياً (\${yearly}/سنة)',
   'auth_resend_in': 'إعادة الإرسال خلال {seconds} ث',
   'plan_pct_used': 'مُستخدَم {pct}٪',
   'item_count': '{visible} من {total} {label}',
@@ -3373,6 +3516,19 @@ const Map<String, String> _ar = {
 
   'file_kind_image': 'صورة',
   'auth_otp_placeholder': '١ ٢ ٣ ٤ ٥ ٦',
+
+  // مجموعات روابط الحساب
+  'account_group_workspace': 'مساحة العمل',
+  'account_group_workspace_hint': 'أدوات تشتغل على أودو مباشرة.',
+  'account_group_security': 'الأمان',
+  'account_group_billing': 'الفوترة',
+  'account_group_billing_hint': 'باقتك ومدفوعاتك وإيصالاتك.',
+  'apps_subtitle': 'إعدادات موجّهة تشغّلها بضغطة واحدة.',
+  'trial_subtitle': 'احصل على أودو مستضاف لتجربة ما تريد.',
+  'data_explorer_subtitle': 'اقرأ نماذجك وسجلاتك مباشرة.',
+  'devices_subtitle': 'اعرف أين سجّلت دخولك، وسجّل خروج جهاز مفقود.',
+  'checkout_subtitle': 'اشحن التوكنز التي ينفقها صقّار على عملك.',
+  'billing_history_subtitle': 'المدفوعات السابقة والإيصالات.',
 
   // نقاط النهاية الجديدة (API_MOBILE_NEW_ENDPOINTS.md)
   'apps_title': 'تطبيقات صقّار',
@@ -3390,6 +3546,13 @@ const Map<String, String> _ar = {
   'billing_receipt_no_viewer': 'لا يوجد عارض PDF على هذا الجهاز.',
   'billing_paid': 'مدفوع',
   'billing_failed': 'فشل',
+  'billing_status_pending': 'قيد الانتظار',
+  'billing_status_expired': 'منتهية',
+  'billing_status_refunded': 'مُستردّة',
+  'billing_status_chargeback': 'ردّ مالي',
+  'billing_pending_note':
+      'في انتظار التأكيد من مزوّد الدفع. إذا كنت قد أتممت الدفع ولم تتحدّث '
+          'الحالة، تواصل مع الدعم بالرقم المرجعي {ref}.',
   'trial_title': 'تجربة أودو المُدارة',
   'trial_intro':
       'اطلب تجربة أودو مستضافة وسنجهّزها لك — دون الحاجة للاستضافة الذاتية.',
@@ -3438,7 +3601,7 @@ const Map<String, String> _ar = {
   // §4 — مستكشف البيانات
   'data_explorer_title': 'مستكشف البيانات',
   'data_explorer_preview_note':
-      'استعلامات Odoo للقراءة فقط — بدون agent وبدون تكلفة توكنز. أشكال الطلب تتبع أعراف Odoo؛ أكّدها مع الباك-إند.',
+      'استعلامات Odoo للقراءة فقط — بدون agent، بدون تكلفة توكنز، ولا شيء هنا يمكنه تعديل بياناتك. عدّل نموذج الطلب ليطابق الموديل والحقول التي تريدها.',
   'data_explorer_env': 'البيئة',
   'data_explorer_no_envs': 'لا توجد بيئات — جهّز واحدة في الخزنة أولاً.',
   'data_explorer_model': 'الموديل',

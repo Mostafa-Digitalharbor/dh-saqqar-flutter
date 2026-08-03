@@ -5,6 +5,7 @@ import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/view_model/locale_cubit.dart';
 import '../../../core/theme/app_icons.dart';
+import 'account_card_header.dart';
 import '../../../core/theme/view_model/theme_cubit.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -36,8 +37,11 @@ class PreferencesCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.tr.preferences, style: context.text.titleMedium),
-          const SizedBox(height: 14),
+          AccountCardHeader(
+            icon: AppIcons.settings,
+            title: context.tr.preferences,
+          ),
+          const SizedBox(height: 16),
           Text(
             context.tr.theme,
             style: context.text.labelLarge?.copyWith(color: s.muted),

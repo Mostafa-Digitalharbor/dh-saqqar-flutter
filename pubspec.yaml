@@ -190,6 +190,12 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+  # Virtual clock for timer-driven tests. The chat's polling cadence is the
+  # difference between a reply appearing in ~2 s and in 15 s, and asserting on
+  # that means elapsing time, not waiting for it. Already present transitively
+  # via flutter_test; declared so the import isn't an implicit dependency.
+  fake_async: ^1.3.1
+
   # Asset generation. Run, in order:
   #   dart run tool/generate_app_icon.dart   # writes assets/img/saqqar-icon.png
   #   dart run flutter_launcher_icons         # platform launcher icons

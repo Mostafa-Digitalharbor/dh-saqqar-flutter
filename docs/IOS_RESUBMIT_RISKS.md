@@ -8,7 +8,18 @@ Legend: 🔴 high risk · 🟠 medium risk · ✅ already fine.
 
 ---
 
-## 🔴 1. Pricing screen shows prices + upgrade CTA (Guideline 3.1.1 — IAP)
+## ✅ 1. Pricing screen shows prices + upgrade CTA (Guideline 3.1.1 — IAP)
+
+> **RESOLVED 2026-08-03 — option A was taken.** `showPaidUpsell` now defaults
+> to **false on iOS** (per-platform, so a plain `flutter build ipa` is already
+> safe) and the iOS build shows no price, no cycle switch, no VAT line and no
+> purchase CTA — only the tier comparison, the current plan, usage, and the
+> plain sentence "Plans are managed on saqqaar.com." The "Contact us to
+> upgrade" CTA described below no longer exists at all; the Android CTA is
+> "Subscribe on the web". See `docs/STORE_PAYMENTS_COMPLIANCE.md`.
+>
+> The original finding is kept below because the reasoning is still the reason
+> the guard exists.
 
 `lib/features/billing/view/pricing_screen.dart` renders paid tiers with a **monthly
 price** and an **"Contact us to upgrade"** CTA. It's reachable on iOS from 3 places

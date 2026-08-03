@@ -40,10 +40,16 @@ class OdooDataApi {
   Future<Map<String, dynamic>> sql(String envId, Map<String, dynamic> q) =>
       _post(ApiEndpoints.envSql(envId), q);
 
-  /// `GET /report-entities/` — entity list for the report filter.
-  Future<Map<String, dynamic>> reportEntities() async {
-    final res =
-        await _dio.get<Map<String, dynamic>>(ApiEndpoints.reportEntities);
+  /// `GET /report-entities/?conversation_id=<id>` — entity list for the
+  /// report filter.
+  ///
+  /// Conversation-scoped, not environment-scoped: a bare call answers
+  /// `400 conversation_id is required and must belong to you`.
+  Future<Map<String, dynamic>> reportEntities(Map<String, dynamic> q) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.reportEntities,
+      queryParameters: q,
+    );
     return res.data ?? const {};
   }
 

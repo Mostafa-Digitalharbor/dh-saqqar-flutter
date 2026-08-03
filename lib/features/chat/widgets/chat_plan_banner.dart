@@ -37,9 +37,10 @@ class ChatPlanBanner extends StatelessWidget {
 
     if (exceededWindow != null) {
       final word = tr.planWindowWord(exceededWindow!.wire);
-      // On iOS the banner states the limit and stops there (App Store 3.1.1):
-      // no "upgrade your plan" nudge, no CTA into the tier catalogue. The reset
-      // is still the honest way out on every platform.
+      // While sales are web-only the banner states the limit and stops there:
+      // no "upgrade your plan" nudge, no CTA into the tier catalogue. Nudging
+      // toward a purchase the app can't complete is worse than saying nothing,
+      // and the window reset is the honest way out either way.
       return AccentBanner(
         color: s.danger,
         icon: AppIcons.warning,

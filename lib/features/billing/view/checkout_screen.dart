@@ -18,12 +18,13 @@ import '../data/checkout_models.dart';
 
 /// Paymob checkout (API_MOBILE_NEW_ENDPOINTS.md §4.3).
 ///
-/// ⚠️ Reachable ONLY where [showPaidUpsell] is true (Android) — the route +
-/// Account entry both gate on it, so iOS never surfaces a purchase flow.
-/// Confirm App Store / Play IAP compliance before shipping this anywhere.
+/// ⚠️ **Currently unreachable on every platform.** Sales are web-only (see
+/// [showPaidUpsell]); the route redirects and the Account entry doesn't
+/// render, so no purchase surface exists in either app. Kept and tested so a
+/// future IAP build restores it by flipping one getter.
 ///
-/// Flow: list plans → tap Buy → open the hosted payment page in the browser
-/// → poll the payment status until it's paid / failed.
+/// Flow, when enabled: list plans → tap Buy → open the hosted payment page in
+/// the browser → poll the payment status until it's paid / failed.
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
 

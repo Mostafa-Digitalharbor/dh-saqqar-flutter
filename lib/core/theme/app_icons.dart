@@ -90,4 +90,7 @@ class AppIcons {
   /// semantically right than the old `key` (credentials) glyph now that
   /// the tab is project-centric.
   static const IconData projects = LucideIcons.briefcase;
+
+  /// Heading glyph for the billing group on Account.
+  static const IconData wallet = LucideIcons.wallet;
 }
