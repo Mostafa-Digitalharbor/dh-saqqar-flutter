@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/format/compact_number.dart';
+import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
@@ -10,6 +11,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../billing/data/billing_visibility.dart';
+import '../../billing/data/plan_copy.dart';
 import '../../billing/data/plan_models.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import 'plan_badge.dart';
@@ -51,9 +53,34 @@ class PlanUsageCard extends StatelessWidget {
               // is what App Review asked us about. The slug fallback is gone
               // too: it leaked the wire value ("free") when name came back
               // empty, which is exactly the case that must render nothing.
-              if (plan.showBadge) PlanBadge(name: plan.name),
+              //
+              // `plan_name` is English on the wire, so it goes through
+              // [PlanCopy.nameFor] like every other plan-name site.
+              if (plan.showBadge)
+                PlanBadge(
+                  name: PlanCopy.nameFor(
+                    context.tr,
+                    slug: plan.slug,
+                    fallback: plan.name,
+                  ),
+                ),
             ],
           ),
+          // Subscription line — cycle, state, and when the period renews.
+          // New in API_MOBILE_SUBSCRIPTION.md §1; the app had no way to answer
+          // "when does this renew?" before it.
+          //
+          // Deliberately NOT a countdown. Saqqar billing is prepaid: access is
+          // the token balance plus the window caps, so nothing is cut off on
+          // `expires_at`. Presenting it as a deadline would be a lie the user
+          // acts on.
+          if (_subscriptionLine(context, plan) case final line?) ...[
+            const SizedBox(height: 6),
+            Text(
+              line,
+              style: context.text.bodySmall?.copyWith(color: s.muted),
+            ),
+          ],
           const SizedBox(height: 16),
           if (plan.exempt)
             Text(
@@ -85,6 +112,32 @@ class PlanUsageCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Annual · Renews on 4 Mar 2027", or whichever pieces the server sent.
+///
+/// Returns null when there is nothing true to say — a free or never-paid
+/// account gets `status: null, cycle: null, expires_at: null`, and an empty
+/// grey line under the title is worse than no line.
+String? _subscriptionLine(BuildContext context, PlanSnapshot plan) {
+  final tr = context.tr;
+  final needsAttention = plan.status.isNotEmpty && plan.status != 'active';
+
+  // A billing cycle with no period end is not information — it's a word.
+  // Verified on production 2026-08-04: a staff account reports
+  // `cycle: "monthly"` with `expires_at: null` and nothing ever purchased, so
+  // rendering the cycle alone would tell that user they're on a monthly
+  // billing cycle they have never been billed for.
+  if (plan.expiresAt == null && !needsAttention) return null;
+
+  return <String>[
+    if (plan.cycle.isNotEmpty) tr.planCycleLabel(plan.cycle),
+    // Only surfaced when it is NOT the happy path. "Active" next to a plan
+    // badge is noise; "Payment overdue" is the whole message.
+    if (needsAttention) tr.planStatusLabel(plan.status),
+    if (plan.expiresAt != null)
+      tr.planRenewsOn(AppDateFormat.date(context, plan.expiresAt!)),
+  ].join(' · ');
 }
 
 class _UsageRow extends StatelessWidget {

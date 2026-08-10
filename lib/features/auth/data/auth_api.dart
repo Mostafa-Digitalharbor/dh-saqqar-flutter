@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/response_body.dart';
 import 'auth_models.dart';
 
 /// Repository for `/api/v1/auth/*` endpoints. Returns typed models; throws
@@ -151,7 +152,7 @@ class AuthApi {
       data: {'email': email, 'code': code},
       options: Options(extra: _skipAuth),
     );
-    final d = res.data ?? const {};
+    final d = res.requiredBody;
     return (d['signup_token'] ?? d['token']) as String?;
   }
 
@@ -187,7 +188,11 @@ class AuthApi {
       data: body,
       options: Options(extra: _skipAuth),
     );
-    return _sessionOrNull(res.data ?? const {});
+    // `_sessionOrNull` returns null for "the server issued no token", which
+    // routes the user to sign in manually. That is a legitimate outcome for
+    // a body that arrived without one — but not for a body that never
+    // arrived, where it would quietly swallow a successful signup.
+    return _sessionOrNull(res.requiredBody);
   }
 
   // ── Passwordless email login (Gap D) ─────────────────────────────────
@@ -249,7 +254,7 @@ class AuthApi {
       data: {'email': email, 'code': code},
       options: Options(extra: _skipAuth),
     );
-    final d = res.data ?? const {};
+    final d = res.requiredBody;
     final resetToken = d['reset_token'] ?? d['token'];
     if (resetToken is! String || resetToken.isEmpty) {
       throw const FormatException('reset verify response missing reset_token');
@@ -280,7 +285,11 @@ class AuthApi {
       data: {'reset_token': resetToken, 'new_password': password},
       options: Options(extra: _skipAuth),
     );
-    return _sessionOrNull(res.data ?? const {});
+    // `_sessionOrNull` returns null for "the server issued no token", which
+    // routes the user to sign in manually. That is a legitimate outcome for
+    // a body that arrived without one — but not for a body that never
+    // arrived, where it would quietly swallow a successful signup.
+    return _sessionOrNull(res.requiredBody);
   }
 
   /// `POST /api/v1/auth/logout/` — revokes the token used on this call.
@@ -300,7 +309,13 @@ class AuthApi {
     final res = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.accountDelete,
     );
-    return res.data?['ok'] as bool? ?? true;
+    // `?? true` on a body that never arrived is the most expensive default
+    // in the app: it reports an irreversible deletion as done on the
+    // strength of no response at all. The user is signed out, told their
+    // data is gone, and has no way to discover that the request never
+    // landed. A present body keeps the lenient read — some deploys answer
+    // `200 {}` — but an absent one is now an error the user can retry.
+    return res.requiredBody['ok'] as bool? ?? true;
   }
 
   /// `GET /api/v1/auth/me/` — identity + per-user counts. Used on cold

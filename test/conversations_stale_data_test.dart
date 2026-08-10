@@ -43,12 +43,25 @@ class _FlakyRepo implements ConversationsRepository {
   @override
   Future<({List<ConversationSummary> conversations, int? total})> list({
     int limit = 30,
+    int offset = 0,
     bool includeArchived = false,
   }) async {
     listCalls++;
     if (failing) throw Exception('connection refused');
     return (conversations: [_row('c1'), _row('c2')], total: 2);
   }
+
+  /// The cubit pages through `listAll` now. Delegating keeps this fake's
+  /// point intact — one good response, then a backend that has gone away —
+  /// and `total: 2` means the loop is satisfied by the first page, so the
+  /// failure still lands on the FIRST call of the next refresh.
+  @override
+  Future<({List<ConversationSummary> conversations, int? total})> listAll({
+    int pageSize = 200,
+    int maxPages = 12,
+    bool includeArchived = false,
+  }) =>
+      list(limit: pageSize, includeArchived: includeArchived);
 
   @override
   Future<({Map<String, int> pendingByConv, Map<String, int> filesByConv})>
@@ -80,7 +93,7 @@ void main() {
         data,
       );
       expect(
-        const DataFailure<String>(message: 'x', previous: data).dataOrPrevious,
+        const DataFailure<String>(error: null, previous: data).dataOrPrevious,
         data,
       );
       expect(const DataIdle<String>().dataOrPrevious, isNull);
@@ -90,7 +103,7 @@ void main() {
       // The two getters must not converge; plenty of call sites legitimately
       // want "is what I hold up to date?".
       expect(
-        const DataFailure<String>(message: 'x', previous: 'rows').dataOrNull,
+        const DataFailure<String>(error: null, previous: 'rows').dataOrNull,
         isNull,
       );
     });

@@ -2,12 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/responsive_breakpoints.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../data/interactive_cards.dart';
 import 'message_bubble.dart';
+import 'prompt_clarify_card.dart';
+import 'prompt_suggestion_card.dart';
+import 'report_builder_card.dart';
 import 'tool_activity_card.dart';
 
 /// Orchestrates layout for one message in the chat list.
 ///
-/// - Tool messages render as a [ToolActivityCard] indented under the assistant.
+/// - A message whose `tool_payload.kind` names an INTERACTIVE card renders
+///   that card, so the user can choose options inside the conversation. This
+///   branch runs first and deliberately outranks the tool-role branch below:
+///   the generic [ToolActivityCard] would otherwise swallow the payload and
+///   show a monospace JSON blob with nothing to tap.
+/// - Other tool messages render as a [ToolActivityCard] indented under the
+///   assistant.
 /// - User / assistant messages render as a [MessageBubble], with the avatar
 ///   shown only on the first message of a group (consecutive messages from
 ///   the same sender share a single avatar slot).
@@ -17,17 +27,46 @@ class MessageRow extends StatelessWidget {
     required this.message,
     required this.isFirstOfGroup,
     required this.isLastOfGroup,
+    this.onCardSend,
+    this.onCardSeed,
+    this.entityLoader,
   });
 
   final DemoMessage message;
   final bool isFirstOfGroup;
   final bool isLastOfGroup;
 
+  /// An interactive card composed a follow-up and wants it SENT.
+  final ValueChanged<String>? onCardSend;
+
+  /// An interactive card composed a follow-up and wants it dropped in the
+  /// composer for the user to review before sending.
+  final ValueChanged<String>? onCardSeed;
+
+  /// Backs the report card's record multi-select. Null hides that section.
+  final ReportEntityLoader? entityLoader;
+
   bool get _isUser => message.role == DemoMessageRole.user;
   bool get _isTool => message.role == DemoMessageRole.tool;
 
+  /// The interactive card this message carries, if any.
+  ///
+  /// Static so the chat timeline can ask the same question before grouping
+  /// messages — a card folded into a "thinking steps" run would be
+  /// unreachable, which is the same bug as not rendering it at all.
+  static InteractiveCardKind? interactiveKindOf(DemoMessage message) =>
+      interactiveCardKind(message.toolPayload);
+
   @override
   Widget build(BuildContext context) {
+    final card = _buildInteractiveCard(context);
+    if (card != null) {
+      return Padding(
+        padding: const EdgeInsetsDirectional.only(start: 8, top: 4, bottom: 4),
+        child: card,
+      );
+    }
+
     if (_isTool) {
       return Padding(
         padding: const EdgeInsetsDirectional.only(start: 42),
@@ -65,5 +104,40 @@ class MessageRow extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Mirrors the web's `kind` dispatch in `renderMessages`.
+  ///
+  /// Returns null — falling through to the ordinary message paths — whenever
+  /// the payload can't actually be answered (no questions, no suggestion text,
+  /// no report types) or when the screen wired no send handler. A card the
+  /// user cannot act on is worse than a plain message.
+  Widget? _buildInteractiveCard(BuildContext context) {
+    final send = onCardSend;
+    if (send == null) return null;
+    switch (interactiveCardKind(message.toolPayload)) {
+      case InteractiveCardKind.promptClarify:
+        final payload = PromptClarifyPayload.parse(message.toolPayload);
+        if (payload == null) return null;
+        return PromptClarifyCard(
+          payload: payload,
+          onSend: send,
+          onSeed: onCardSeed ?? send,
+        );
+      case InteractiveCardKind.reportBuilder:
+        final payload = ReportBuilderPayload.parse(message.toolPayload);
+        if (payload == null) return null;
+        return ReportBuilderCard(
+          payload: payload,
+          onSend: send,
+          entityLoader: entityLoader,
+        );
+      case InteractiveCardKind.promptSuggestion:
+        final payload = PromptSuggestionPayload.parse(message.toolPayload);
+        if (payload == null) return null;
+        return PromptSuggestionCard(payload: payload, onSend: send);
+      case null:
+        return null;
+    }
   }
 }

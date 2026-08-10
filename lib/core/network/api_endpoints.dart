@@ -155,6 +155,35 @@ class ApiEndpoints {
   /// conversation (the snapshot-derived plan only lands once a chat polls).
   static const String usage = '/api/v1/usage/';
 
+  // ── Saqqar Odoo tools (§6) — documented by the web team 2026-08-06 ────
+  //
+  // Each POST runs a READ-ONLY scan against the conversation's bound Odoo
+  // credential and posts its report into the conversation as an assistant
+  // message, so the ordinary poll surfaces the result. `400` when no
+  // environment / XML-RPC credential is bound, `502` when Odoo is
+  // unreachable — both with a human `error` string.
+  //
+  // A 2026-08-05 probe guessed `health-radar` / `what-if` / `business-pulse`
+  // and got 404s. The routes were real all along under these names; the
+  // probe was sound, the guesses were not.
+  static const String radarRun = '/api/v1/radar/run/';
+  static const String pulseRun = '/api/v1/pulse/run/';
+
+  /// Posts a "describe your scenario" primer. The user then types the
+  /// scenario in plain language and the agent's `simulate_what_if` tool runs
+  /// it — which is why mobile does not call [whatIfRun] directly (it needs a
+  /// `scenario` enum + `percent` the user never chose in a form).
+  static const String whatIfIntro = '/api/v1/whatif/intro/';
+  static const String whatIfRun = '/api/v1/whatif/run/';
+
+  // ── Voice support (§8) ───────────────────────────────────────────────
+  //
+  // NOT telephony. A self-service support workspace: describe a problem in
+  // text, an LLM drafts a structured diagnosis plus a reply, and the user can
+  // optionally file it as a real Odoo `helpdesk.ticket`.
+  static const String voiceSupportDraft = '/api/v1/voice-support/draft/';
+  static const String voiceSupportTicket = '/api/v1/voice-support/ticket/';
+
   // ── Artifacts (§9) ───────────────────────────────────────────────────
   static const String artifacts = '/api/v1/artifacts/';
 
@@ -212,15 +241,16 @@ class ApiEndpoints {
   static String billingReceipt(String receiptRef) =>
       '/api/v1/billing/receipt/$receiptRef/';
 
-  // ── Billing checkout (API_MOBILE_NEW_ENDPOINTS.md §4.3) — Paymob ──────
-  // ⚠️ NOT CALLED by the shipped app. Buying in-app conflicts with App Store
-  // 3.1.1 and the Google Play Payments policy, so tokens are sold on
-  // saqqaar.com only and the whole purchase surface is gated off behind
-  // `showPaidUpsell` (false on every platform).
-  static const String billingPlans = '/api/v1/billing/plans/';
-  static const String billingCheckout = '/api/v1/billing/checkout/';
-  static String billingPaymentStatus(String ref) =>
-      '/api/v1/billing/payment/$ref/status/';
+  // ── Paymob checkout — deliberately absent ────────────────────────────
+  // `/billing/plans/`, `/billing/checkout/` and `/billing/payment/<ref>/status/`
+  // exist on the server and are NOT declared here on purpose. Payment happens
+  // on saqqaar.com; the app never creates an order, never holds a payment
+  // reference and never tracks a payment state machine. It opens
+  // `/pricing/` (see WebCheckout) and re-reads `/usage/` + `/plans/` on
+  // resume — the server is the only thing that says what a user is on.
+  //
+  // Adding one back would also put a purchase surface in a store binary,
+  // which is the thing App Store 3.1.1 and the Play Payments policy forbid.
 
   // ── Artifact detail (API_MOBILE_NEW_ENDPOINTS.md §4.4) ───────────────
   /// `GET /api/v1/artifacts/<id>/` — one artifact's detail/metadata.

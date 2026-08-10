@@ -16,12 +16,25 @@ import 'voice_input_button.dart';
 ///   ┌──────────────────────────────────────────────────────┐
 ///   │ Message Saqqar…                                      │  ← textarea
 ///   ├──────────────────────────────────────────────────────┤
-///   │ 📎    ✦ Deep think    🛡 Auto-approve         [ → ]  │  ← bar
+///   │ ＋  📎  🎤                              [badges] [→] │  ← bar
+///   ├──────────────────────────────────────────────────────┤
+///   │ ✦ Task prep      🛡 Auto-approve                     │  ← toggles
 ///   └──────────────────────────────────────────────────────┘
 ///
-/// The bar splits the chat controls (attach + deep think + auto-approve)
-/// from Send (gradient circle) so the user sees them as siblings of the
-/// message, not the message itself. Matches the desktop `composer-bar`.
+/// The bar splits the chat controls from Send (gradient circle) so the user
+/// sees them as siblings of the message, not the message itself. Matches the
+/// web's reshaped `composer-bar`:
+///
+///   * `＋` opens the **Saqqar tools** sheet (web's `#shadowMenuButton`).
+///   * The paperclip is GONE (2026-08-06). It used to stay on mobile on the
+///     reasoning that hiding upload behind a menu costs a tap — but the `＋`
+///     sheet's first row is "Upload file", so the two controls sat side by
+///     side firing the same action. Two doors into one room read as two
+///     different rooms. [onAttach] survives as the sheet row's callback.
+///   * The slash (`/`) button moved INTO the tools sheet: it is a rarely-used
+///     power affordance, and the web has no composer equivalent at all.
+///   * Deep think is gone entirely (web parity — the backend escalates hard
+///     tasks on its own), replaced by **Task prep**.
 class ChatComposer extends StatelessWidget {
   const ChatComposer({
     super.key,
@@ -31,11 +44,12 @@ class ChatComposer extends StatelessWidget {
     required this.onRemoveAttachment,
     required this.onPreviewAttachment,
     required this.onSend,
-    this.onSlash,
-    required this.deepThink,
+    this.onTools,
+    required this.taskPrep,
     required this.autoApprove,
-    required this.onDeepThinkChanged,
+    required this.onTaskPrepChanged,
     required this.onAutoApproveChanged,
+    this.taskPrepAvailable = true,
     required this.onStartRecording,
     required this.onStopRecording,
     required this.onDiscardRecording,
@@ -78,18 +92,27 @@ class ChatComposer extends StatelessWidget {
 
   final VoidCallback? onSend;
 
-  /// Tapped on the slash (/) command button in the action bar. Opens the
-  /// slash-command menu (representative Odoo quick-ops). Null hides the
-  /// button entirely.
-  final VoidCallback? onSlash;
+  /// Tapped on the `＋` button — opens the Saqqar tools sheet (upload,
+  /// modes, Odoo tools, connections). Null hides the button entirely.
+  final VoidCallback? onTools;
 
   /// Two persistent chat-level toggles live in the composer bar so the
   /// AppBar can stay focused on identity (Saqqar wordmark + page label
-  /// + agent pulse). Web parity for `deepThinkToggle` + `autoApproveToggle`.
-  final bool deepThink;
+  /// + agent pulse). Web parity for `taskPrepToggle` + `autoApproveToggle`.
+  final bool taskPrep;
   final bool autoApprove;
-  final ValueChanged<bool> onDeepThinkChanged;
+  final ValueChanged<bool> onTaskPrepChanged;
   final ValueChanged<bool> onAutoApproveChanged;
+
+  /// Whether the caller's plan carries task prep. The server gates the
+  /// feature itself (coercing `task_prep` to `false` for ineligible plans),
+  /// so `false` here only hides a toggle that would do nothing — it is never
+  /// what enforces the gate.
+  ///
+  /// Defaults to `true` because the mobile feature snapshot does not carry
+  /// `task_prep_available` yet: an unknown flag must not hide a working
+  /// control. See `ChatFeatures.taskPrepAvailable`.
+  final bool taskPrepAvailable;
 
   /// When non-null the send button morphs into a Stop control — the chat
   /// screen passes a real callback while `_isThinking` so the user can
@@ -257,6 +280,15 @@ class ChatComposer extends StatelessWidget {
                                 ? FontStyle.italic
                                 : FontStyle.normal,
                           ),
+                          // The hint shares the field's `maxLines: 6`, so it
+                          // grows the box exactly as typed text would. The
+                          // busy hint is a full sentence — "Saqqar is working
+                          // — type your next task; send unlocks when done." —
+                          // which at 320 px and 1.3× text wraps to four lines
+                          // and inflates an EMPTY composer to over half the
+                          // screen. Capping it lets a placeholder ellipsize
+                          // rather than push the chat off the top.
+                          hintMaxLines: 2,
                           isCollapsed: true,
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -281,24 +313,26 @@ class ChatComposer extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
                       child: Row(
                         children: [
-                          IconButton(
-                            onPressed: onAttach,
-                            icon: Icon(AppIcons.attach,
-                                color: s.muted, size: 20),
-                            tooltip: context.tr.attachFiles,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          // Slash (/) — opens the command menu of common
-                          // Odoo quick-ops. Mirrors the design's composer
-                          // action row (paperclip · slash · mic).
-                          if (onSlash != null)
+                          // `＋` — Saqqar tools. Left-most control, matching
+                          // the web composer. Everything that isn't one of
+                          // the two hot actions (attach, mic) lives behind
+                          // it: prompt bank, Odoo tools, connections, and
+                          // the slash commands that used to sit out here.
+                          if (onTools != null)
                             IconButton(
-                              onPressed: onSlash,
-                              icon: Icon(AppIcons.slash,
+                              onPressed: onTools,
+                              icon: Icon(AppIcons.plus,
                                   color: s.muted, size: 20),
-                              tooltip: context.tr.commands,
+                              tooltip: context.tr.toolsTitle,
                               visualDensity: VisualDensity.compact,
                             ),
+                          // NO separate paperclip. It duplicated the ＋
+                          // sheet's own "Upload file" row — two controls, one
+                          // action, sitting next to each other. Removed
+                          // 2026-08-06; [onAttach] is still the callback the
+                          // sheet's upload row fires, so nothing about the
+                          // attachment flow changed except the second door
+                          // into it.
                           // Mic — opens the recording overlay. Same
                           // gating as Send (offline / no env / mid-
                           // generation) so the user can't start a
@@ -311,11 +345,11 @@ class ChatComposer extends StatelessWidget {
                               onStart: onStartRecording,
                             ),
                           const Spacer(),
-                          if (deepThink) ...[
+                          if (taskPrep && taskPrepAvailable) ...[
                             _ActiveModeBadge(
                               icon: AppIcons.lightbulb,
                               color: s.brandPurple,
-                              tooltip: context.tr.deepThinkOn,
+                              tooltip: context.tr.taskPrepOn,
                             ),
                             const SizedBox(width: 6),
                           ],
@@ -354,7 +388,7 @@ class ChatComposer extends StatelessWidget {
                     ),
                     // ── Toggles row ────────────────────────────────────
                     // Toggles get their own line so the full Arabic
-                    // labels ("التفكير العميق", "الموافقة التلقائية")
+                    // labels ("تجهيز المهمة", "الموافقة التلقائية")
                     // are always readable, no ellipsis. Wrap so a very
                     // narrow screen can flow the second toggle down.
                     Padding(
@@ -364,13 +398,15 @@ class ChatComposer extends StatelessWidget {
                         runSpacing: 4,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          _ComposerToggle(
-                            icon: AppIcons.lightbulb,
-                            label: context.tr.deepThink,
-                            value: deepThink,
-                            activeColor: s.brandPurple,
-                            onChanged: onDeepThinkChanged,
-                          ),
+                          if (taskPrepAvailable)
+                            _ComposerToggle(
+                              icon: AppIcons.lightbulb,
+                              label: context.tr.taskPrep,
+                              tooltip: context.tr.taskPrepTitle,
+                              value: taskPrep,
+                              activeColor: s.brandPurple,
+                              onChanged: onTaskPrepChanged,
+                            ),
                           _ComposerToggle(
                             // Auto-approve gets the track+thumb mini
                             // switch per spec §9 — reads as "always-on
@@ -499,7 +535,7 @@ class _ActiveModeBadgeState extends State<_ActiveModeBadge>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: AppDurations.breathe,
     )..addStatusListener(_onHalfCycle);
     _ctrl.forward();
   }
@@ -580,6 +616,7 @@ class _ComposerToggle extends StatelessWidget {
     this.icon,
     this.hasTrack = false,
     required this.label,
+    this.tooltip,
     required this.value,
     required this.activeColor,
     required this.onChanged,
@@ -589,12 +626,23 @@ class _ComposerToggle extends StatelessWidget {
   final IconData? icon;
   final bool hasTrack;
   final String label;
+
+  /// Long-press / hover explanation. Task prep gets one because "Task prep"
+  /// alone doesn't say what flipping it changes; the sentence the web shows
+  /// as a `title` attribute is the same copy.
+  final String? tooltip;
   final bool value;
   final Color activeColor;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final body = _buildBody(context);
+    final message = tooltip;
+    return message == null ? body : Tooltip(message: message, child: body);
+  }
+
+  Widget _buildBody(BuildContext context) {
     final s = context.saqqar;
     if (hasTrack) {
       return Material(
@@ -642,7 +690,7 @@ class _ComposerToggle extends StatelessWidget {
         onTap: () => onChanged(!value),
         borderRadius: AppRadius.pillR,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: AppDurations.fast,
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
@@ -713,7 +761,7 @@ class _MiniSwitch extends StatelessWidget {
             ),
           ),
           AnimatedPositionedDirectional(
-            duration: const Duration(milliseconds: 180),
+            duration: AppDurations.fast,
             curve: Curves.easeOutCubic,
             top: 1,
             start: value ? 13 : 1,

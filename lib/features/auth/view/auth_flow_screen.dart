@@ -12,6 +12,7 @@ import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/ghost_button.dart';
+import '../../../shared/widgets/labeled_divider.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
 import '../data/auth_api.dart';
@@ -20,6 +21,7 @@ import '../view_model/auth_cubit.dart';
 import '../view_model/auth_flow_cubit.dart';
 import '../widgets/auth_header_actions.dart';
 import '../widgets/social_auth_buttons.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Email-OTP auth flow (Gap D). One screen, nine steps, driven by
 /// [AuthFlowCubit]. `/sign-up` enters at [AuthFlowStep.signUpEmail] and
@@ -174,7 +176,7 @@ class _AuthLogoCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 24),
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.45 : 0.55),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: AppRadius.heroPlateR,
         border: Border.all(color: s.cardBorder),
         boxShadow: s.glassShadow,
       ),
@@ -228,23 +230,10 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
     return Column(
       children: [
         const SizedBox(height: 22),
-        Row(
-          children: [
-            Expanded(child: Divider(color: s.cardBorder)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                label,
-                style: context.text.labelSmall?.copyWith(color: s.muted),
-              ),
-            ),
-            Expanded(child: Divider(color: s.cardBorder)),
-          ],
-        ),
+        LabeledDivider(label: label),
         const SizedBox(height: 18),
         GhostButton(label: actionLabel, expand: true, onPressed: onAction),
       ],
@@ -265,7 +254,7 @@ class _EmailChip extends StatelessWidget {
       padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.buttonR,
         border: Border.all(color: s.cardBorder),
       ),
       child: Row(

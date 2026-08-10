@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/format/compact_number.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
@@ -11,9 +10,11 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../billing/data/billing_visibility.dart';
+import '../../billing/data/plan_copy.dart';
 import '../../billing/data/plan_tier_models.dart';
 import '../../billing/data/plans_api.dart';
 import '../../billing/view_model/plan_cubit.dart';
+import '../../billing/widgets/plan_feature_line.dart';
 import 'plan_badge.dart';
 
 /// Account "Plan" card shown when live usage isn't available yet (Gap A).
@@ -141,6 +142,15 @@ class _PlanCardBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tr = context.tr;
+    // The same copy the pricing catalogue draws, so the two screens describe
+    // one plan the same way. What used to be here — the daily and monthly
+    // token caps quoted in "ST" — was the card describing the API instead of
+    // the product: the figures were real, but "ST" is a unit that appears
+    // nowhere on saqqaar.com and answers nothing a customer asked.
+    //
+    // Both screens now read it off the tier the server sent, so "the same
+    // copy" is a fact rather than a convention two files have to keep.
+    final tagline = PlanCopy.translate(tr, tier.tagline);
     return GlassCard(
       // Flat opaque Account backdrop → the backdrop blur has no visible
       // subject; dropping it removes a saveLayer with pixel-identical output.
@@ -153,21 +163,31 @@ class _PlanCardBody extends StatelessWidget {
               Expanded(
                 child: Text(tr.planUsageTitle, style: context.text.titleMedium),
               ),
-              if (tier.showBadge) PlanBadge(name: tier.name),
+              if (tier.showBadge)
+                PlanBadge(
+                  name: PlanCopy.nameFor(
+                    tr,
+                    slug: tier.slug,
+                    fallback: tier.name,
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 14),
-          _CapRow(
-            label: tr.pricingDailyCap,
-            value: '${compactCount(tier.dailyBurstTokens, tr)} ${tr.pricingStUnit}',
-          ),
-          const SizedBox(height: 6),
-          _CapRow(
-            label: tr.pricingMonthlyCap,
-            value: '${compactCount(tier.monthlyTokens, tr)} ${tr.pricingStUnit}',
-          ),
+          if (tagline.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              tagline,
+              style: context.text.bodySmall
+                  ?.copyWith(color: context.saqqar.muted),
+            ),
+          ],
+          if (tier.featuresText.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            for (final bullet in tier.featuresText)
+              PlanFeatureLine(label: PlanCopy.translate(tr, bullet)),
+          ],
           // Upgrade CTA → pricing catalogue. Hidden while sales are web-only;
-          // the current plan + caps above stay (informational).
+          // the current plan and what it includes stay (informational).
           if (showPaidUpsell) ...[
             const SizedBox(height: 14),
             Align(
@@ -182,32 +202,6 @@ class _PlanCardBody extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-class _CapRow extends StatelessWidget {
-  const _CapRow({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: context.text.labelLarge?.copyWith(color: s.muted),
-          ),
-        ),
-        Text(
-          value,
-          style: context.text.labelMedium
-              ?.copyWith(color: s.text, fontWeight: FontWeight.w700),
-        ),
-      ],
     );
   }
 }

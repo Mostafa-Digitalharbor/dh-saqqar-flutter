@@ -50,6 +50,18 @@ class AppColors {
   // Cyan pop shadow (CTA + active rows) — 0 10px 30px rgba(6,182,212,0.18).
   static final Color popShadowCyan = brandCyan.withValues(alpha: 0.18);
 
+  /// Base hues every drop shadow is tinted from — the near-black the design
+  /// system casts shadows in, per theme.
+  ///
+  /// Shadows are the one place raw hex kept reappearing: four shared widgets
+  /// each wrote their own `Color(0xFF020617)` / `Color(0xFF0F172A)` because a
+  /// shadow needs a colour *plus* a blur and an offset, and only the colour had
+  /// a home. Elevations that are genuinely shared live as
+  /// `SaqqarThemeExtension.glassShadow` / `.modalShadow`; anything with its own
+  /// shape tints from here rather than inventing the hue again.
+  static const shadowDark = Color(0xFF020617);
+  static const shadowLight = Color(0xFF0F172A);
+
   /// Per-conversation avatar gradient palette (ports the design system's
   /// `AVATAR_GRADS`). Lives here — the one home for brand hex — instead of
   /// being hand-duplicated inside the conversation card. Reuses the brand /

@@ -101,7 +101,7 @@ class _BreathingGlowState extends State<_BreathingGlow>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2200),
+    duration: AppDurations.breathingGlow,
   );
 
   /// Breathes this many full in-out cycles, then parks at rest. A `repeat()`

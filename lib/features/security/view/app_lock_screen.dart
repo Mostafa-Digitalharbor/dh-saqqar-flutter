@@ -96,7 +96,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
                       buildWhen: (a, b) => a.authenticating != b.authenticating,
                       builder: (context, state) => PrimaryButton(
                         label: tr.appLockUnlock,
-                        icon: Icons.fingerprint,
+                        icon: AppIcons.biometric,
                         expand: true,
                         loading: state.authenticating,
                         onPressed: state.authenticating ? null : _unlock,

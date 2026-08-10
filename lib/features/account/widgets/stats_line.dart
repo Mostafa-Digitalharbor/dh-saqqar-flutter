@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/stat_tile.dart';
 
 /// Workspace stats for the Account identity card — four counts rendered as a
 /// row of tiles rather than a sentence.
@@ -62,7 +63,12 @@ class StatsLine extends StatelessWidget {
             children: [
               for (var i = 0; i < stats.length; i++) ...[
                 if (i > 0) _Divider(),
-                _Stat(value: stats[i].value, label: stats[i].label),
+                Expanded(
+                  child: StatTile(
+                    value: '${stats[i].value}',
+                    label: stats[i].label,
+                  ),
+                ),
               ],
             ],
           );
@@ -74,14 +80,18 @@ class StatsLine extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Stat(
-                    value: stats[row * 2].value,
-                    label: stats[row * 2].label,
+                  Expanded(
+                    child: StatTile(
+                      value: '${stats[row * 2].value}',
+                      label: stats[row * 2].label,
+                    ),
                   ),
                   _Divider(),
-                  _Stat(
-                    value: stats[row * 2 + 1].value,
-                    label: stats[row * 2 + 1].label,
+                  Expanded(
+                    child: StatTile(
+                      value: '${stats[row * 2 + 1].value}',
+                      label: stats[row * 2 + 1].label,
+                    ),
                   ),
                 ],
               ),
@@ -93,56 +103,11 @@ class StatsLine extends StatelessWidget {
   }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.value, required this.label});
-
-  final int value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Expanded(
-      child: Column(
-        children: [
-          // Real accounts reach four digits (2,368 approvals on the account
-          // this was designed against), and four of those have to share a
-          // 320 px row. FittedBox shrinks only when it must, so typical
-          // 1–3 digit counts keep their full size.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '$value',
-              maxLines: 1,
-              style: context.text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                height: 1.1,
-                // Tabular figures so the four columns stay optically aligned
-                // regardless of which digits land in them.
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            // Two lines, because the Arabic labels are longer than the
-            // English ones and a 4-column split on a 320 px phone leaves
-            // roughly 70 px per column. Ellipsis rather than overflow.
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: context.text.labelSmall?.copyWith(
-              color: s.muted,
-              height: 1.25,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// The private `_Stat` that lived here is now `StatTile` in shared/widgets.
+// The billing screen had grown its own near-identical copy WITHOUT the
+// FittedBox or the ellipsised label, so this hardening only ever protected one
+// of the two places that needed it. The `Expanded` moved out to the call sites
+// with it — a tile that wraps itself can only ever live in a Row.
 
 /// Hairline between columns. Fixed height rather than `stretch` so a label
 /// that wraps to two lines doesn't drag the rule down with it.

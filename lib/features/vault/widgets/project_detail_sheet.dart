@@ -10,6 +10,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/ghost_button.dart';
+import '../../../shared/widgets/inline_add_form.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
@@ -293,31 +294,14 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                         const SizedBox(height: 14),
                         // ── Add-environment inline form (always visible,
                         // even when no envs yet — matches screenshot 1)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppTextField(
-                                hint: context.tr.addEnvironmentHint,
-                                controller: _newEnv,
-                                textInputAction: TextInputAction.done,
-                                onSubmitted: (_) => _addEnv(),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            // Disabled until an env name is typed (and no
-                            // write in flight) — no empty-tap no-op.
-                            ValueListenableBuilder<TextEditingValue>(
-                              valueListenable: _newEnv,
-                              builder: (context, value, _) {
-                                final canAdd = value.text.trim().isNotEmpty &&
-                                    !state.actionInFlight;
-                                return PrimaryButton(
-                                  label: context.tr.addEnvironment,
-                                  onPressed: canAdd ? _addEnv : null,
-                                );
-                              },
-                            ),
-                          ],
+                        // Disabled until an env name is typed (and no
+                        // write in flight) — no empty-tap no-op.
+                        InlineAddForm(
+                          controller: _newEnv,
+                          hint: context.tr.addEnvironmentHint,
+                          buttonLabel: context.tr.addEnvironment,
+                          enabled: !state.actionInFlight,
+                          onSubmit: _addEnv,
                         ),
                       ],
                     ),
@@ -355,12 +339,33 @@ class _BackToProjectsPill extends StatelessWidget {
             borderRadius: AppRadius.pillR,
             border: Border.all(color: s.cardBorder),
           ),
-          child: Text(
-            '← ${context.tr.backToProjects}',
-            style: context.text.labelMedium?.copyWith(
-              color: s.text,
-              fontWeight: FontWeight.w700,
-            ),
+          // The back arrow is an Icon, not a '←' glyph baked into the
+          // string. A literal arrow keeps pointing left after the sheet
+          // flips to RTL, where "back" is to the *right* — so in Arabic it
+          // pointed at the direction the user came from. Resolving the
+          // chevron from `isRtl` mirrors it with the layout, the same way
+          // `ProjectCard`'s disclosure chevron already does.
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                context.isRtl ? AppIcons.chevronRight : AppIcons.chevronLeft,
+                size: 16,
+                color: s.text,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  context.tr.backToProjects,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelMedium?.copyWith(
+                    color: s.text,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -755,7 +760,7 @@ class _FlagCheckbox extends StatelessWidget {
     final s = context.saqqar;
     return InkWell(
       onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: AppRadius.microR,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
         child: Row(

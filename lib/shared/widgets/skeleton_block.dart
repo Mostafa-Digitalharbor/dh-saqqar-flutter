@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_radius.dart';
 import '../extensions/context_extensions.dart';
 
 /// Base shimmer block used by list-row skeletons.
@@ -13,7 +14,7 @@ class SkeletonBlock extends StatefulWidget {
     super.key,
     this.width,
     this.height = 14,
-    this.radius = 8,
+    this.radius = AppRadius.tight,
   });
 
   final double? width;
@@ -38,7 +39,7 @@ class _SkeletonBlockState extends State<SkeletonBlock>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1200),
+    duration: AppDurations.skeletonSweep,
   );
 
   @override

@@ -5,6 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/code_plate.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Inline collapsible card representing a tool call (Odoo XML-RPC, SQL, shell,
 /// GitHub). Collapsed by default — header shows the tool name + timestamp;
@@ -28,17 +29,17 @@ class _ToolActivityCardState extends State<ToolActivityCard> {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadius.smallR,
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadius.smallR,
         onTap: () => setState(() => _expanded = !_expanded),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppDurations.expand,
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.fromLTRB(10, 7, 8, 7),
           decoration: BoxDecoration(
             color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadius.smallR,
             border: Border.all(color: s.border),
           ),
           child: Column(
@@ -72,7 +73,7 @@ class _ToolActivityCardState extends State<ToolActivityCard> {
                   const SizedBox(width: 4),
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
+                    duration: AppDurations.expand,
                     child: Icon(
                       AppIcons.chevronDown,
                       size: 13,

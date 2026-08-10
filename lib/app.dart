@@ -19,6 +19,7 @@ import 'core/theme/view_model/theme_cubit.dart';
 import 'features/auth/view_model/auth_cubit.dart';
 import 'features/auth/view_model/auth_state.dart';
 import 'features/billing/view_model/plan_cubit.dart';
+import 'features/billing/view_model/saqqar_features_cubit.dart';
 import 'features/conversations/view_model/conversations_cubit.dart';
 import 'features/launch/launch_splash_screen.dart';
 import 'features/share/intake/share_intent_bootstrap.dart';
@@ -169,6 +170,9 @@ class _SaqqarAppState extends State<SaqqarApp> {
           // The plan cubit is app-scoped and never closed, so without this
           // the previous account's feature gates stay live for the next user.
           context.read<PlanCubit>().clear();
+          // Same reasoning: staff-only tool rows must not survive into the
+          // next account's tools sheet.
+          context.read<SaqqarFeaturesCubit>().clear();
           // Unregister this device so a signed-out phone gets no pushes.
           push.stop();
         }

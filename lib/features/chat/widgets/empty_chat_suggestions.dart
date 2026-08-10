@@ -5,6 +5,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 
 /// Empty-chat surface — replaces the bare "Start a conversation" headline
 /// on 2026-05-17. Hero icon + welcome copy + a 2×2 grid of 4 starter
@@ -228,18 +229,13 @@ class _SuggestionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: data.accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: data.accent.withValues(alpha: 0.28),
-                  ),
-                ),
-                child: Icon(data.icon, color: data.accent, size: 16),
+              ColoredIconBox(
+                icon: data.icon,
+                color: data.accent,
+                size: 28,
+                radius: AppRadius.tight,
+                iconSize: 16,
+                borderAlpha: 0.28,
               ),
               const SizedBox(height: 8),
               Text(

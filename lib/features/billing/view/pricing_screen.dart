@@ -2,20 +2,23 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/format/compact_number.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/app_error_state.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/billing_visibility.dart';
+import '../data/plan_copy.dart';
 import '../data/plan_tier_models.dart';
 import '../data/plans_api.dart';
 import '../data/web_checkout.dart';
 import '../view_model/plan_cubit.dart';
+import '../widgets/plan_feature_line.dart';
 import '../../../core/theme/app_radius.dart';
 
 /// Pricing screen (Gap L) — renders the live tiers from `GET /api/v1/plans/`,
@@ -72,18 +75,36 @@ class _PricingScreenState extends State<PricingScreen>
 
   void _reload() {
     if (!mounted) return;
-    setState(() => _future = context.read<PlansApi>().list());
+    // A BLOCK body, not an arrow. `setState(() => _future = …)` returns the
+    // value of the assignment — which here is a `Future` — and `setState`
+    // asserts against exactly that, because a closure returning a Future is
+    // almost always someone doing async work inside it.
+    //
+    // Here the assignment was correct and only the *shape* was wrong, so the
+    // screen still reloaded. What it also did was throw on every resume in
+    // debug and profile, and — once Sentry's error bridge was wired — report
+    // itself as an app error. Caught on a real device coming back from the
+    // browser, which is the one path this method exists for.
+    setState(() {
+      _future = context.read<PlansApi>().list();
+    });
   }
 
-  /// Which tier's Subscribe button is mid-hand-off, so it can show a spinner.
-  /// Resolving the login hand-off is a round-trip; a button that looks inert
-  /// for a few hundred milliseconds gets tapped twice.
+  /// Which button is mid-hand-off, so it can show a spinner. Holds the tier
+  /// slug, or `''` for the footer "manage on the web" button — no tier has an
+  /// empty slug, so the two can't collide. Resolving the login hand-off is a
+  /// round-trip; a button that looks inert for a few hundred milliseconds gets
+  /// tapped twice.
   String? _opening;
 
-  Future<void> _subscribe(PlanTier tier) async {
+  /// Opens saqqaar.com — a tier's page for [slug], or the plain catalogue when
+  /// it's empty. **This is the only thing the app does about payment.** It
+  /// mints a one-time login hand-off so the browser lands signed in, launches
+  /// it, and stops. No order, no reference, no state to reconcile.
+  Future<void> _openWeb(String slug) async {
     if (_opening != null) return;
-    setState(() => _opening = tier.slug);
-    final result = await WebCheckout.open(context.read<Dio>(), slug: tier.slug);
+    setState(() => _opening = slug);
+    final result = await WebCheckout.open(context.read<Dio>(), slug: slug);
     if (!mounted) return;
     setState(() => _opening = null);
 
@@ -94,28 +115,40 @@ class _PricingScreenState extends State<PricingScreen>
     // be silent — "we couldn't sign you in, so the page will ask you to" — is
     // the one that made this look broken: you tap Subscribe as a signed-in
     // user and land on a login form with no explanation.
+    // Tone is decided in the same branch as the wording: three of these are
+    // real failures, one is a heads-up. Deriving it afterwards would mean
+    // re-testing the same conditions and risking the two drifting apart.
     final String? message;
+    final ToastVariant variant;
     if (target.blocking) {
       // Never launched: no connection, or the session ended. The failure text
       // is the real reason, so use it rather than a generic line.
       message = ApiErrorMapper.messageForLocale(tr, target.failure);
+      variant = ToastVariant.error;
     } else if (!result.launched) {
       message = tr.pricingOpenFailed;
+      variant = ToastVariant.error;
     } else if (target.failure != null) {
       // Opened, but on the plain page AND something actually went wrong.
       message = '${ApiErrorMapper.messageForLocale(tr, target.failure)} '
           '${tr.pricingWebSignInNote}';
+      variant = ToastVariant.error;
     } else if (!target.signedIn) {
       // Opened on the plain page because the server offers no hand-off. Not
       // an error — just a heads-up so the sign-in form isn't a surprise.
       message = tr.pricingWebSignInNote;
+      variant = ToastVariant.info;
     } else {
       message = null;
+      variant = ToastVariant.info;
     }
 
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+      AppToast.show(
+        context,
+        message: message,
+        variant: variant,
+        duration: AppDurations.toastDwellError,
       );
     }
   }
@@ -133,7 +166,16 @@ class _PricingScreenState extends State<PricingScreen>
               return const Center(child: CircularProgressIndicator());
             }
             if (snap.hasError || !snap.hasData) {
-              return _ErrorState(onRetry: _reload);
+              // Name the cause, not just the symptom. This screen used to say
+              // "Couldn't load plans" and drop `snap.error` on the floor, so a
+              // user offline, rate-limited, or hitting a 500 read the same
+              // sentence and had no idea which of those to act on — on the one
+              // screen where the next step is spending money.
+              return AppErrorState(
+                title: context.tr.pricingLoadError,
+                message: ApiErrorMapper.message(context, snap.error),
+                onRetry: _reload,
+              );
             }
             final data = snap.data!;
             // Prefer the server's current_plan; fall back to the live
@@ -166,19 +208,27 @@ class _PricingScreenState extends State<PricingScreen>
                     annual: _annual,
                     onChanged: (v) => setState(() => _annual = v),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    tr.pricingVatNote,
-                    textAlign: TextAlign.center,
-                    style: context.text.bodySmall
-                        ?.copyWith(color: context.saqqar.muted),
-                  ),
+                  // Rate and applicability both come from the response's `vat`
+                  // object. The note used to be a fixed sentence with "15%"
+                  // written into it, which would have gone on claiming 15%
+                  // through any rate change, and would have kept claiming tax
+                  // applied at all in a market where it doesn't.
+                  if (data.vat.addedAtCheckout) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      tr.pricingVatNote(data.vat.rateLabel),
+                      textAlign: TextAlign.center,
+                      style: context.text.bodySmall
+                          ?.copyWith(color: context.saqqar.muted),
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 18),
                 for (final tier in data.plans) ...[
                   _PlanTierCard(
                     tier: tier,
                     annual: _annual,
+                    vat: data.vat,
                     isCurrent: tier.slug == current,
                     // Don't offer to sell a tier at or below the one they're
                     // on. A Business customer was being shown "Subscribe on
@@ -189,7 +239,30 @@ class _PricingScreenState extends State<PricingScreen>
                     // being sold one is not.
                     sellable: currentSort == null || tier.sort > currentSort,
                     opening: _opening == tier.slug,
-                    onSubscribe: () => _subscribe(tier),
+                    onSubscribe: () => _openWeb(tier.slug),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                // The one entry point that is always here.
+                //
+                // Every other route to saqqaar.com hangs off a tier card, and
+                // those disappear on the tier you're on and everything below
+                // it. A Business customer — the top tier — therefore had no
+                // way to reach their own billing page from the app at all
+                // (QA 2026-08-04). Renewals, cancellations, receipts and card
+                // changes all live on the web, so "manage" has to exist
+                // independently of whether there is anything left to sell.
+                //
+                // Opens the plain `/pricing/` (empty slug → no `?plan=`),
+                // signed in via the hand-off.
+                if (showPaidUpsell) ...[
+                  const SizedBox(height: 4),
+                  GhostButton(
+                    label: tr.pricingManageCta,
+                    icon: AppIcons.open,
+                    expand: true,
+                    loading: _opening == '',
+                    onPressed: () => _openWeb(''),
                   ),
                   const SizedBox(height: 14),
                 ],
@@ -234,8 +307,22 @@ class _CycleSwitch extends StatelessWidget {
           color: s.cardBorder.withValues(alpha: 0.35),
           borderRadius: AppRadius.pillR,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        // `Wrap`, not `Row`. A Row hands its non-flex children unbounded
+        // width, so the two chips grew past a 320 px screen — 126 px past it
+        // in English — and nothing could ellipsize because ellipsis only
+        // engages against a bound. Wrap both bounds the chips (so the note
+        // inside one can reflow) and stacks them when they genuinely cannot
+        // share a line. It is `Wrap` rather than `Flexible` for the same
+        // reason the conversation-card counts were: truncating "save up to
+        // 50%" to "save up t…" misstates an offer, which is worse than
+        // spending a second line on it.
+        //
+        // This was invisible until 2026-08-06 because the sweep's plans
+        // fixture threw while parsing, so every viewport was only ever
+        // rendering this screen's error state.
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          runSpacing: 4,
           children: [
             _CycleChip(
               label: tr.pricingCycleMonthly,
@@ -285,8 +372,14 @@ class _CycleChip extends StatelessWidget {
             color: selected ? s.brandCyan : Colors.transparent,
             borderRadius: AppRadius.pillR,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          // Wrap again, one level down: at 1.3× text the annual chip alone is
+          // wider than a 320 px screen, so stacking the two chips is not
+          // enough — the label and its note have to be able to take a line
+          // each as well.
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
             children: [
               Text(
                 label,
@@ -295,21 +388,15 @@ class _CycleChip extends StatelessWidget {
                   color: selected ? Colors.white : s.text,
                 ),
               ),
-              if (note != null) ...[
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    note!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.labelSmall?.copyWith(
-                      color: selected
-                          ? Colors.white.withValues(alpha: 0.85)
-                          : s.muted,
-                    ),
+              if (note != null)
+                Text(
+                  note!,
+                  style: context.text.labelSmall?.copyWith(
+                    color: selected
+                        ? Colors.white.withValues(alpha: 0.85)
+                        : s.muted,
                   ),
                 ),
-              ],
             ],
           ),
         ),
@@ -322,6 +409,7 @@ class _PlanTierCard extends StatelessWidget {
   const _PlanTierCard({
     required this.tier,
     required this.annual,
+    required this.vat,
     required this.isCurrent,
     required this.sellable,
     required this.opening,
@@ -330,6 +418,11 @@ class _PlanTierCard extends StatelessWidget {
 
   final PlanTier tier;
   final bool annual;
+
+  /// Decides whether the "+ VAT" rider rides beside the figure. Server-sent,
+  /// not assumed.
+  final VatPolicy vat;
+
   final bool isCurrent;
 
   /// Whether this tier is an *upgrade* from the caller's current one. False
@@ -344,6 +437,23 @@ class _PlanTierCard extends StatelessWidget {
     final s = context.saqqar;
     final tr = context.tr;
 
+    // Every string below is the SERVER's, put through the Arabic map on the
+    // way to the screen. Nothing about this tier is written down on this side
+    // any more: a tier the backend adds tomorrow arrives fully described, and
+    // a wording change on saqqaar.com reaches this card without a release.
+    //
+    // `translate` returns its input unchanged when there is no Arabic for it,
+    // so an untranslated bullet shows the server's English rather than a gap.
+    final name = PlanCopy.nameFor(
+      tr,
+      slug: tier.slug,
+      // The wire name is English-only; the localized one is what wins, and
+      // this is the floor under it.
+      fallback: tier.name.isEmpty ? tier.slug : tier.name,
+    );
+    final tagline = PlanCopy.translate(tr, tier.tagline);
+    final intro = PlanCopy.translate(tr, tier.featuresIntro);
+
     return GlassCard(
       // Pricing sits on a flat opaque AmbientBackground and renders one card
       // per tier — the backdrop blur has no visible subject, so dropping it
@@ -354,87 +464,125 @@ class _PlanTierCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // The website floats this badge on the card's top edge. On a
+          // single-column phone layout there is no edge to float over, so it
+          // leads the card instead — same signal, same place in the reading
+          // order.
+          if (tier.mostPopular) ...[
+            _Pill(
+              label: tr.pricingMostPopular,
+              color: s.brandCyan,
+              filled: true,
+            ),
+            const SizedBox(height: 10),
+          ],
           Row(
             children: [
               Expanded(
                 child: Text(
-                  tier.name.isEmpty ? tier.slug : tier.name,
+                  name,
                   style: context.text.titleLarge
                       ?.copyWith(fontWeight: FontWeight.w900),
                 ),
               ),
               if (isCurrent)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: s.brandCyan.withValues(alpha: 0.12),
-                    borderRadius: AppRadius.pillR,
-                    border:
-                        Border.all(color: s.brandCyan.withValues(alpha: 0.35)),
-                  ),
-                  child: Text(
-                    tr.pricingCurrent,
-                    style: context.text.labelSmall?.copyWith(
-                      color: s.brandCyan,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+                _Pill(label: tr.pricingCurrent, color: s.brandCyan),
             ],
           ),
-          // Price line. Gated so the same screen can still be shipped as a
-          // pure feature comparison if a store objects to the prices — the
-          // caps and features below are what actually differentiate the
-          // tiers, and they read fine without a number attached.
-          if (showPaidUpsell) ...[
-            const SizedBox(height: 4),
+          if (tagline.isNotEmpty) ...[
+            const SizedBox(height: 2),
             Text(
-              // "$0", not the word "Free" — the free tier is *named* Free, so
-              // the word under its own title read as a rendering bug. A figure
-              // also lines the column up with the paid tiers above and below.
+              tagline,
+              style: context.text.bodyMedium?.copyWith(color: s.muted),
+            ),
+          ],
+          // Price block. Gated so the same screen can still be shipped as a
+          // pure feature comparison if a store objects to the prices — the
+          // bullet list below is what actually differentiates the tiers, and
+          // it reads fine without a number attached.
+          if (showPaidUpsell) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  // "$0", not the word "Free" — the free tier is *named*
+                  // Free, so the word under its own title read as a rendering
+                  // bug. A figure also lines the column up with the paid
+                  // tiers above and below.
+                  tier.isFree
+                      ? tr.pricingZero
+                      : tr.priceAmount(
+                          annual ? tier.priceAnnualCents : tier.priceMonthlyCents,
+                        ),
+                  style: context.text.headlineSmall?.copyWith(
+                    color: s.brandCyan,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (!tier.isFree && vat.addedAtCheckout) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    tr.pricePlusVat,
+                    style: context.text.bodySmall?.copyWith(color: s.muted),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              // Both cycles, always — the figure above only ever shows one of
+              // them, and the switch that reveals the other is off-card.
+              //
+              // The paid tiers compose this line locally rather than printing
+              // the server's `price_note`. Not a mirror: every number in it is
+              // interpolated from the very cents this row carries, so it can't
+              // disagree with the server — but it CAN be written right-to-left.
+              // The server's string is English-only and reads as
+              // "billed monthly ($24/yr).$2/mo" once the bidi algorithm has
+              // had it, which is the same content and unreadable.
+              //
+              // The free tier has no figures to reorder, so its note is the
+              // server's own — translated, and blank if the server sends none.
               tier.isFree
-                  ? tr.pricingZero
-                  : annual
-                      ? tr.priceAnnualPerMonth(tier.priceAnnualCents)
-                      : tr.pricePerMonth(tier.priceMonthlyCents),
-              style: context.text.titleMedium?.copyWith(
-                color: s.brandCyan,
-                fontWeight: FontWeight.w800,
+                  ? PlanCopy.translate(tr, tier.priceNote)
+                  : tr.priceBothCycles(
+                      annualCentsPerMonth: tier.priceAnnualCents,
+                      monthlyCents: tier.priceMonthlyCents,
+                    ),
+              style: context.text.bodySmall?.copyWith(
+                color: s.muted,
+                height: 1.45,
               ),
             ),
           ],
-          const SizedBox(height: 14),
-          _CapRow(
-            label: tr.pricingDailyCap,
-            value: '${compactCount(tier.dailyBurstTokens, tr)} ${tr.pricingStUnit}',
-          ),
-          const SizedBox(height: 6),
-          _CapRow(
-            label: tr.pricingMonthlyCap,
-            value: '${compactCount(tier.monthlyTokens, tr)} ${tr.pricingStUnit}',
-          ),
-          const SizedBox(height: 6),
-          _CapRow(
-            label: tr.pricingProjectsLabel,
-            value: tier.maxProjects == null
-                ? tr.pricingUnlimited
-                : '${tier.maxProjects}',
-          ),
-          const SizedBox(height: 12),
-          _FeatureLine(label: tr.featureVoice, on: tier.features.voice),
-          _FeatureLine(label: tr.featurePostgres, on: tier.features.postgres),
-          _FeatureLine(label: tr.featureGithub, on: tier.features.github),
-          _FeatureLine(
-            label: tr.featureServerShell,
-            on: tier.features.serverShell,
-          ),
+          if (tier.featuresText.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Divider(height: 1, thickness: 1, color: s.cardBorder),
+            const SizedBox(height: 14),
+            // "Everything in Solo, plus:" — the ladder that makes a bullet
+            // list of four items mean "four *more* than the tier below".
+            // Absent on the entry tier, whose list is absolute. Sent as a
+            // whole sentence, so nothing here reconstructs it from a slug.
+            if (intro.isNotEmpty) ...[
+              Text(
+                intro,
+                style: context.text.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+            ],
+            for (final bullet in tier.featuresText)
+              PlanFeatureLine(label: PlanCopy.translate(tr, bullet)),
+          ],
           // Subscribe → saqqaar.com. Not shown on the tier you already have
           // (nothing to buy) or on Free (nothing to charge). `AppIcons.open`
           // is the external-link glyph: the button leaves the app, and the
-          // icon is the only thing that says so before the tap.
+          // icon is the only thing that says so before the tap — which is why
+          // this keeps its own label instead of the website's "Choose Solo".
           if (showPaidUpsell && sellable && !isCurrent && !tier.isFree) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             PrimaryButton(
               label: tr.pricingWebCta,
               icon: AppIcons.open,
@@ -449,85 +597,45 @@ class _PlanTierCard extends StatelessWidget {
   }
 }
 
-class _CapRow extends StatelessWidget {
-  const _CapRow({required this.label, required this.value});
+/// The small rounded label used for "Most popular" and "Current plan".
+class _Pill extends StatelessWidget {
+  const _Pill({
+    required this.label,
+    required this.color,
+    this.filled = false,
+  });
+
   final String label;
-  final String value;
+  final Color color;
+
+  /// Solid fill with white text, for the badge the website uses to push a
+  /// tier. The outlined form marks state rather than making a claim.
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: context.text.bodyMedium?.copyWith(color: s.muted),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: filled ? color : color.withValues(alpha: 0.12),
+        borderRadius: AppRadius.pillR,
+        border: filled
+            ? null
+            : Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        label,
+        style: context.text.labelSmall?.copyWith(
+          color: filled ? Colors.white : color,
+          fontWeight: FontWeight.w800,
         ),
-        Text(
-          value,
-          style: context.text.bodyMedium
-              ?.copyWith(color: s.text, fontWeight: FontWeight.w700),
-        ),
-      ],
-    );
-  }
-}
-
-class _FeatureLine extends StatelessWidget {
-  const _FeatureLine({required this.label, required this.on});
-  final String label;
-  final bool on;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final color = on ? s.success : s.muted;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Icon(on ? AppIcons.check : AppIcons.close, size: 16, color: color),
-          const SizedBox(width: 8),
-          // Expanded + wrap so a long Arabic feature label (at up to 1.4x
-          // text scale on a narrow phone) wraps instead of overflowing the
-          // row — mirrors the sibling _CapRow which already uses Expanded.
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.bodyMedium?.copyWith(
-                color: on ? s.text : s.muted,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.onRetry});
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(context.tr.pricingLoadError, style: context.text.bodyLarge),
-          const SizedBox(height: 12),
-          GhostButton(
-            label: context.tr.retry,
-            icon: AppIcons.refresh,
-            onPressed: onRetry,
-          ),
-        ],
-      ),
-    );
-  }
-}
+// The private `_ErrorState` that lived here is gone — it was `AppErrorState`
+// minus the icon, minus the cause and minus the reason the retry might work.
+// `_FeatureLine` left too, to `../widgets/plan_feature_line.dart` — the
+// account's current-plan card renders the same bullets and the two must not
+// drift.

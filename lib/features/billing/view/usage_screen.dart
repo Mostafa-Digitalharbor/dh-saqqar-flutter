@@ -11,6 +11,7 @@ import '../../account/widgets/plan_usage_card.dart';
 import '../data/plan_models.dart';
 import '../data/usage_api.dart';
 import '../view_model/plan_cubit.dart';
+import '../view_model/saqqar_features_cubit.dart';
 
 /// Standalone token-usage page, reached from the Account "Usage" button.
 ///
@@ -46,7 +47,8 @@ class _UsageScreenState extends State<UsageScreen> {
     try {
       final usage = await context.read<UsageApi>().fetch();
       if (!mounted) return;
-      context.read<PlanCubit>().update(usage);
+      context.read<PlanCubit>().update(usage.plan);
+      context.read<SaqqarFeaturesCubit>().update(usage.saqqarFeatures);
       setState(() => _loading = false);
     } catch (e) {
       // Deliberately RECORDED, not swallowed. This used to be `catch (_) {}`,

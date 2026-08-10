@@ -7,6 +7,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/conversation_models.dart';
 import 'conversation_action.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Bottom sheet surfaced when the user long-presses a conversation row
 /// in the list. Same set of actions the ⋯ kebab exposes (Pin, Rename,
@@ -107,9 +108,11 @@ class ConversationActionsSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _ActionRow(
+                        // Shows the ACTION, not the state — see the same
+                        // pairing in `conversation_row_menu.dart`.
                         icon: isPinned
-                            ? Icons.push_pin
-                            : Icons.push_pin_outlined,
+                            ? AppIcons.pinOff
+                            : AppIcons.pin,
                         label: isPinned
                             ? tr.unpinConversation
                             : tr.pinConversation,
@@ -131,7 +134,7 @@ class ConversationActionsSheet extends StatelessWidget {
                       ),
                       _ActionRow(
                         icon: isArchived
-                            ? Icons.unarchive_outlined
+                            ? AppIcons.unarchive
                             : AppIcons.archive,
                         label: isArchived ? tr.unarchive : tr.archive,
                         onTap: () => Navigator.of(
@@ -177,10 +180,10 @@ class _ActionRow extends StatelessWidget {
     final fg = danger ? s.danger : s.text;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.buttonR,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
           child: Row(

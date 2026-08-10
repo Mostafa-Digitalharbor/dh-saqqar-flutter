@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/i18n/app_strings.dart';
+
 /// One guided implementation package from `GET /api/v1/apps/`
 /// (API_MOBILE_NEW_ENDPOINTS.md §1).
 ///
@@ -46,6 +48,88 @@ class SaqqarApp {
   /// tile hint; binding still happens in-chat (the agent asks) so launch
   /// never blocks on it.
   final bool envRequired;
+
+  // ── Localization ────────────────────────────────────────────────────
+  //
+  // `GET /api/v1/apps/` serves ONE language: `name`, `tagline` and
+  // `category` come back in English whatever the user's locale, so the whole
+  // grid stayed English on an Arabic phone.
+  //
+  // These resolve a client string keyed by the app's stable `slug` and fall
+  // back to the server value — the same rule the report-builder chips use
+  // (`rbType_<key>` → server `label`). Two properties follow from that:
+  //
+  //   * An app the backend adds tomorrow still renders, in English, with no
+  //     mobile release. It is never blank.
+  //   * A translated app renders in the user's language on both tables,
+  //     because `lookup` falls through `ar` → `en` → the server string.
+  //
+  // The durable fix is server-side (`name_ar`/`tagline_ar`, or honouring
+  // `Accept-Language`); this is what makes the Arabic build correct today
+  // without inventing a contract. When the backend localizes, delete the
+  // `app_*_<slug>` keys and these three getters collapse to the raw fields.
+
+  /// Lookup keys for this package, most stable first.
+  ///
+  /// The `slug` is the right key and is tried first. The normalized English
+  /// name is a second chance, because the catalogue is server-owned and the
+  /// slugs are not published anywhere the mobile side can read — keying only
+  /// on a slug we had to guess would silently fall back to English and look
+  /// exactly like no translation at all.
+  ///
+  /// Both are checked, so a translation lands whichever key matches, and a
+  /// package with neither still renders the server's own strings.
+  List<String> _keys(String prefix) => [
+        if (slug.isNotEmpty) '$prefix$slug',
+        if (name.isNotEmpty) '$prefix${normalizeKey(name)}',
+      ];
+
+  /// `ZATCA e-invoicing` → `zatca_e_invoicing`. Lowercased, every run of
+  /// non-alphanumerics collapsed to one underscore, ends trimmed.
+  static String normalizeKey(String value) => value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+
+  String _resolve(AppStrings tr, String prefix, String fallback) {
+    for (final key in _keys(prefix)) {
+      final hit = tr.lookup(key);
+      if (hit.isNotEmpty) return hit;
+    }
+    return fallback;
+  }
+
+  String displayName(AppStrings tr) => _resolve(tr, 'app_name_', name);
+
+  String displayTagline(AppStrings tr) =>
+      _resolve(tr, 'app_tagline_', tagline);
+
+  String displayCategory(AppStrings tr) =>
+      _resolve(tr, 'app_category_', category);
+
+  /// The taxonomy chip the web shows on each card (`FINANCE`,
+  /// `INTEGRATIONS`, `ACCOUNTING`) and the value its filter pills key off.
+  /// A closed set, so it translates by value rather than per package.
+  String displayGroup(AppStrings tr) =>
+      tr.lookup('app_group_${normalizeKey(group)}', fallback: group);
+
+  // ── Which packages mobile shows: all of them ────────────────────────
+  //
+  // A four-slug ALLOWLIST used to sit here. `GET /api/v1/apps/` was returning
+  // a fifth package (`meetings`) that the web gallery does not show — it is a
+  // direct-launch app that opens an internal web route, gated behind staff and
+  // a configured integration, and mobile has no surface for it. Filtering it
+  // out client-side matched web, and cost the property that matters more: a
+  // genuinely new package would not have appeared on mobile until someone
+  // added its key here and shipped a release.
+  //
+  // The endpoint became authoritative on 2026-08-09 — it now applies the web
+  // gallery's own visibility gate and omits direct-launch apps server-side —
+  // so the list is rendered whole. `POST /apps/{slug}/launch/` returns 404 for
+  // a filtered slug, so there is no second path to one either.
+  //
+  // Nothing replaces this. That is the point: the grid is whatever the server
+  // says it is.
 
   factory SaqqarApp.fromJson(Map<String, dynamic> json) {
     return SaqqarApp(

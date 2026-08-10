@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
+import '../../features/security/view_model/app_lock_cubit.dart';
 import '../session/local_session_caches.dart';
 import 'app_toast.dart';
 import 'blocking_progress_dialog.dart';
@@ -29,6 +30,17 @@ Future<bool> showSignOutFlow(BuildContext context) async {
   );
   if (!confirmed) return false;
   if (!context.mounted) return false;
+
+  // Biometric re-check when the user turned the app lock on. Signing out
+  // wipes the local session and is the fastest way for someone holding an
+  // unlocked phone to lock the owner out of their own Odoo — so the lock
+  // they enabled has to apply here too, not only on cold start.
+  //
+  // No-op when the lock is off: `confirm` returns true without prompting.
+  final unlocked = await context.read<AppLockCubit>().confirm(
+        reason: tr.appLockConfirmSignOut,
+      );
+  if (!unlocked || !context.mounted) return false;
 
   // Capture references before any awaits — after logout the widget tree
   // is rebuilt by the auth-gate redirect and `context.read` would throw.

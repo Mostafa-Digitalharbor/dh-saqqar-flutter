@@ -7,6 +7,7 @@ import '../../core/i18n/app_strings.dart';
 import '../../core/constants/ui_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_radius.dart';
 
 /// Friendly fallback for uncaught widget build errors.
 ///
@@ -135,7 +136,7 @@ class AppErrorScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: card,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadius.smallR,
                           border: Border.all(
                             color: muted.withValues(alpha: 0.2),
                           ),

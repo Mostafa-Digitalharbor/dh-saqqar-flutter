@@ -56,8 +56,8 @@ class DataStateView<T> extends StatelessWidget {
   final Widget Function(BuildContext context, T? previous)? onLoading;
 
   /// Override for the failure branch. Defaults to [AppErrorState] showing
-  /// the failure's [DataFailure.message] + a retry button (if [onRetry]
-  /// is provided).
+  /// the localized message for [DataFailure.error] + a retry button (if
+  /// [onRetry] is provided).
   final Widget Function(BuildContext context, DataFailure<T> failure)? onError;
 
   /// Override for the idle branch. Defaults to an empty [SizedBox].
@@ -128,14 +128,12 @@ class DataStateView<T> extends StatelessWidget {
 
   Widget _buildError(BuildContext context, DataFailure<T> failure) {
     if (onError != null) return onError!(context, failure);
-    // Prefer the typed [error] so the message renders in the active locale.
-    // Cubits set [message] as a non-localized English fallback for logging;
-    // routing through [ApiErrorMapper] keeps an Arabic UI fully Arabic.
-    final message = failure.error != null
-        ? ApiErrorMapper.message(context, failure.error)
-        : failure.message;
+    // Always routed through [ApiErrorMapper]: it is locale-aware, and it
+    // classifies a null/unrecognised error into the generic message rather
+    // than needing a fallback branch here. That keeps an Arabic UI Arabic
+    // no matter what the cubit threw.
     return AppErrorState(
-      message: message,
+      message: ApiErrorMapper.message(context, failure.error),
       onRetry: onRetry,
     );
   }

@@ -16,6 +16,7 @@ import '../../chat/widgets/chat_markdown.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../data/shared_transcript_models.dart';
 import '../view_model/shared_transcript_cubit.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Public, read-only view of a shared conversation. Reached via the
 /// `https://saqqaar.com/share/<token>` Universal / App Link or the legacy
@@ -102,7 +103,7 @@ class _ReadOnlyBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: s.muted.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadius.pillR,
         border: Border.all(color: s.muted.withValues(alpha: 0.28)),
       ),
       child: Text(

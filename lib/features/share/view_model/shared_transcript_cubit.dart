@@ -33,9 +33,7 @@ class SharedTranscriptCubit extends Cubit<DataState<SharedTranscript>> {
       AppLogger.warn(_tag, 'load($token) failed', error: e, stackTrace: st);
       emit(
         DataFailure<SharedTranscript>(
-          // Unlocalized fallback only — the canonical user-facing message is
-          // resolved by DataStateView via ApiErrorMapper on [error].
-          message: 'Failed to load shared transcript',
+
           error: ApiErrorMapper.toFailure(e),
           previous: state.dataOrNull,
         ),

@@ -5,11 +5,10 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/inline_add_form.dart';
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
 import 'project_detail_sheet.dart';
@@ -171,37 +170,29 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
               Divider(color: s.cardBorder, height: 1),
               const SizedBox(height: 18),
               // ── Quick "Add project" inline form ─────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: AppTextField(
-                      hint: context.tr.addProjectHint,
-                      controller: _newName,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _addProject(),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Disabled until a name is typed (and no write in flight) —
-                  // the empty-tap no-op used to look like a broken button.
-                  ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _newName,
-                    builder: (context, value, _) {
-                      final canAdd = value.text.trim().isNotEmpty &&
-                          !state.actionInFlight;
-                      return PrimaryButton(
-                        label: context.tr.addProject,
-                        onPressed: canAdd ? _addProject : null,
-                      );
-                    },
-                  ),
-                ],
+              // Disabled until a name is typed (and no write in flight) —
+              // the empty-tap no-op used to look like a broken button.
+              InlineAddForm(
+                controller: _newName,
+                hint: context.tr.addProjectHint,
+                buttonLabel: context.tr.addProject,
+                enabled: !state.actionInFlight,
+                onSubmit: _addProject,
               ),
               const SizedBox(height: 18),
               // ── Project list ─────────────────────────────────────────
               Flexible(
                 child: projects.isEmpty
-                    ? Padding(
+                    // Scrollable for the same reason the list branch is.
+                    // `Flexible` hands this child the sheet's *remaining*
+                    // height, and on a 320×568 phone that is ~127 px once
+                    // the header, the divider and the stacked add-form have
+                    // taken their share — less than the empty plate's icon,
+                    // title and two-line body need. Unscrollable, it
+                    // overflowed by 120 px; the plate is fixed-height
+                    // content in a bounded box, which is the one shape that
+                    // cannot absorb a squeeze.
+                    ? SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: EmptyState(
                           icon: AppIcons.projects,

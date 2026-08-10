@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_icons.dart';
 
 /// A warning-tinted, screen-top caveat banner: a small leading icon + a single
 /// line of text. Used to flag surfaces built against an unconfirmed backend
@@ -13,7 +14,7 @@ class PreviewBanner extends StatelessWidget {
   const PreviewBanner({
     super.key,
     required this.text,
-    this.icon = Icons.info_outline,
+    this.icon = AppIcons.info,
   });
 
   final String text;

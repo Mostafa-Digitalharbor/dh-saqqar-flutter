@@ -53,6 +53,7 @@ class PlanFeatures extends Equatable {
     this.postgres = false,
     this.github = false,
     this.serverShell = false,
+    this.flags = const {},
   });
 
   final bool voice;
@@ -60,15 +61,31 @@ class PlanFeatures extends Equatable {
   final bool github;
   final bool serverShell;
 
+  /// EVERY boolean the server sent under `plan.features`, verbatim.
+  ///
+  /// The four typed fields above are the flags the app has shipped UI for.
+  /// The web gates several more rows off its own feature context
+  /// (`prompt_bank`, `health_radar`, `what_if`, `business_pulse`,
+  /// `voice_support`, `task_prep_available`) which the mobile snapshot does
+  /// not carry yet. Keeping the raw map means the day the backend adds one,
+  /// [enabled] / [has] resolve it with no client release — and until then
+  /// [has] can tell "the server said false" apart from "the server never
+  /// mentioned it", which is the difference between hiding a locked control
+  /// and hiding a working one.
+  final Map<String, bool> flags;
+
   /// Generic lookup by wire key — lets callers gate on a server-named
-  /// feature without a hardcoded field reference.
+  /// feature without a hardcoded field reference. Unknown keys are `false`.
   bool enabled(String key) => switch (key) {
         'voice' => voice,
         'postgres' => postgres,
         'github' => github,
         'server_shell' => serverShell,
-        _ => false,
+        _ => flags[key] ?? false,
       };
+
+  /// Whether the server expressed an opinion about [key] at all.
+  bool has(String key) => flags.containsKey(key);
 
   factory PlanFeatures.fromJson(Map<String, dynamic> json) {
     return PlanFeatures(
@@ -76,11 +93,17 @@ class PlanFeatures extends Equatable {
       postgres: json['postgres'] as bool? ?? false,
       github: json['github'] as bool? ?? false,
       serverShell: json['server_shell'] as bool? ?? false,
+      // Booleans only: a non-bool value would make `enabled` lie about a
+      // flag it can't actually evaluate.
+      flags: {
+        for (final entry in json.entries)
+          if (entry.value is bool) entry.key: entry.value as bool,
+      },
     );
   }
 
   @override
-  List<Object?> get props => [voice, postgres, github, serverShell];
+  List<Object?> get props => [voice, postgres, github, serverShell, flags];
 }
 
 /// The `conversation.plan` object — plan identity, the three usage windows,
@@ -96,6 +119,10 @@ class PlanSnapshot extends Equatable {
     required this.week,
     required this.month,
     required this.features,
+    this.status = '',
+    this.cycle = '',
+    this.expiresAt,
+    this.tokenBalance = 0,
   });
 
   /// Plan slug — `free | pro | max-5x | max-20x`.
@@ -112,6 +139,25 @@ class PlanSnapshot extends Equatable {
   final UsageWindow week;
   final UsageWindow month;
   final PlanFeatures features;
+
+  /// Subscription state — `active` | `trialing` | `canceled` | `past_due`.
+  /// Empty when the server didn't send one (free / never-paid accounts, and
+  /// the chat-snapshot shape, which carries no subscription fields).
+  final String status;
+
+  /// `monthly` | `annual`, or empty when unknown.
+  final String cycle;
+
+  /// When the current paid period ends / renews.
+  ///
+  /// **Not a cut-off.** Saqqar billing is prepaid: entitlement is
+  /// [tokenBalance] plus the window caps, so nothing stops working on this
+  /// date. `null` for free or never-paid accounts — render "Renews on …" only
+  /// when it's present, never a countdown to a lockout that doesn't happen.
+  final DateTime? expiresAt;
+
+  /// Prepaid balance in ST. This, not [expiresAt], is what buys access.
+  final int tokenBalance;
 
   bool get isFree => slug == 'free';
 
@@ -142,11 +188,30 @@ class PlanSnapshot extends Equatable {
       week: UsageWindow.fromJson(sub('week')),
       month: UsageWindow.fromJson(sub('month')),
       features: PlanFeatures.fromJson(sub('features')),
+      status: json['status'] as String? ?? '',
+      cycle: json['cycle'] as String? ?? '',
+      expiresAt: _parseDate(json['expires_at']),
+      tokenBalance: (json['token_balance'] as num?)?.toInt() ?? 0,
     );
   }
 
+  static DateTime? _parseDate(Object? v) =>
+      v is String && v.isNotEmpty ? DateTime.tryParse(v)?.toLocal() : null;
+
   @override
-  List<Object?> get props => [slug, name, exempt, day, week, month, features];
+  List<Object?> get props => [
+        slug,
+        name,
+        exempt,
+        day,
+        week,
+        month,
+        features,
+        status,
+        cycle,
+        expiresAt,
+        tokenBalance,
+      ];
 }
 
 /// Identifies which usage window was exceeded on a blocked send.

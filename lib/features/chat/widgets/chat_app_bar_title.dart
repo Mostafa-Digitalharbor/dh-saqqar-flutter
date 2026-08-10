@@ -69,7 +69,7 @@ class ChatAppBarTitle extends StatelessWidget {
 
     return InkWell(
       onTap: onCredentialTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 4, 4),
         child: Row(
@@ -221,7 +221,7 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1400),
+    duration: AppDurations.agentPulse,
   );
 
   @override

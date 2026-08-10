@@ -11,11 +11,16 @@ import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/data_state_refreshable_view.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/filter_pill.dart';
 import '../data/app_package_models.dart';
 import '../data/apps_api.dart';
 import '../view_model/apps_cubit.dart';
+import '../widgets/app_launch_dialog.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Saqqar Apps gallery (API_MOBILE_NEW_ENDPOINTS.md §1) — a grid of guided
 /// packages. Tapping a tile launches a package-tagged conversation and
@@ -35,6 +40,11 @@ class _AppsScreenState extends State<AppsScreen> {
   /// a double-tap from firing two launch calls.
   String? _launchingSlug;
 
+  /// Active group filter, or `null` for "All". Client-side: the catalogue is
+  /// a handful of packages that already arrived in one response, so filtering
+  /// it locally is instant and works offline from the cached list.
+  String? _group;
+
   @override
   void initState() {
     super.initState();
@@ -44,12 +54,22 @@ class _AppsScreenState extends State<AppsScreen> {
 
   Future<void> _launch(SaqqarApp app) async {
     if (_launchingSlug != null) return; // one launch at a time
+
+    // Ask WHERE before opening anything. Tapping a package used to drop the
+    // user straight into a chat whose first message was the agent asking
+    // which database to use — a question this screen can answer from a list
+    // instead of making them type a name.
+    final choice = await AppLaunchDialog.show(context, app: app);
+    // Null means dismissed. Distinct from a choice with no environment,
+    // which is the supported "decide later in chat" path.
+    if (choice == null || !mounted) return;
+
     setState(() => _launchingSlug = app.slug);
     try {
-      // Launch WITHOUT an environment_id: per the API, the agent asks the
-      // user to pick one in-chat when the task needs it, so we don't block
-      // the tap on an env picker here.
-      final conversationId = await context.read<AppsApi>().launch(app.slug);
+      final conversationId = await context.read<AppsApi>().launch(
+            app.slug,
+            environmentId: choice.environmentId,
+          );
       if (!mounted) return;
       setState(() => _launchingSlug = null);
       // Replace-free push so Back returns to the gallery, matching how the
@@ -59,11 +79,12 @@ class _AppsScreenState extends State<AppsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _launchingSlug = null);
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(content: Text(ApiErrorMapper.message(context, e))),
-        );
+      AppToast.show(
+        context,
+        title: context.tr.appsLaunchFailed,
+        message: ApiErrorMapper.message(context, e),
+        variant: ToastVariant.error,
+      );
     }
   }
 
@@ -82,6 +103,10 @@ class _AppsScreenState extends State<AppsScreen> {
                   state: state,
                   onRefresh: () => context.read<AppsCubit>().refresh(),
                   onData: (context, apps) {
+                    // No client-side trim. `GET /apps/` applies the web
+                    // gallery's own visibility gate as of 2026-08-09, so the
+                    // catalogue it sends IS the catalogue — and a package the
+                    // backend adds now appears here with no mobile release.
                     if (apps.isEmpty) {
                       // Scrollable so pull-to-refresh still works on empty.
                       return ListView(
@@ -89,14 +114,38 @@ class _AppsScreenState extends State<AppsScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           EmptyState(
-                            icon: Icons.grid_view_rounded,
+                            icon: AppIcons.grid,
                             title: context.tr.appsEmptyTitle,
                             body: context.tr.appsEmptyBody,
                           ),
                         ],
                       );
                     }
-                    return _AppsGrid(apps: apps, onLaunch: _launch);
+                    // Group filter, web parity. The pill set is derived from
+                    // the data rather than hardcoded, so a group the backend
+                    // introduces gets a pill without a mobile release — and
+                    // a group it retires stops showing an empty filter.
+                    final groups = <String>{
+                      for (final a in apps)
+                        if (a.group.trim().isNotEmpty) a.group.trim(),
+                    }.toList()
+                      ..sort();
+                    // A selection that no longer matches anything (the
+                    // catalogue changed under a pull-to-refresh) falls back
+                    // to All instead of showing a permanently empty grid.
+                    final active =
+                        groups.contains(_group) ? _group : null;
+                    final visible = active == null
+                        ? apps
+                        : [for (final a in apps) if (a.group == active) a];
+
+                    return _AppsGrid(
+                      apps: visible,
+                      onLaunch: _launch,
+                      groups: groups,
+                      activeGroup: active,
+                      onGroupChanged: (g) => setState(() => _group = g),
+                    );
                   },
                 );
               },
@@ -134,10 +183,25 @@ class _AppsScreenState extends State<AppsScreen> {
 }
 
 class _AppsGrid extends StatelessWidget {
-  const _AppsGrid({required this.apps, required this.onLaunch});
+  const _AppsGrid({
+    required this.apps,
+    required this.onLaunch,
+    required this.groups,
+    required this.activeGroup,
+    required this.onGroupChanged,
+  });
 
   final List<SaqqarApp> apps;
   final ValueChanged<SaqqarApp> onLaunch;
+
+  /// Distinct groups present in the catalogue, sorted. Empty when the
+  /// backend sends none, in which case the pill row is omitted entirely
+  /// rather than showing a lone "All" that filters nothing.
+  final List<String> groups;
+
+  /// `null` = All.
+  final String? activeGroup;
+  final ValueChanged<String?> onGroupChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -146,18 +210,70 @@ class _AppsGrid extends StatelessWidget {
         // Two columns on phones, three once there's room (tablets / large
         // phones landscape). Keeps tiles a comfortable tap size either way.
         final crossAxisCount = constraints.maxWidth >= 640 ? 3 : 2;
-        return GridView.builder(
+
+        // A grid cell's height comes from its width via the aspect ratio, so
+        // it is fixed with respect to the user's text scale — but the tile's
+        // content is not. The 44 px icon, the two-line name and the meta row
+        // are all unshrinkable, and at 1.3× text they need ~143 px inside the
+        // 138 px cell a 320 px-wide screen produces: a RenderFlex overflow on
+        // the smallest supported phone with the OS text slider two notches up.
+        //
+        // Dividing the ratio by the text scale makes the cell grow at exactly
+        // the rate the copy inside it does. Clamped at 1.6 because the tile
+        // stops gaining anything past that — `Expanded` has already absorbed
+        // the slack — and an unclamped 2.0+ accessibility setting would leave
+        // one tile taller than the viewport.
+        final textScale =
+            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6);
+        final grid = GridView.builder(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
           physics: const AlwaysScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.82,
+            childAspectRatio: 0.82 / textScale,
           ),
           itemCount: apps.length,
           itemBuilder: (context, i) =>
               _AppTile(app: apps[i], onTap: () => onLaunch(apps[i])),
+        );
+
+        // Nothing to filter with — one group, or none at all. A pill row
+        // offering only "All" is a control that cannot do anything.
+        if (groups.length < 2) return grid;
+
+        return Column(
+          children: [
+            // Pinned above the grid, as on web, so the active filter stays
+            // visible while the user scrolls the results.
+            SizedBox(
+              height: 52,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                children: [
+                  FilterPill(
+                    label: context.tr.appGroupAll,
+                    selected: activeGroup == null,
+                    onTap: () => onGroupChanged(null),
+                  ),
+                  for (final g in groups) ...[
+                    const SizedBox(width: 8),
+                    FilterPill(
+                      // Translated by value — the taxonomy is a closed set,
+                      // so the pills follow the UI language even though the
+                      // server sends them in English only.
+                      label: context.tr.appGroup(g),
+                      selected: activeGroup == g,
+                      onTap: () => onGroupChanged(g),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Expanded(child: grid),
+          ],
         );
       },
     );
@@ -192,20 +308,19 @@ class _AppTile extends StatelessWidget {
               // Accent-tinted icon square. Uses a group-mapped Material icon
               // (the server's inline SVG isn't rendered yet), tinted with the
               // server-supplied accent so each tile keeps its brand colour.
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: accent.withValues(alpha: 0.30)),
-                ),
-                child: Icon(_iconForGroup(app.group), size: 22, color: accent),
+              ColoredIconBox(
+                icon: _iconForGroup(app.group),
+                color: accent,
+                size: 44,
+                radius: AppRadius.button,
+                iconSize: 22,
               ),
               const SizedBox(height: 12),
+              // Localized through the app's slug, falling back to the
+              // server's English. `/api/v1/apps/` serves one language, so
+              // without this the whole grid stays English on an Arabic phone.
               Text(
-                app.name,
+                app.displayName(context.tr),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: context.text.titleSmall
@@ -214,7 +329,7 @@ class _AppTile extends StatelessWidget {
               const SizedBox(height: 4),
               Expanded(
                 child: Text(
-                  app.tagline,
+                  app.displayTagline(context.tr),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodySmall?.copyWith(color: s.muted),
@@ -223,10 +338,16 @@ class _AppTile extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  if (app.category.isNotEmpty)
+                  // The GROUP, matching the web card's chip (FINANCE /
+                  // INTEGRATIONS / ACCOUNTING) and the filter pills above.
+                  // Falls back to `category` when the server sends no group,
+                  // so the meta row never goes blank.
+                  if (app.group.isNotEmpty || app.category.isNotEmpty)
                     Expanded(
                       child: Text(
-                        app.category,
+                        app.group.isNotEmpty
+                            ? app.displayGroup(context.tr).toUpperCase()
+                            : app.displayCategory(context.tr),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: context.text.labelSmall?.copyWith(
@@ -238,7 +359,7 @@ class _AppTile extends StatelessWidget {
                   if (app.envRequired)
                     Tooltip(
                       message: context.tr.appsNeedsEnv,
-                      child: Icon(Icons.dns_outlined, size: 15, color: s.muted),
+                      child: Icon(AppIcons.server, size: 15, color: s.muted),
                     ),
                 ],
               ),
@@ -256,13 +377,13 @@ class _AppTile extends StatelessWidget {
 IconData _iconForGroup(String group) {
   switch (group.toLowerCase()) {
     case 'accounting':
-      return Icons.calculate_outlined;
+      return AppIcons.calculator;
     case 'finance':
-      return Icons.account_balance_outlined;
+      return AppIcons.bank;
     case 'integrations':
-      return Icons.extension_outlined;
+      return AppIcons.puzzle;
     default:
-      return Icons.grid_view_rounded;
+      return AppIcons.grid;
   }
 }
 

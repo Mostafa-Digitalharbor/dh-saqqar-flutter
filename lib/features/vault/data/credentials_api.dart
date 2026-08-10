@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/response_body.dart';
 import 'credential_models.dart';
 
 /// Result of `POST /api/v1/credentials/test/`. Returned by
@@ -91,7 +92,12 @@ class CredentialsApi {
         ApiEndpoints.credentialTest,
         data: {'kind': kind.wire, 'payload': payload},
       );
-      final body = res.data ?? const <String, dynamic>{};
+      // `requiredBody` throws on a bodiless 200, and the `catch (_)` below
+      // turns that into a plain failure badge. That is the same outcome the
+      // old `?? {}` produced by a longer route (empty map → `ok != true` →
+      // failure) but it stops this method being the one place in the app
+      // that still reads an absent body as data.
+      final body = res.requiredBody;
       if (body['ok'] == true) return const CredentialTestResult.success();
       final err = body['error']?.toString();
       return CredentialTestResult.failure(
@@ -139,7 +145,12 @@ class CredentialsApi {
       ApiEndpoints.credentialDatabases,
       data: {'url': url},
     );
-    final body = res.data ?? const <String, dynamic>{};
+    // An empty list is meaningful here — it is how the form learns that
+    // `list_db=False` and switches to the manual database field. That
+    // reading only holds for a body the server actually sent; deriving it
+    // from a missing one silently downgrades the form for a failure the
+    // user is never told about.
+    final body = res.requiredBody;
     return (body['databases'] as List? ?? [])
         .map((e) => e.toString())
         .toList();

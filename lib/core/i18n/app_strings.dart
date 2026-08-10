@@ -118,7 +118,7 @@ class AppStrings {
   String get inlineCredentialMemorized => _t('inline_credential_memorized');
   String get inlineCredentialSession => _t('inline_credential_session');
 
-  // Project / Environment (matches web saqqaar.com data model)
+  // Company / Environment (matches web saqqaar.com data model)
   String get pickEnvironment => _t('pick_environment');
   String get pickEnvironmentSubtitle => _t('pick_environment_subtitle');
   String get noEnvironmentPicked => _t('no_environment_picked');
@@ -127,6 +127,10 @@ class AppStrings {
   String get liveBadge => _t('live_badge');
   String get readOnlyBadge => _t('read_only_badge');
   String get autoApproveBadge => _t('auto_approve_badge');
+  // Getter and key stay `project` — they are identifiers, not copy. Only the
+  // English/Arabic VALUES were renamed to "Company"/"الشركة"; renaming the key
+  // would break `_t` (no such entry) and renaming the getter would break every
+  // call site. The wire model is still `projects` on the backend too.
   String get project => _t('project');
   String get environment => _t('environment');
   String get changeEnvironment => _t('change_environment');
@@ -168,7 +172,7 @@ class AppStrings {
   String get backToProjects => _t('back_to_projects');
   /// Numeric-first count rendering — always `N word` so the count
   /// reads cleanly at a glance, even when the same row repeats across
-  /// dozens of projects. Drops the locale-specific pluralisation that
+  /// dozens of companies. Drops the locale-specific pluralisation that
   /// made rows like "بيئة واحدة" / "بيئتان" inconsistent next to the
   /// numeric variants. Reserves the special "no environments" copy for
   /// the empty case only.
@@ -184,8 +188,8 @@ class AppStrings {
   String get projectDeletedToast => _t('project_deleted_toast');
   String get deleteProjectTitle => _t('delete_project_title');
   String deleteProjectBody(String name) => _isArabic
-      ? 'حذف المشروع "$name"؟ ستُحذف البيئات وبيانات الدخول المرتبطة بها.'
-      : 'Delete project "$name"? Environments and their credentials are deleted with it.';
+      ? 'حذف الشركة "$name"؟ ستُحذف البيئات وبيانات الدخول المرتبطة بها.'
+      : 'Delete company "$name"? Environments and their credentials are deleted with it.';
 
   String get addEnvironment => _t('add_environment');
   String get addEnvironmentHint => _t('add_environment_hint');
@@ -293,6 +297,9 @@ class AppStrings {
   String approveAllN(int count) => _f('approve_all_n', {'count': count});
   String rejectAllN(int count) => _f('reject_all_n', {'count': count});
   String get preApprovalTip => _t('pre_approval_tip');
+  String get approveAllSimilar => _t('approve_all_similar');
+  String approvalBatchResolved(int count) =>
+      _f('approval_batch_resolved', {'count': count});
   String get showIndividualRecords => _t('show_individual_records');
   String get hideIndividualRecords => _t('hide_individual_records');
   String approvalGrantedWithPreapproval(int count) =>
@@ -469,12 +476,118 @@ class AppStrings {
   String get approvalGrantedExecuting => _t('approval_granted_executing');
   String get autoApproveOn => _t('auto_approve_on');
   String get autoApproveOff => _t('auto_approve_off');
-  // Deep think — global toggle in the chat header. Web parity (mirrors
-  // `state.deepThink` in app.js).
-  String get deepThink => _t('deep_think');
-  String get deepThinkTitle => _t('deep_think_title');
-  String get deepThinkOn => _t('deep_think_on');
-  String get deepThinkOff => _t('deep_think_off');
+  // Email-approval preview — labels for the recipient rows.
+  String get emailPreviewTo => _t('email_preview_to');
+  String get emailPreviewCc => _t('email_preview_cc');
+  String get emailPreviewBcc => _t('email_preview_bcc');
+  String get emailPreviewReply => _t('email_preview_reply');
+  // Destructive-delete type-to-confirm (web parity — `renderDeleteApproval`).
+  // The phrase itself is the localized Delete verb + the record count, e.g.
+  // "Delete 6" / "حذف 6"; `delete_confirmation.dart` folds Arabic-Indic
+  // digits so ٦ matches 6 when the user types on an Arabic keyboard.
+  String get deleteConfirmTitle => _t('delete_confirm_title');
+  String deleteConfirmBody(int count, String phrase) =>
+      _f('delete_confirm_body', {'count': count, 'phrase': phrase});
+  String deleteConfirmHint(String phrase) =>
+      _f('delete_confirm_hint', {'phrase': phrase});
+  String deleteConfirmMismatch(String phrase) =>
+      _f('delete_confirm_mismatch', {'phrase': phrase});
+
+  /// The exact phrase the user must type to confirm deleting [count] records.
+  String deleteConfirmPhrase(int count) => '${_t('approval_op_delete')} $count';
+
+  // Task prep — global composer toggle. Web parity for `#taskPrepToggle`;
+  // replaced Deep think, which the web removed (the backend escalates hard
+  // tasks to the stronger model with no manual switch).
+  String get taskPrep => _t('task_prep');
+  String get taskPrepTitle => _t('task_prep_title');
+  String get taskPrepOn => _t('task_prep_on');
+  String get taskPrepOff => _t('task_prep_off');
+  // Saqqar tools sheet — the composer's `+` menu (web `renderShadowMenu`).
+  String get toolsTitle => _t('tools_title');
+  String get toolsUploadFile => _t('tools_upload_file');
+  String get toolsModesSection => _t('tools_modes_section');
+  String get toolsOdooSection => _t('tools_odoo_section');
+  String get toolsConnectSection => _t('tools_connect_section');
+  String get toolsReadonlyNote => _t('tools_readonly_note');
+  String get toolsNeedsConversation => _t('tools_needs_conversation');
+
+  // §8 — voice support workspace
+  String get voiceSupportTitle => _t('voice_support_title');
+  String get voiceSupportIntro => _t('voice_support_intro');
+  String get voiceSupportHint => _t('voice_support_hint');
+  String get voiceSupportSubmit => _t('voice_support_submit');
+  String get voiceSupportSummary => _t('voice_support_summary');
+  String get voiceSupportReply => _t('voice_support_reply');
+  String get voiceSupportSteps => _t('voice_support_steps');
+  String get voiceSupportQuestions => _t('voice_support_questions');
+  String get voiceSupportFileTicket => _t('voice_support_file_ticket');
+  String get voiceSupportTicketConfirmTitle =>
+      _t('voice_support_ticket_confirm_title');
+  String get voiceSupportTicketConfirmBody =>
+      _t('voice_support_ticket_confirm_body');
+  String get voiceSupportTicketCreated => _t('voice_support_ticket_created');
+  String get voiceSupportEmpty => _t('voice_support_empty');
+  String get toolsPromptBank => _t('tools_prompt_bank');
+  String get toolsHealthRadar => _t('tools_health_radar');
+  String get toolsWhatIf => _t('tools_what_if');
+  String get toolsBusinessPulse => _t('tools_business_pulse');
+  String get toolsMyDatabase => _t('tools_my_database');
+  String get toolsVoiceSupport => _t('tools_voice_support');
+  // The request each §6 row sends. Authored here, not by the server — see the
+  // note on the values. One string each to correct when the web team replies.
+  // Interactive in-chat cards — dispatched on `message.tool_payload.kind`.
+  String get clarifyTitle => _t('clarify_title');
+  String get clarifySomethingElse => _t('clarify_something_else');
+  String get clarifyBuildSend => _t('clarify_build_send');
+  String get clarifyPrepareReview => _t('clarify_prepare_review');
+  String get clarifyNeedsAnswer => _t('clarify_needs_answer');
+  String get clarifyAnswersHeader => _t('clarify_answers_header');
+  String get clarifyReadyToReview => _t('clarify_ready_to_review');
+  String get suggestionTitle => _t('suggestion_title');
+  String get suggestionApprove => _t('suggestion_approve');
+  String get suggestionKeepMine => _t('suggestion_keep_mine');
+  String get reportTitle => _t('report_title');
+  String get reportType => _t('report_type');
+  String get reportPeriod => _t('report_period');
+  String get reportLens => _t('report_lens');
+  String get reportFormat => _t('report_format');
+  String get reportRecords => _t('report_records');
+  String get reportPickRecords => _t('report_pick_records');
+  String get reportSearchRecords => _t('report_search_records');
+  String get reportNoRecords => _t('report_no_records');
+  String get reportBuild => _t('report_build');
+  String get reportNeedsType => _t('report_needs_type');
+  String reportRecordsTruncated(int count) =>
+      _f('report_records_truncated', {'count': count});
+  String reportSelectedCount(int count) =>
+      _f('report_selected_count', {'count': count});
+
+  /// The report request the card composes and sends as a normal message.
+  /// Optional parts (lens, ticked records) are appended only when present so
+  /// the message never carries an empty "View: " line.
+  String reportCompose({
+    required String type,
+    required String period,
+    required String format,
+    String? lens,
+    String? records,
+  }) {
+    final buffer = StringBuffer(
+      _f('report_compose', {
+        'type': type,
+        'period': period,
+        'format': format,
+      }),
+    );
+    if (lens != null && lens.isNotEmpty) {
+      buffer.write(_f('report_compose_lens', {'lens': lens}));
+    }
+    if (records != null && records.isNotEmpty) {
+      buffer.write(_f('report_compose_records', {'names': records}));
+    }
+    return buffer.toString();
+  }
   // Stop generation — composer button label + toast.
   String get stopGeneration => _t('stop_generation');
   String get generationStopped => _t('generation_stopped');
@@ -715,7 +828,7 @@ class AppStrings {
   String get suggestPendingInvoices => _t('suggest_pending_invoices');
   String get suggestSyncInventory => _t('suggest_sync_inventory');
 
-  // Vault / project card
+  // Vault / company card
   String get idleBadge => _t('idle_badge');
   String get envNoCredentials => _t('env_no_credentials');
 
@@ -746,7 +859,7 @@ class AppStrings {
   String relativeHoursAgo(String n) => _f('relative_hours_ago', {'n': n});
   String relativeDaysAgo(String n) => _f('relative_days_ago', {'n': n});
 
-  /// Project header stats line — "3 environments · 1 live · 2 credentials"
+  /// Company header stats line — "3 environments · 1 live · 2 credentials"
   /// (pluralized for EN, RTL-natural for AR). Segments after the count are
   /// dropped when zero.
   String projectStats(int envs, int live, int connected) {
@@ -939,6 +1052,8 @@ class AppStrings {
   String get appLockSubtitle => _t('appLockSubtitle');
   String get appLockUnlock => _t('appLockUnlock');
   String get appLockReason => _t('appLockReason');
+  String get appLockConfirmSignOut => _t('appLockConfirmSignOut');
+  String get appLockConfirmDelete => _t('appLockConfirmDelete');
   String get appLockSettingTitle => _t('appLockSettingTitle');
   String get appLockSettingSubtitle => _t('appLockSettingSubtitle');
   String get appLockUnavailable => _t('appLockUnavailable');
@@ -1141,34 +1256,41 @@ class AppStrings {
   String get pricingCurrent => _t('pricing_current');
   String get pricingFree => _t('pricing_free');
   String get pricingLoadError => _t('pricing_load_error');
-  String get pricingStUnit => _t('pricing_st_unit');
-  String get pricingDailyCap => _t('pricing_daily_cap');
-  String get pricingMonthlyCap => _t('pricing_monthly_cap');
-  String get pricingProjectsLabel => _t('pricing_projects_label');
-  String get pricingUnlimited => _t('pricing_unlimited');
-  String get featureVoice => _t('feature_voice');
-  String get featurePostgres => _t('feature_postgres');
-  String get featureGithub => _t('feature_github');
-  String get featureServerShell => _t('feature_server_shell');
+  // `pricing_st_unit`, the two cap labels, `pricing_projects_label`,
+  // `pricing_unlimited` and the four `feature_*` labels are gone with the
+  // rows that used them. They described the API — token caps in an invented
+  // "ST" unit and a capability tick/cross matrix — where the website
+  // describes the product. See `plan_copy.dart`.
 
-  /// "$20 / month" (free plans pass 0 → "Free"). Western digits in both
-  /// locales to match the rest of the numeric UI.
-  String pricePerMonth(int cents) {
-    if (cents <= 0) return pricingFree;
-    return _f('price_per_month', {'dollars': _dollars(cents)});
-  }
+  /// The headline figure alone — "$20". Western digits in both locales to
+  /// match the rest of the numeric UI.
+  ///
+  /// Quoted **per month** on both cycles, the way saqqaar.com quotes it: the
+  /// annual plan's yearly total on its own would make the cheaper cycle look
+  /// like the dearer one. [priceBothCycles] carries the yearly figures.
+  String priceAmount(int cents) =>
+      cents <= 0 ? pricingZero : '\$${_dollars(cents)}';
 
-  /// The annual line, quoted **per month** the way saqqaar.com quotes it —
-  /// "$10 / month, billed annually ($120/yr)". Quoting the yearly total alone
-  /// would make the annual plan look more expensive than the monthly one,
-  /// which is the opposite of what it is.
-  String priceAnnualPerMonth(int centsPerMonth) {
-    if (centsPerMonth <= 0) return pricingFree;
-    return _f('price_annual_per_month', {
-      'dollars': _dollars(centsPerMonth),
-      'yearly': _dollars(centsPerMonth * 12),
-    });
-  }
+  /// The "+ VAT" rider next to [priceAmount]. Separate because it renders a
+  /// size down beside the figure, the way the website sets it.
+  String get pricePlusVat => _t('price_plus_vat');
+
+  /// Both cycles on one line — "$10/mo billed annually ($120/yr) · $20/mo
+  /// billed monthly ($240/yr)." Shown under the headline figure whichever
+  /// cycle is selected, so the switch above it is never the only way to find
+  /// out what the other one costs.
+  String priceBothCycles({
+    required int annualCentsPerMonth,
+    required int monthlyCents,
+  }) =>
+      _f('price_both_cycles', {
+        'annualMo': _dollars(annualCentsPerMonth),
+        'annualYr': _dollars(annualCentsPerMonth * 12),
+        'monthlyMo': _dollars(monthlyCents),
+        'monthlyYr': _dollars(monthlyCents * 12),
+      });
+
+  String get pricingMostPopular => _t('pricing_most_popular');
 
   /// Cents → "20" or "2.50". Trailing `.00` reads as false precision on a
   /// price list where most tiers are whole dollars.
@@ -1181,8 +1303,17 @@ class AppStrings {
   String get pricingCycleMonthly => _t('pricing_cycle_monthly');
   String get pricingCycleAnnual => _t('pricing_cycle_annual');
   String get pricingCycleAnnualSave => _t('pricing_cycle_annual_save');
-  String get pricingVatNote => _t('pricing_vat_note');
+  /// The tax footnote. [rate] comes from the `vat` object on `/plans/` — the
+  /// rate used to be written into this string, which made it a number that
+  /// could go stale without anyone noticing, on the one screen where being
+  /// wrong costs money.
+  String pricingVatNote(String rate) => _f('pricing_vat_note', {'rate': rate});
   String get pricingWebCta => _t('pricing_web_cta');
+
+  /// The always-present footer action. Says "manage", not "subscribe": it is
+  /// the only route to the web for someone on the top tier, who has nothing
+  /// left to buy but still renews, cancels and downloads receipts there.
+  String get pricingManageCta => _t('pricing_manage_cta');
   String get pricingWebNote => _t('pricing_web_note');
   String get pricingOpenFailed => _t('pricing_open_failed');
   String get pricingPlansTitle => _t('pricing_plans_title');
@@ -1352,6 +1483,30 @@ class AppStrings {
   /// "12% used" — pct already computed server-side.
   String planPctUsed(int pct) => _f('plan_pct_used', {'pct': pct});
 
+  // ── Subscription line (API_MOBILE_SUBSCRIPTION.md §1) ──────────────────
+
+  /// `monthly` / `annual` → a display word. Falls back to the raw value so an
+  /// unrecognised cycle is shown rather than dropped.
+  String planCycleLabel(String wire) => switch (wire.toLowerCase()) {
+        'monthly' => _t('pricing_cycle_monthly'),
+        'annual' || 'yearly' => _t('pricing_cycle_annual'),
+        _ => wire,
+      };
+
+  /// Subscription state. `active` is deliberately not surfaced by the card —
+  /// only states the user needs to act on reach the screen.
+  String planStatusLabel(String wire) => switch (wire.toLowerCase()) {
+        'active' => _t('plan_status_active'),
+        'trialing' => _t('plan_status_trialing'),
+        'canceled' || 'cancelled' => _t('plan_status_canceled'),
+        'past_due' => _t('plan_status_past_due'),
+        _ => wire,
+      };
+
+  /// "Renews on 4 Mar 2027". Worded as a renewal, never a deadline: Saqqar
+  /// billing is prepaid, so nothing stops working on this date.
+  String planRenewsOn(String date) => _f('plan_renews_on', {'date': date});
+
   /// "12.3K / 125K" — compact used/cap pair (formatting done by caller).
   String planUsageLine(String used, String cap) => '$used / $cap';
 
@@ -1422,6 +1577,34 @@ class AppStrings {
   String get appsEmptyBody => _t('apps_empty_body');
   String get appsOpening => _t('apps_opening');
   String get appsNeedsEnv => _t('apps_needs_env');
+  String get appLaunchTitle => _t('app_launch_title');
+  String get appLaunchProject => _t('app_launch_project');
+  String get appLaunchEnvironment => _t('app_launch_environment');
+  String get appLaunchStart => _t('app_launch_start');
+  String get appLaunchSkip => _t('app_launch_skip');
+  String get appLaunchNeedsEnv => _t('app_launch_needs_env');
+  String get appLaunchOptionalEnv => _t('app_launch_optional_env');
+  String get appLaunchNoProjects => _t('app_launch_no_projects');
+  String get appLaunchNoEnvs => _t('app_launch_no_envs');
+
+  /// Placeholder under the Database section while no company is chosen.
+  /// Distinct from [appLaunchProject], which is the section *label* — the
+  /// dialog used to render the label here, so the empty slot read "Company"
+  /// under the heading "Database" and instructed nobody.
+  String get appLaunchPickProjectFirst =>
+      _t('app_launch_pick_project_first');
+  String get appGroupAll => _t('app_group_all');
+
+  /// Group taxonomy label. Falls back to the server's own English value so a
+  /// group the backend adds still reads as itself rather than as a key.
+  String appGroup(String group) => lookup(
+        'app_group_${group.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_')}',
+        fallback: group,
+      );
+
+  /// Toast title when launching a guided app fails. Names the action; the
+  /// toast body carries the mapped reason from [ApiErrorMapper].
+  String get appsLaunchFailed => _t('apps_launch_failed');
 
   // Billing history & receipts (§3)
   String get billingHistoryTitle => _t('billing_history_title');
@@ -1557,7 +1740,7 @@ const Map<String, String> _en = {
       'Live Odoo agent that diagnoses, reports, and acts with private credentials and approval gating on every risky change.',
   'open_workspace': 'Open workspace',
   'tab_chats': 'Chats',
-  'tab_vault': 'Projects',
+  'tab_vault': 'Companies',
   'tab_inbox': 'Inbox',
   'tab_account': 'Account',
   'workspace': 'Workspace',
@@ -1695,11 +1878,143 @@ const Map<String, String> _en = {
   'approval_granted_executing': 'Approval granted. Executing approved action.',
   'auto_approve_on': 'Auto-approve on.',
   'auto_approve_off': 'Auto-approve off.',
-  'deep_think': 'Deep think',
-  'deep_think_title':
-      'Give Saqqar more reasoning budget for harder questions.',
-  'deep_think_on': 'Deep think on.',
-  'deep_think_off': 'Deep think off.',
+  'email_preview_to': 'To:',
+  'email_preview_cc': 'Cc:',
+  'email_preview_bcc': 'Bcc:',
+  'email_preview_reply': 'Reply',
+  'delete_confirm_title': 'Confirm deletion',
+  'delete_confirm_body':
+      'This permanently deletes {count} record(s) in Odoo. Type {phrase} to '
+          'confirm.',
+  'delete_confirm_hint': 'Type {phrase}',
+  'delete_confirm_mismatch': 'That doesn\'t match. Type {phrase} exactly.',
+  'task_prep': 'Task prep',
+  'task_prep_title':
+      'Saqqar asks quick questions to refine a vague task before building',
+  'task_prep_on':
+      'Task prep on. Saqqar will ask a couple of questions to refine vague '
+          'tasks.',
+  'task_prep_off': 'Task prep off. Saqqar builds directly from what you write.',
+  // Saqqar tools sheet (the composer's `+` menu).
+  'tools_title': 'Saqqar tools',
+  'tools_upload_file': 'Upload file',
+  'tools_modes_section': 'Modes',
+  'tools_odoo_section': 'Odoo tools',
+  'tools_connect_section': 'Connections',
+  'tools_readonly_note': 'Tools do not change Odoo without your approval.',
+  'tools_needs_conversation':
+      'Send a message first — scans run inside a conversation.',
+  // Saqqar Apps — per-slug overrides for `GET /api/v1/apps/`, which serves
+  // one language. Absent keys fall back to the server string, so an app the
+  // backend adds tomorrow still renders. English side is kept in sync with
+  // the server copy so the two tables stay comparable.
+  // Keyed by slug where known, and by the normalized English name as a
+  // second chance — the catalogue is server-owned and the slugs are not
+  // published to mobile. Copy taken verbatim from the web's own two locales
+  // so the same package reads identically on both clients.
+  'app_name_zatca': 'ZATCA e-invoicing',
+  'app_name_zatca_e_invoicing': 'ZATCA e-invoicing',
+  'app_tagline_zatca':
+      'Onboard Saudi Fatoora Phase-2 e-invoicing on your Odoo — CSR, OTP, '
+          'and go-live.',
+  'app_tagline_zatca_e_invoicing':
+      'Onboard Saudi Fatoora Phase-2 e-invoicing on your Odoo — CSR, OTP, '
+          'and go-live.',
+
+  'app_name_whatsapp_integration': 'WhatsApp integration',
+  'app_tagline_whatsapp_integration':
+      'Connect WhatsApp Business (Cloud API) so Odoo can send and receive '
+          'messages.',
+
+  'app_name_chart_of_accounts_builder': 'Chart of Accounts builder',
+  'app_tagline_chart_of_accounts_builder':
+      'Build or import a clean, localized chart of accounts and wire up '
+          'default postings.',
+
+  'app_name_bank_reconciliation': 'Bank reconciliation',
+  'app_tagline_bank_reconciliation':
+      'Set up bank journals, statement import, and reconciliation rules that '
+          'match automatically.',
+
+  // Group taxonomy — a closed set, shown as the card chip and as the filter
+  // pills. `app_group_all` is the client-side "no filter" pill.
+  'app_group_all': 'All',
+  'app_group_accounting': 'Accounting',
+  'app_group_finance': 'Finance',
+  'app_group_integrations': 'Integrations',
+  // Launch picker — shown before the app opens a conversation.
+  'app_launch_title': 'Where should this run?',
+  'app_launch_project': 'Company',
+  'app_launch_environment': 'Database',
+  'app_launch_start': 'Start',
+  'app_launch_skip': 'Decide later in chat',
+  'app_launch_needs_env':
+      'This setup works on a connected Odoo database. Pick one, or choose it '
+          'later when Saqqar asks.',
+  'app_launch_optional_env':
+      'Optional — Saqqar will ask in the chat if it needs a database.',
+  'app_launch_no_projects':
+      'No companies yet. Saqqar will help you connect one in the chat.',
+  'app_launch_no_envs': 'This company has no databases yet.',
+  'app_launch_pick_project_first': 'Pick a company first.',
+  // §8 — voice support. "Voice" is the web's name for the page, not a
+  // promise of audio: nothing here dials or speaks.
+  'voice_support_title': 'Support',
+  'voice_support_intro':
+      'Describe the problem and Saqqar will draft a diagnosis and a reply.',
+  'voice_support_hint': 'What went wrong?',
+  'voice_support_submit': 'Get help',
+  'voice_support_summary': 'What we understood',
+  'voice_support_reply': 'Suggested reply',
+  'voice_support_steps': 'Steps to try',
+  'voice_support_questions': 'Still needs answering',
+  'voice_support_file_ticket': 'Save as a ticket',
+  'voice_support_ticket_confirm_title': 'Create a ticket in Odoo?',
+  'voice_support_ticket_confirm_body':
+      'This creates a real helpdesk ticket in your connected database.',
+  'voice_support_ticket_created': 'Ticket created',
+  'voice_support_empty': 'No draft came back. Try describing it differently.',
+  'tools_prompt_bank': 'Prompt bank',
+  'tools_health_radar': 'Health radar',
+  'tools_what_if': 'What-if',
+  'tools_business_pulse': 'Business pulse',
+  'tools_my_database': 'My database',
+  'tools_voice_support': 'Voice support',
+  // §6 rows call `/radar/run/`, `/pulse/run/` and `/whatif/intro/` directly
+  // (web team, 2026-08-06) — there is no prompt text to author any more.
+  // The three `tools_*_prompt` strings that used to live here were locally
+  // invented against a probe that missed the real routes; they are gone
+  // rather than left unused, so nobody wires them back by accident.
+  // Interactive chat cards (tool_payload.kind dispatch).
+  'clarify_title': 'A couple of quick questions',
+  'clarify_something_else': 'Something else…',
+  'clarify_build_send': 'Build & send',
+  'clarify_prepare_review': 'Prepare & review',
+  'clarify_needs_answer': 'Pick at least one answer',
+  'clarify_answers_header': 'Answers to your questions:',
+  'clarify_ready_to_review': 'Answers ready in the composer — edit or send.',
+  'suggestion_title': 'A clearer way to ask',
+  'suggestion_approve': 'Approve & use',
+  'suggestion_keep_mine': 'Keep mine',
+  'report_title': 'Build a report',
+  'report_type': 'Type',
+  'report_period': 'Period',
+  'report_lens': 'View',
+  'report_format': 'Format',
+  'report_records': 'Records',
+  'report_pick_records': 'Pick records',
+  'report_search_records': 'Search records',
+  'report_records_truncated':
+      'Showing the first {count} — search to narrow the list.',
+  'report_no_records': 'No matching records.',
+  'report_selected_count': '{count} selected',
+  'report_build': 'Build report',
+  'report_needs_type': 'Pick a report type first',
+  'report_compose':
+      'Build this report:\n- Type: {type}\n- Period: {period}\n'
+          '- Format: {format}',
+  'report_compose_lens': '\n- View: {lens}',
+  'report_compose_records': '\n- Records: {names}',
   'stop_generation': 'Stop generating',
   'generation_stopped': 'Stopped.',
   'stopping': 'Stopping…',
@@ -1751,9 +2066,19 @@ const Map<String, String> _en = {
   'error_timeout': 'The server took too long to respond. Please try again.',
   'error_cancelled': 'The action was cancelled.',
   'error_unauthorized': 'Your session ended. Please sign in again.',
-  'error_forbidden': "You don't have permission to do this.",
-  'error_not_found': "We couldn't find what you were looking for.",
-  'error_validation': 'Some fields need your attention.',
+  // Every failure line names the cause AND the next step. These three used to
+  // stop at the cause, which leaves the user staring at a sentence with
+  // nothing to do about it — the two that matter most are the ones where the
+  // fix is NOT "try again", because a retry button is the wrong instinct there.
+  'error_forbidden':
+      "You don't have permission to do this. Ask the owner of this Odoo "
+          'database to grant it, or switch to a database you can write to.',
+  'error_not_found':
+      "We couldn't find that — it may have been deleted or moved. Pull down "
+          'to refresh the list.',
+  'error_validation':
+      'Some fields need your attention. Check the highlighted ones and try '
+          'again.',
   'error_conflict': 'That action conflicts with current data. Refresh and try again.',
   'error_rate_limited': 'Too many attempts. Please slow down.',
   'error_rate_limited_with_retry': 'Too many attempts. Try again in {seconds}s.',
@@ -1773,10 +2098,10 @@ const Map<String, String> _en = {
   'crash_screen_body': 'This screen ran into a problem. The error has been '
       'logged. Try going back, or restart the app if it keeps happening.',
   // ── Vault action labels (prefixes) ──
-  'vault_action_load_failed': "Couldn't load your projects",
-  'vault_action_create_project_failed': "Couldn't create the project",
-  'vault_action_rename_project_failed': "Couldn't rename the project",
-  'vault_action_delete_project_failed': "Couldn't delete the project",
+  'vault_action_load_failed': "Couldn't load your companies",
+  'vault_action_create_project_failed': "Couldn't create the company",
+  'vault_action_rename_project_failed': "Couldn't rename the company",
+  'vault_action_delete_project_failed': "Couldn't delete the company",
   'vault_action_create_environment_failed': "Couldn't create the environment",
   'vault_action_update_environment_failed': "Couldn't update the environment",
   'vault_action_delete_environment_failed': "Couldn't delete the environment",
@@ -1784,8 +2109,8 @@ const Map<String, String> _en = {
   'vault_action_save_credential_failed': "Couldn't save the credential",
   'vault_action_delete_credential_failed': "Couldn't delete the credential",
   // ── Vault success toasts ──
-  'vault_toast_project_created': 'Project created.',
-  'vault_toast_project_deleted': 'Project deleted.',
+  'vault_toast_project_created': 'Company created.',
+  'vault_toast_project_deleted': 'Company deleted.',
   'vault_toast_environment_created': 'Environment created.',
   'vault_toast_environment_deleted': 'Environment deleted.',
   'vault_toast_credential_saved': 'Credential saved.',
@@ -1835,7 +2160,7 @@ const Map<String, String> _en = {
   'push_channel_updates_description': 'Finished tasks and ready reports',
   'watch_error_no_speech': 'Didn\'t catch that — try again.',
   'watch_error_unreachable': 'Couldn\'t reach Saqqar. Try again.',
-  'watch_error_projects_load': 'Couldn\'t load projects.',
+  'watch_error_projects_load': 'Couldn\'t load companies.',
   'watch_error_project_setup': 'Couldn\'t set up a database.',
   'account_usage': 'Usage',
   'account_see_plans': 'See plans',
@@ -1876,13 +2201,13 @@ const Map<String, String> _en = {
   'session_ended_toast': 'Your session ended. Please sign in again.',
   'sign_out_confirm_title': 'Sign out',
   'sign_out_confirm_body':
-      'You will need to sign in again to access your projects and chats.',
+      'You will need to sign in again to access your companies and chats.',
   'signing_out': 'Signing out…',
   'delete_account': 'Delete account',
   'delete_account_confirm_title': 'Delete account?',
   'delete_account_confirm_body':
       'This permanently deletes your account and all of its data — '
-          'conversations, credentials, projects, and files. This cannot be '
+          'conversations, credentials, companies, and files. This cannot be '
           'undone.',
   'deleting_account': 'Deleting account…',
   'account_deleted_toast': 'Your account has been deleted.',
@@ -1939,7 +2264,7 @@ const Map<String, String> _en = {
   'start_conversation': 'Start a conversation',
   'send': 'Send',
   'auto_approve': 'Auto-approve',
-  'credential_vault': 'Projects',
+  'credential_vault': 'Companies',
   'no_credentials': 'No credentials yet',
   'no_credentials_hint': 'Add one to let Saqqar work against your systems.',
   'add_credential': 'Add credential',
@@ -2046,6 +2371,10 @@ const Map<String, String> _en = {
   'appLockSubtitle': 'Authenticate to continue.',
   'appLockUnlock': 'Unlock',
   'appLockReason': 'Unlock Saqqar',
+  // Shown in the system biometric dialog before an irreversible action, so
+  // each one names what is about to happen rather than saying "Unlock".
+  'appLockConfirmSignOut': 'Confirm it is you to sign out',
+  'appLockConfirmDelete': 'Confirm it is you to delete your account',
   'appLockSettingTitle': 'App lock',
   'appLockSettingSubtitle':
       'Require Face ID / fingerprint to open Saqqar.',
@@ -2103,8 +2432,9 @@ const Map<String, String> _en = {
   'pricing_cycle_monthly': 'Monthly',
   'pricing_cycle_annual': 'Annual',
   'pricing_cycle_annual_save': 'save up to 50%',
-  'pricing_vat_note': 'Prices exclude VAT. 15% VAT is added at checkout.',
+  'pricing_vat_note': 'Prices exclude VAT. {rate}% VAT is added at checkout.',
   'pricing_web_cta': 'Subscribe on the web',
+  'pricing_manage_cta': 'Manage subscription on saqqaar.com',
   // Says where the user is going and what happens when they come back. A CTA
   // that silently throws you into a browser reads as the app breaking.
   'pricing_web_note':
@@ -2127,15 +2457,59 @@ const Map<String, String> _en = {
   'pricing_web_signin_note': 'You may need to sign in on the web to continue.',
   'pricing_zero': '\$0',
   'pricing_load_error': "Couldn't load plans.",
-  'pricing_st_unit': 'ST',
-  'pricing_daily_cap': 'Daily',
-  'pricing_monthly_cap': 'Monthly',
-  'pricing_projects_label': 'Projects',
-  'pricing_unlimited': 'Unlimited',
-  'feature_voice': 'Voice input',
-  'feature_postgres': 'Postgres queries',
-  'feature_github': 'GitHub',
-  'feature_server_shell': 'Server shell',
+  'pricing_most_popular': 'Most popular',
+  'price_plus_vat': '+ VAT',
+  // Both billing cycles on one line, exactly as saqqaar.com quotes them, so
+  // the price above is never the only figure a buyer sees. Every number is
+  // interpolated from `/plans/` — nothing here is written down.
+  'price_both_cycles':
+      '\${annualMo}/mo billed annually (\${annualYr}/yr) · '
+          '\${monthlyMo}/mo billed monthly (\${monthlyYr}/yr).',
+  // Plan copy. The ENGLISH entries below are not display strings — they are
+  // lookup KEYS. `/plans/` sends this copy in English (the endpoint has no
+  // Arabic; the web page translates in the browser), and `plan_copy.dart`
+  // indexes these values to find the Arabic for whatever the server sent. So
+  // each English value here must stay byte-identical to the server's, and the
+  // Arabic beside it is what actually reaches the screen. `plan_copy_test`
+  // pins both halves against a captured live payload.
+  'plan_copy_free_name': 'Free',
+  'plan_copy_free_tagline': 'Try Saqqar',
+  'plan_copy_free_price_note': 'Free for everyone',
+  'plan_copy_free_f1': 'Chat with Saqqar on web and mobile',
+  'plan_copy_free_f2': 'Connect one Odoo database',
+  'plan_copy_free_f3': 'Search, read and count records',
+  'plan_copy_free_f4': 'Generate Excel, PDF and Word reports',
+  'plan_copy_free_f5': 'Voice input (speech to text)',
+  'plan_copy_free_f6': 'Read Odoo addons',
+  'plan_copy_free_f7': 'Memory across conversations',
+  'plan_copy_starter_name': 'Starter',
+  'plan_copy_starter_tagline': 'Get started',
+  'plan_copy_starter_inherits': 'Everything in Free, plus:',
+  'plan_copy_starter_f1': 'A little more monthly usage',
+  'plan_copy_starter_f2': 'Priority over the free tier at busy times',
+  'plan_copy_solo_name': 'Solo',
+  'plan_copy_solo_tagline': 'For individuals',
+  'plan_copy_solo_inherits': 'Everything in Starter, plus:',
+  'plan_copy_solo_f1': 'Much higher monthly usage',
+  'plan_copy_solo_f2': 'Create and edit Odoo records (with approval)',
+  'plan_copy_solo_f3': 'Multiple databases and environments',
+  'plan_copy_solo_f4': 'Bulk imports (create-many / load)',
+  'plan_copy_solo_f5': 'Priority access to the best models',
+  'plan_copy_pro_name': 'Professional',
+  'plan_copy_pro_tagline': 'For power users',
+  'plan_copy_pro_inherits': 'Everything in Solo, plus:',
+  'plan_copy_pro_f1': 'Build and edit Odoo addons, download as .zip',
+  'plan_copy_pro_f2': 'Trigger server actions and install modules',
+  'plan_copy_pro_f3': 'Higher usage limits',
+  'plan_copy_pro_f4': 'Priority support',
+  'plan_copy_business_name': 'Business',
+  'plan_copy_business_tagline': 'For teams & heavy use',
+  'plan_copy_business_inherits': 'Everything in Professional, plus:',
+  'plan_copy_business_f1': 'Highest usage limits',
+  'plan_copy_business_f2': 'Direct database and secure server access',
+  'plan_copy_business_f3': 'Early access to new features',
+  'plan_copy_business_f4': 'Priority support',
+  'plan_copy_business_f5': 'Dedicated onboarding',
   'use_my_database_title': 'Set up your database?',
   'env_hint_title': 'No database connected',
   'env_hint_body':
@@ -2249,7 +2623,7 @@ const Map<String, String> _en = {
   'conversations_coverage_title': 'Conversations',
   'conversations_coverage_body':
       'Search, archive, rename, share, and open full work logs.',
-  'vault_coverage_title': 'Projects',
+  'vault_coverage_title': 'Companies',
   'vault_coverage_body':
       'Odoo XML-RPC, PostgreSQL, server shell, GitHub, and approval-backed memorization.',
   'approvals_coverage_title': 'Approvals',
@@ -2330,30 +2704,30 @@ const Map<String, String> _en = {
   'review_approval': 'Review',
 
   // Chat header strip (web parity)
-  'header_project': 'Project',
+  'header_project': 'Company',
   'header_environment': 'Environment',
-  'pick_project_first': 'Pick a project first',
-  'no_projects_yet': '— No projects yet —',
+  'pick_project_first': 'Pick a company first',
+  'no_projects_yet': '— No companies yet —',
   'no_environments_for_project': '— No environments —',
   'create_environment_cta': '+ Add environment',
   'create_environment_confirm_title': 'Create an environment?',
   'create_environment_confirm_body':
-      "This project doesn't have any environments yet. Add one to start chatting in this project.",
+      "This company doesn't have any environments yet. Add one to start chatting in this company.",
   'header_none_option': '—',
 
   // Vault lifecycle (web saqqaar.com verbatim)
   'no_stored_credentials_title': 'No stored credentials.',
   'no_stored_credentials_body':
       'The agent will request the exact access it needs.',
-  'project_name': 'Project name',
-  'add_project': 'Add project',
-  'add_project_hint': 'Add project…',
-  'projects_title': 'Projects',
-  'back_to_projects': 'All projects',
-  'manage_projects': 'Manage projects',
-  'project_saved_toast': 'Project saved.',
-  'project_deleted_toast': 'Project deleted.',
-  'delete_project_title': 'Delete project?',
+  'project_name': 'Company name',
+  'add_project': 'Add company',
+  'add_project_hint': 'Add company…',
+  'projects_title': 'Companies',
+  'back_to_projects': 'All companies',
+  'manage_projects': 'Manage companies',
+  'project_saved_toast': 'Company saved.',
+  'project_deleted_toast': 'Company deleted.',
+  'delete_project_title': 'Delete company?',
   'add_environment': 'Add environment',
   'add_environment_hint': 'Add environment…',
   'environment_saved_toast': 'Environment saved.',
@@ -2381,18 +2755,18 @@ const Map<String, String> _en = {
   'mark_as_live': 'Mark as LIVE',
   'env_search_hint': 'Search environments…',
 
-  // Project / Environment
+  // Company / Environment
   'pick_environment': 'Pick an environment',
   'pick_environment_subtitle':
       'The credential the agent uses for this conversation.',
   'no_environment_picked': '— No environment —',
   'pick_environment_to_start':
-      'Choose a project and environment at the top of the screen to start.',
+      'Choose a company and environment at the top of the screen to start.',
   'environment_set_for_chat': 'Environment set for this chat.',
   'live_badge': 'LIVE',
   'read_only_badge': 'READ-ONLY',
   'auto_approve_badge': 'AUTO',
-  'project': 'Project',
+  'project': 'Company',
   'environment': 'Environment',
   'change_environment': 'Change environment',
   'env_multi_title': 'Environments',
@@ -2455,11 +2829,13 @@ const Map<String, String> _en = {
   'operation_on_model': '{operation} on `{model}`',
   'approve_all_n': 'Approve all {count}',
   'reject_all_n': 'Reject all {count}',
+  'approve_all_similar': 'Approve all similar requests',
+  'approval_batch_resolved': 'Approved {count} requests',
   'approval_granted_with_preapproval':
       'Approval granted. {count} similar request(s) pre-approved.',
   'live_warning_title': 'Live environment: {envName}',
   'live_warning_body':
-      'You\'re about to talk to "{envName}" in project "{projectName}" — a '
+      'You\'re about to talk to "{envName}" in company "{projectName}" — a '
           'LIVE environment. Destructive actions are still approval-gated, '
           'but be careful. Continue?',
   'share_token_label': 'Token: {token}',
@@ -2471,8 +2847,6 @@ const Map<String, String> _en = {
   'relative_minutes_ago': '{n} m ago',
   'relative_hours_ago': '{n} h ago',
   'relative_days_ago': '{n} d ago',
-  'price_per_month': '\${dollars} / month',
-  'price_annual_per_month': '\${dollars} / month, billed annually (\${yearly}/yr)',
   'auth_resend_in': 'Resend in {seconds} s',
   'plan_pct_used': '{pct}% used',
   'item_count': '{visible} of {total} {label}',
@@ -2507,6 +2881,7 @@ const Map<String, String> _en = {
   'apps_empty_body': 'Guided setups will appear here once they\'re available.',
   'apps_opening': 'Opening…',
   'apps_needs_env': 'Needs a connected environment',
+  'apps_launch_failed': 'Couldn\'t open this app',
   'billing_history_title': 'Billing history',
   'billing_balance': 'Token balance',
   'billing_total_purchased': 'Total purchased',
@@ -2517,6 +2892,11 @@ const Map<String, String> _en = {
   'billing_receipt_no_viewer': 'No PDF viewer found on this device.',
   'billing_paid': 'Paid',
   'billing_failed': 'Failed',
+  'plan_status_active': 'Active',
+  'plan_status_trialing': 'Trial',
+  'plan_status_canceled': 'Canceled',
+  'plan_status_past_due': 'Payment overdue',
+  'plan_renews_on': 'Renews on {date}',
   'billing_status_pending': 'Pending',
   'billing_status_expired': 'Expired',
   'billing_status_refunded': 'Refunded',
@@ -2629,7 +3009,7 @@ const Map<String, String> _ar = {
       'وكيل أودو مباشر يشخّص ويجهز التقارير وينفذ عبر بيانات دخول خاصة وموافقات قبل أي تغيير حساس.',
   'open_workspace': 'فتح مساحة العمل',
   'tab_chats': 'المحادثات',
-  'tab_vault': 'المشاريع',
+  'tab_vault': 'الشركات',
   'tab_inbox': 'الوارد',
   'tab_account': 'الحساب',
   'workspace': 'مساحة العمل',
@@ -2770,10 +3150,118 @@ const Map<String, String> _ar = {
   'approval_granted_executing': 'تمت الموافقة. جار تنفيذ الإجراء.',
   'auto_approve_on': 'الموافقة التلقائية مفعلة.',
   'auto_approve_off': 'الموافقة التلقائية متوقفة.',
-  'deep_think': 'تفكير عميق',
-  'deep_think_title': 'أعطِ صقاراً مساحة تفكير أوسع للأسئلة الأصعب.',
-  'deep_think_on': 'تفكير عميق مفعَّل.',
-  'deep_think_off': 'تفكير عميق متوقف.',
+  'email_preview_to': 'إلى:',
+  'email_preview_cc': 'نسخة إلى:',
+  'email_preview_bcc': 'نسخة مخفية إلى:',
+  'email_preview_reply': 'رد',
+  'delete_confirm_title': 'تأكيد الحذف',
+  'delete_confirm_body':
+      'سيحذف هذا {count} سجلاً من Odoo نهائياً. اكتب {phrase} للتأكيد.',
+  'delete_confirm_hint': 'اكتب {phrase}',
+  'delete_confirm_mismatch': 'النص غير مطابق. اكتب {phrase} كما هو.',
+  'task_prep': 'تجهيز المهمة',
+  'task_prep_title':
+      'صقّار يطرح أسئلة توضيحية مختصرة قبل تنفيذ أي مهمة غير واضحة',
+  'task_prep_on':
+      'تجهيز المهمة مفعّل. صقّار سيطرح أسئلة قصيرة لتوضيح المهام غير المكتملة.',
+  'task_prep_off': 'تجهيز المهمة متوقف. صقّار سيبدأ من النص المكتوب مباشرة.',
+  'tools_title': 'أدوات صقار',
+  'tools_upload_file': 'رفع ملف',
+  'tools_modes_section': 'أوضاع التشغيل',
+  'tools_odoo_section': 'أدوات Odoo',
+  'tools_connect_section': 'الربط والتكاملات',
+  'tools_readonly_note': 'الأدوات لا تغيّر أي شيء في Odoo بدون موافقتك.',
+  'tools_needs_conversation':
+      'أرسل رسالة أولاً — تعمل الفحوصات داخل محادثة قائمة.',
+  'app_name_zatca': 'الفوترة الإلكترونية (زاتكا)',
+  'app_name_zatca_e_invoicing': 'الفوترة الإلكترونية (زاتكا)',
+  'app_tagline_zatca':
+      'تفعيل فوترة المرحلة الثانية (فاتورة) على أودو – CSR ورمز التحقق '
+          'والإطلاق.',
+  'app_tagline_zatca_e_invoicing':
+      'تفعيل فوترة المرحلة الثانية (فاتورة) على أودو – CSR ورمز التحقق '
+          'والإطلاق.',
+
+  'app_name_whatsapp_integration': 'تكامل واتساب',
+  'app_tagline_whatsapp_integration':
+      'اربط واتساب للأعمال (Cloud API) ليتمكّن أودو من إرسال الرسائل '
+          'واستقبالها.',
+
+  'app_name_chart_of_accounts_builder': 'مُنشئ شجرة الحسابات',
+  'app_tagline_chart_of_accounts_builder':
+      'أنشئ أو استورد شجرة حسابات نظيفة ومحلّية واضبط القيود الافتراضية.',
+
+  'app_name_bank_reconciliation': 'التسوية البنكية',
+  'app_tagline_bank_reconciliation':
+      'إعداد اليوميات البنكية واستيراد الكشوف وقواعد التسوية التي تطابق '
+          'تلقائيًا.',
+
+  'app_group_all': 'الكل',
+  'app_group_accounting': 'المحاسبة',
+  'app_group_finance': 'المالية',
+  'app_group_integrations': 'التكاملات',
+  'app_launch_title': 'أين تريد تشغيل هذا؟',
+  'app_launch_project': 'الشركة',
+  'app_launch_environment': 'قاعدة البيانات',
+  'app_launch_start': 'ابدأ',
+  'app_launch_skip': 'أحدّدها لاحقًا في المحادثة',
+  'app_launch_needs_env':
+      'يعمل هذا الإعداد على قاعدة بيانات أودو متصلة. اختر واحدة، أو حدّدها '
+          'لاحقًا حين يسألك صقّار.',
+  'app_launch_optional_env':
+      'اختياري — سيسألك صقّار داخل المحادثة إذا احتاج قاعدة بيانات.',
+  'app_launch_no_projects':
+      'لا توجد شركات بعد. سيساعدك صقّار على ربط واحدة داخل المحادثة.',
+  'app_launch_no_envs': 'لا توجد قواعد بيانات في هذه الشركة بعد.',
+  'app_launch_pick_project_first': 'اختر شركة أولًا.',
+  'voice_support_title': 'الدعم',
+  'voice_support_intro': 'اشرح المشكلة وسيقوم صقّار بصياغة تشخيص ورد مقترح.',
+  'voice_support_hint': 'ما الذي حدث؟',
+  'voice_support_submit': 'اطلب المساعدة',
+  'voice_support_summary': 'اللي فهمناه',
+  'voice_support_reply': 'الرد المقترح',
+  'voice_support_steps': 'خطوات للتجربة',
+  'voice_support_questions': 'ما زال بحاجة إلى إجابة',
+  'voice_support_file_ticket': 'احفظ كتذكرة',
+  'voice_support_ticket_confirm_title': 'إنشاء تذكرة في Odoo؟',
+  'voice_support_ticket_confirm_body':
+      'سيؤدي هذا إلى إنشاء تذكرة دعم حقيقية في قاعدة بياناتك المتصلة.',
+  'voice_support_ticket_created': 'تم إنشاء التذكرة',
+  'voice_support_empty': 'لم يصل أي تشخيص. جرّب صياغة المشكلة بطريقة أخرى.',
+  'tools_prompt_bank': 'بنك الصياغات',
+  'tools_health_radar': 'رادار الصحة',
+  'tools_what_if': 'ماذا لو',
+  'tools_business_pulse': 'نبض الأعمال',
+  'tools_my_database': 'قاعدة بياناتي',
+  'tools_voice_support': 'الدعم الصوتي',
+  'clarify_title': 'سؤالان سريعان',
+  'clarify_something_else': 'شيء آخر…',
+  'clarify_build_send': 'نفّذ وأرسل',
+  'clarify_prepare_review': 'جهّز للمراجعة',
+  'clarify_needs_answer': 'اختر إجابة واحدة على الأقل',
+  'clarify_answers_header': 'إجابات أسئلتك:',
+  'clarify_ready_to_review': 'الإجابات جاهزة في مربع الكتابة — عدّلها أو أرسلها.',
+  'suggestion_title': 'صياغة أوضح للطلب',
+  'suggestion_approve': 'اعتمد الصياغة',
+  'suggestion_keep_mine': 'أبقِ صياغتي',
+  'report_title': 'إنشاء تقرير',
+  'report_type': 'النوع',
+  'report_period': 'الفترة',
+  'report_lens': 'العرض',
+  'report_format': 'الصيغة',
+  'report_records': 'السجلات',
+  'report_pick_records': 'اختر السجلات',
+  'report_search_records': 'ابحث في السجلات',
+  'report_records_truncated': 'تظهر أول {count} — ابحث لتضييق القائمة.',
+  'report_no_records': 'لا توجد سجلات مطابقة.',
+  'report_selected_count': 'تم اختيار {count}',
+  'report_build': 'أنشئ التقرير',
+  'report_needs_type': 'اختر نوع التقرير أولاً',
+  'report_compose':
+      'أنشئ هذا التقرير:\n- النوع: {type}\n- الفترة: {period}\n'
+          '- الصيغة: {format}',
+  'report_compose_lens': '\n- العرض: {lens}',
+  'report_compose_records': '\n- السجلات: {names}',
   'stop_generation': 'إيقاف الردّ',
   'generation_stopped': 'تم الإيقاف.',
   'stopping': 'جارِ الإيقاف…',
@@ -2825,9 +3313,14 @@ const Map<String, String> _ar = {
   'error_timeout': 'استغرق الخادم وقتاً طويلاً. حاول مرة أخرى.',
   'error_cancelled': 'تم إلغاء العملية.',
   'error_unauthorized': 'انتهت جلستك. سجّل الدخول من جديد.',
-  'error_forbidden': 'ليس لديك صلاحية لتنفيذ هذه العملية.',
-  'error_not_found': 'لم نتمكن من العثور على المطلوب.',
-  'error_validation': 'بعض الحقول تحتاج للمراجعة.',
+  'error_forbidden':
+      'ليس لديك صلاحية لتنفيذ هذه العملية. اطلب الصلاحية من مالك قاعدة بيانات '
+          'أودو، أو انتقل إلى قاعدة بيانات تملك صلاحية الكتابة عليها.',
+  'error_not_found':
+      'لم نعثر على المطلوب — قد يكون محذوفاً أو تم نقله. اسحب للأسفل لتحديث '
+          'القائمة.',
+  'error_validation':
+      'بعض الحقول تحتاج للمراجعة. راجع الحقول المحدّدة ثم حاول مرة أخرى.',
   'error_conflict': 'هذه العملية تتعارض مع البيانات الحالية. حدّث الصفحة ثم حاول مجدداً.',
   'error_rate_limited': 'محاولات كثيرة. تمهّل قليلاً.',
   'error_rate_limited_with_retry': 'محاولات كثيرة. حاول بعد {seconds} ثانية.',
@@ -2843,10 +3336,10 @@ const Map<String, String> _ar = {
   'crash_screen_body': 'واجهت هذه الشاشة مشكلة، وتم تسجيل الخطأ. جرّب الرجوع '
       'للخلف، أو أعد تشغيل التطبيق إذا تكرر الأمر.',
   // ── Vault action labels (prefixes) ──
-  'vault_action_load_failed': 'تعذّر تحميل مشاريعك',
-  'vault_action_create_project_failed': 'تعذّر إنشاء المشروع',
-  'vault_action_rename_project_failed': 'تعذّر إعادة تسمية المشروع',
-  'vault_action_delete_project_failed': 'تعذّر حذف المشروع',
+  'vault_action_load_failed': 'تعذّر تحميل شركاتك',
+  'vault_action_create_project_failed': 'تعذّر إنشاء الشركة',
+  'vault_action_rename_project_failed': 'تعذّر إعادة تسمية الشركة',
+  'vault_action_delete_project_failed': 'تعذّر حذف الشركة',
   'vault_action_create_environment_failed': 'تعذّر إنشاء البيئة',
   'vault_action_update_environment_failed': 'تعذّر تحديث البيئة',
   'vault_action_delete_environment_failed': 'تعذّر حذف البيئة',
@@ -2854,8 +3347,8 @@ const Map<String, String> _ar = {
   'vault_action_save_credential_failed': 'تعذّر حفظ بيانات الدخول',
   'vault_action_delete_credential_failed': 'تعذّر حذف بيانات الدخول',
   // ── Vault success toasts ──
-  'vault_toast_project_created': 'تم إنشاء المشروع.',
-  'vault_toast_project_deleted': 'تم حذف المشروع.',
+  'vault_toast_project_created': 'تم إنشاء الشركة.',
+  'vault_toast_project_deleted': 'تم حذف الشركة.',
   'vault_toast_environment_created': 'تم إنشاء البيئة.',
   'vault_toast_environment_deleted': 'تم حذف البيئة.',
   'vault_toast_credential_saved': 'تم حفظ بيانات الدخول.',
@@ -2901,7 +3394,7 @@ const Map<String, String> _ar = {
   'push_channel_updates_description': 'المهام المكتملة والتقارير الجاهزة',
   'watch_error_no_speech': 'لم يصلنا صوت واضح. حاول مرة أخرى.',
   'watch_error_unreachable': 'تعذّر الوصول إلى صقّار. حاول مرة أخرى.',
-  'watch_error_projects_load': 'تعذّر تحميل المشاريع.',
+  'watch_error_projects_load': 'تعذّر تحميل الشركات.',
   'watch_error_project_setup': 'تعذّر إنشاء قاعدة بيانات.',
   'account_usage': 'الاستخدام',
   'account_see_plans': 'عرض الخطط',
@@ -2941,13 +3434,13 @@ const Map<String, String> _ar = {
   'session_ended_toast': 'انتهت جلستك. سجّل الدخول من جديد.',
   'sign_out_confirm_title': 'تسجيل الخروج',
   'sign_out_confirm_body':
-      'هتحتاج تسجّل الدخول من جديد عشان توصل لمشاريعك ومحادثاتك.',
+      'هتحتاج تسجّل الدخول من جديد عشان توصل لشركاتك ومحادثاتك.',
   'signing_out': 'جاري تسجيل الخروج…',
   'delete_account': 'حذف الحساب',
   'delete_account_confirm_title': 'حذف الحساب؟',
   'delete_account_confirm_body':
       'هيتم حذف حسابك وكل بياناته نهائيًا — المحادثات وبيانات الاعتماد '
-          'والمشاريع والملفات. الإجراء ده مالوش رجعة.',
+          'والشركات والملفات. الإجراء ده مالوش رجعة.',
   'deleting_account': 'جاري حذف الحساب…',
   'account_deleted_toast': 'تم حذف حسابك.',
   'delete_account_failed': 'تعذّر حذف الحساب. حاول تاني.',
@@ -2998,7 +3491,7 @@ const Map<String, String> _ar = {
   'start_conversation': 'ابدأ محادثة',
   'send': 'إرسال',
   'auto_approve': 'موافقة تلقائية',
-  'credential_vault': 'المشاريع',
+  'credential_vault': 'الشركات',
   'no_credentials': 'لا توجد بيانات دخول',
   'no_credentials_hint': 'أضف واحدة ليستطيع صقّار العمل على أنظمتك.',
   'add_credential': 'إضافة بيانات دخول',
@@ -3099,6 +3592,8 @@ const Map<String, String> _ar = {
   'appLockSubtitle': 'تحقّق من هويتك للمتابعة.',
   'appLockUnlock': 'فتح القفل',
   'appLockReason': 'افتح صقّار',
+  'appLockConfirmSignOut': 'أكّد هويتك لتسجيل الخروج',
+  'appLockConfirmDelete': 'أكّد هويتك لحذف حسابك',
   'appLockSettingTitle': 'قفل التطبيق',
   'appLockSettingSubtitle': 'اطلب البصمة أو بصمة الوجه لفتح صقّار.',
   'appLockUnavailable': 'غير متاح على هذا الجهاز',
@@ -3155,8 +3650,9 @@ const Map<String, String> _ar = {
   'pricing_cycle_annual': 'سنوي',
   'pricing_cycle_annual_save': 'وفّر حتى 50%',
   'pricing_vat_note':
-      'الأسعار لا تشمل ضريبة القيمة المضافة. تُضاف 15% عند الدفع.',
+      'الأسعار لا تشمل ضريبة القيمة المضافة. تُضاف {rate}% عند الدفع.',
   'pricing_web_cta': 'الاشتراك عبر الموقع',
+  'pricing_manage_cta': 'إدارة الاشتراك على saqqaar.com',
   'pricing_web_note':
       'يتم الدفع على saqqaar.com في المتصفح. تتحدّث باقتك هنا فور إتمام '
           'العملية.',
@@ -3168,15 +3664,55 @@ const Map<String, String> _ar = {
   'pricing_web_signin_note': 'قد تحتاج إلى تسجيل الدخول على الموقع للمتابعة.',
   'pricing_zero': '\$0',
   'pricing_load_error': 'تعذّر تحميل الباقات.',
-  'pricing_st_unit': 'وحدة',
-  'pricing_daily_cap': 'يومياً',
-  'pricing_monthly_cap': 'شهرياً',
-  'pricing_projects_label': 'المشاريع',
-  'pricing_unlimited': 'غير محدود',
-  'feature_voice': 'الإدخال الصوتي',
-  'feature_postgres': 'استعلامات Postgres',
-  'feature_github': 'GitHub',
-  'feature_server_shell': 'صدفة الخادم',
+  'pricing_most_popular': 'الأكثر شيوعًا',
+  'price_plus_vat': '+ ض.ق.م',
+  // saqqaar.com leaves this line in English on the Arabic page, where the
+  // bidi algorithm reorders it into "billed monthly ($24/yr).$2/mo" — the
+  // same content, unreadable. Translated here rather than mirrored.
+  'price_both_cycles':
+      '\${annualMo}/شهرياً عند الدفع السنوي (\${annualYr}/سنة) · '
+          '\${monthlyMo}/شهرياً عند الدفع الشهري (\${monthlyYr}/سنة).',
+  'plan_copy_free_name': 'مجاني',
+  'plan_copy_free_tagline': 'تجربة صقّار',
+  'plan_copy_free_price_note': 'مجاني للجميع',
+  'plan_copy_free_f1': 'الدردشة مع صقّار على الويب والجوال',
+  'plan_copy_free_f2': 'اربط قاعدة بيانات أودو واحدة',
+  'plan_copy_free_f3': 'البحث والقراءة وعدّ السجلات',
+  'plan_copy_free_f4': 'إنشاء تقارير Excel و PDF و Word',
+  'plan_copy_free_f5': 'الإدخال الصوتي (تحويل الكلام إلى نص)',
+  'plan_copy_free_f6': 'قراءة إضافات أودو',
+  'plan_copy_free_f7': 'ذاكرة عبر المحادثات',
+  'plan_copy_starter_name': 'المبتدئ',
+  'plan_copy_starter_tagline': 'ابدأ الآن',
+  'plan_copy_starter_inherits': 'كل ما في المجاني، بالإضافة إلى:',
+  'plan_copy_starter_f1': 'استخدام شهري أكبر قليلاً',
+  'plan_copy_starter_f2': 'أولوية على الباقة المجانية في أوقات الذروة',
+  'plan_copy_solo_name': 'الفردي',
+  'plan_copy_solo_tagline': 'للأفراد',
+  'plan_copy_solo_inherits': 'كل ما في المبتدئ، بالإضافة إلى:',
+  'plan_copy_solo_f1': 'استخدام شهري أعلى بكثير',
+  'plan_copy_solo_f2': 'إنشاء وتعديل سجلات أودو (بموافقة)',
+  'plan_copy_solo_f3': 'قواعد بيانات وبيئات متعددة',
+  'plan_copy_solo_f4': 'استيراد جماعي (إنشاء متعدد / تحميل)',
+  'plan_copy_solo_f5': 'وصول ذو أولوية لأفضل النماذج',
+  'plan_copy_pro_name': 'الاحترافي',
+  'plan_copy_pro_tagline': 'للمستخدمين المتقدمين',
+  'plan_copy_pro_inherits': 'كل ما في الفردي، بالإضافة إلى:',
+  // The LRM keeps ".zip" from being reordered to "zip." — the extension is a
+  // Latin token inside an RTL sentence, and without the mark the neutral dot
+  // inherits the paragraph direction and lands on the wrong side.
+  'plan_copy_pro_f1': 'بناء وتعديل إضافات أودو وتنزيلها بصيغة ‎.zip',
+  'plan_copy_pro_f2': 'تشغيل إجراءات الخادم وتثبيت الوحدات',
+  'plan_copy_pro_f3': 'حدود استخدام أعلى',
+  'plan_copy_pro_f4': 'دعم ذو أولوية',
+  'plan_copy_business_name': 'الأعمال',
+  'plan_copy_business_tagline': 'للفرق والاستخدام المكثّف',
+  'plan_copy_business_inherits': 'كل ما في الاحترافي، بالإضافة إلى:',
+  'plan_copy_business_f1': 'أعلى حدود استخدام',
+  'plan_copy_business_f2': 'وصول مباشر لقاعدة البيانات وللخادم بشكل آمن',
+  'plan_copy_business_f3': 'وصول مبكر للميزات الجديدة',
+  'plan_copy_business_f4': 'دعم ذو أولوية',
+  'plan_copy_business_f5': 'إعداد مخصص',
   'use_my_database_title': 'إعداد قاعدة بياناتك؟',
   'env_hint_title': 'لا توجد قاعدة بيانات متصلة',
   'env_hint_body':
@@ -3288,7 +3824,7 @@ const Map<String, String> _ar = {
   'conversations_coverage_title': 'المحادثات',
   'conversations_coverage_body':
       'بحث وأرشفة وإعادة تسمية ومشاركة وفتح سجلات العمل كاملة.',
-  'vault_coverage_title': 'المشاريع',
+  'vault_coverage_title': 'الشركات',
   'vault_coverage_body':
       'Odoo XML-RPC وPostgreSQL والسيرفر وGitHub مع حفظ مدعوم بالموافقة.',
   'approvals_coverage_title': 'الموافقات',
@@ -3366,30 +3902,30 @@ const Map<String, String> _ar = {
   'review_approval': 'مراجعة',
 
   // Chat header strip
-  'header_project': 'المشروع',
+  'header_project': 'الشركة',
   'header_environment': 'البيئة',
-  'pick_project_first': 'اختر مشروعًا أولاً',
-  'no_projects_yet': '— لا توجد مشاريع بعد —',
+  'pick_project_first': 'اختر شركة أولاً',
+  'no_projects_yet': '— لا توجد شركات بعد —',
   'no_environments_for_project': '— لا توجد بيئات —',
   'create_environment_cta': '+ أضف بيئة',
   'create_environment_confirm_title': 'هل تريد إنشاء بيئة؟',
   'create_environment_confirm_body':
-      'هذا المشروع ليس لديه أي بيئات بعد. أضف بيئة لتبدأ المحادثة في هذا المشروع.',
+      'هذه الشركة ليس لديها أي بيئات بعد. أضف بيئة لتبدأ المحادثة في هذه الشركة.',
   'header_none_option': '—',
 
   // Vault lifecycle
   'no_stored_credentials_title': 'لا توجد بيانات دخول مخزّنة.',
   'no_stored_credentials_body':
       'سيطلب الوكيل الصلاحيات التي يحتاجها عند اللزوم.',
-  'project_name': 'اسم المشروع',
-  'add_project': 'إضافة مشروع',
-  'add_project_hint': 'أضف مشروعًا…',
-  'projects_title': 'المشاريع',
-  'back_to_projects': 'كل المشاريع',
-  'manage_projects': 'إدارة المشاريع',
-  'project_saved_toast': 'تم حفظ المشروع.',
-  'project_deleted_toast': 'تم حذف المشروع.',
-  'delete_project_title': 'حذف المشروع؟',
+  'project_name': 'اسم الشركة',
+  'add_project': 'إضافة شركة',
+  'add_project_hint': 'أضف شركة…',
+  'projects_title': 'الشركات',
+  'back_to_projects': 'كل الشركات',
+  'manage_projects': 'إدارة الشركات',
+  'project_saved_toast': 'تم حفظ الشركة.',
+  'project_deleted_toast': 'تم حذف الشركة.',
+  'delete_project_title': 'حذف الشركة؟',
   'add_environment': 'إضافة بيئة',
   'add_environment_hint': 'أضف بيئة…',
   'environment_saved_toast': 'تم حفظ البيئة.',
@@ -3416,16 +3952,16 @@ const Map<String, String> _ar = {
   'mark_as_live': 'تفعيل كمباشرة',
   'env_search_hint': 'ابحث في البيئات…',
 
-  // Project / Environment
+  // Company / Environment
   'pick_environment': 'اختر بيئة',
   'pick_environment_subtitle': 'بيانات الدخول التي سيستخدمها الوكيل لهذه المحادثة.',
   'no_environment_picked': '— لا توجد بيئة —',
-  'pick_environment_to_start': 'اختر المشروع والبيئة من أعلى الشاشة للبدء.',
+  'pick_environment_to_start': 'اختر الشركة والبيئة من أعلى الشاشة للبدء.',
   'environment_set_for_chat': 'تم تعيين البيئة لهذه المحادثة.',
   'live_badge': 'مباشر',
   'read_only_badge': 'قراءة فقط',
   'auto_approve_badge': 'تلقائي',
-  'project': 'المشروع',
+  'project': 'الشركة',
   'environment': 'البيئة',
   'change_environment': 'تغيير البيئة',
   'env_multi_title': 'البيئات',
@@ -3485,11 +4021,13 @@ const Map<String, String> _ar = {
   'operation_on_model': '{operation} على `{model}`',
   'approve_all_n': 'وافق على الكل ({count})',
   'reject_all_n': 'ارفض الكل ({count})',
+  'approve_all_similar': 'وافق على كل الطلبات المشابهة',
+  'approval_batch_resolved': 'تمت الموافقة على {count} طلب',
   'approval_granted_with_preapproval':
       'تمت الموافقة. {count} طلب مماثل تمت الموافقة عليه مسبقاً.',
   'live_warning_title': 'بيئة مباشرة: {envName}',
   'live_warning_body':
-      'أنت على وشك التحدث مع "{envName}" في مشروع "{projectName}" — بيئة '
+      'أنت على وشك التحدث مع "{envName}" في شركة "{projectName}" — بيئة '
           'مباشرة. الإجراءات المؤذية لا تزال تحت الموافقة، لكن انتبه. هل تريد '
           'المتابعة؟',
   'share_token_label': 'الرمز: {token}',
@@ -3501,8 +4039,6 @@ const Map<String, String> _ar = {
   'relative_minutes_ago': 'منذ {n} د',
   'relative_hours_ago': 'منذ {n} س',
   'relative_days_ago': 'منذ {n} أيام',
-  'price_per_month': '\${dollars} / شهرياً',
-  'price_annual_per_month': '\${dollars} / شهرياً، تُدفع سنوياً (\${yearly}/سنة)',
   'auth_resend_in': 'إعادة الإرسال خلال {seconds} ث',
   'plan_pct_used': 'مُستخدَم {pct}٪',
   'item_count': '{visible} من {total} {label}',
@@ -3536,6 +4072,7 @@ const Map<String, String> _ar = {
   'apps_empty_body': 'ستظهر الإعدادات الموجّهة هنا عند توفّرها.',
   'apps_opening': 'جارٍ الفتح…',
   'apps_needs_env': 'يحتاج بيئة متصلة',
+  'apps_launch_failed': 'تعذّر فتح هذا التطبيق',
   'billing_history_title': 'سجل الفواتير',
   'billing_balance': 'رصيد التوكنز',
   'billing_total_purchased': 'إجمالي المشتراة',
@@ -3546,6 +4083,11 @@ const Map<String, String> _ar = {
   'billing_receipt_no_viewer': 'لا يوجد عارض PDF على هذا الجهاز.',
   'billing_paid': 'مدفوع',
   'billing_failed': 'فشل',
+  'plan_status_active': 'نشطة',
+  'plan_status_trialing': 'تجريبية',
+  'plan_status_canceled': 'ملغاة',
+  'plan_status_past_due': 'دفعة متأخرة',
+  'plan_renews_on': 'تتجدّد في {date}',
   'billing_status_pending': 'قيد الانتظار',
   'billing_status_expired': 'منتهية',
   'billing_status_refunded': 'مُستردّة',

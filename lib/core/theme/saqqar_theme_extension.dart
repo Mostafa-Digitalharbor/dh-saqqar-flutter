@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_colors.dart';
+
 /// Custom design tokens that don't fit Material's [ColorScheme].
 ///
 /// Access via `Theme.of(context).extension<SaqqarThemeExtension>()!` or the
@@ -87,6 +89,29 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
             color: Color(0x170F172A), // rgba(15,23,42,0.09)
             blurRadius: 30,
             offset: Offset(0, 10),
+          ),
+        ];
+
+  /// The near-black this theme casts shadows in. Compose a one-off elevation
+  /// from this rather than writing the hex again.
+  Color get shadowBase => _isDark ? AppColors.shadowDark : AppColors.shadowLight;
+
+  /// Deep lift for surfaces that float above *everything* — dialogs and
+  /// sheets. Heavier than [glassShadow] on purpose: a modal has to read as
+  /// detached from the page it dims, not as another card on it.
+  List<BoxShadow> get modalShadow => _isDark
+      ? const [
+          BoxShadow(
+            color: Color(0x8C020617), // rgba(2,6,23,0.55)
+            blurRadius: 36,
+            offset: Offset(0, 16),
+          ),
+        ]
+      : const [
+          BoxShadow(
+            color: Color(0x1F0F172A), // rgba(15,23,42,0.12)
+            blurRadius: 36,
+            offset: Offset(0, 16),
           ),
         ];
 

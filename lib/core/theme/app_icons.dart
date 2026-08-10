@@ -1,4 +1,7 @@
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
+// `material` only for the handful of glyphs Lucide has no equivalent for —
+// each is commented at its declaration. `widgets` stays for `IconData`.
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/widgets.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -93,4 +96,58 @@ class AppIcons {
 
   /// Heading glyph for the billing group on Account.
   static const IconData wallet = LucideIcons.wallet;
+
+  // ── Added 2026-08-09, closing a drift ───────────────────────────────
+  //
+  // An audit found 67 raw `Icons.*` references across 24 files. Two thirds
+  // of them named a concept this class *already* had — `Icons.error_outline`
+  // beside `AppIcons.error`, `Icons.info_outline` beside `AppIcons.info`,
+  // `Icons.grid_view_rounded` beside `AppIcons.grid`. So the same idea was
+  // rendering in two different icon sets depending on which screen you were
+  // on, which is a visible inconsistency rather than only a tidiness one.
+  //
+  // Those call sites now use the existing constants. The names below cover
+  // the concepts this class genuinely did not have yet.
+  //
+  // A few deliberately stay on Material, and each says why: this class is
+  // the single place icons are chosen, not a rule that they must all come
+  // from one package.
+
+  static const IconData mic = LucideIcons.mic;
+  static const IconData copy = LucideIcons.copy;
+  static const IconData play = LucideIcons.play;
+  static const IconData pin = LucideIcons.pin;
+  static const IconData pinOff = LucideIcons.pinOff;
+  static const IconData unarchive = LucideIcons.archiveRestore;
+  static const IconData stopCircle = LucideIcons.circleStop;
+  static const IconData clock = LucideIcons.clock;
+  static const IconData receipt = LucideIcons.receipt;
+  static const IconData rocket = LucideIcons.rocket;
+  static const IconData premium = LucideIcons.award;
+  static const IconData barChart = LucideIcons.chartColumn;
+  static const IconData calculator = LucideIcons.calculator;
+  static const IconData bank = LucideIcons.landmark;
+  static const IconData puzzle = LucideIcons.puzzle;
+  static const IconData qa = LucideIcons.messagesSquare;
+  static const IconData recordDot = LucideIcons.circleDot;
+  static const IconData devices = LucideIcons.monitorSmartphone;
+  static const IconData apple = LucideIcons.apple;
+
+  /// Biometric unlock. **Material on purpose** — Lucide ships no fingerprint
+  /// glyph (only `scanFace`, which names one modality), and the app gates on
+  /// whichever of Face ID or fingerprint the device offers. The Material
+  /// fingerprint is the conventional glyph for "biometrics" generally.
+  static const IconData biometric = Icons.fingerprint;
+
+  /// Per-platform device rows in Push settings. **Material on purpose** —
+  /// Lucide has a single `smartphone`, and collapsing the two would drop the
+  /// only thing that distinguishes an iPhone row from an Android one at a
+  /// glance.
+  static const IconData deviceIos = Icons.phone_iphone;
+  static const IconData deviceAndroid = Icons.phone_android;
+
+  /// Storybook's LTR/RTL preview toggle. **Material on purpose** — a
+  /// developer-only surface, and Lucide has no text-direction pair.
+  static const IconData textDirLtr = Icons.format_textdirection_l_to_r;
+  static const IconData textDirRtl = Icons.format_textdirection_r_to_l;
 }

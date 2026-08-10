@@ -87,7 +87,6 @@ class ApprovalsCubit extends Cubit<ApprovalsState> {
       // which localizes the [AppFailure] stashed in `error`.
       emit(state.copyWith(
         approvals: DataFailure(
-          message: 'Failed to load approvals',
           error: ApiErrorMapper.toFailure(e),
           previous: state.approvals.dataOrNull,
         ),

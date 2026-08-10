@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_radius.dart';
+
 /// Spec §12 — 2.6 s scan-line gradient that sweeps horizontally across the
 /// child. Used on typing / working chat bubbles to signal that Saqqar is
 /// actively generating a response.
@@ -15,7 +17,7 @@ class ScanlineOverlay extends StatefulWidget {
     required this.child,
     required this.color,
     this.borderRadius,
-    this.duration = const Duration(milliseconds: 2600),
+    this.duration = AppDurations.scanLine,
   });
 
   final Widget child;

@@ -70,7 +70,7 @@ class ChatTypingRow extends StatelessWidget {
                 // the row's intrinsic width doesn't snap during the
                 // crossfade window.
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
+                  duration: AppDurations.cardIn,
                   switchInCurve: Curves.easeOut,
                   switchOutCurve: Curves.easeIn,
                   layoutBuilder: (current, previous) => Stack(

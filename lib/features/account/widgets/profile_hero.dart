@@ -9,9 +9,11 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../auth/data/auth_models.dart';
 import '../../auth/view_model/auth_cubit.dart';
+import '../../billing/data/plan_copy.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import 'plan_badge.dart';
 import 'stats_line.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Identity card at the top of the Account tab.
 ///
@@ -49,8 +51,11 @@ class ProfileHero extends StatelessWidget {
     // Gap A — paid plan badge beside the name (web shows "Pro" / "Max").
     // Hidden for Free (and when no snapshot has loaded yet).
     final plan = context.watch<PlanCubit>().state;
-    final planBadgeName =
-        (plan != null && plan.showBadge) ? plan.name : null;
+    // Localized via [PlanCopy.nameFor] like the other two badge sites — the
+    // wire `plan_name` is English on both.
+    final planBadgeName = (plan != null && plan.showBadge)
+        ? PlanCopy.nameFor(context.tr, slug: plan.slug, fallback: plan.name)
+        : null;
 
     return GlassCard(
       // Sits on the Account tab's flat opaque AmbientBackground, so the 14px
@@ -272,7 +277,7 @@ class _AccountMetaLine extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 1),
           child: Icon(
-            Icons.schedule_rounded,
+            AppIcons.clock,
             size: 13,
             color: s.muted.withValues(alpha: 0.8),
           ),

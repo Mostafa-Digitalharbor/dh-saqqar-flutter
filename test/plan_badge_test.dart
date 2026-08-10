@@ -81,10 +81,11 @@ void main() {
   });
 
   group('PlanUsageCard', () {
-    Widget host(PlanSnapshot plan) => BlocProvider<PlanCubit>(
+    Widget host(PlanSnapshot plan, {String locale = 'en'}) =>
+        BlocProvider<PlanCubit>(
           create: (_) => PlanCubit()..update(plan),
           child: MaterialApp(
-            locale: const Locale('en'),
+            locale: Locale(locale),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
@@ -92,7 +93,7 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: const [Locale('en'), Locale('ar')],
-            theme: AppTheme.light(const Locale('en')),
+            theme: AppTheme.light(Locale(locale)),
             home: const Scaffold(body: PlanUsageCard()),
           ),
         );
@@ -114,7 +115,38 @@ void main() {
       await tester.pump();
 
       expect(find.byType(PlanBadge), findsOneWidget);
-      expect(find.text('Pro'), findsOneWidget);
+      // "Professional", not the snapshot's "Pro". The badge resolves through
+      // `PlanCopy.nameFor`, which is what lets the Arabic case below work at
+      // all — and it also settles a disagreement the app used to ship with:
+      // `/usage/` calls this tier "Pro", `/plans/` and saqqaar.com call it
+      // "Professional", and the account badge and the pricing card sat side
+      // by side saying different things.
+      expect(find.text('Professional'), findsOneWidget);
+    });
+
+    testWidgets('the badge is Arabic on an Arabic device', (tester) async {
+      // The regression this guards: `plan_name` is English on the wire, so a
+      // bare `PlanBadge(name: plan.name)` put a Latin pill on an otherwise
+      // Arabic account screen.
+      await tester.pumpWidget(
+        host(snapshot(slug: 'pro', name: 'Pro'), locale: 'ar'),
+      );
+      await tester.pump();
+
+      expect(find.text('الاحترافي'), findsOneWidget);
+      expect(find.text('Pro'), findsNothing);
+    });
+
+    testWidgets('an unknown slug keeps whatever the server called it',
+        (tester) async {
+      // No copy on this side ⇒ no override. The badge is still filled, just
+      // from the wire — the same degradation the pricing card makes.
+      await tester.pumpWidget(
+        host(snapshot(slug: 'max-100x', name: 'Enterprise'), locale: 'ar'),
+      );
+      await tester.pump();
+
+      expect(find.text('Enterprise'), findsOneWidget);
     });
   });
 }

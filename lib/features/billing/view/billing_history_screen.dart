@@ -10,11 +10,14 @@ import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/stat_tile.dart';
 import '../../../shared/widgets/status_pill.dart';
 import '../../inbox/data/artifact_downloader.dart';
 import '../data/billing_history_api.dart';
 import '../data/billing_history_models.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Read-only billing history + PDF receipts (API_MOBILE_NEW_ENDPOINTS.md §3).
 ///
@@ -86,18 +89,22 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
     );
     if (!mounted) return;
     setState(() => _openingReceiptRef = null);
-    final messenger = ScaffoldMessenger.of(context)..clearSnackBars();
     switch (result) {
       case ArtifactOpenSuccess():
         break; // handed off to the OS viewer
+      // "No viewer installed" is the user's device missing a PDF app, not a
+      // failure on our side — info tone, so it doesn't read as a bug report.
       case ArtifactOpenNoViewer():
-        messenger.showSnackBar(
-          SnackBar(content: Text(context.tr.billingReceiptNoViewer)),
+        AppToast.show(
+          context,
+          message: context.tr.billingReceiptNoViewer,
         );
       case ArtifactOpenFailed():
       case ArtifactDownloadFailed():
-        messenger.showSnackBar(
-          SnackBar(content: Text(context.tr.billingReceiptFailed)),
+        AppToast.show(
+          context,
+          message: context.tr.billingReceiptFailed,
+          variant: ToastVariant.error,
         );
     }
   }
@@ -131,7 +138,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             EmptyState(
-              icon: Icons.receipt_long_outlined,
+              icon: AppIcons.receipt,
               title: context.tr.billingEmptyTitle,
               body: context.tr.billingEmptyBody,
             ),
@@ -202,16 +209,18 @@ class _BalanceHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _Stat(
+            child: StatTile(
               label: context.tr.billingBalance,
               value: compactCount(history.tokenBalance, context.tr),
+              valueColor: s.brandCyan,
             ),
           ),
           Container(width: 1, height: 34, color: s.border),
           Expanded(
-            child: _Stat(
+            child: StatTile(
               label: context.tr.billingTotalPurchased,
               value: compactCount(history.totalPurchased, context.tr),
+              valueColor: s.brandCyan,
             ),
           ),
         ],
@@ -220,30 +229,9 @@ class _BalanceHeader extends StatelessWidget {
   }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Column(
-      children: [
-        Text(
-          value,
-          style: context.text.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: s.brandCyan,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(label, style: context.text.labelSmall?.copyWith(color: s.muted)),
-      ],
-    );
-  }
-}
+// The private `_Stat` here is now `StatTile` in shared/widgets — same shape,
+// but with the FittedBox and the two-line ellipsised label that the account
+// screen's identical copy had already grown and this one hadn't.
 
 class _PaymentRowCard extends StatelessWidget {
   const _PaymentRowCard({
@@ -341,7 +329,7 @@ class _PaymentRowCard extends StatelessWidget {
                           color: s.brandCyan,
                         ),
                       )
-                    : Icon(Icons.download_outlined, size: 16, color: s.brandCyan),
+                    : Icon(AppIcons.download, size: 16, color: s.brandCyan),
                 label: Text(context.tr.billingReceipt),
               ),
             ),

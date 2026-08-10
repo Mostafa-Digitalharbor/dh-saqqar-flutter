@@ -17,7 +17,7 @@ import 'package:saqqar_app/features/auth/data/auth_api.dart';
 import 'package:saqqar_app/features/auth/data/social_auth_service.dart';
 import 'package:saqqar_app/features/auth/view_model/auth_cubit.dart';
 import 'package:saqqar_app/features/chat/data/live_env_ack_service.dart';
-import 'package:saqqar_app/features/chat/view_model/deep_think_cubit.dart';
+import 'package:saqqar_app/features/chat/view_model/task_prep_cubit.dart';
 import 'package:saqqar_app/features/chat/view_model/running_agents_cubit.dart';
 import 'package:saqqar_app/features/conversations/data/conversations_api.dart';
 import 'package:saqqar_app/features/conversations/data/conversations_repository.dart';
@@ -212,7 +212,7 @@ Future<void> _pumpApp(WidgetTester tester) async {
             lazy: false,
             create: (_) => AuthCubit(api: authApi, tokenStore: tokenStore),
           ),
-          BlocProvider<DeepThinkCubit>(create: (_) => DeepThinkCubit(prefs)),
+          BlocProvider<TaskPrepCubit>(create: (_) => TaskPrepCubit(prefs)),
           BlocProvider<NotificationsSettingsCubit>(
             create: (_) => NotificationsSettingsCubit(prefs),
           ),

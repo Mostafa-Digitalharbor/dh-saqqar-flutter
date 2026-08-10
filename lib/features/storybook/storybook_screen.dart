@@ -17,6 +17,7 @@ import '../../shared/widgets/mini_chip.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../../core/theme/app_icons.dart';
 
 /// Showcase screen — every shared widget rendered with both themes
 /// reachable via the Account screen. Used by the developer to verify
@@ -36,15 +37,15 @@ class StorybookScreen extends StatelessWidget {
           title: Text(context.tr.storybook),
           actions: [
             IconButton(
-              icon: Icon(context.isDark ? Icons.light_mode : Icons.dark_mode),
+              icon: Icon(context.isDark ? AppIcons.sun : AppIcons.moon),
               onPressed: () => context.read<ThemeCubit>().toggle(),
               tooltip: context.tr.toggleTheme,
             ),
             IconButton(
               icon: Icon(
                 context.isRtl
-                    ? Icons.format_textdirection_l_to_r
-                    : Icons.format_textdirection_r_to_l,
+                    ? AppIcons.textDirLtr
+                    : AppIcons.textDirRtl,
               ),
               onPressed: () =>
                   context.read<LocaleCubit>().toggleEnglishArabic(),
@@ -99,7 +100,7 @@ class StorybookScreen extends StatelessWidget {
             _section(context, context.tr.storybookButtons, [
               PrimaryButton(
                 label: context.tr.signIn,
-                icon: Icons.login,
+                icon: AppIcons.signIn,
                 expand: true,
                 onPressed: () => AppToast.show(
                   context,
@@ -120,7 +121,7 @@ class StorybookScreen extends StatelessWidget {
               const SizedBox(height: 8),
               GhostButton(
                 label: context.tr.delete,
-                icon: Icons.delete_outline,
+                icon: AppIcons.trash,
                 tone: GhostButtonTone.danger,
                 expand: true,
                 onPressed: () => AppToast.show(
@@ -133,25 +134,25 @@ class StorybookScreen extends StatelessWidget {
               Row(
                 children: [
                   AppIconButton(
-                    icon: Icons.refresh,
+                    icon: AppIcons.refresh,
                     onPressed: () {},
                     tooltip: context.tr.refresh,
                   ),
                   const SizedBox(width: 8),
                   AppIconButton(
-                    icon: Icons.add,
+                    icon: AppIcons.plus,
                     onPressed: () {},
                     tooltip: context.tr.add,
                   ),
                   const SizedBox(width: 8),
                   AppIconButton(
-                    icon: Icons.attach_file,
+                    icon: AppIcons.attach,
                     onPressed: () {},
                     tooltip: context.tr.attach,
                   ),
                   const SizedBox(width: 8),
                   AppIconButton(
-                    icon: Icons.search,
+                    icon: AppIcons.search,
                     onPressed: () {},
                     tooltip: context.tr.search,
                   ),
@@ -163,7 +164,7 @@ class StorybookScreen extends StatelessWidget {
               AppTextField(
                 label: context.tr.username,
                 hint: context.tr.sampleUsername,
-                prefixIcon: Icons.person_outline,
+                prefixIcon: AppIcons.user,
                 helper: context.tr.fieldRulesHint,
               ),
               const SizedBox(height: 12),
@@ -175,7 +176,7 @@ class StorybookScreen extends StatelessWidget {
               AppTextField(
                 label: context.tr.withError,
                 hint: context.tr.tryAgain,
-                prefixIcon: Icons.error_outline,
+                prefixIcon: AppIcons.error,
                 errorText: context.tr.invalidValue,
               ),
             ]),
@@ -228,10 +229,10 @@ class StorybookScreen extends StatelessWidget {
               EmptyState(
                 title: context.tr.noConversations,
                 body: context.tr.noConversationsHint,
-                icon: Icons.chat_bubble_outline,
+                icon: AppIcons.message,
                 action: PrimaryButton(
                   label: context.tr.newConversation,
-                  icon: Icons.add,
+                  icon: AppIcons.plus,
                   onPressed: () {},
                 ),
               ),

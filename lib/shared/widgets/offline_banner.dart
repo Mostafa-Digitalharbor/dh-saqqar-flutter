@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/network/view_model/connectivity_cubit.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_radius.dart';
 import '../extensions/context_extensions.dart';
 
 /// Top-of-screen sticky banner that animates in when the device is offline.
@@ -72,11 +73,11 @@ class _OfflineBannerState extends State<OfflineBanner> {
           body = const SizedBox.shrink(key: ValueKey('online'));
         }
         return AnimatedSize(
-          duration: const Duration(milliseconds: 220),
+          duration: AppDurations.cardIn,
           curve: Curves.easeOutCubic,
           alignment: Alignment.topCenter,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
+            duration: AppDurations.cardIn,
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
             transitionBuilder: (child, animation) {

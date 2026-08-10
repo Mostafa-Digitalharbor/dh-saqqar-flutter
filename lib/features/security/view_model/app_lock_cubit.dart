@@ -104,6 +104,24 @@ class AppLockCubit extends Cubit<AppLockState> {
     return ok;
   }
 
+  /// Re-prove identity before a sensitive, irreversible action — signing
+  /// out, or deleting the account.
+  ///
+  /// Distinct from [unlock] on purpose: this does NOT touch
+  /// [AppLockState.locked]. The app is unlocked while the user is looking at
+  /// it, so borrowing `unlock` would work by accident today and quietly
+  /// clear a real lock the day this is called from a locked surface.
+  ///
+  /// Returns `true` immediately when the lock is off. The gate exists to
+  /// honour a protection the user switched on; an account with no app lock
+  /// has not asked to be challenged, and prompting anyway would be a
+  /// biometric prompt they cannot satisfy on a device with none enrolled.
+  Future<bool> confirm({required String reason}) async {
+    if (!state.enabled) return true;
+    if (state.authenticating) return false;
+    return _authenticate(reason);
+  }
+
   Future<bool> _authenticate(String reason) async {
     emit(state.copyWith(authenticating: true));
     try {

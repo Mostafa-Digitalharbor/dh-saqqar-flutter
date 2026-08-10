@@ -187,7 +187,11 @@ class _EnvironmentRow extends StatelessWidget {
     // real fields are shown: name, live/read-only/idle state, and whether
     // credentials are configured. [slug] is the one real secondary
     // identifier the server returns.
-    final ar = context.locale.languageCode == 'ar';
+    // Resolved from the rendered direction rather than the language code:
+    // the chevron follows the *layout*, and `Directionality` is what the
+    // layout actually obeys. Comparing against a bare 'ar' literal also
+    // duplicated the code that already exists as `UiStrings.localeArabicCode`.
+    final ar = context.isRtl;
 
     return Material(
       color: Colors.transparent,
@@ -422,7 +426,7 @@ class _TypeGlyph extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: s.surface3,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppRadius.microR,
         border: Border.all(color: s.border),
       ),
       child: Icon(icon, size: 12, color: s.brandCyan),

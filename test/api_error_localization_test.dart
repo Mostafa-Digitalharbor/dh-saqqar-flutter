@@ -375,6 +375,56 @@ void main() {
       }
     });
   });
+
+  group('every failure tells the user what to DO', () {
+    // The user never sees a status code, a stack trace or a log — they see a
+    // sentence. A sentence that names the cause and stops ("You don't have
+    // permission to do this.") leaves them with nowhere to go, and the retry
+    // button most screens offer is actively the wrong instinct for the cases
+    // where retrying cannot help.
+    //
+    // So each failure line must carry a second clause: the next step. Checked
+    // as "more than one sentence's worth of words" rather than by matching
+    // phrases, because a phrase list would just be this rule written twice and
+    // would fail on the first reworded line.
+    test('no failure message stops at naming the cause', () {
+      for (final tr in [en, ar]) {
+        final messages = <String, String>{
+          'forbidden': tr.errorForbidden,
+          'notFound': tr.errorNotFound,
+          'validation': tr.errorValidation,
+          'network': tr.errorNetwork,
+          'timeout': tr.errorTimeout,
+          'unauthorized': tr.errorUnauthorized,
+          'conflict': tr.errorConflict,
+          'server': tr.errorServer,
+        };
+
+        messages.forEach((label, text) {
+          expect(
+            text.split(RegExp(r'\s+')).length,
+            greaterThanOrEqualTo(6),
+            reason: '$label reads "$text" — that names the problem and stops. '
+                'Add what the user should do next.',
+          );
+        });
+      }
+    });
+
+    test('the two failures a retry cannot fix say so', () {
+      // `forbidden` and `notFound` are the pair where "try again" is a lie:
+      // the same request will fail identically every time. Their copy has to
+      // point somewhere else — a permission to request, a list to refresh.
+      for (final tr in [en, ar]) {
+        expect(tr.errorForbidden.length, greaterThan(tr.errorServer.length),
+            reason: 'forbidden needs more than the generic server line: it '
+                'must say who can grant the permission');
+        expect(tr.errorNotFound.length, greaterThan(tr.errorCancelled.length),
+            reason: 'not-found must offer a way forward, not just report the '
+                'absence');
+      }
+    });
+  });
 }
 
 /// Returns a canned HTTP response without touching the network.

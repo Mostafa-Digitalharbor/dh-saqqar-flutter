@@ -5,6 +5,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import 'chat_sheet.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Where the composer should pull the next attachment from.
 enum AttachmentPickerSource { photos, camera, files }
@@ -85,10 +86,10 @@ class _SourceRow extends StatelessWidget {
     final s = context.saqqar;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.buttonR,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
           child: Row(

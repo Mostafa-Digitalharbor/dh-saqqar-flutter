@@ -478,7 +478,7 @@ class _VaultFooterButton extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Icon(Icons.chevron_right, color: s.muted, size: 18),
+              Icon(AppIcons.chevronRight, color: s.muted, size: 18),
             ],
           ),
         ),

@@ -74,7 +74,6 @@ class TrialCubit extends Cubit<TrialScreenState> {
       if (prev == null) {
         emit(state.copyWith(
           status: DataFailure<TrialInfo>(
-            message: 'Failed to load trial status',
             error: ApiErrorMapper.toFailure(e),
           ),
         ));

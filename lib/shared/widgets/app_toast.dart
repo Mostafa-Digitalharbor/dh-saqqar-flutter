@@ -68,8 +68,8 @@ class AppToast {
         padding: EdgeInsets.zero,
         duration: duration ??
             (variant == ToastVariant.error
-                ? const Duration(seconds: 5)
-                : const Duration(seconds: 3)),
+                ? AppDurations.toastDwellError
+                : AppDurations.toastDwell),
         content: _ToastContent(
           title: title,
           message: message,
@@ -124,9 +124,12 @@ class _ToastContent extends StatelessWidget {
             color: s.surface,
             borderRadius: AppRadius.toastR,
             border: Border.all(color: c.withValues(alpha: 0.45)),
+            // Its own shape (tighter than `modalShadow`) because a toast sits
+            // close to the surface it annotates, not above a dimmed page —
+            // only the hue is shared.
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF020617).withValues(alpha: 0.35),
+                color: s.shadowBase.withValues(alpha: 0.35),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),

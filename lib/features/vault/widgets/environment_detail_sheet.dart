@@ -325,7 +325,7 @@ class _AudienceToggle extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: AppDurations.control,
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(vertical: 9),
           alignment: Alignment.center,

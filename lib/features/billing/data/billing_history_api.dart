@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/response_body.dart';
 import 'billing_history_models.dart';
 
 /// Reads the caller's own payment history (API_MOBILE_NEW_ENDPOINTS.md §3).
@@ -17,6 +18,9 @@ class BillingHistoryApi {
   Future<BillingHistory> fetch() async {
     final res =
         await _dio.get<Map<String, dynamic>>(ApiEndpoints.billingHistory);
-    return BillingHistory.fromJson(res.data ?? const {});
+    // A bodiless 200 used to parse into an empty history, which the screen
+    // shows as "no payments yet" — a factual claim about the user's account,
+    // made from a response that contained nothing.
+    return BillingHistory.fromJson(res.requiredBody);
   }
 }

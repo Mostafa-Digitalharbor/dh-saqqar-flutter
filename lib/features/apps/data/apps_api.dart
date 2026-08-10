@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/response_body.dart';
 import 'app_package_models.dart';
 
 /// Reads and launches the guided Saqqar Apps (API_MOBILE_NEW_ENDPOINTS.md
@@ -14,7 +15,10 @@ class AppsApi {
   /// `GET /api/v1/apps/` — the full package catalogue.
   Future<List<SaqqarApp>> list() async {
     final res = await _dio.get<Map<String, dynamic>>(ApiEndpoints.apps);
-    return (res.data?['apps'] as List? ?? const [])
+    // A bodiless 200 used to render the Apps screen's "no apps" empty state.
+    // The catalogue is server-owned and never legitimately empty, so that
+    // was always a failure wearing an empty state's clothes.
+    return (res.requiredBody['apps'] as List? ?? const [])
         .cast<Map<String, dynamic>>()
         .map(SaqqarApp.fromJson)
         .toList();
@@ -32,11 +36,17 @@ class AppsApi {
           'environment_id': environmentId,
       },
     );
-    final id = res.data?['conversation_id'] as String?;
+    final id = res.requiredBody['conversation_id'] as String?;
     if (id == null || id.isEmpty) {
       // Contract violation — surface it rather than routing to /chats/ with
       // an empty id (which would open a broken "new chat" sentinel).
-      throw StateError('apps/$slug/launch/ returned no conversation_id');
+      //
+      // A FormatException, not a StateError: `ApiErrorMapper` classifies it
+      // as `ParseFailure` → "unexpected response from the server", which is
+      // exactly what happened. A StateError fell through to `UnknownFailure`
+      // ("something went wrong, please try again"), which invites a retry
+      // that replays the same contract violation forever.
+      throw const FormatException('apps launch returned no conversation_id');
     }
     return id;
   }

@@ -48,7 +48,7 @@ class FilterPill extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppRadius.pillR,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: AppDurations.control,
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(

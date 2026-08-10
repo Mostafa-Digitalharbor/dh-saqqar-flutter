@@ -36,9 +36,17 @@ import '../../../shared/widgets/fade_slide_in.dart';
 import '../../../shared/widgets/offline_banner.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../billing/view_model/plan_cubit.dart';
+import '../../billing/view_model/saqqar_features_cubit.dart';
+import '../../data_api/data/odoo_data_api.dart';
 import '../../demo/saqqar_demo_data.dart';
-import '../view_model/deep_think_cubit.dart';
+import '../view_model/task_prep_cubit.dart';
 import '../view_model/earlier_paging.dart';
+import '../data/chat_features.dart';
+import '../data/saqqar_tools_api.dart';
+import '../data/chat_timeline.dart';
+import '../data/interactive_cards.dart';
+import '../data/message_adapter.dart';
+import '../data/message_visibility.dart';
 import '../data/live_env_ack_service.dart';
 import '../data/transcribe_api.dart';
 import '../view_model/running_agents_cubit.dart';
@@ -259,20 +267,14 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// Predicate for "this server message is shown to the user" — drops the
   /// agent's internal plumbing (tool outputs, empty tool-call invocations,
-  /// system-injected user payloads, `[agent-control]` directives). Shared by
-  /// [_allVisibleMessages] (render) and [_loadedVisibleCount] (paging math)
-  /// so the two never disagree on what counts as a visible message.
-  bool _isVisibleMessage(api.Message m) {
-    if (m.role == api.MessageRole.tool) return false;
-    if (m.role == api.MessageRole.assistant && m.content.trim().isEmpty) {
-      return false;
-    }
-    if (m.role == api.MessageRole.user && _isSystemUserPayload(m.content)) {
-      return false;
-    }
-    if (_isAgentControlPayload(m.content)) return false;
-    return true;
-  }
+  /// system-injected user payloads, `[agent-control]` directives) while
+  /// keeping interactive cards, which ride on exactly the rows those first
+  /// two rules drop. Shared by [_allVisibleMessages] (render) and
+  /// [_loadedVisibleCount] (paging math) so the two never disagree.
+  ///
+  /// Lives in `data/message_visibility.dart` so it is testable without
+  /// pumping the screen — see the note there.
+  bool _isVisibleMessage(api.Message m) => isVisibleMessage(m);
 
   /// Count of currently-LOADED visible messages (whole loaded snapshot, not
   /// the rendered window). Uses `context.read` so it's safe to call from
@@ -343,58 +345,6 @@ class _ChatScreenState extends State<ChatScreen>
     return all.sublist(all.length - _visibleLimit);
   }
 
-  /// Heuristic for "this user message wasn't actually typed by the
-  /// user — it's a system-injected payload (approval ack, button-tap
-  /// echo, raw JSON envelope) that leaked into the conversation as a
-  /// `user` row server-side". The server doesn't currently mark these
-  /// distinctly, so we sniff the content.
-  ///
-  /// Tight on purpose — only filters obvious payloads (single-word
-  /// approve/reject keywords or JSON blobs). Anything that looks like
-  /// real prose passes through, including short replies like "تمام"
-  /// or "yes" (those are 3+ chars and not in the keyword list).
-  static const _approvalKeywords = {
-    'approve',
-    'approved',
-    'reject',
-    'rejected',
-    'accept',
-    'accepted',
-    'deny',
-    'denied',
-  };
-
-  bool _isSystemUserPayload(String content) {
-    final trimmed = content.trim();
-    if (trimmed.isEmpty) return true;
-    // Single-word approval acks ("approve" / "rejected" etc.) — these
-    // come from clicking the inline approval card, not from typing.
-    if (_approvalKeywords.contains(trimmed.toLowerCase())) return true;
-    // JSON-shaped payload — a raw envelope the server persisted as a
-    // user message. Real users don't type JSON.
-    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-      return true;
-    }
-    return false;
-  }
-
-  /// Detects the server-side "approval granted, now go execute"
-  /// directives the agent receives after a user accepts an approval.
-  /// They carry the literal `[agent-control]` marker and start with
-  /// `Approval '<id>' ...` so we match either signal — the marker is
-  /// the authoritative one, the prefix is the cheap early-exit.
-  bool _isAgentControlPayload(String content) {
-    if (content.isEmpty) return false;
-    if (content.contains('[agent-control]')) return true;
-    final trimmed = content.trimLeft();
-    if (trimmed.startsWith("Approval '") &&
-        trimmed.contains('is approved')) {
-      return true;
-    }
-    return false;
-  }
-
   /// True when the server reports the agent is mid-run for this
   /// conversation. For new chats this falls back to the local timer
   /// (kept for the brief window before the create-then-route handoff).
@@ -403,12 +353,22 @@ class _ChatScreenState extends State<ChatScreen>
   /// the user taps Stop, even though the server-side cancel is
   /// cooperative and may take another poll or two to confirm.
   bool get _effectiveIsThinking {
+    // A §6 scan runs entirely server-side and only becomes visible once its
+    // posted message lands, which can be several seconds. Reusing the
+    // existing working indicator is the honest signal — the alternative is
+    // a tap that appears to do nothing, or a second "running" affordance
+    // that means the same thing.
+    if (_toolRunning) return true;
     if (_localStopOverride) return false;
     if (_isNewChat) return _isThinking;
     final snapshot =
         context.watch<ChatCubit>().state.data.dataOrNull;
     return snapshot?.conversation.isRunning ?? false;
   }
+
+  /// A §6 Odoo scan is in flight. Server-side work with no local message to
+  /// show for it until the report is posted.
+  bool _toolRunning = false;
 
   /// Inert placeholder used ONLY as a last-resort title fallback in the
   /// rename dialog when the live title isn't in the list cubit yet. Carries
@@ -782,6 +742,14 @@ class _ChatScreenState extends State<ChatScreen>
     // once the BlocProvider above us has built its child.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _consumeShareIntake();
+      // The tools sheet gates on `saqqar_features`, which rides on
+      // `/api/v1/usage/` alone — no conversation snapshot carries it. Ask
+      // once per session; the cubit no-ops when it already has an answer or
+      // a request is in flight, so this stays one round-trip however many
+      // chats the user opens.
+      if (mounted) {
+        unawaited(context.read<SaqqarFeaturesCubit>().ensureLoaded());
+      }
     });
     // Also subscribe to the service for the **same-chat case**: when
     // the user is already inside chat A and the destination sheet
@@ -1554,7 +1522,7 @@ class _ChatScreenState extends State<ChatScreen>
     if (!_scroll.hasClients) return;
     _scroll.animateTo(
       _scroll.position.maxScrollExtent,
-      duration: const Duration(milliseconds: 420),
+      duration: AppDurations.scrollToEnd,
       curve: Curves.easeOutQuart,
     );
   }
@@ -1564,7 +1532,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (_scroll.hasClients) {
         _scroll.animateTo(
           _scroll.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 360),
+          duration: AppDurations.scrollToEndSoft,
           curve: Curves.easeOutQuart,
         );
       }
@@ -1587,6 +1555,48 @@ class _ChatScreenState extends State<ChatScreen>
     } finally {
       _sending = false;
     }
+  }
+
+  /// Sends text an in-chat interactive card composed (§4).
+  ///
+  /// Routed through the composer + [_send] rather than straight to the cubit
+  /// so a card-driven send passes every gate a typed one does: environment
+  /// bound, live-env acknowledged, online, under quota, not mid-run. A card
+  /// that POSTed directly would be the one path in the screen able to skip
+  /// the live-database warning.
+  Future<void> _sendComposed(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    _composer.text = trimmed;
+    _composer.selection = TextSelection.collapsed(offset: trimmed.length);
+    await _send();
+  }
+
+  /// "Prepare & review" on a clarify card (§4a) — drops the composed answers
+  /// in the composer instead of sending them.
+  ///
+  /// Separate from [_seedSuggestion] (which the starter-prompt strip uses)
+  /// purely so this one can TOAST. Seeding silently is the failure this
+  /// exists to avoid: the user taps a button at the top of a card, the text
+  /// lands in a composer that may be behind the keyboard or off-screen, and
+  /// nothing on screen says the tap did anything.
+  void _seedFromCard(String text) {
+    _seedSuggestion(text);
+    _toast(context.tr.clarifyReadyToReview);
+  }
+
+  /// Backs the report card's record multi-select (Appendix A.2). Conversation-
+  /// scoped, so a brand-new chat (no id yet) has nothing to query.
+  Future<ReportEntityPage> _loadReportEntities(
+    String entity,
+    String query,
+  ) async {
+    final raw = await context.read<OdooDataApi>().reportEntities({
+      'conversation_id': widget.conversationId,
+      'entity': entity,
+      if (query.trim().isNotEmpty) 'q': query.trim(),
+    });
+    return ReportEntityPage.fromJson(raw);
   }
 
   Future<void> _sendInternal() async {
@@ -1636,25 +1646,20 @@ class _ChatScreenState extends State<ChatScreen>
       }
     }
 
-    // Deep-think source of truth depends on the chat lifecycle:
-    //   * Existing chat → the conversation snapshot's `deep_think`
-    //     (server is canonical, so a web-side flip lands here on the
-    //     next poll). Fall back to the local cubit only when we don't
-    //     have a snapshot yet (very first paint).
-    //   * New chat → no conversation row exists, so the local cubit
-    //     is the only state. We PATCH the new conv with this value
-    //     below so its server default matches.
-    final localDeepThink = context.read<DeepThinkCubit>().state;
-    final deepThink = _isNewChat
-        ? localDeepThink
-        : (context
+    // What to send with THIS message. The server still reads `task_prep` off
+    // every message body and gates it itself, so the body is always sent —
+    // what changes is where the value comes from: the conversation when the
+    // server owns one, the device preference otherwise.
+    final taskPrep = (_isNewChat
+            ? null
+            : context
                 .read<ChatCubit>()
                 .state
                 .data
                 .dataOrNull
                 ?.conversation
-                .deepThink ??
-            localDeepThink);
+                .taskPrep) ??
+        context.read<TaskPrepCubit>().state;
 
     // ── New chat path ─────────────────────────────────────────────────
     // We don't have a ChatCubit yet (no UUID to scope it to), so this
@@ -1668,7 +1673,7 @@ class _ChatScreenState extends State<ChatScreen>
     //                                     message + the assistant reply
     //                                     once it lands.
     if (_isNewChat) {
-      await _sendAsNewConversation(text: text, env: env, deepThink: deepThink);
+      await _sendAsNewConversation(text: text, env: env, taskPrep: taskPrep);
       return;
     }
 
@@ -1696,7 +1701,7 @@ class _ChatScreenState extends State<ChatScreen>
     context.read<RunningAgentsCubit>().markRunning(widget.conversationId);
     final ok = await context.read<ChatCubit>().sendMessage(
           content: text.isEmpty ? context.tr.attachedFilesForReview : text,
-          deepThink: deepThink,
+          taskPrep: taskPrep,
         );
     if (!mounted) return;
     if (ok) {
@@ -1735,7 +1740,7 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _sendAsNewConversation({
     required String text,
     required _ResolvedEnv env,
-    required bool deepThink,
+    required bool taskPrep,
   }) async {
     final repo = context.read<ConversationsRepository>();
     final conversationsCubit = context.read<ConversationsCubit>();
@@ -1765,13 +1770,9 @@ class _ChatScreenState extends State<ChatScreen>
           : pendingText;
       final newId = await repo.create(title: title);
       if (!mounted) return;
-      // 2) Bind the picked environment AND persist the user's current
-      //    deep-think preference onto the new conversation. Without the
-      //    `deepThink` PATCH the new row would default to false server-
-      //    side, so the next time we poll the snapshot the toggle would
-      //    appear OFF even though the user has it ON locally. Pass null
-      //    when the user has it off (matches server default; saves a
-      //    no-op write) — non-null only when we need to flip it on.
+      // 2) Bind the picked environment. Nothing else to persist here:
+      //    task prep travels on the message body (step 3), not on the
+      //    conversation row, so a new chat needs no extra flag write.
       await repo.patch(
         id: newId,
         environmentId: env.id,
@@ -1779,7 +1780,6 @@ class _ChatScreenState extends State<ChatScreen>
         // primary in the header pill; null (single-env path) leaves just
         // env.id bound, matching the prior behavior.
         environmentIds: _environmentIds.length > 1 ? _environmentIds : null,
-        deepThink: deepThink ? true : null,
       );
       if (!mounted) return;
       // 2.5) Upload any deferred attachment now that we have a
@@ -1801,7 +1801,7 @@ class _ChatScreenState extends State<ChatScreen>
         conversationId: newId,
         content: pendingText,
         attachmentIds: attachmentIds,
-        deepThink: deepThink,
+        taskPrep: taskPrep,
       );
       if (!mounted) return;
       // 4) Refresh the conversations list so the row appears.
@@ -1876,6 +1876,223 @@ class _ChatScreenState extends State<ChatScreen>
     // Focus the composer so the user can edit or hit Send without an
     // extra tap — matches the empty-chat suggestion-grid contract.
     _composerFocus.requestFocus();
+  }
+
+  /// Flips the per-conversation auto-approve flag and confirms it in words.
+  ///
+  /// Extracted from the composer's inline handler so the tools sheet (§1) can
+  /// drive the exact same path — the sheet's toggle and the composer's are
+  /// the same setting, and a second copy of this logic is how two surfaces
+  /// end up disagreeing about whether a refused PATCH rolls back.
+  void _setAutoApprove(bool value) {
+    // Optimistic local mirror so the switch animates before the snapshot
+    // poll catches up.
+    setState(() => _autoApprove = value);
+    if (!_isNewChat) {
+      // Awaited (inside `_applyToggle`) so a refused PATCH surfaces. Fire-
+      // and-forget here meant the switch visibly snapped back with no
+      // explanation, and left a stale `ChatAction.patch` failure on the
+      // state that a later, unrelated error would surface under the wrong
+      // label.
+      _applyToggle(() => context.read<ChatCubit>().setAutoApprove(value));
+    }
+    _toast(value ? context.tr.autoApproveOn : context.tr.autoApproveOff);
+  }
+
+  /// Flips Task prep and confirms it in words.
+  ///
+  /// Writes wherever the setting actually lives:
+  ///
+  ///   * **The server owns it** (`conversation.task_prep` is non-null) →
+  ///     PATCH it, exactly as auto-approve does, so the website sees the
+  ///     change. Optimistic with rollback, via `_applyToggle`.
+  ///   * **The server owns nothing** (the field is absent — every deployment
+  ///     as of 2026-08-10) → write the device preference, which is precisely
+  ///     the behaviour that shipped.
+  ///
+  /// The branch is what lets this ship ahead of the backend: the day the
+  /// field appears in the snapshot, the toggle starts syncing on builds
+  /// already installed. Until then nothing changes. Writing the local
+  /// preference too, in both branches, keeps the fallback warm for chats the
+  /// server has no opinion about.
+  void _setTaskPrep(bool value) {
+    final serverOwnsIt = !_isNewChat &&
+        context
+                .read<ChatCubit>()
+                .state
+                .data
+                .dataOrNull
+                ?.conversation
+                .taskPrep !=
+            null;
+
+    context.read<TaskPrepCubit>().set(value);
+    if (serverOwnsIt) {
+      // Awaited inside `_applyToggle` for the same reason auto-approve is:
+      // a refused PATCH has to surface, or the switch snaps back with no
+      // explanation and leaves a stale failure on the state.
+      _applyToggle(() => context.read<ChatCubit>().setTaskPrep(value));
+    }
+    _toast(value ? context.tr.taskPrepOn : context.tr.taskPrepOff);
+  }
+
+  /// Opens the Saqqar tools sheet — the composer's `+` menu (§1).
+  ///
+  /// Rows that are already whole mobile screens (Apps, Projects) route to
+  /// them; the rest reuse the handlers the composer used to expose directly.
+  Future<void> _openToolsSheet({
+    required ChatFeatures features,
+    required bool taskPrep,
+    required bool autoApprove,
+  }) async {
+    final picked = await SaqqarToolsSheet.show(
+      context,
+      features: features,
+      taskPrep: taskPrep,
+      autoApprove: autoApprove,
+      onTaskPrepChanged: _setTaskPrep,
+      onAutoApproveChanged: _setAutoApprove,
+    );
+    if (picked == null || !mounted) return;
+    switch (picked) {
+      case SaqqarTool.uploadFile:
+        await _pickAttachment();
+      case SaqqarTool.commands:
+        await _openSlashCommands();
+      // §6 — real endpoints (web team, 2026-08-06). Each runs a READ-ONLY
+      // scan server-side and posts its report into this conversation, so the
+      // result arrives through the ordinary poll.
+      //
+      // These deliberately skip the live-database warning that `_sendComposed`
+      // applies. That prompt exists for WRITES; the three scans cannot write,
+      // and putting a "this is production" confirmation in front of a
+      // read-only report would train the user to dismiss the one warning that
+      // matters. Every other guard still holds server-side: an unbound
+      // environment 400s, an unreachable Odoo 502s, and both surface as a
+      // toast in the user's language.
+      case SaqqarTool.healthRadar:
+        await _runOdooTool(
+          (api, id, lang) =>
+              api.runHealthRadar(conversationId: id, lang: lang),
+        );
+      case SaqqarTool.whatIf:
+        await _runOdooTool(
+          (api, id, lang) => api.runWhatIfIntro(conversationId: id, lang: lang),
+        );
+      case SaqqarTool.businessPulse:
+        await _runOdooTool(
+          (api, id, lang) =>
+              api.runBusinessPulse(conversationId: id, lang: lang),
+        );
+      case SaqqarTool.promptBank:
+        // Reuses the app's own starter prompts — the same list the empty-chat
+        // grid offers — so the row seeds real wording rather than inventing a
+        // catalogue the backend never sent.
+        await _openPromptBank();
+      case SaqqarTool.myDatabase:
+        await _openEnvironmentPicker();
+      case SaqqarTool.apps:
+        // PUSH, for the same reason `voiceSupport` below does — and this one
+        // was a genuine trap, reported by the user: `go` REPLACES the
+        // location, and `/apps` is a top-level route that sits OUTSIDE the
+        // tab shell. So opening Saqqar Apps from a chat destroyed the chat's
+        // route and landed on a screen with no back button (nothing to pop)
+        // and no bottom navigation (outside the shell). The only way out was
+        // to kill the app.
+        //
+        // `credentialVault` below can stay `go` because `/vault` IS a shell
+        // tab: the bottom bar is still there, so there is always a way out.
+        // That difference is the whole rule — `go` only to a tab, `push` for
+        // anything above one.
+        unawaited(context.pushNamed(RouteNames.apps));
+      case SaqqarTool.credentialVault:
+        context.go(RouteNames.vaultPath);
+      case SaqqarTool.voiceSupport:
+        // PUSH, not go. `go` replaces the location, so opening support from a
+        // conversation would destroy that conversation's route and leave the
+        // user with no way back to the chat they were describing a problem
+        // about. The Account screen reaches its detail screens the same way.
+        // Unawaited: the future completes when the user pops back, and
+        // awaiting it here would hold the tools-sheet handler open for the
+        // whole visit.
+        unawaited(context.pushNamed(RouteNames.voiceSupport));
+    }
+  }
+
+  /// Runs one of the three §6 read-only Odoo scans.
+  ///
+  /// The report is not in the response — the server posts it into the
+  /// conversation as an assistant message — so success is reported by
+  /// refreshing the snapshot and letting the message appear, exactly as it
+  /// would for any other agent output. No local "running" copy is invented:
+  /// the thinking indicator the snapshot already drives is the honest one.
+  Future<void> _runOdooTool(
+    Future<void> Function(SaqqarToolsApi api, String conversationId, String lang)
+        run,
+  ) async {
+    // A tool needs a conversation to post into, and a brand-new chat has no
+    // id on the server yet. The rows are reachable from the new-chat composer,
+    // so this is a real state rather than a defensive impossibility.
+    if (_isNewChat) {
+      _toast(context.tr.toolsNeedsConversation);
+      return;
+    }
+    // Re-entry guard: the sheet closes on tap but reopens with the row still
+    // there, so a second tap during a slow scan would run it twice and post
+    // two reports into the same conversation.
+    if (_toolRunning) return;
+    final api = context.read<SaqqarToolsApi>();
+    final lang = Localizations.localeOf(context).languageCode;
+    setState(() => _toolRunning = true);
+    try {
+      await run(api, widget.conversationId, lang);
+      if (!mounted) return;
+      await context.read<ChatCubit>().refresh();
+    } catch (e) {
+      if (!mounted) return;
+      // Carries the server's own Arabic string for the two states that
+      // actually happen here — no environment bound (400) and Odoo
+      // unreachable (502).
+      _toast(ApiErrorMapper.message(context, e));
+    } finally {
+      if (mounted) setState(() => _toolRunning = false);
+    }
+  }
+
+  /// Prompt bank (§7) — a picker of ready-made task wordings that seeds the
+  /// composer instead of sending.
+  ///
+  /// Sourced from the app's OWN starter prompts (the same four the empty-chat
+  /// grid and the suggestion strip offer). The backend exposes no saved-prompt
+  /// catalogue, and inventing rows here would put wording on screen that no
+  /// server ever authored. Gated on the `prompt_bank` feature flag, so the row
+  /// stays hidden until the backend says this account has the feature.
+  Future<void> _openPromptBank() async {
+    final tr = context.tr;
+    final prompts = [
+      tr.suggestRestartWorker,
+      tr.suggestReconciliationReport,
+      tr.suggestPendingInvoices,
+      tr.suggestSyncInventory,
+    ];
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => ChatSheet(
+        title: tr.toolsPromptBank,
+        children: [
+          for (final p in prompts)
+            ListTile(
+              leading: Icon(AppIcons.sparkles,
+                  size: 18, color: context.saqqar.brandCyan),
+              title: Text(p, style: context.text.bodyMedium),
+              onTap: () => Navigator.of(sheetContext).pop(p),
+            ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    _seedSuggestion(picked);
   }
 
   /// Opens the slash-command menu (design parity: composer "/" button →
@@ -2442,23 +2659,19 @@ class _ChatScreenState extends State<ChatScreen>
     // Server blocked this turn for being over a usage cap (Gap B). Drives
     // the quota banner + a disabled composer until the window resets.
     final quotaWindow = chatSnapshot?.quotaExceeded;
-    final deepThink = snapshotConv?.deepThink ??
-        context.watch<DeepThinkCubit>().state;
+    // Server value first, device preference second — the same precedence
+    // auto-approve uses one line down. `taskPrep` is null on every server
+    // that does not own the flag, which is all of them today, so this reads
+    // as the local preference exactly like before. See
+    // `Conversation.taskPrep` for why it is written this way now rather than
+    // when the field lands.
+    final taskPrep =
+        snapshotConv?.taskPrep ?? context.watch<TaskPrepCubit>().state;
     final autoApprove = snapshotConv?.autoApprove ?? _autoApprove;
-
-    // Mirror the server-authoritative `deep_think` back into the local
-    // [DeepThinkCubit] AFTER the current frame so a flip on the web
-    // (which lands via snapshot poll) also updates the persisted
-    // preference. Without this, opening a NEW chat after a web-side
-    // flip would still seed from the stale local value. Idempotent
-    // inside the cubit's `set` — safe to fire on every rebuild.
-    final serverDeepThink = snapshotConv?.deepThink;
-    if (serverDeepThink != null && !_isNewChat) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.read<DeepThinkCubit>().set(serverDeepThink);
-      });
-    }
+    final chatFeatures = ChatFeatures(
+      context.watch<PlanCubit>().state,
+      context.watch<SaqqarFeaturesCubit>().state,
+    );
 
     // Surface the latest plan / quota / feature snapshot app-wide (Gap A)
     // so the account usage card, plan badge, and feature gating all read one
@@ -2591,8 +2804,14 @@ class _ChatScreenState extends State<ChatScreen>
       body: Stack(
         children: [
           // ── Main chat content ─────────────────────────────────────
+          //
+          // `LayoutBuilder` so the bottom band can be capped against the
+          // height this body actually has, not the screen's. The two diverge
+          // exactly when it matters: opening the keyboard leaves the screen
+          // the same size and halves the body.
           AmbientBackground(
-            child: Column(
+            child: LayoutBuilder(
+              builder: (context, bodyConstraints) => Column(
               children: [
                 // Brief §4.1 — the project / environment dropdowns are
             // replaced on mobile by a compact env-badges strip. Tapping
@@ -2667,39 +2886,55 @@ class _ChatScreenState extends State<ChatScreen>
             // _buildMessageList), scrolling with the rest of the chat
             // so they no longer hog the composer space.
             //
-            // Env-hint banner (Gap H) — when the server flags the chat as
-            // needing an environment and none is bound yet, offer the
-            // one-click "Use My Database" default-env bind above the composer.
-            if (!_isNewChat &&
-                (snapshotConv?.needsEnvironment ?? false) &&
-                _resolveEnv() == null)
-              ChatEnvHintBanner(
-                busy: _bindingDefaultEnv,
-                onUseMyDatabase: _useMyDatabase,
-              ),
-            // Plan/quota banner (Gap A near-limit + Gap B exceeded). Sits
-            // directly above the composer so the upgrade CTA is next to the
-            // (now disabled) send affordance.
-            ChatPlanBanner(
-              plan: context.watch<PlanCubit>().state,
-              exceededWindow: quotaWindow,
-              onUpgrade: _openPricing,
-            ),
-            // Quick-action suggestion chips — seed the composer with a
-            // common Odoo operation. Hidden while recording / transcribing
-            // and on a brand-new empty chat (the welcome grid covers that).
-            ChatSuggestionStrip(
-              visible: !_recording &&
-                  !_transcribing &&
-                  _effectiveMessages.isNotEmpty,
-              onSelect: _seedSuggestion,
-            ),
-            ChatComposer(
+            // Everything between the transcript and the composer, height-
+            // capped. All three are conditional, and when several fire at
+            // once on a small screen at large text they used to push the
+            // composer clean off the bottom — see [ChatBottomChrome].
+            ChatBottomChrome(
+              maxHeight: bodyConstraints.maxHeight *
+                  ChatBottomChrome.fractionOfBody,
+              children: [
+                // Env-hint banner (Gap H) — when the server flags the chat as
+                // needing an environment and none is bound yet, offer the
+                // one-click "Use My Database" default-env bind above the
+                // composer.
+                if (!_isNewChat &&
+                    (snapshotConv?.needsEnvironment ?? false) &&
+                    _resolveEnv() == null)
+                  ChatEnvHintBanner(
+                    busy: _bindingDefaultEnv,
+                    onUseMyDatabase: _useMyDatabase,
+                  ),
+                // Plan/quota banner (Gap A near-limit + Gap B exceeded). Sits
+                // directly above the composer so the upgrade CTA is next to
+                // the (now disabled) send affordance.
+                ChatPlanBanner(
+                  plan: context.watch<PlanCubit>().state,
+                  exceededWindow: quotaWindow,
+                  onUpgrade: _openPricing,
+                ),
+                // Quick-action suggestion chips — seed the composer with a
+                // common Odoo operation. Hidden while recording / transcribing
+                // and on a brand-new empty chat (the welcome grid covers that).
+                ChatSuggestionStrip(
+                  visible: !_recording &&
+                      !_transcribing &&
+                      _effectiveMessages.isNotEmpty,
+                  onSelect: _seedSuggestion,
+                ),
+                // Inside the band, and last: `reverse: true` rests the scroll
+                // at its end, so the composer is the part that stays on screen
+                // and the banners above are what scroll away.
+                ChatComposer(
               controller: _composer,
               focusNode: _composerFocus,
               attachments: _attachments,
               onAttach: _pickAttachment,
-              onSlash: _openSlashCommands,
+              onTools: () => _openToolsSheet(
+                features: chatFeatures,
+                taskPrep: taskPrep,
+                autoApprove: autoApprove,
+              ),
               onRemoveAttachment: _removeAttachmentAt,
               onPreviewAttachment: _previewAttachmentAt,
               // Block send when offline OR over a usage cap (Gap B). The
@@ -2722,59 +2957,37 @@ class _ChatScreenState extends State<ChatScreen>
               onStartRecording: _startRecording,
               onStopRecording: _stopRecording,
               onDiscardRecording: _discardRecording,
-              deepThink: deepThink,
+              taskPrep: taskPrep,
+              taskPrepAvailable: chatFeatures.taskPrepAvailable,
               autoApprove: autoApprove,
-              onDeepThinkChanged: (value) {
-                // New chats keep the local cubit until the
-                // conversation exists; existing chats PATCH the
-                // per-conversation flag so the web sees the change
-                // on its next poll and vice versa.
-                context.read<DeepThinkCubit>().set(value);
-                if (!_isNewChat) {
-                  // Awaited so a refused PATCH surfaces. Fire-and-forget
-                  // here meant the switch visibly snapped back with no
-                  // explanation, and left a stale `ChatAction.patch`
-                  // failure on the state that a later, unrelated error
-                  // would then surface under the wrong label.
-                  _applyToggle(
-                    () => context.read<ChatCubit>().setDeepThink(value),
-                  );
-                }
-                _toast(
-                  value ? context.tr.deepThinkOn : context.tr.deepThinkOff,
-                );
-              },
-              onAutoApproveChanged: (value) {
-                if (_isNewChat) {
-                  setState(() => _autoApprove = value);
-                } else {
-                  // Optimistic local mirror so the switch animates
-                  // before the snapshot poll catches up.
-                  setState(() => _autoApprove = value);
-                  _applyToggle(
-                    () => context.read<ChatCubit>().setAutoApprove(value),
-                  );
-                }
-                _toast(
-                  value
-                      ? context.tr.autoApproveOn
-                      : context.tr.autoApproveOff,
-                );
-              },
+              onTaskPrepChanged: _setTaskPrep,
+              onAutoApproveChanged: _setAutoApprove,
               // Render Stop instead of Send while the agent is running.
               // For existing chats, the source of truth is the cubit's
               // snapshot (`conversation.is_running`); for new chats it
               // still comes from the local timer until the first send
               // creates the conversation + routes.
-              onStop: _effectiveIsThinking ? _stopGeneration : null,
+              // NOT offered while a §6 scan is in flight. The scan reuses the
+              // working indicator (honest — something IS running), but it is
+              // an HTTP POST to /radar/run/, not a conversation generation:
+              // `_stopGeneration` would call stop on a conversation that is
+              // not generating, report "generation stopped", and leave the
+              // scan running. A Stop button that cannot stop what the user
+              // is watching is worse than no Stop button.
+              onStop: _effectiveIsThinking && !_toolRunning
+                  ? _stopGeneration
+                  : null,
               stopping: _isNewChat
                   ? _stopping
                   : context
                       .watch<ChatCubit>()
                       .state
                       .isStopping,
+                ),
+              ],
             ),
           ],
+        ),
         ),
       ),
           // ── Scrim (covers main content when any drawer is open) ──
@@ -2783,7 +2996,7 @@ class _ChatScreenState extends State<ChatScreen>
             ignoring: !anyDrawerOpen,
             child: AnimatedOpacity(
               opacity: anyDrawerOpen ? 1 : 0,
-              duration: const Duration(milliseconds: 220),
+              duration: AppDurations.cardIn,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => setState(() {
@@ -2801,7 +3014,7 @@ class _ChatScreenState extends State<ChatScreen>
             top: 0,
             bottom: 0,
             width: drawerWidth,
-            duration: const Duration(milliseconds: 280),
+            duration: AppDurations.sheetIn,
             curve: Curves.easeOutCubic,
             child: _sidebarDrawer(),
           ),
@@ -2812,7 +3025,7 @@ class _ChatScreenState extends State<ChatScreen>
             top: 0,
             bottom: 0,
             width: drawerWidth,
-            duration: const Duration(milliseconds: 280),
+            duration: AppDurations.sheetIn,
             curve: Curves.easeOutCubic,
             child: _railDrawer(),
           ),
@@ -2829,17 +3042,33 @@ class _ChatScreenState extends State<ChatScreen>
   /// next 1.5 s poll). Errors surface as a toast.
   Future<void> _decideApprovalInline(
     api.Approval approval,
-    bool approved,
-  ) async {
+    bool approved, {
+    bool batchScope = false,
+  }) async {
     final tr = context.tr;
     try {
-      await context
-          .read<ApprovalsApi>()
-          .decide(id: approval.id, approved: approved);
+      final result = await context.read<ApprovalsApi>().decide(
+            id: approval.id,
+            approved: approved,
+            batchScope: batchScope,
+          );
       if (!mounted) return;
       await context.read<ChatCubit>().refresh();
       if (!mounted) return;
-      _toast(approved ? tr.approvalGrantedExecuting : tr.approvalRejected);
+      if (!approved) {
+        _toast(tr.approvalRejected);
+        return;
+      }
+      // On a batch, report what the tap actually cleared — the count comes
+      // back in the response and exists nowhere else, so this is the only
+      // moment the user can be told. Falls through to the ordinary message
+      // when the server didn't send one rather than printing "Approved 0".
+      final resolved = (result.batch?['resolved_count'] as num?)?.toInt();
+      _toast(
+        batchScope && resolved != null && resolved > 0
+            ? tr.approvalBatchResolved(resolved)
+            : tr.approvalGrantedExecuting,
+      );
     } catch (e) {
       if (!mounted) return;
       _toast(ApiErrorMapper.message(context, e));
@@ -2861,10 +3090,19 @@ class _ChatScreenState extends State<ChatScreen>
         api.ApprovalStatus.approved => DemoApprovalStatus.approved,
         api.ApprovalStatus.rejected => DemoApprovalStatus.rejected,
       },
+      // NULLS ARE DROPPED, not stringified. `entry.value.toString()` on a
+      // null yields the literal string "null", and the server sends null for
+      // every optional field — so an ordinary email approval (cc, bcc and
+      // in_reply_to all null) rendered "Cc: null", "Bcc: null", and a Reply
+      // badge on every single mail, because "null" is a non-empty string.
+      // An absent field must read as absent.
       payload: {
         for (final entry in a.payload.entries)
-          entry.key: entry.value.toString(),
+          if (entry.value != null) entry.key: entry.value.toString(),
       },
+      recordCount: a.recordCount,
+      confirmPhrase: a.confirmPhrase,
+      batchScoped: a.batchScoped,
     );
   }
 
@@ -3254,12 +3492,14 @@ class _ChatScreenState extends State<ChatScreen>
             child: FadeSlideIn(
               key: ValueKey('approval-${approval.id}'),
               index: approvalIdx,
-              duration: const Duration(milliseconds: 220),
+              duration: AppDurations.cardIn,
               offset: const Offset(0, 6),
               child: ChatApprovalCard(
                 approval: _adaptApiApproval(approval),
                 onApprove: () => _decideApprovalInline(approval, true),
                 onReject: () => _decideApprovalInline(approval, false),
+                onApproveAllSimilar: () =>
+                    _decideApprovalInline(approval, true, batchScope: true),
               ),
             ),
           );
@@ -3333,16 +3573,16 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  /// Renders one [_TimelineEntry] as either a plain [MessageRow] or a
+  /// Renders one [TimelineEntry] as either a plain [MessageRow] or a
   /// [ChatThinkingPill] + the final reply. Keeps the bubble-grouping
   /// (`isFirstOfGroup` / `isLastOfGroup`) heuristics out of the
   /// itemBuilder closure so the index math up top stays readable.
   Widget _buildTimelineEntry(
-    _TimelineEntry entry, {
+    TimelineEntry entry, {
     required bool showDateSeparator,
     required DemoMessage? previousLast,
   }) {
-    if (entry is _SingleMessageEntry) {
+    if (entry is SingleMessageEntry) {
       final message = entry.message;
       final isFirstOfGroup = previousLast == null ||
           previousLast.role != message.role;
@@ -3359,10 +3599,13 @@ class _ChatScreenState extends State<ChatScreen>
           message: message,
           isFirstOfGroup: isFirstOfGroup,
           isLastOfGroup: true,
+          onCardSend: _sendComposed,
+          onCardSeed: _seedFromCard,
+          entityLoader: _loadReportEntities,
         ),
       );
     }
-    final turn = entry as _AgentTurnEntry;
+    final turn = entry as AgentTurnEntry;
     final finalReply = turn.finalReply;
     final pillThenReply = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3380,6 +3623,12 @@ class _ChatScreenState extends State<ChatScreen>
           message: finalReply,
           isFirstOfGroup: true,
           isLastOfGroup: true,
+          // `_buildTimeline` never folds a card into an agent turn, so this
+          // reply cannot be one today. Wired anyway: if that ever changes,
+          // the failure would be a silently inert card, not a crash.
+          onCardSend: _sendComposed,
+          onCardSeed: _seedFromCard,
+          entityLoader: _loadReportEntities,
         ),
       ],
     );
@@ -3390,41 +3639,13 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  /// Walks the flat message list and bundles each user-→-agent round
-  /// into a [_TimelineEntry]. Runs of 2+ consecutive assistant messages
-  /// collapse into one [_AgentTurnEntry] (everything before the last
-  /// becomes "thinking steps"; the last stays as the final reply).
-  /// Single user messages and lone assistant replies map straight to
-  /// [_SingleMessageEntry] so unchanged turns render exactly as before.
-  List<_TimelineEntry> _buildTimeline(List<DemoMessage> messages) {
-    final out = <_TimelineEntry>[];
-    var i = 0;
-    while (i < messages.length) {
-      final m = messages[i];
-      if (m.role != DemoMessageRole.assistant) {
-        out.add(_SingleMessageEntry(m));
-        i++;
-        continue;
-      }
-      // Collect a run of consecutive assistant messages.
-      var j = i;
-      while (j < messages.length &&
-          messages[j].role == DemoMessageRole.assistant) {
-        j++;
-      }
-      final run = messages.sublist(i, j);
-      if (run.length == 1) {
-        out.add(_SingleMessageEntry(run.first));
-      } else {
-        out.add(_AgentTurnEntry(
-          thinkingSteps: run.sublist(0, run.length - 1),
-          finalReply: run.last,
-        ));
-      }
-      i = j;
-    }
-    return out;
-  }
+  /// Bundles each user-→-agent round into a [TimelineEntry].
+  ///
+  /// Lives in `data/chat_timeline.dart` so the grouping — including the rule
+  /// that keeps interactive cards out of the collapsed thinking pill — is
+  /// testable without pumping the screen.
+  List<TimelineEntry> _buildTimeline(List<DemoMessage> messages) =>
+      buildChatTimeline(messages);
 
   // -------- Sheets --------
 
@@ -3612,7 +3833,7 @@ class _InboxBellTrigger extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadius.smallR,
       side: BorderSide(color: s.border, width: 1),
     );
     return Padding(
@@ -3716,7 +3937,7 @@ class _LoadEarlierHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.refresh_rounded, size: 18, color: s.brandCyan),
+                Icon(AppIcons.refresh, size: 18, color: s.brandCyan),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -3751,25 +3972,14 @@ class _LoadEarlierHeader extends StatelessWidget {
 /// [AppDateFormat.fullDateTime] — the user sees "May 18, 2026 at 06:24
 /// PM" / "١٨ مايو ٢٠٢٦ في ٠٦:٢٤ م" instead of just the bare HH:mm.
 /// Matches the web's per-message timestamp footer.
+/// The mapping itself lives in `data/message_adapter.dart` so it is testable
+/// without a `BuildContext`; this wrapper only resolves the two things that
+/// genuinely need one — the localized timestamp label and the attachment
+/// size/kind copy.
 DemoMessage _adaptApiMessage(api.Message m, BuildContext context) {
-  return DemoMessage(
-    id: m.id,
-    role: switch (m.role) {
-      api.MessageRole.user => DemoMessageRole.user,
-      // Tool + system messages render in the assistant lane; the chat
-      // widgets don't visually distinguish those today.
-      api.MessageRole.assistant ||
-      api.MessageRole.tool ||
-      api.MessageRole.system =>
-        DemoMessageRole.assistant,
-    },
-    content: m.content,
-    // Web-parity full timestamp under the bubble. The chat row also
-    // renders a date separator above the first message of a new
-    // calendar day; both reference `createdAt` so they stay in sync.
+  return adaptApiMessage(
+    m,
     time: AppDateFormat.fullDateTime(context, m.createdAt),
-    createdAt: m.createdAt,
-    toolName: (m.toolName ?? '').isEmpty ? null : m.toolName,
     attachments: m.attachments
         .map((a) => _adaptApiAttachment(a, context.tr))
         .toList(),
@@ -3817,70 +4027,4 @@ class _ResolvedEnv {
   final String projectName;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Chat timeline entries
-// ─────────────────────────────────────────────────────────────────────────
-
-/// One renderable slot in the chat list. The flat `messages` list gets
-/// reshaped into this sealed family by [_ChatScreenState._buildTimeline]
-/// so consecutive agent steps can be folded into a single "Saqqar
-/// thinking" pill above the final reply (web parity, per user request).
-sealed class _TimelineEntry {
-  const _TimelineEntry();
-
-  /// First message in this entry — used for date-separator anchoring
-  /// (calendar-day boundary against the previous entry).
-  DemoMessage get firstMessage;
-
-  /// Last message in this entry — used for the "previous role" check
-  /// when the next entry starts a new group.
-  DemoMessage get lastMessage;
-}
-
-/// A solo bubble — either a user message or a lone assistant reply
-/// that had no thinking steps preceding it.
-class _SingleMessageEntry extends _TimelineEntry {
-  const _SingleMessageEntry(this.message);
-
-  final DemoMessage message;
-
-  @override
-  DemoMessage get firstMessage => message;
-
-  @override
-  DemoMessage get lastMessage => message;
-}
-
-/// A multi-step agent turn: all intermediate "thinking" assistant
-/// messages collapsed into a pill, plus the final reply that gets
-/// rendered as a normal bubble below it.
-class _AgentTurnEntry extends _TimelineEntry {
-  const _AgentTurnEntry({
-    required this.thinkingSteps,
-    required this.finalReply,
-  });
-
-  final List<DemoMessage> thinkingSteps;
-  final DemoMessage finalReply;
-
-  @override
-  DemoMessage get firstMessage =>
-      thinkingSteps.isEmpty ? finalReply : thinkingSteps.first;
-
-  @override
-  DemoMessage get lastMessage => finalReply;
-
-  /// Wall-clock duration the agent spent on this turn — first thinking
-  /// step's `createdAt` → final reply's `createdAt`. Returns null when
-  /// either side is missing a timestamp (older cached messages) so the
-  /// pill can hide the `· 14s` segment cleanly.
-  Duration? get duration {
-    if (thinkingSteps.isEmpty) return null;
-    final start = thinkingSteps.first.createdAt;
-    final end = finalReply.createdAt;
-    if (start == null || end == null) return null;
-    final delta = end.difference(start);
-    return delta.isNegative ? null : delta;
-  }
-}
 

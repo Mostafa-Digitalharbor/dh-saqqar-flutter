@@ -35,6 +35,12 @@ class RouteNames {
   static const usage = 'usage';
   static const usagePath = '/usage';
 
+  // Support workspace (§8). Reachable ONLY from the chat tools sheet, and
+  // only when `saqqar_features.voice_support` is on — there is deliberately
+  // no entry point that ignores the flag.
+  static const voiceSupport = 'voice-support';
+  static const voiceSupportPath = '/voice-support';
+
   // In-app notifications inbox — opened from the header bell.
   static const notifications = 'notifications';
   static const notificationsPath = '/notifications';

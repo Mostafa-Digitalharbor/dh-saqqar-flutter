@@ -6,7 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/labeled_divider.dart';
 import '../view_model/auth_flow_cubit.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// "or continue with" divider + Google (all platforms) and Apple (iOS only)
 /// sign-in buttons. Shown under the email field on the sign-in / sign-up entry
@@ -27,19 +29,7 @@ class SocialAuthButtons extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 22),
-        Row(
-          children: [
-            Expanded(child: Divider(color: s.cardBorder)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                tr.authOrContinueWith,
-                style: context.text.labelSmall?.copyWith(color: s.muted),
-              ),
-            ),
-            Expanded(child: Divider(color: s.cardBorder)),
-          ],
-        ),
+        LabeledDivider(label: tr.authOrContinueWith),
         const SizedBox(height: 18),
         _SocialButton(
           label: tr.authContinueWithGoogle,
@@ -52,7 +42,7 @@ class SocialAuthButtons extends StatelessWidget {
           const SizedBox(height: 12),
           _SocialButton(
             label: tr.authContinueWithApple,
-            logo: Icon(Icons.apple, size: 21, color: s.text),
+            logo: Icon(AppIcons.apple, size: 21, color: s.text),
             onPressed: loading ? null : cubit.continueWithApple,
           ),
         ],
@@ -151,6 +141,10 @@ class _GoogleGlyph extends StatelessWidget {
 class _GoogleLogoPainter extends CustomPainter {
   const _GoogleLogoPainter();
 
+  // The only hex in the app outside `AppColors`, and deliberately so: these
+  // are Google's, fixed by its Sign-In branding guidelines. Theming them —
+  // recolouring for dark mode, tinting toward our brand — is exactly what the
+  // guidelines forbid, so they must NOT move into our palette.
   static const _blue = Color(0xFF4285F4);
   static const _red = Color(0xFFEA4335);
   static const _yellow = Color(0xFFFBBC05);

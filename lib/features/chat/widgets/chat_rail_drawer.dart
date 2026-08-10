@@ -300,9 +300,19 @@ DemoApproval _adaptApiApproval(inbox_api.Approval a, AppStrings tr) {
       inbox_api.ApprovalStatus.approved => DemoApprovalStatus.approved,
       inbox_api.ApprovalStatus.rejected => DemoApprovalStatus.rejected,
     },
+    // Nulls dropped rather than stringified — see the note on the chat
+    // screen's copy of this adapter. "null" is a non-empty string and would
+    // render as a real value in every field the server left empty.
     payload: {
-      for (final entry in a.payload.entries) entry.key: entry.value.toString(),
+      for (final entry in a.payload.entries)
+        if (entry.value != null) entry.key: entry.value.toString(),
     },
+    recordCount: a.recordCount,
+    // The delete type-to-confirm gate lives on the card, so BOTH surfaces
+    // that render approvals need the server's phrase — dropping it here
+    // would leave the drawer accepting only the client-built strings.
+    confirmPhrase: a.confirmPhrase,
+    batchScoped: a.batchScoped,
   );
 }
 
@@ -373,7 +383,7 @@ class _ThemeToggleButton extends StatelessWidget {
     return IconButton(
       tooltip: context.tr.toggleTheme,
       icon: Icon(
-        isDark ? Icons.dark_mode : Icons.light_mode,
+        isDark ? AppIcons.moon : AppIcons.sun,
         color: s.text,
       ),
       onPressed: () => context.read<ThemeCubit>().toggle(),
@@ -386,7 +396,7 @@ class _LanguageToggleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final locale = context.watch<LocaleCubit>().state;
-    final code = locale?.languageCode ?? 'en';
+    final code = locale?.languageCode ?? UiStrings.localeEnglishCode;
     return Material(
       color: Colors.transparent,
       shape: const CircleBorder(),

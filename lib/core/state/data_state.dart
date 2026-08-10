@@ -92,12 +92,25 @@ final class DataSuccess<T> extends DataState<T> {
 /// render. [error] is the raw exception kept for logging / retry context.
 final class DataFailure<T> extends DataState<T> {
   const DataFailure({
-    required this.message,
-    this.error,
+    required this.error,
     this.previous,
   });
 
-  final String message;
+  /// The thrown object, kept raw so the *view* decides the wording.
+  ///
+  /// This used to sit next to a `required String message` that every cubit
+  /// had to invent ("Failed to load apps"). That message was English, and
+  /// cubits have no `BuildContext` to localize with — so the field was a
+  /// standing invitation to render English inside an Arabic screen. It
+  /// survived only because every cubit also passed `error`, and
+  /// `DataStateView` preferred `error` when it was non-null; the moment one
+  /// new cubit passed just a message, an Arabic user would have seen it.
+  ///
+  /// Making [error] the required field removes the choice: the view always
+  /// resolves copy through `ApiErrorMapper.message`, which is locale-aware
+  /// and re-evaluates if the user switches language after the emit. `null`
+  /// is still accepted (some failures have no exception object) and maps to
+  /// the generic "something went wrong" line.
   final Object? error;
 
   /// Previous successful data when the failure happened during a refresh
@@ -106,5 +119,5 @@ final class DataFailure<T> extends DataState<T> {
   final T? previous;
 
   @override
-  List<Object?> get props => [message, error, previous];
+  List<Object?> get props => [error, previous];
 }

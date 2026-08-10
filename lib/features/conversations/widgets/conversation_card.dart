@@ -181,7 +181,7 @@ class ConversationCard extends StatelessWidget {
                               leading: [
                                 if (isPinned) ...[
                                   Icon(
-                                    Icons.push_pin,
+                                    AppIcons.pin,
                                     size: 13,
                                     color: s.brandCyan,
                                   ),
@@ -288,7 +288,19 @@ class ConversationCard extends StatelessWidget {
                                     ? 6
                                     : 0,
                               ),
-                              child: Row(
+                              // `Wrap`, not `Row`: a Row hands these unbounded
+                              // width, so `_MetaInline`'s ellipsis never
+                              // engages and the pair overflowed by 2.6 px at
+                              // 320 px / 1.3× text once both counts reached
+                              // four digits. Ellipsis would be the wrong cure
+                              // anyway — a truncated "13…" reads as a real
+                              // number. Wrapping keeps both counts legible in
+                              // full and drops the file count onto its own
+                              // line, which is the same stacked-lines
+                              // treatment lines 1 and 2 already use.
+                              child: Wrap(
+                                spacing: 14,
+                                runSpacing: 4,
                                 children: [
                                   // Message count (real).
                                   _MetaInline(
@@ -296,13 +308,11 @@ class ConversationCard extends StatelessWidget {
                                     label: '${conversation.messageCount}',
                                   ),
                                   // File count (real) — hidden when none.
-                                  if (filesCount > 0) ...[
-                                    const SizedBox(width: 14),
+                                  if (filesCount > 0)
                                     _MetaInline(
                                       icon: AppIcons.fileText,
                                       label: '$filesCount',
                                     ),
-                                  ],
                                 ],
                               ),
                             ),

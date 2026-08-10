@@ -148,6 +148,12 @@ class ApiErrorMapper {
         return const TimeoutFailure();
       case ApiExceptionKind.cancelled:
         return const CancelledFailure();
+      // The transport succeeded and the body was unreadable. `message` is
+      // empty by construction here (there was no JSON to read an `error` key
+      // out of), so this renders `tr.errorUnexpectedResponse` — the same copy
+      // a schema mismatch gets, which is the same thing from the user's side.
+      case ApiExceptionKind.parse:
+        return const ParseFailure();
       case ApiExceptionKind.badResponse:
         if (e.statusCode != null && e.statusCode! >= 500) {
           return ServerFailure(

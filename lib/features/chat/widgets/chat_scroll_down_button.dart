@@ -23,11 +23,11 @@ class ChatScrollDownButton extends StatelessWidget {
       ignoring: !visible,
       child: AnimatedOpacity(
         opacity: visible ? 1 : 0,
-        duration: const Duration(milliseconds: 180),
+        duration: AppDurations.fast,
         curve: Curves.easeOutCubic,
         child: AnimatedSlide(
           offset: visible ? Offset.zero : const Offset(0, 0.3),
-          duration: const Duration(milliseconds: 180),
+          duration: AppDurations.fast,
           curve: Curves.easeOutCubic,
           child: Material(
             color: Colors.transparent,

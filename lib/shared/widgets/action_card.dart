@@ -35,11 +35,13 @@ class ActionCard extends StatelessWidget {
         color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
         borderRadius: AppRadius.bubbleR,
         border: Border.all(color: s.cardBorder),
+        // Light theme only: on a dark backdrop the card already separates by
+        // fill alone, and a shadow there just muddies the border.
         boxShadow: context.isDark
             ? null
             : [
                 BoxShadow(
-                  color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                  color: s.shadowBase.withValues(alpha: 0.04),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),

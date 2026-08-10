@@ -195,7 +195,7 @@ class _ShareDestinationOverlayContentState
                         child: AppErrorState(
                           message: ApiErrorMapper.message(
                             context,
-                            failure.error ?? failure.message,
+                            failure.error,
                           ),
                           onRetry: () =>
                               context.read<ConversationsCubit>().load(),
@@ -299,10 +299,10 @@ class _ConversationRow extends StatelessWidget {
     final preview = conversation.lastMessagePreview;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.buttonR,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           child: Row(

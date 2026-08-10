@@ -51,7 +51,7 @@ class SwipeArchiveBackground extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              archived ? Icons.unarchive_outlined : AppIcons.archive,
+              archived ? AppIcons.unarchive : AppIcons.archive,
               color: base,
               size: 20,
             ),

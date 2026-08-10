@@ -380,6 +380,7 @@ class Conversation extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     required this.autoApprove,
+    this.taskPrep,
     required this.deepThink,
     required this.isRunning,
     required this.stopRequested,
@@ -419,6 +420,29 @@ class Conversation extends Equatable {
   /// Read from the top-level `deep_think` field first (canonical),
   /// falls back to `context['deep_think']` for backwards compatibility.
   final bool? deepThink;
+
+  /// Per-conversation "task prep" toggle, on exactly the terms as
+  /// [deepThink] above:
+  ///   * `true` / `false` — the server owns the setting; use it, and PATCH
+  ///     it when the user flips the switch.
+  ///   * `null`           — the server does not send the field, so it owns
+  ///     nothing. Callers fall back to the device-local `TaskPrepCubit`,
+  ///     which is exactly how the app behaves today.
+  ///
+  /// **Nullable so this ships BEFORE the backend field exists.** As of
+  /// 2026-08-10 the conversation carries `auto_approve` and `deep_think` but
+  /// no `task_prep`, which is why flipping the toggle in the app never
+  /// reached the website and vice versa — there was no shared value to agree
+  /// through, only two private copies. The product decision has been made:
+  /// per-conversation, mirroring `auto_approve`.
+  ///
+  /// Reading it now, ahead of the server, is what removes a mobile release
+  /// from that fix: the day the field appears in the snapshot the toggle
+  /// starts syncing on builds already in users' hands. Until then `null`
+  /// keeps today's behaviour precisely, so shipping this early costs
+  /// nothing and cannot regress.
+  final bool? taskPrep;
+
   final bool isArchived;
 
   /// `true` while the agent worker is processing this conversation.
@@ -473,6 +497,10 @@ class Conversation extends Equatable {
       updatedAt: _parseDate(json['updated_at']) ?? DateTime.now(),
       autoApprove: json['auto_approve'] as bool? ?? false,
       deepThink: deepThinkRaw is bool ? deepThinkRaw : null,
+      // `is bool`, not `as bool?`: a non-bool would throw and take the whole
+      // snapshot with it. Anything that is not a boolean reads as "the server
+      // said nothing", which falls back to the local preference.
+      taskPrep: json['task_prep'] is bool ? json['task_prep'] as bool : null,
       isArchived: json['is_archived'] as bool? ?? false,
       isRunning: json['is_running'] as bool? ?? false,
       stopRequested: json['stop_requested'] as bool? ?? false,
@@ -513,6 +541,7 @@ class Conversation extends Equatable {
     DateTime? updatedAt,
     bool? autoApprove,
     bool? deepThink,
+    bool? taskPrep,
     bool? isArchived,
     bool? isRunning,
     bool? stopRequested,
@@ -532,6 +561,7 @@ class Conversation extends Equatable {
       updatedAt: updatedAt ?? this.updatedAt,
       autoApprove: autoApprove ?? this.autoApprove,
       deepThink: deepThink ?? this.deepThink,
+      taskPrep: taskPrep ?? this.taskPrep,
       isArchived: isArchived ?? this.isArchived,
       isRunning: isRunning ?? this.isRunning,
       stopRequested: stopRequested ?? this.stopRequested,
@@ -556,6 +586,7 @@ class Conversation extends Equatable {
         updatedAt,
         autoApprove,
         deepThink,
+        taskPrep,
         isArchived,
         isRunning,
         stopRequested,

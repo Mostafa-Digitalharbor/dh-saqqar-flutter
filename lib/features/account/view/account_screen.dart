@@ -20,6 +20,7 @@ import '../../auth/view_model/auth_cubit.dart';
 import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/usage_api.dart';
 import '../../billing/view_model/plan_cubit.dart';
+import '../../billing/view_model/saqqar_features_cubit.dart';
 import '../widgets/widgets.dart';
 
 /// Account tab — identity hero (with stats line), preferences, change
@@ -74,8 +75,13 @@ class _AccountScreenState extends State<AccountScreen>
     if (!mounted) return;
     final usageApi = context.read<UsageApi>();
     final planCubit = context.read<PlanCubit>();
+    final featuresCubit = context.read<SaqqarFeaturesCubit>();
     try {
-      planCubit.update(await usageApi.fetch());
+      final usage = await usageApi.fetch();
+      planCubit.update(usage.plan);
+      // Same response carries `saqqar_features`; hand it over so the tools
+      // sheet doesn't have to make its own round-trip.
+      featuresCubit.update(usage.saqqarFeatures);
     } catch (_) {
       // Leave the existing PlanCubit state (snapshot-derived or null).
     }
@@ -128,7 +134,7 @@ class _AccountScreenState extends State<AccountScreen>
                       Expanded(
                         child: GhostButton(
                           label: context.tr.accountSeePlans,
-                          icon: Icons.workspace_premium_outlined,
+                          icon: AppIcons.premium,
                           expand: true,
                           onPressed: () =>
                               context.pushNamed(RouteNames.pricing),
@@ -139,7 +145,7 @@ class _AccountScreenState extends State<AccountScreen>
                     Expanded(
                       child: GhostButton(
                         label: context.tr.accountUsage,
-                        icon: Icons.bar_chart_rounded,
+                        icon: AppIcons.barChart,
                         expand: true,
                         onPressed: () => context.pushNamed(RouteNames.usage),
                       ),
@@ -177,7 +183,7 @@ class _AccountScreenState extends State<AccountScreen>
               AccountLinkGroup(
                 links: [
                   AccountLink(
-                    icon: Icons.devices_other_outlined,
+                    icon: AppIcons.devices,
                     title: context.tr.devicesManage,
                     subtitle: context.tr.devicesSubtitle,
                     onTap: () => context.pushNamed(RouteNames.devices),
@@ -205,7 +211,7 @@ class _AccountScreenState extends State<AccountScreen>
                 links: [
                   // Saqqar Apps — guided setups (§1).
                   AccountLink(
-                    icon: Icons.grid_view_rounded,
+                    icon: AppIcons.grid,
                     title: context.tr.appsTitle,
                     subtitle: context.tr.appsSubtitle,
                     tint: context.saqqar.brandPurple,
@@ -213,7 +219,7 @@ class _AccountScreenState extends State<AccountScreen>
                   ),
                   // Managed Odoo trial (§2).
                   AccountLink(
-                    icon: Icons.rocket_launch_outlined,
+                    icon: AppIcons.rocket,
                     title: context.tr.trialTitle,
                     subtitle: context.tr.trialSubtitle,
                     tint: context.saqqar.brandPurple,
@@ -221,7 +227,7 @@ class _AccountScreenState extends State<AccountScreen>
                   ),
                   // Read-only Odoo data explorer (§4.2).
                   AccountLink(
-                    icon: Icons.table_chart_outlined,
+                    icon: AppIcons.table,
                     title: context.tr.dataExplorerTitle,
                     subtitle: context.tr.dataExplorerSubtitle,
                     tint: context.saqqar.brandPurple,
@@ -256,7 +262,7 @@ class _AccountScreenState extends State<AccountScreen>
                     // even if the app can't sell it. Hiding the row entirely
                     // left iOS with a limit message and no explanation of it.
                     AccountLink(
-                      icon: Icons.workspace_premium_outlined,
+                      icon: AppIcons.premium,
                       title: context.tr.pricingPlansTitle,
                       subtitle: showPaidUpsell
                           ? context.tr.pricingPlansSubtitle
@@ -268,7 +274,7 @@ class _AccountScreenState extends State<AccountScreen>
                     // place in the app the money is visible at all.
                     if (showBillingRecords)
                       AccountLink(
-                        icon: Icons.receipt_long_outlined,
+                        icon: AppIcons.receipt,
                         title: context.tr.billingHistoryTitle,
                         subtitle: context.tr.billingHistorySubtitle,
                         onTap: () =>

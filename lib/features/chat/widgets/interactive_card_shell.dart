@@ -1,0 +1,167 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../../core/theme/app_radius.dart';
+import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
+
+/// Shared chrome for the three in-chat interactive cards (clarify, report
+/// builder, prompt suggestion) so they read as one family rather than three
+/// unrelated widgets that happen to sit in the message lane.
+///
+/// Cyan start-side stripe — the mirror of the amber stripe an approval card
+/// wears. Amber says "a decision with consequences is waiting"; cyan says
+/// "Saqqar needs input before it starts", which is the whole point of these.
+class InteractiveCardShell extends StatelessWidget {
+  const InteractiveCardShell({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
+        borderRadius: AppRadius.bubbleR,
+        border: Border.all(color: s.cardBorder),
+      ),
+      child: Stack(
+        children: [
+          PositionedDirectional(
+            start: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: s.brandCyan,
+                borderRadius: const BorderRadiusDirectional.horizontal(
+                  start: Radius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ColoredIconBox(
+                      icon: icon,
+                      color: s.brandCyan,
+                      size: 34,
+                      radius: AppRadius.small,
+                      iconSize: 17,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: context.text.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: s.text,
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...children,
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Single-select chip used by the clarify + report cards.
+///
+/// A `Wrap` of these, not a horizontal strip: the options are server-authored
+/// sentences ("This quarter", "كل العملاء النشطين") of wildly different
+/// widths, and a strip would push half of them off-screen with no affordance
+/// saying so.
+class CardChoiceChip extends StatelessWidget {
+  const CardChoiceChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppRadius.pillR,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        borderRadius: AppRadius.pillR,
+        child: AnimatedContainer(
+          duration: AppDurations.control,
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? s.brandCyan.withValues(alpha: 0.16)
+                : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.9),
+            borderRadius: AppRadius.pillR,
+            border: Border.all(
+              color: selected
+                  ? s.brandCyan.withValues(alpha: 0.55)
+                  : s.cardBorder,
+            ),
+          ),
+          child: Text(
+            label,
+            style: context.text.labelMedium?.copyWith(
+              color: selected ? s.brandCyan : s.text,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Small group heading inside a card ("Period", "Which customers?").
+class CardFieldLabel extends StatelessWidget {
+  const CardFieldLabel(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: context.text.labelMedium?.copyWith(
+          color: context.saqqar.muted,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}

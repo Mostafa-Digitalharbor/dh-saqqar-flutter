@@ -72,10 +72,10 @@ class AttachmentChip extends StatelessWidget {
     if (onTap == null) return child;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.buttonR,
         child: child,
       ),
     );
@@ -100,14 +100,14 @@ class _CompactAttachment extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadius.smallR,
       child: Container(
         width: 72,
         height: 72,
         decoration: BoxDecoration(
           color: s.surface,
           border: Border.all(color: s.border),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppRadius.smallR,
         ),
         child: _isLocalImage(attachment)
             ? _localImageThumb(attachment.imageUrl!, s)
@@ -167,7 +167,7 @@ class _CompactAttachment extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: s.brandCyan.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: AppRadius.badgeR,
             ),
             child: Text(
               attachment.kind,
@@ -226,14 +226,14 @@ class _GalleryAttachment extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: Container(
         width: AttachmentChip.galleryWidth,
         height: AttachmentChip.galleryHeight,
         decoration: BoxDecoration(
           color: s.surface,
           border: Border.all(color: s.border),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.buttonR,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -333,13 +333,13 @@ class _ImageAttachment extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 360),
         decoration: BoxDecoration(
           color: s.surface,
           border: Border.all(color: s.border),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.buttonR,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -460,7 +460,7 @@ class _FileAttachment extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 8, 10, 8),
       decoration: BoxDecoration(
         color: s.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadius.smallR,
         border: Border.all(color: s.border),
       ),
       child: Row(

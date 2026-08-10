@@ -92,6 +92,16 @@ class ErrorInterceptor extends Interceptor {
     );
   }
 
+  /// True when Dio's `unknown` is really "the body wasn't the JSON it said it
+  /// was" rather than "the socket never opened".
+  ///
+  /// [FormatException] is what `jsonDecode` throws on a truncated or HTML
+  /// body; [TypeError] covers a transformer casting a decoded scalar to a
+  /// Map. Both leave `response` null — Dio discards it when the decode step
+  /// throws — which is also why the status code cannot be recovered here.
+  static bool _isDecodeFailure(DioException err) =>
+      err.error is FormatException || err.error is TypeError;
+
   static ApiException _mapToApiException(DioException err) {
     final body = _ParsedBody.from(err.response?.data, err.response?.headers);
 
@@ -101,6 +111,18 @@ class ErrorInterceptor extends Interceptor {
       DioExceptionType.receiveTimeout => ApiExceptionKind.timeout,
       DioExceptionType.badResponse => ApiExceptionKind.badResponse,
       DioExceptionType.cancel => ApiExceptionKind.cancelled,
+      // `unknown` is Dio's bucket for two unrelated things: a socket that
+      // never connected, and a response whose body failed to decode. Both
+      // arrived here as `network`, so a server returning malformed JSON told
+      // the user to check their internet — advice that cannot fix it and
+      // that points at the one component which is demonstrably working.
+      //
+      // The decode failure is identifiable: Dio puts the `FormatException`
+      // in `err.error` and leaves `response` null, because parsing is what
+      // failed. Split it out so `ApiErrorMapper` can say "unexpected response
+      // from the server" instead.
+      DioExceptionType.unknown when _isDecodeFailure(err) =>
+        ApiExceptionKind.parse,
       DioExceptionType.connectionError ||
       DioExceptionType.unknown => ApiExceptionKind.network,
       _ => ApiExceptionKind.unknown,

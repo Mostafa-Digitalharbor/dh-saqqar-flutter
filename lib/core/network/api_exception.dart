@@ -51,5 +51,18 @@ enum ApiExceptionKind {
   timeout, // connect/receive/send timeout
   badResponse, // 4xx / 5xx
   cancelled, // request was cancelled
+
+  /// The bytes arrived and were not the JSON they claimed to be — a proxy
+  /// truncated the body, gzip cut off mid-object, or a Django debug page came
+  /// back under an `application/json` header.
+  ///
+  /// Distinct from [network] because the advice differs and only one of them
+  /// is actionable: "check your connection" sends a user to their router when
+  /// the connection is fine and the server is the problem. Dio reports these
+  /// as `DioExceptionType.unknown` with a `FormatException` inside and *no
+  /// status code* — the response never finished parsing — so the kind is the
+  /// only place the distinction can survive.
+  parse,
+
   unknown,
 }

@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../core/constants/ui_strings.dart';
+
 /// The five `action_type` values the backend emits per
 /// SAQQAR_MOBILE_API.md §3 / §8. `unknown` is the safe fallback for
 /// forward-compat (so a new server-side action_type doesn't crash the
@@ -77,6 +79,8 @@ class Approval extends Equatable {
     this.modelLabelEn,
     this.modelLabelAr,
     this.recordCount,
+    this.confirmPhrase,
+    this.batchScoped = false,
   });
 
   final String id;
@@ -107,6 +111,23 @@ class Approval extends Equatable {
   /// not applicable to the action type.
   final int? recordCount;
 
+  /// The exact phrase the server will accept to confirm a destructive delete
+  /// (e.g. `"delete 3"`), from `confirm_phrase`. `null` on every non-delete
+  /// approval, and on a server that predates the field.
+  ///
+  /// Prefer this over building the string client-side: the server owns the
+  /// canonical wording and has already changed it once (the Odoo model name
+  /// used to be part of it). Reading it means inheriting the next change for
+  /// free. The locale-built phrases stay accepted alongside it — the server
+  /// takes `delete N`, `حذف N` and `احذف N` interchangeably, so refusing a
+  /// user's own language would be a client-only restriction.
+  final String? confirmPhrase;
+
+  /// `payload.batch_scope` — this approval was auto-resolved by a scope the
+  /// user already approved. Suppresses "approve all similar", which would
+  /// offer to do something that has already happened.
+  final bool batchScoped;
+
   /// Locale-aware model name — Arabic when [isArabic], else English; falls
   /// back to the other locale when one side is missing. `null` when neither
   /// is present (caller then renders the raw payload as before).
@@ -119,12 +140,17 @@ class Approval extends Equatable {
 
   factory Approval.fromJson(Map<String, dynamic> json) {
     final ml = json['model_label'];
+    final payload = (json['payload'] as Map?)?.cast<String, dynamic>() ?? const {};
+    // Documented as a field on the approval object; also accepted from the
+    // payload, because every other delete-specific value (record_ids, model)
+    // lives there and one of the two placements will be what actually ships.
+    final phrase = json['confirm_phrase'] ?? payload['confirm_phrase'];
     return Approval(
       id: json['id'] as String,
       actionType: ApprovalActionType.fromWire(json['action_type'] as String?),
       status: ApprovalStatus.fromWire(json['status'] as String?),
       prompt: json['prompt'] as String? ?? '',
-      payload: (json['payload'] as Map?)?.cast<String, dynamic>() ?? const {},
+      payload: payload,
       resolutionNote: json['resolution_note'] as String?,
       createdAt: _parseDate(json['created_at']),
       resolvedAt: _parseDate(json['resolved_at']),
@@ -133,9 +159,17 @@ class Approval extends Equatable {
               json['conversation'] as Map<String, dynamic>,
             )
           : null,
-      modelLabelEn: ml is Map ? ml['en'] as String? : null,
-      modelLabelAr: ml is Map ? ml['ar'] as String? : null,
+      modelLabelEn:
+          ml is Map ? ml[UiStrings.localeEnglishCode] as String? : null,
+      modelLabelAr:
+          ml is Map ? ml[UiStrings.localeArabicCode] as String? : null,
       recordCount: (json['record_count'] as num?)?.toInt(),
+      // Non-String (or blank) means "the server didn't tell us" — the dialog
+      // then falls back to the locale-built phrases rather than requiring the
+      // user to type an empty string, which would gate the delete forever.
+      confirmPhrase:
+          phrase is String && phrase.trim().isNotEmpty ? phrase.trim() : null,
+      batchScoped: payload['batch_scope'] == true,
     );
   }
 
@@ -153,6 +187,8 @@ class Approval extends Equatable {
         modelLabelEn,
         modelLabelAr,
         recordCount,
+        confirmPhrase,
+        batchScoped,
       ];
 
   static DateTime? _parseDate(Object? value) {

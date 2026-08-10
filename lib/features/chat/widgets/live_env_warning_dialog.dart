@@ -5,6 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
+import '../../../shared/widgets/dialog_actions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/app_dialog_shell.dart';
@@ -135,29 +136,22 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GhostButton(
-                                label: context.tr.cancel,
-                                onPressed: () => Navigator.of(
-                                  context,
-                                ).pop(LiveAckResult.cancel),
-                              ),
+                        DialogActions(
+                          cancel: GhostButton(
+                            label: context.tr.cancel,
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).pop(LiveAckResult.cancel),
+                          ),
+                          confirm: PrimaryButton(
+                            label: context.tr.sendToLive,
+                            icon: AppIcons.send,
+                            onPressed: () => Navigator.of(context).pop(
+                              _dontAskAgain
+                                  ? LiveAckResult.confirmGlobal
+                                  : LiveAckResult.confirmOnce,
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: PrimaryButton(
-                                label: context.tr.sendToLive,
-                                icon: AppIcons.send,
-                                onPressed: () => Navigator.of(context).pop(
-                                  _dontAskAgain
-                                      ? LiveAckResult.confirmGlobal
-                                      : LiveAckResult.confirmOnce,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
         ),

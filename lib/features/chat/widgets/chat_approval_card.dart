@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 
+import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
@@ -9,6 +12,10 @@ import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../../core/theme/app_radius.dart';
+import '../data/delete_confirmation.dart';
+import 'delete_approval_confirm_dialog.dart';
+import 'email_approval_preview.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 
 /// Approval card shown inside the chat "Pending approvals" sheet.
 /// Neutral surface + 4 px amber start-side stripe + Reject / Approve actions.
@@ -22,11 +29,18 @@ class ChatApprovalCard extends StatefulWidget {
     required this.approval,
     required this.onApprove,
     required this.onReject,
+    this.onApproveAllSimilar,
   });
 
   final DemoApproval approval;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+
+  /// Sends the decision with `scope: "batch"` — resolves every pending
+  /// sibling of the same shape in this conversation AND pre-approves future
+  /// ones. Null on surfaces that don't support it (the rail drawer), which
+  /// hides the action rather than showing a dead control.
+  final VoidCallback? onApproveAllSimilar;
 
   @override
   State<ChatApprovalCard> createState() => _ChatApprovalCardState();
@@ -35,10 +49,42 @@ class ChatApprovalCard extends StatefulWidget {
 class _ChatApprovalCardState extends State<ChatApprovalCard> {
   bool _showDetails = false;
 
+  /// Whether this approval deletes Odoo records — the one action here that
+  /// can't be undone. Read off the SERVER's `payload.operation`, never
+  /// guessed from the prompt text.
+  bool get _isDestructiveDelete =>
+      widget.approval.payload['operation'] == kDeleteOperation;
+
+  /// Approve, gated by the type-to-confirm dialog for deletes (web parity).
+  ///
+  /// Lives on the card rather than at each call site so BOTH surfaces that
+  /// render approvals — inline in the chat stream and the rail drawer — get
+  /// the gate. A second copy is how one of them ends up without it.
+  Future<void> _approve() async {
+    // Fire-and-forget: awaiting the haptic would gate a user-visible dialog
+    // on a platform channel that never answers in a widget test (and can be
+    // slow on a real device).
+    unawaited(HapticFeedback.mediumImpact());
+    if (_isDestructiveDelete) {
+      final confirmed = await DeleteApprovalConfirmDialog.show(
+        context,
+        // Falls back to 1: the phrase must always name a real number,
+        // because it's what the user has to type.
+        recordCount: widget.approval.recordCount ?? 1,
+        // The server's own canonical phrase when it sent one; the locale
+        // phrases stay accepted alongside it.
+        serverPhrase: widget.approval.confirmPhrase,
+      );
+      if (!confirmed || !mounted) return;
+    }
+    widget.onApprove();
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final approval = widget.approval;
+    final email = EmailApprovalPreview.of(approval.payload);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
@@ -68,22 +114,12 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: s.warning.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: s.warning.withValues(alpha: 0.30),
-                        ),
-                      ),
-                      child: Icon(
-                        AppIcons.shieldAlert,
-                        color: s.warning,
-                        size: 17,
-                      ),
+                    ColoredIconBox(
+                      icon: AppIcons.shieldAlert,
+                      color: s.warning,
+                      size: 34,
+                      radius: AppRadius.small,
+                      iconSize: 17,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -97,7 +133,8 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                       ),
                     ),
                     if (approval.isGrouped) ...[
-                      MiniChip('×${approval.groupedCount ?? 1}',
+                      MiniChip(
+                          '${UiStrings.timesSign}${approval.groupedCount ?? 1}',
                           color: s.warning),
                       const SizedBox(width: 6),
                     ],
@@ -112,6 +149,11 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                     height: 1.5,
                   ),
                 ),
+                // §9 — when the payload is an email, show it AS an email
+                // (recipient / subject / body) rather than as key-value
+                // chips. The raw payload stays available under "Show
+                // details" below, so nothing is hidden, only laid out.
+                if (email != null) email,
                 // Gap E — raw payload collapsed by default behind a
                 // "Show details" disclosure; the friendly title above is
                 // enough for non-technical users.
@@ -170,32 +212,38 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      // Web parity: when this approval is grouped (shape
-                      // shared by multiple pending writes), the primary
-                      // button approves the whole batch in one tap AND
-                      // pre-approves future writes of the same shape in
-                      // this conversation. The label must reflect that —
-                      // a generic "Approve" would be misleading.
+                      // Always the singular "Approve". The card cannot label
+                      // a count: the backend has no `grouped_count` field, and
+                      // the number of siblings a batch clears is only known
+                      // from the decision RESPONSE. "Approve all 6" here would
+                      // be a number the client invented.
                       child: PrimaryButton(
-                        label: approval.isGrouped
-                            ? context.tr.approveAllN(
-                                approval.groupedCount ?? 1,
-                              )
-                            : context.tr.approve,
+                        label: context.tr.approve,
                         icon: AppIcons.check,
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          widget.onApprove();
-                        },
+                        onPressed: _approve,
                       ),
                     ),
                   ],
                 ),
-                // Pre-approval hint — same copy the web uses below the
-                // "Approve all" button. Only rendered when the approval
-                // belongs to a shape group so single one-off approvals
-                // don't get an irrelevant disclosure.
-                if (approval.isGrouped) ...[
+                // Batch resolve — a separate, quieter action rather than the
+                // primary button, because it does strictly more than the user
+                // asked: it clears every pending sibling AND pre-approves
+                // future writes of the same shape. Hidden for deletes (the
+                // server 400s) and for approvals already covered by a scope.
+                if (widget.onApproveAllSimilar != null &&
+                    approval.canBatchApprove) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: GhostButton(
+                      label: context.tr.approveAllSimilar,
+                      icon: AppIcons.check,
+                      onPressed: () {
+                        unawaited(HapticFeedback.mediumImpact());
+                        widget.onApproveAllSimilar!();
+                      },
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     context.tr.preApprovalTip,

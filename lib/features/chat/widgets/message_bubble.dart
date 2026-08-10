@@ -19,6 +19,7 @@ import '../view/attachment_viewer_screen.dart';
 import 'artifact_pill.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Spec §8 — two distinct render paths for one message:
 ///
@@ -98,38 +99,18 @@ class _UserBubble extends StatelessWidget {
         ),
         if (showTime) ...[
           const SizedBox(height: 5),
-          // Split into separate Text widgets so each is independently
-          // findable in tests (and screen readers can announce them as
-          // discrete pieces of meta).
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  context.tr.youLabel,
-                  style: context.text.labelSmall?.copyWith(
-                    color: s.muted,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  ' · ',
-                  style: context.text.labelSmall?.copyWith(
-                    color: s.muted.withValues(alpha: 0.7),
-                    fontSize: 10.5,
-                  ),
-                ),
-                Text(
-                  message.time,
-                  style: context.text.labelSmall?.copyWith(
-                    color: s.muted,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            child: MessageMeta(
+              leading: TextSpan(text: context.tr.youLabel),
+              time: message.time,
+              align: TextAlign.end,
+              style: context.text.labelSmall?.copyWith(
+                color: s.muted,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500,
+              ),
+              dotColor: s.muted.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -156,29 +137,18 @@ class _AgentMessage extends StatelessWidget {
           // Meta line: SAQQÂR logo + middle-dot + (optional time).
           // The logo is small (14 dp) so it sits inline with the
           // adjacent muted timestamp without dominating the meta row.
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SaqqarLogo(height: 14),
-              if (showTime) ...[
-                Text(
-                  ' · ',
-                  style: TextStyle(
-                    color: s.muted.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
-                ),
-                Text(
-                  message.time,
-                  style: context.text.labelSmall?.copyWith(
-                    color: s.muted,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ],
+          MessageMeta(
+            leading: const WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: SaqqarLogo(height: 14),
+            ),
+            time: showTime ? message.time : null,
+            style: context.text.labelSmall?.copyWith(
+              color: s.muted,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+            ),
+            dotColor: s.muted.withValues(alpha: 0.7),
           ),
           const SizedBox(height: 6),
           // Optional tool name (sits above the body so the user knows
@@ -216,6 +186,69 @@ class _AgentMessage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The attribution line under a message — `You · <timestamp>` on the user
+/// side, `[Saqqar mark] · <timestamp>` on the agent side.
+///
+/// **One paragraph, not a Row.** Both sides used to build this as
+/// `Row(mainAxisSize: min, children: [Text, Text, Text])`, and `Row` hands its
+/// children unbounded width on the main axis — so no `Text` inside one can
+/// ever wrap or ellipsize, whatever its own `overflow` says. That was fine
+/// while the label read `10:00`. It stopped being fine when the timestamp
+/// became the web-parity long form (`August 9, 2026 at 10:00 AM`,
+/// `١٨ مايو ٢٠٢٦ في ٠٦:٢٤ م`): on a 320 px screen the bubble column is
+/// 268.5 px wide and the line wants 294.5, so it overflowed by 26 px — on
+/// every user message, on the app's main surface.
+///
+/// A single `Text.rich` makes the whole line one paragraph, so the normal
+/// line-breaker wraps it. The Saqqar mark rides along as a `WidgetSpan`, which
+/// is what keeps the agent side one paragraph too rather than a Row again.
+///
+/// Wrapping rather than ellipsizing is deliberate. The tool-name row a few
+/// lines below *does* ellipsize, because a clipped tool name is still a
+/// recognisable tool name — but `August 9, 2026 at 10:0…` misstates when a
+/// message was sent, and a second line costs 15 px.
+class MessageMeta extends StatelessWidget {
+  const MessageMeta({
+    super.key,
+    required this.leading,
+    required this.time,
+    required this.style,
+    required this.dotColor,
+    this.align = TextAlign.start,
+  });
+
+  /// The attribution itself: a `TextSpan` for "You", a `WidgetSpan` for the
+  /// Saqqar mark. Taking a span rather than a widget is what allows both
+  /// shapes to share one paragraph.
+  final InlineSpan leading;
+
+  /// Null hides both the separator and the timestamp, leaving [leading]
+  /// alone — the agent's meta line still shows its mark on a grouped message.
+  final String? time;
+
+  final TextStyle? style;
+  final Color dotColor;
+  final TextAlign align;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = time;
+    return Text.rich(
+      TextSpan(
+        style: style,
+        children: [
+          leading,
+          if (label != null) ...[
+            TextSpan(text: ' · ', style: TextStyle(color: dotColor)),
+            TextSpan(text: label),
+          ],
+        ],
+      ),
+      textAlign: align,
     );
   }
 }
@@ -298,13 +331,13 @@ class _MessageActionsSheet extends StatelessWidget {
             const SheetDragHandle(),
             const SizedBox(height: 18),
             _SheetRow(
-              icon: Icons.content_copy_outlined,
+              icon: AppIcons.copy,
               label: tr.copyAction,
               onTap: () =>
                   Navigator.of(context).pop(_MessageAction.copy),
             ),
             _SheetRow(
-              icon: Icons.ios_share,
+              icon: AppIcons.share,
               label: tr.shareMessage,
               onTap: () =>
                   Navigator.of(context).pop(_MessageAction.share),
@@ -346,10 +379,10 @@ class _SheetRow extends StatelessWidget {
     final s = context.saqqar;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.buttonR,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
           child: Row(

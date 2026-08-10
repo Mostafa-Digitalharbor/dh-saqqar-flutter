@@ -75,15 +75,11 @@ class AppDialogShell extends StatelessWidget {
               color: s.surface,
               borderRadius: AppRadius.cardR,
               border: Border.all(color: s.cardBorder),
-              boxShadow: elevated
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF020617).withValues(alpha: 0.55),
-                        blurRadius: 36,
-                        offset: const Offset(0, 16),
-                      ),
-                    ]
-                  : null,
+              // `modalShadow` carries the same 36/16 lift this had, and adds
+              // the light-theme half it was missing: the hardcoded colour was
+              // 55%-opaque near-black in *both* themes, so a dialog on a white
+              // page cast a shadow darker than any other surface in the app.
+              boxShadow: elevated ? s.modalShadow : null,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

@@ -51,12 +51,25 @@ class AppErrorState extends StatelessWidget {
     final s = context.saqqar;
     final headline = title ?? context.tr.defaultApiError;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    // `default_api_error` and `error_unknown` are the same sentence in both
+    // locales — deliberately, they answer the same question. So an error we
+    // cannot classify (the single most common failure) used to stack the
+    // headline on an identical body:
+    //
+    //     Something went wrong. Please try again.
+    //     Something went wrong. Please try again.
+    //
+    // which reads as a rendering bug and pushes the retry button off small
+    // screens for no information. Collapse to one line when they match, and
+    // drop an empty message rather than reserving blank space for it.
+    final body = message.trim();
+    final showBody = body.isNotEmpty && body != headline.trim();
+
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
             ColoredIconBox(
               icon: icon ?? AppIcons.warning,
               color: s.danger,
@@ -77,15 +90,17 @@ class AppErrorState extends StatelessWidget {
                 letterSpacing: -0.2,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: context.text.bodyMedium?.copyWith(
-                color: s.muted,
-                height: 1.45,
+            if (showBody) ...[
+              const SizedBox(height: 6),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: context.text.bodyMedium?.copyWith(
+                  color: s.muted,
+                  height: 1.45,
+                ),
               ),
-            ),
+            ],
             if (onRetry != null) ...[
               const SizedBox(height: 18),
               GhostButton(
@@ -95,8 +110,31 @@ class AppErrorState extends StatelessWidget {
               ),
             ],
           ],
-        ),
       ),
+    );
+
+    // Centred, but scrollable when it can't fit.
+    //
+    // The icon + headline + body + retry stack is ~200 px tall, and a phone in
+    // landscape is 320 px minus the app bar — so at 1.3× text this overflowed
+    // the bottom rather than letting the user reach the retry button, which is
+    // the one control an error state exists to offer. Found by the pricing
+    // screen's cell in `screen_responsive_sweep_test.dart`.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Unbounded height means a scrolling parent already owns the axis
+        // (the devices screen puts this inside a ListView). Adding our own
+        // there would nest two scrollables and break pull-to-refresh.
+        if (!constraints.hasBoundedHeight) return Center(child: content);
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            // Fill the viewport so short content still centres, and grow past
+            // it — the scroll only engages once it has to.
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: content),
+          ),
+        );
+      },
     );
   }
 }

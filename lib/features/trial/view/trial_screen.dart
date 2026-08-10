@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/state/data_state.dart';
@@ -13,6 +14,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../data/trial_models.dart';
 import '../view_model/trial_cubit.dart';
@@ -79,14 +81,11 @@ class _TrialScreenState extends State<TrialScreen> {
           listenWhen: (prev, next) =>
               prev.submitError != next.submitError && next.submitError != null,
           listener: (context, state) {
-            ScaffoldMessenger.of(context)
-              ..clearSnackBars()
-              ..showSnackBar(
-                SnackBar(
-                  content:
-                      Text(ApiErrorMapper.message(context, state.submitError)),
-                ),
-              );
+            AppToast.show(
+              context,
+              message: ApiErrorMapper.message(context, state.submitError),
+              variant: ToastVariant.error,
+            );
           },
           builder: _buildBody,
         ),
@@ -198,7 +197,7 @@ class _RequestForm extends StatelessWidget {
         const SizedBox(height: 20),
         GhostButton(
           label: context.tr.trialRequestButton,
-          icon: Icons.rocket_launch_outlined,
+          icon: AppIcons.rocket,
           expand: true,
           loading: submitting,
           onPressed: submitting ? null : onSubmit,
@@ -265,7 +264,7 @@ class _FailedCard extends StatelessWidget {
     return AppErrorState(
       title: context.tr.trialFailedTitle,
       message: reason,
-      icon: Icons.error_outline,
+      icon: AppIcons.error,
       onRetry: onRetry,
       retryLabel: context.tr.retry,
     );
@@ -284,9 +283,11 @@ class _ReadyCard extends StatelessWidget {
     if (uri == null) return;
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(context.tr.trialOpenFailed)));
+      AppToast.show(
+        context,
+        message: context.tr.trialOpenFailed,
+        variant: ToastVariant.error,
+      );
     }
   }
 
@@ -298,7 +299,7 @@ class _ReadyCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.check_circle_outline, color: s.success, size: 22),
+            Icon(AppIcons.success, color: s.success, size: 22),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -353,7 +354,7 @@ class _ReadyCard extends StatelessWidget {
         const SizedBox(height: 16),
         GhostButton(
           label: context.tr.trialOpen,
-          icon: Icons.open_in_new,
+          icon: AppIcons.open,
           expand: true,
           onPressed: () => _open(context),
         ),
@@ -385,15 +386,17 @@ class _CredentialRowState extends State<_CredentialRow> {
   Future<void> _copy(BuildContext context) async {
     await Clipboard.setData(ClipboardData(text: widget.value));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(context.tr.trialCopied)));
+    AppToast.show(
+      context,
+      message: context.tr.trialCopied,
+      variant: ToastVariant.success,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final shown = _hidden ? '••••••••••' : widget.value;
+    final shown = _hidden ? UiStrings.secretMask : widget.value;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
@@ -426,7 +429,7 @@ class _CredentialRowState extends State<_CredentialRow> {
             ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            icon: Icon(Icons.copy_outlined, size: 16, color: s.muted),
+            icon: Icon(AppIcons.copy, size: 16, color: s.muted),
             tooltip: context.tr.copy,
             onPressed: () => _copy(context),
           ),

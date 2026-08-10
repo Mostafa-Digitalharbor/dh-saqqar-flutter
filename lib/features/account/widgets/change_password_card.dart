@@ -5,6 +5,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_radius.dart';
 import 'account_card_header.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
@@ -182,7 +183,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
           // the end side (mirrored automatically in RTL by Flutter).
           InkWell(
             onTap: _toggle,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.buttonR,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
               child: AccountCardHeader(
@@ -191,7 +192,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                 trailing: Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: AnimatedRotation(
-                    duration: const Duration(milliseconds: 180),
+                    duration: AppDurations.fast,
                     turns: _expanded ? 0.5 : 0,
                     child: Icon(
                       AppIcons.chevronDown,
@@ -204,11 +205,11 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
             ),
           ),
           AnimatedSize(
-            duration: const Duration(milliseconds: 200),
+            duration: AppDurations.expand,
             curve: Curves.easeOutCubic,
             alignment: Alignment.topCenter,
             child: AnimatedCrossFade(
-              duration: const Duration(milliseconds: 180),
+              duration: AppDurations.fast,
               firstChild: const SizedBox(width: double.infinity, height: 0),
               secondChild: Padding(
                 padding: const EdgeInsets.fromLTRB(0, 4, 8, 14),

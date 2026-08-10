@@ -154,6 +154,46 @@ void main() {
       expect(RouteNames.checkoutPath, isNot(RouteNames.pricingPath));
       expect(RouteNames.pricingPath, '/pricing');
     });
+
+    test('the checkout screen, client and models are gone from the tree', () {
+      // Deleted 2026-08-04. Payment is the website's job end to end: the user
+      // is sent to /pricing/, the backend verifies with Paymob and activates
+      // the plan, and the app only ever reads the result back. Keeping a
+      // dormant purchase UI around meant one import could put a Buy button
+      // back into a store binary.
+      for (final path in const [
+        'lib/features/billing/view/checkout_screen.dart',
+        'lib/features/billing/data/checkout_api.dart',
+        'lib/features/billing/data/checkout_models.dart',
+      ]) {
+        expect(
+          File(path).existsSync(),
+          isFalse,
+          reason: '$path is back — the app must not own a payment surface',
+        );
+      }
+    });
+
+    test('no checkout endpoint is declared', () {
+      // These three exist on the server and are deliberately not written down
+      // here. Declaring one is how an app grows a payment state machine: an
+      // order to create, a reference to hold, a status to poll — all of it
+      // duplicating what the backend already decides, and all of it needing a
+      // store release every time pricing changes.
+      final src = File('lib/core/network/api_endpoints.dart').readAsStringSync();
+      for (final path in const [
+        "'/api/v1/billing/checkout/'",
+        "'/api/v1/billing/plans/'",
+        r"'/api/v1/billing/payment/$ref/status/'",
+      ]) {
+        expect(
+          src.contains(path),
+          isFalse,
+          reason: '$path was re-declared — the app does not create or track '
+              'payments; see the block that replaced these constants',
+        );
+      }
+    });
   });
 
   group('the login hand-off', () {

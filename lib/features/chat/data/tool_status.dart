@@ -82,66 +82,59 @@ String pendingStatusForTool(
   }
 }
 
+/// Ordered keyword → tool table backing [guessToolFromPrompt].
+///
+/// Order is load-bearing: the first entry whose keyword appears in the
+/// prompt wins, so the more specific artifact tools ("excel", "pdf") must
+/// precede the broad Odoo catch-alls ("odoo", "search") — otherwise
+/// "search the Odoo partners and export to Excel" would guess a record
+/// search and the typing row would name the wrong activity.
+///
+/// These are *matching tokens*, not copy: they are compared against what
+/// the user typed, never rendered. That is why the Arabic entries live
+/// here next to their English counterparts instead of in `app_strings` —
+/// a translator changing "تقرير" would silently break detection, and the
+/// i18n parity guard would have no way to know. Naming the table keeps
+/// them greppable and lets `tool_status_test` assert the priority order.
+const Map<String, List<String>> _toolKeywords = {
+  ToolNames.generateExcelReport: [
+    'excel',
+    'xlsx',
+    'csv',
+    'export',
+    'صدّر',
+    'تقرير',
+  ],
+  ToolNames.generatePdfReport: ['pdf', 'بي دي اف'],
+  ToolNames.generateWordReport: ['word', 'docx', 'مستند'],
+  ToolNames.runReadonlySql: ['sql', 'postgres', 'database', 'قاعدة'],
+  ToolNames.runServerCommand: [
+    'log',
+    'tail',
+    'shell',
+    'command',
+    'سيرفر',
+    'سجل',
+  ],
+  ToolNames.listGithubDirectory: ['repo', 'github', 'addons', 'module'],
+  ToolNames.describeOdooModel: ['describe', 'model', 'schema'],
+  ToolNames.writeOdooRecords: ['write', 'update', 'delete', 'create'],
+  ToolNames.countOdooRecords: ['odoo', 'user', 'count', 'search'],
+};
+
 /// Maps free-form user-prompt text (or assistant placeholder messages) to
 /// the most likely tool the agent will reach for, so the typing row can
 /// show contextual feedback BEFORE the backend reports the actual tool
 /// call. Heuristic — once the chat is wired to the live streaming API,
 /// callers should prefer the real `toolName` from the last assistant /
 /// tool message and only fall back to this helper for the first frame.
+///
+/// Returns null when nothing matches, which [pendingStatusForTool] renders
+/// as the generic "Finishing response" label.
 String? guessToolFromPrompt(String prompt) {
   final lower = prompt.toLowerCase();
-  if (lower.contains('excel') ||
-      lower.contains('xlsx') ||
-      lower.contains('csv') ||
-      lower.contains('export') ||
-      lower.contains('صدّر') ||
-      lower.contains('تقرير')) {
-    return ToolNames.generateExcelReport;
-  }
-  if (lower.contains('pdf') || lower.contains('بي دي اف')) {
-    return ToolNames.generatePdfReport;
-  }
-  if (lower.contains('word') ||
-      lower.contains('docx') ||
-      lower.contains('مستند')) {
-    return ToolNames.generateWordReport;
-  }
-  if (lower.contains('sql') ||
-      lower.contains('postgres') ||
-      lower.contains('database') ||
-      lower.contains('قاعدة')) {
-    return ToolNames.runReadonlySql;
-  }
-  if (lower.contains('log') ||
-      lower.contains('tail') ||
-      lower.contains('shell') ||
-      lower.contains('command') ||
-      lower.contains('سيرفر') ||
-      lower.contains('سجل')) {
-    return ToolNames.runServerCommand;
-  }
-  if (lower.contains('repo') ||
-      lower.contains('github') ||
-      lower.contains('addons') ||
-      lower.contains('module')) {
-    return ToolNames.listGithubDirectory;
-  }
-  if (lower.contains('describe') ||
-      lower.contains('model') ||
-      lower.contains('schema')) {
-    return ToolNames.describeOdooModel;
-  }
-  if (lower.contains('write') ||
-      lower.contains('update') ||
-      lower.contains('delete') ||
-      lower.contains('create')) {
-    return ToolNames.writeOdooRecords;
-  }
-  if (lower.contains('odoo') ||
-      lower.contains('user') ||
-      lower.contains('count') ||
-      lower.contains('search')) {
-    return ToolNames.countOdooRecords;
+  for (final entry in _toolKeywords.entries) {
+    if (entry.value.any(lower.contains)) return entry.key;
   }
   return null;
 }

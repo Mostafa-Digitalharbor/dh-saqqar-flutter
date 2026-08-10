@@ -173,7 +173,7 @@ class _DeviceRowTile extends StatelessWidget {
       child: Row(
         children: [
           ColoredIconBox(
-            icon: isIos ? Icons.phone_iphone : Icons.phone_android,
+            icon: isIos ? AppIcons.deviceIos : AppIcons.deviceAndroid,
             color: s.brandCyan,
             iconSize: 19,
           ),

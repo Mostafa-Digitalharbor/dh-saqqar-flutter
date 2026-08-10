@@ -77,12 +77,6 @@ class VaultCubit extends Cubit<VaultState> {
       final failure = ApiErrorMapper.toFailure(e);
       emit(state.copyWith(
         data: DataFailure<VaultData>(
-          // `message` here is a fallback for surfaces that don't read
-          // through DataStateView — it intentionally goes UNLOCALIZED so
-          // any view rendering it directly gets caught in dev (better
-          // than silently shipping English to an Arabic user). The
-          // canonical path is `DataStateView` + `ApiErrorMapper.message`.
-          message: 'Failed to load',
           error: failure,
           previous: state.data.dataOrNull,
         ),

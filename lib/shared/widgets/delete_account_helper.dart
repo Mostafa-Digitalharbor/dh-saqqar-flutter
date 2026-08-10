@@ -7,6 +7,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/network/api_error_mapper.dart';
 import '../../core/theme/app_icons.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
+import '../../features/security/view_model/app_lock_cubit.dart';
 import '../session/local_session_caches.dart';
 import 'app_toast.dart';
 import 'blocking_progress_dialog.dart';
@@ -35,6 +36,17 @@ Future<bool> showDeleteAccountFlow(BuildContext context) async {
   );
   if (!confirmed) return false;
   if (!context.mounted) return false;
+
+  // Biometric re-check when the app lock is on. This is the single most
+  // destructive action in the app — irreversible, server-side, and it takes
+  // every Odoo credential with it — so a typed confirmation on an already
+  // unlocked phone is not enough on its own.
+  //
+  // No-op when the lock is off: `confirm` returns true without prompting.
+  final unlocked = await context.read<AppLockCubit>().confirm(
+        reason: tr.appLockConfirmDelete,
+      );
+  if (!unlocked || !context.mounted) return false;
 
   // Capture references before any awaits — the auth-gate redirect rebuilds
   // the tree on success and `context.read` would throw afterwards.

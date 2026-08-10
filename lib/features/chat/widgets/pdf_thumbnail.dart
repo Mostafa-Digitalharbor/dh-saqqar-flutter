@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
 import '../../../core/logging/app_logger.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../shared/widgets/skeleton_block.dart';
 
 /// Renders the first page of a local PDF as a thumbnail.
@@ -219,7 +220,7 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
     }
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
+      duration: AppDurations.cardIn,
       child: child,
     );
   }

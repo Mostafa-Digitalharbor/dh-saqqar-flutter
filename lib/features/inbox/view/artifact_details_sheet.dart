@@ -88,7 +88,17 @@ class _ArtifactDetailsSheetState extends State<ArtifactDetailsSheet> {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return SafeArea(
-      child: Padding(
+      // Scrollable, because a bottom sheet's height is the viewport's to
+      // decide and this sheet's is the content's. In landscape (568×320) the
+      // artifact name, the meta rows and the action buttons come to 2 px more
+      // than the sheet is allowed to be, and a `Column(mainAxisSize: min)`
+      // answers that by painting past its own edge — the download button ends
+      // up under the screen with no way to reach it.
+      //
+      // `SingleChildScrollView` inside the sheet's bounded height sizes to the
+      // content when it fits and scrolls when it does not, so the tall-phone
+      // layout is pixel-identical to before.
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,

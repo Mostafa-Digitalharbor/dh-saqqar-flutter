@@ -22,7 +22,7 @@ publish_to: 'none'
 # 1.2.0+108 — Universal Links (iOS) / App Links (Android): tapping a
 #   https://saqqaar.com/... link opens the app on the matching screen
 #   (new feature → minor bump). See docs/SAQQAR_DEEP_LINKS_FLUTTER.md.
-version: 1.2.0+109
+version: 1.2.0+111
 
 environment:
   sdk: ^3.9.2

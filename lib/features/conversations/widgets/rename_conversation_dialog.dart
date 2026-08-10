@@ -6,6 +6,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
+import '../../../shared/widgets/dialog_actions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
 
@@ -125,31 +126,27 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
                   onSubmitted: (_) => _save(),
                 ),
                 const SizedBox(height: 18),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    GhostButton(
-                      label: context.tr.cancel,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(width: 8),
-                    // Save stays disabled until the title is non-empty AND
-                    // actually different from the current one — renaming to
-                    // the same value is a wasted PATCH.
-                    ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: _controller,
-                      builder: (context, value, _) {
-                        final next = value.text.trim();
-                        final canSave =
-                            next.isNotEmpty && next != widget.initial.trim();
-                        return PrimaryButton(
-                          label: context.tr.save,
-                          icon: AppIcons.save,
-                          onPressed: canSave ? _save : null,
-                        );
-                      },
-                    ),
-                  ],
+                DialogActions(
+                  cancel: GhostButton(
+                    label: context.tr.cancel,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  // Save stays disabled until the title is non-empty AND
+                  // actually different from the current one — renaming to
+                  // the same value is a wasted PATCH.
+                  confirm: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _controller,
+                    builder: (context, value, _) {
+                      final next = value.text.trim();
+                      final canSave =
+                          next.isNotEmpty && next != widget.initial.trim();
+                      return PrimaryButton(
+                        label: context.tr.save,
+                        icon: AppIcons.save,
+                        onPressed: canSave ? _save : null,
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

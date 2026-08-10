@@ -4,6 +4,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../extensions/context_extensions.dart';
 import 'app_dialog_shell.dart';
 import 'colored_icon_box.dart';
+import 'dialog_actions.dart';
 import 'ghost_button.dart';
 import 'primary_button.dart';
 
@@ -121,31 +122,23 @@ class ConfirmDialog extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GhostButton(
-                                label: cancelLabel ?? context.tr.cancel,
-                                onPressed: () =>
-                                    Navigator.of(context).pop(false),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: destructive
-                                  ? GhostButton(
-                                      label: confirmLabel,
-                                      tone: GhostButtonTone.danger,
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(true),
-                                    )
-                                  : PrimaryButton(
-                                      label: confirmLabel,
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(true),
-                                    ),
-                            ),
-                          ],
+                        DialogActions(
+                          cancel: GhostButton(
+                            label: cancelLabel ?? context.tr.cancel,
+                            onPressed: () => Navigator.of(context).pop(false),
+                          ),
+                          confirm: destructive
+                              ? GhostButton(
+                                  label: confirmLabel,
+                                  tone: GhostButtonTone.danger,
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                )
+                              : PrimaryButton(
+                                  label: confirmLabel,
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                ),
                         ),
                       ],
         ),

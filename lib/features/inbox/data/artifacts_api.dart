@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/response_body.dart';
 import 'artifact_models.dart';
 
 /// Repository for the flat Files feed (SAQQAR_MOBILE_API.md §9). Artifacts
@@ -29,7 +30,7 @@ class ArtifactsApi {
     final res = await _dio.get<Map<String, dynamic>>(
       ApiEndpoints.artifactDetail(id),
     );
-    final body = res.data ?? const <String, dynamic>{};
+    final body = res.requiredBody;
     final obj = (body['artifact'] as Map?)?.cast<String, dynamic>() ?? body;
     return Artifact.fromJson(obj);
   }

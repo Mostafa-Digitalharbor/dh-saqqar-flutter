@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Mic-tap → start recording. Reduced to a pure stateless button after
 /// the Whisper integration (2026-05-23): the State that used to live
@@ -48,7 +49,7 @@ class VoiceInputButton extends StatelessWidget {
             width: 38,
             height: 38,
             child: Icon(
-              Icons.mic,
+              AppIcons.mic,
               size: 20,
               color: enabled ? s.muted : s.muted.withValues(alpha: 0.4),
             ),
@@ -104,7 +105,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
     super.initState();
     _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: AppDurations.recordingPulse,
     )..repeat(reverse: true);
   }
 
@@ -134,7 +135,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
           IconButton(
             tooltip: tr.discardRecording,
             onPressed: widget.transcribing ? null : widget.onDiscard,
-            icon: Icon(Icons.delete_outline,
+            icon: Icon(AppIcons.trash,
                 size: 22,
                 color: widget.transcribing ? s.muted : s.danger),
             visualDensity: VisualDensity.compact,
@@ -209,7 +210,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                   color: s.danger,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.stop_rounded,
+                child: const Icon(AppIcons.stop,
                     color: Colors.white, size: 18),
               ),
               visualDensity: VisualDensity.compact,
@@ -272,12 +273,12 @@ class _Bar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 80),
+      duration: AppDurations.waveformBar,
       width: 3,
       height: height.clamp(4, 20),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: AppRadius.waveformBarR,
       ),
     );
   }

@@ -92,7 +92,7 @@ class HomeShell extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: s.surface.withValues(alpha: context.isDark ? 0.94 : 0.98),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: AppRadius.navBarR,
               border: Border.all(color: s.cardBorder),
               boxShadow: [
                 BoxShadow(
@@ -173,7 +173,7 @@ class _NavTab extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppRadius.bubbleR,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: AppDurations.fast,
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           decoration: BoxDecoration(
@@ -194,7 +194,7 @@ class _NavTab extends StatelessWidget {
               // Cuts visual noise on a 5-tab bar without losing the icon
               // legend on the tab the user is currently on.
               AnimatedSize(
-                duration: const Duration(milliseconds: 180),
+                duration: AppDurations.fast,
                 curve: Curves.easeOutCubic,
                 child: selected
                     ? Padding(

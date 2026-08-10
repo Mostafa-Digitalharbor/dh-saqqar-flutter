@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../chat/data/delete_confirmation.dart';
+
 /// Shared chat/vault view-model TYPES (the `Demo*` names are legacy — they
 /// pre-date the API layer and are now populated exclusively from real API
 /// responses via the per-feature adapters). ALL hardcoded sample data that
@@ -99,6 +101,7 @@ class DemoMessage {
     required this.time,
     this.id = '',
     this.toolName,
+    this.toolPayload,
     this.attachments = const [],
     this.createdAt,
   });
@@ -113,6 +116,14 @@ class DemoMessage {
   final String content;
   final String time;
   final String? toolName;
+
+  /// The server's `tool_payload`, carried through verbatim.
+  ///
+  /// Its `kind` is what selects an INTERACTIVE card (clarifying questions,
+  /// report builder, prompt suggestion) over the generic tool-activity card —
+  /// see `interactive_cards.dart`. Without it a mobile user got a raw JSON
+  /// blob with nothing to tap where a web user got a card to choose from.
+  final Map<String, dynamic>? toolPayload;
   final List<DemoAttachment> attachments;
 
   /// Calendar date the message belongs to (server's `created_at`). When non-
@@ -287,6 +298,9 @@ class DemoApproval {
     this.sharedShape,
     this.conversationId,
     this.individualRecords = const [],
+    this.recordCount,
+    this.confirmPhrase,
+    this.batchScoped = false,
   });
 
   final String id;
@@ -297,8 +311,15 @@ class DemoApproval {
   final DemoApprovalStatus status;
   final Map<String, String> payload;
 
-  /// When >1, the card renders as a grouped approval (e.g. "12 similar
-  /// requests") with an "Approve all" CTA. Null or 1 means a single record.
+  /// Number of sibling approvals sharing this shape.
+  ///
+  /// **Demo data only.** The backend confirmed on 2026-08-06 that no
+  /// `grouped_count` field exists anywhere — grouping is resolved by POSTing
+  /// `scope: "batch"`, and the count of what that cleared comes back in the
+  /// RESPONSE (`batch.resolved_count`), not on the incoming card. So a real
+  /// approval can never know its group size up front, and no server-fed card
+  /// sets this. It survives to keep the demo screenshots rendering; nothing
+  /// on the live path may key a label off it.
   final int? groupedCount;
 
   /// Composite key the agent uses to pre-approve future writes of the same
@@ -317,7 +338,42 @@ class DemoApproval {
   /// collapsible block under the group card.
   final List<DemoApprovalIndividual> individualRecords;
 
+  /// Records this write touches, straight from the server (`record_count`).
+  /// Drives the delete type-to-confirm phrase ("Delete 6" / "حذف 6"), which
+  /// is why it is the SERVER's count and never a client-side guess.
+  final int? recordCount;
+
+  /// `Approval.confirmPhrase` — the server's canonical delete phrase.
+  final String? confirmPhrase;
+
+  /// `payload.batch_scope` — already auto-approved by a scope the user
+  /// granted earlier, so offering to batch it again is offering a no-op.
+  final bool batchScoped;
+
   bool get isGrouped => (groupedCount ?? 1) > 1;
+
+  /// Wire value of the action type the backend describes batching for.
+  static const kOdooWrite = 'odoo_write';
+
+  /// Whether "approve all similar" may be offered.
+  ///
+  /// Three conditions, each for its own reason:
+  ///
+  ///   * **Odoo writes only.** The backend describes the scope as registering
+  ///     a shape so "future same-shape WRITES auto-approve silently". It does
+  ///     not exclude other action types, but one tap that silently
+  ///     pre-approves future `server_command` or `credential_storage`
+  ///     approvals is a privilege escalation the user did not ask for, and
+  ///     those are the two approvals most worth reading individually. Asked
+  ///     the backend to confirm; conservative until they do.
+  ///   * **Never deletes.** The server returns 400 for `scope: "batch"` on a
+  ///     destructive delete, so the button could only fail — and a batch
+  ///     delete is the one mistake with no undo.
+  ///   * **Not already scoped.** `payload.batch_scope` means a scope the user
+  ///     granted earlier already cleared this one.
+  bool get canBatchApprove =>
+      actionType == kOdooWrite &&
+      !batchScoped && payload['operation'] != kDeleteOperation;
 }
 
 /// One row inside a grouped approval — e.g. one of the 12 records the agent

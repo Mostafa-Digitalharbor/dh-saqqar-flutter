@@ -30,16 +30,18 @@ import 'features/auth/data/auth_api.dart';
 import 'features/auth/data/social_auth_service.dart';
 import 'features/auth/view_model/auth_cubit.dart';
 import 'features/billing/data/billing_history_api.dart';
-import 'features/billing/data/checkout_api.dart';
 import 'features/billing/data/plans_api.dart';
 import 'features/billing/data/usage_api.dart';
 import 'features/data_api/data/odoo_data_api.dart';
 import 'features/meetings/data/meetings_api.dart';
 import 'features/trial/data/trial_api.dart';
 import 'features/billing/view_model/plan_cubit.dart';
+import 'features/billing/view_model/saqqar_features_cubit.dart';
 import 'features/chat/data/live_env_ack_service.dart';
+import 'features/chat/data/saqqar_tools_api.dart';
+import 'features/support/data/voice_support_api.dart';
 import 'features/chat/data/transcribe_api.dart';
-import 'features/chat/view_model/deep_think_cubit.dart';
+import 'features/chat/view_model/task_prep_cubit.dart';
 import 'features/chat/view_model/running_agents_cubit.dart';
 import 'features/conversations/data/conversations_api.dart';
 import 'features/chat/data/chat_snapshot_disk_cache.dart';
@@ -94,7 +96,18 @@ Future<void> main() async {
   // binding, so ensure it here — the call is idempotent, so `_bootApp`
   // re-ensuring it below is harmless. Guarded so a platform channel
   // failure degrades to an empty release instead of blocking boot.
-  WidgetsFlutterBinding.ensureInitialized();
+  //
+  // **`SentryWidgetsFlutterBinding`, not `WidgetsFlutterBinding`.** A Flutter
+  // binding is a singleton: whichever type is instantiated first wins for the
+  // life of the process. Ensuring the plain one here — before
+  // `SentryFlutter.init` runs below — left Sentry's `FramesTrackingIntegration`
+  // with a binding it cannot hook, so it disabled itself at boot with
+  //   "incompatible binding, SentryWidgetsFlutterBinding has not been
+  //    instantiated"
+  // and every slow-frame / frozen-frame metric was silently never collected.
+  // Observed on a real device 2026-08-09. It is a subclass of
+  // `WidgetsFlutterBinding`, so nothing else changes.
+  SentryWidgetsFlutterBinding.ensureInitialized();
   String release = '';
   try {
     final info = await PackageInfo.fromPlatform();
@@ -148,7 +161,10 @@ Future<void> main() async {
 }
 
 Future<void> _bootApp() async {
-  final binding = WidgetsFlutterBinding.ensureInitialized();
+  // Same binding as `main` ensured above — idempotent, and named the same way
+  // so nobody "tidies" this back to the plain type and re-breaks frame
+  // tracking from a call site that looks unrelated to Sentry.
+  final binding = SentryWidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: binding);
 
   // Firebase (push notifications). `firebase_options.dart` + the Android
@@ -259,7 +275,6 @@ Future<void> _bootApp() async {
   final appsApi = AppsApi(dio);
   final trialApi = TrialApi(dio);
   final billingHistoryApi = BillingHistoryApi(dio);
-  final checkoutApi = CheckoutApi(dio);
   final meetingsApi = MeetingsApi(dio);
   final odooDataApi = OdooDataApi(dio);
   final credentialsApi = CredentialsApi(dio);
@@ -270,6 +285,8 @@ Future<void> _bootApp() async {
   final remoteI18nApi = RemoteI18nApi(dio);
   final devicesApi = DevicesApi(dio);
   final transcribeApi = TranscribeApi(dio);
+  final saqqarToolsApi = SaqqarToolsApi(dio);
+  final voiceSupportApi = VoiceSupportApi(dio);
   // Resolves localized copy for the surfaces that render OUTSIDE the widget
   // tree — Android's notification channels (shown in system Settings) and
   // the Apple Watch face. Neither has a BuildContext, so neither can reach
@@ -341,7 +358,6 @@ Future<void> _bootApp() async {
         RepositoryProvider<AppsApi>.value(value: appsApi),
         RepositoryProvider<TrialApi>.value(value: trialApi),
         RepositoryProvider<BillingHistoryApi>.value(value: billingHistoryApi),
-        RepositoryProvider<CheckoutApi>.value(value: checkoutApi),
         RepositoryProvider<MeetingsApi>.value(value: meetingsApi),
         RepositoryProvider<OdooDataApi>.value(value: odooDataApi),
         RepositoryProvider<CredentialsApi>.value(value: credentialsApi),
@@ -353,6 +369,8 @@ Future<void> _bootApp() async {
         RepositoryProvider<DevicesApi>.value(value: devicesApi),
         RepositoryProvider<PushNotificationsService>.value(value: pushService),
         RepositoryProvider<TranscribeApi>.value(value: transcribeApi),
+        RepositoryProvider<SaqqarToolsApi>.value(value: saqqarToolsApi),
+        RepositoryProvider<VoiceSupportApi>.value(value: voiceSupportApi),
         RepositoryProvider<LiveEnvAckService>.value(value: liveEnvAckService),
         // `ShareIntakeService` extends `ChangeNotifier`, so a plain
         // `RepositoryProvider`/`Provider` throws — Provider auto-detects
@@ -391,7 +409,7 @@ Future<void> _bootApp() async {
               return cubit;
             },
           ),
-          BlocProvider<DeepThinkCubit>(create: (_) => DeepThinkCubit(prefs)),
+          BlocProvider<TaskPrepCubit>(create: (_) => TaskPrepCubit(prefs)),
           // Biometric / device-credential app lock. `lazy: false` so it
           // probes device availability and engages the cold-start lock
           // before the first frame, not on first read.
@@ -406,6 +424,12 @@ Future<void> _bootApp() async {
             create: (_) => NotificationsSettingsCubit(prefs),
           ),
           BlocProvider<PlanCubit>(create: (_) => PlanCubit()),
+          // Separate from PlanCubit on purpose: `saqqar_features` rides on
+          // `/api/v1/usage/` only, while PlanCubit is replaced by every chat
+          // poll from a snapshot that never carries it.
+          BlocProvider<SaqqarFeaturesCubit>(
+            create: (_) => SaqqarFeaturesCubit(usageApi),
+          ),
           BlocProvider<RunningAgentsCubit>(
             create: (_) => RunningAgentsCubit(),
           ),
@@ -467,6 +491,12 @@ bool _shouldSkipSentry(Object? error) {
         // 4xx = client/business expected; 5xx = backend bug worth shipping.
         final status = error.statusCode;
         return status != null && status >= 400 && status < 500;
+      // A body that failed to decode is a backend or proxy bug — the one
+      // party who can fix it is us, and the user's report ("it just says
+      // something went wrong") carries none of the detail a trace does.
+      // These used to be classified `network` and silently dropped here.
+      case ApiExceptionKind.parse:
+        return false;
       case ApiExceptionKind.unknown:
         return false;
     }

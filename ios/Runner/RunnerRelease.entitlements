@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- PRODUCTION APNs. This is the whole reason this file exists separately
+	     from Runner.entitlements.
+
+	     Every build configuration used to point at Runner.entitlements, which
+	     declares `aps-environment: development`. That is correct for a debug
+	     build talking to the APNs sandbox, and wrong for anything uploaded:
+	     a TestFlight or App Store build carrying the development entitlement
+	     registers against the sandbox while the server pushes to production,
+	     so device tokens are rejected and notifications simply never arrive —
+	     with nothing failing at build time to say so.
+
+	     Debug and Profile keep Runner.entitlements (development) so on-device
+	     push testing against the sandbox still works. -->
+	<key>aps-environment</key>
+	<string>production</string>
+
+	<!-- Universal Links (docs/SAQQAR_DEEP_LINKS_FLUTTER.md §1). Lets a tapped
+	     https://saqqaar.com/... link open the app; iOS validates it against
+	     https://saqqaar.com/.well-known/apple-app-site-association. Requires
+	     the Associated Domains capability on App ID
+	     sa.com.digitalharbor.saqqarapp in the Apple Developer portal. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:saqqaar.com</string>
+	</array>
+
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+
+	<!-- Shared container with the Share Extension. Must match the group in
+	     `Share Extension/Share Extension.entitlements` exactly, or a shared
+	     item arrives with nowhere to be written and the share silently drops. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.sa.com.digitalharbor.saqqar</string>
+	</array>
+</dict>
+</plist>

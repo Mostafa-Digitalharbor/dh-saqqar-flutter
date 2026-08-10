@@ -216,7 +216,6 @@ void main() {
       // Trademarks and product names — never transliterated.
       'digital_harbor': 'company name',
       'credKindPostgres': 'product name',
-      'feature_github': 'product name',
       'production_domain': 'domain name',
       'product_initial': 'brand glyph',
       // The language switcher deliberately labels each target language in
@@ -283,7 +282,6 @@ void main() {
     const allowlisted = <String>[
       'digital_harbor',
       'credKindPostgres',
-      'feature_github',
       'production_domain',
       'product_initial',
       'switch_language_to_english',

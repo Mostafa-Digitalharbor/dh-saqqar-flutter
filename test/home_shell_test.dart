@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
+import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/routing/route_names.dart';
 import 'package:saqqar_app/core/theme/app_icons.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
@@ -97,7 +98,13 @@ void main() {
       // i.e. the bottom bar is in sync with the route (the old bug fell back
       // to highlighting Chats because the vault tab was absent from the list).
       expect(find.text('vault-body'), findsOneWidget);
-      expect(find.text('Projects'), findsOneWidget);
+      // The tab reads "Companies" since the 2026-08-10 rename. Asserted
+      // through the i18n table rather than a literal, so the next wording
+      // change moves one entry instead of hunting hardcoded copy in tests.
+      expect(
+        find.text(AppStrings(const Locale('en')).tabVault),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 

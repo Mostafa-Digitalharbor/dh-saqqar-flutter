@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_radius.dart';
 
 /// Accent-tinted inline banner: a leading icon, a bold accent title, a body
 /// line, and an optional start-aligned action below. The recurring "call-out
@@ -36,7 +37,7 @@ class AccentBanner extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.buttonR,
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Column(

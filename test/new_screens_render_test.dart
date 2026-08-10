@@ -10,10 +10,7 @@ import 'package:saqqar_app/features/apps/view/apps_screen.dart';
 import 'package:saqqar_app/features/apps/view_model/apps_cubit.dart';
 import 'package:saqqar_app/features/billing/data/billing_history_api.dart';
 import 'package:saqqar_app/features/billing/data/billing_history_models.dart';
-import 'package:saqqar_app/features/billing/data/checkout_api.dart';
-import 'package:saqqar_app/features/billing/data/checkout_models.dart';
 import 'package:saqqar_app/features/billing/view/billing_history_screen.dart';
-import 'package:saqqar_app/features/billing/view/checkout_screen.dart';
 import 'package:saqqar_app/features/data_api/data/odoo_data_api.dart';
 import 'package:saqqar_app/features/data_api/view/data_explorer_screen.dart';
 import 'package:saqqar_app/features/data_api/view_model/data_explorer_cubit.dart';
@@ -105,24 +102,6 @@ class _FakeBillingHistoryApi implements BillingHistoryApi {
         'total_purchased': 5000000,
         'has_any': true,
       });
-}
-
-class _FakeCheckoutApi implements CheckoutApi {
-  @override
-  Future<List<CheckoutPlan>> plans() async => const [
-        CheckoutPlan(
-          id: 'tokens-5m',
-          name: 'Token recharge',
-          price: 99,
-          currency: 'SAR',
-        ),
-      ];
-  @override
-  Future<CheckoutSession> start(String planId, {String cycle = 'monthly'}) async =>
-      const CheckoutSession(url: 'https://pay/x', ref: 'R1');
-  @override
-  Future<PaymentStatus> status(String ref) async =>
-      const PaymentStatus(status: 'pending', isPaid: false);
 }
 
 class _FakeArtifactsApi implements ArtifactsApi {
@@ -219,17 +198,9 @@ void main() {
     expect(find.text('Pro — monthly'), findsOneWidget);
   });
 
-  testWidgets('CheckoutScreen renders a plan with a Buy button', (tester) async {
-    await tester.pumpWidget(_harness(
-      RepositoryProvider<CheckoutApi>(
-        create: (_) => _FakeCheckoutApi(),
-        child: const CheckoutScreen(),
-      ),
-    ));
-    await tester.pumpAndSettle();
-    expect(find.text('Token recharge'), findsOneWidget);
-    expect(find.text('Buy'), findsOneWidget);
-  });
+  // The CheckoutScreen test that lived here is gone with the screen: the app
+  // no longer has a purchase surface to render. Its replacement is
+  // `no_in_app_purchase_test.dart`, which asserts the absence.
 
   testWidgets('ArtifactDetailsSheet renders the fetched metadata',
       (tester) async {

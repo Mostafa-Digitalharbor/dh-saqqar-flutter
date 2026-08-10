@@ -15,9 +15,9 @@ import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/auth/view_model/auth_flow_cubit.dart';
 import '../../features/auth/view_model/auth_state.dart';
 import '../../features/billing/view/billing_history_screen.dart';
-import '../../features/billing/view/checkout_screen.dart';
 import '../../features/billing/view/pricing_screen.dart';
 import '../../features/billing/view/usage_screen.dart';
+import '../../features/support/view/voice_support_screen.dart';
 import '../../features/data_api/data/odoo_data_api.dart';
 import '../../features/data_api/view/data_explorer_screen.dart';
 import '../../features/data_api/view_model/data_explorer_cubit.dart';
@@ -42,6 +42,7 @@ import '../../features/vault/view/vault_screen.dart';
 import '../constants/ui_strings.dart';
 import '../../navigation/home_shell.dart';
 import '../i18n/app_localizations.dart';
+import '../theme/app_radius.dart';
 import 'route_names.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -157,6 +158,15 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
         ),
       ),
       GoRoute(
+        path: RouteNames.voiceSupportPath,
+        name: RouteNames.voiceSupport,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const VoiceSupportScreen(),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      GoRoute(
         path: RouteNames.notificationsPath,
         name: RouteNames.notifications,
         pageBuilder: (_, state) => _transitionPage(
@@ -244,24 +254,18 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
           kind: _RouteTransitionKind.detail,
         ),
       ),
-      // Billing checkout (§4.3) — the in-app Paymob flow. **Permanently
-      // closed**: payment happens on saqqaar.com, so anything that reaches for
-      // this route lands on the plan catalogue instead of a purchase form.
+      // Billing checkout — **gone**. The app takes no payment and holds no
+      // payment state: subscribing opens saqqaar.com/pricing/ in the browser
+      // and the server is the only thing that decides what someone is on.
+      // The screen, its API client and its models were deleted with it.
       //
-      // Registered rather than deleted so the redirect exists: an old deep
-      // link, a push payload or a stale shortcut pointing here should arrive
-      // somewhere sensible, not at a "no route" error. The screen behind it is
-      // kept for the same reason [showPaidUpsell] is a switch — see
-      // billing_visibility.dart.
+      // The path survives as a pure redirect so an old deep link, a push
+      // payload or a stale shortcut lands on the plan catalogue rather than a
+      // "no route" error. There is no builder — this route can only forward.
       GoRoute(
         path: RouteNames.checkoutPath,
         name: RouteNames.checkout,
         redirect: (_, __) => RouteNames.pricingPath,
-        pageBuilder: (_, state) => _transitionPage(
-          state: state,
-          child: const CheckoutScreen(),
-          kind: _RouteTransitionKind.detail,
-        ),
       ),
       GoRoute(
         path: RouteNames.sharedTranscriptPattern,
@@ -385,8 +389,8 @@ CustomTransitionPage<void> _transitionPage({
     // a per-id key so each conversation gets its own page.
     key: key ?? state.pageKey,
     child: child,
-    transitionDuration: const Duration(milliseconds: 260),
-    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionDuration: AppDurations.routeIn,
+    reverseTransitionDuration: AppDurations.routeOut,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final reduceMotion =
           MediaQuery.maybeOf(context)?.disableAnimations ?? false;

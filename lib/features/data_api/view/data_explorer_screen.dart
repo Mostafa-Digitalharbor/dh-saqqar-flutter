@@ -8,12 +8,14 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/code_plate.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/preview_banner.dart';
 import '../view_model/data_explorer_cubit.dart';
 import '../view_model/data_explorer_state.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Read-only Odoo data explorer (API_MOBILE_NEW_ENDPOINTS.md §4.2) — pick a
 /// bound environment + an operation, edit the JSON request body, and run it.
@@ -64,9 +66,11 @@ class _DataExplorerScreenState extends State<DataExplorerScreen> {
               final msg = state.queryError is FormatException
                   ? context.tr.dataExplorerInvalidJson
                   : ApiErrorMapper.message(context, state.queryError);
-              ScaffoldMessenger.of(context)
-                ..clearSnackBars()
-                ..showSnackBar(SnackBar(content: Text(msg)));
+              AppToast.show(
+                context,
+                message: msg,
+                variant: ToastVariant.error,
+              );
             }
           },
           builder: (context, state) {
@@ -93,7 +97,7 @@ class _DataExplorerScreenState extends State<DataExplorerScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 48, 16, 28),
                 children: [
                   EmptyState(
-                    icon: Icons.dns_outlined,
+                    icon: AppIcons.server,
                     title: context.tr.dataExplorerNoEnvs,
                   ),
                 ],
@@ -155,7 +159,7 @@ class _Body extends StatelessWidget {
         const SizedBox(height: 16),
         GhostButton(
           label: context.tr.dataExplorerRun,
-          icon: Icons.play_arrow_rounded,
+          icon: AppIcons.play,
           expand: true,
           loading: state.running,
           onPressed: state.running ? null : () => cubit.run(body.text),

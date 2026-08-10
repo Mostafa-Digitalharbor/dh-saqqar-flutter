@@ -7,6 +7,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 
 /// Visual style for one artifact kind — drives the leading icon plate and
 /// the uppercase kind badge so file types are recognisable at a glance.
@@ -145,18 +146,13 @@ class ChatArtifactTile extends StatelessWidget {
             children: [
               // Kind-coloured icon plate. Bigger than the old 36-px square
               // (44 px) so the file kind reads from across the sheet.
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: style.accent.withValues(alpha: 0.14),
-                  borderRadius: AppRadius.buttonR,
-                  border: Border.all(
-                    color: style.accent.withValues(alpha: 0.45),
-                  ),
-                ),
-                child: Icon(style.icon, color: style.accent, size: 20),
+              ColoredIconBox(
+                icon: style.icon,
+                color: style.accent,
+                size: 44,
+                radius: AppRadius.button,
+                iconSize: 20,
+                borderAlpha: 0.45,
               ),
               const SizedBox(width: 12),
               Expanded(

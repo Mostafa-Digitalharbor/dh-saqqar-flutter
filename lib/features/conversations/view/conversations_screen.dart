@@ -151,7 +151,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     HapticFeedback.lightImpact();
     _scrollController.animateTo(
       0,
-      duration: const Duration(milliseconds: 380),
+      duration: AppDurations.scrollToTop,
       curve: Curves.easeOutQuart,
     );
   }
@@ -951,7 +951,7 @@ class _ArchivedSection extends StatelessWidget {
                       ),
                     ),
                     AnimatedRotation(
-                      duration: const Duration(milliseconds: 180),
+                      duration: AppDurations.fast,
                       turns: expanded ? 0.5 : 0,
                       child: Icon(
                         AppIcons.chevronDown,
@@ -965,11 +965,11 @@ class _ArchivedSection extends StatelessWidget {
             ),
           ),
           AnimatedSize(
-            duration: const Duration(milliseconds: 220),
+            duration: AppDurations.cardIn,
             curve: Curves.easeOutCubic,
             alignment: Alignment.topCenter,
             child: AnimatedCrossFade(
-              duration: const Duration(milliseconds: 180),
+              duration: AppDurations.fast,
               firstChild: const SizedBox(width: double.infinity, height: 0),
               // AnimatedCrossFade builds BOTH children every frame. While the
               // section is collapsed we therefore skip building the archived

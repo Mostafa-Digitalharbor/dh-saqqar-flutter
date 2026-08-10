@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_radius.dart';
+
 /// Spec §12 — three-dot indicator with a 1 s staggered pulse.
 ///
 /// Two motion styles: opacity pulse (default) or a vertical [bounce] where
@@ -29,7 +31,7 @@ class _TypingDotsState extends State<TypingDots>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1100),
+    duration: AppDurations.breathe,
   );
 
   @override

@@ -21,7 +21,14 @@ class UiStrings {
   static const localeArabicLabel = 'ع';
   static const themePreferenceKey = 'saqqar.theme';
   static const localePreferenceKey = 'saqqar.locale';
-  static const deepThinkPreferenceKey = 'saqqar.deepThink';
+  /// Global "Task prep" preference. Mirrors the web's composer toggle:
+  /// when on, Saqqar asks a couple of clarifying questions (which arrive as
+  /// a `prompt_clarify` card) before building a vague task.
+  ///
+  /// Replaced the old reasoning-budget preference, retired when the web
+  /// removed its manual toggle — the backend routes hard tasks to the
+  /// stronger model on its own now.
+  static const taskPrepPreferenceKey = 'saqqar.taskPrep';
 
   /// Uppercase file-format badges shown on artifact tiles and attachment
   /// chips ("XLSX", "PDF", …).
@@ -62,4 +69,15 @@ class UiStrings {
   /// §4.1). A URL example — reads the same in every locale, so it lives here
   /// rather than in `app_strings`.
   static const meetingUrlExample = 'https://meet.google.com/…';
+
+  /// Mask rendered in place of a secret while it is hidden (trial credential
+  /// rows). Deliberately a fixed width rather than one bullet per character:
+  /// matching the real length would leak how long the secret is, and the
+  /// row's width would twitch as the value loads.
+  static const secretMask = '••••••••••';
+
+  /// Multiplication sign prefixed to a grouped-approval count ("×3"). U+00D7,
+  /// not the Latin letter "x" — and not translated: the glyph is a numeric
+  /// operator that reads the same in Arabic.
+  static const timesSign = '×';
 }

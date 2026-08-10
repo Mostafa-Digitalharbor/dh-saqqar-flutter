@@ -23,6 +23,9 @@
 | PATCH | `/api/v1/auth/me/` | تعديل بيانات الحساب (`first_name`/`last_name`) | ✅ | [auth_api.dart:322](../lib/features/auth/data/auth_api.dart#L322) |
 | POST | `/api/v1/auth/password/` | تغيير كلمة المرور (token جديد + إلغاء باقي الأجهزة) | ✅ | [auth_api.dart:346](../lib/features/auth/data/auth_api.dart#L346) |
 | POST | `/api/v1/account/delete/` | حذف الحساب وكل بياناته نهائيًا | ✅ | [auth_api.dart:299](../lib/features/auth/data/auth_api.dart#L299) |
+| POST | `/api/v1/auth/web-session/` | تسليم جلسة لمرّة واحدة للمتصفح: `{next}` → `{ok, url}` قبل فتح checkout الويب | ✅ | [web_checkout.dart:127](../lib/features/billing/data/web_checkout.dart#L127) |
+
+> **web-session:** بيرجّع `/auth/handoff/?t=<one-time-token>` عشان المتصفح يفتح والمستخدم مسجّل دخول بدل ما يوصل مجهول ويعمل حساب تاني. أي رد غير 200 (بما فيه 404 لو السيرفر لسه منزّلوش) بيتعامل كأنه "مش متاح" والتطبيق بيفتح صفحة `/pricing/` العادية — فمش هيكسر لو الـ endpoint اتأخّر. التطبيق كمان بيتحقق إن الـ host والـ scheme بتوع الرد نفس `baseUrl` قبل ما يفتحه، لأن الرابط شايل توكن دخول حيّ.
 
 ## 2) Email-OTP Auth — تسجيل/دخول بالكود (`/api/auth/`)
 
@@ -143,7 +146,7 @@
 
 | Method | Path | الوصف | Auth | المصدر |
 |--------|------|-------|:----:|--------|
-| GET | `/api/v1/health/` | فحص liveness/version → `{ ok, service, time, api }` | ⬜ | [api_endpoints.dart:168](../lib/core/network/api_endpoints.dart#L168) |
+| GET | `/api/v1/health/` | فحص liveness/version → `{ ok, service, time, api }` | ⬜ | [api_endpoints.dart:181](../lib/core/network/api_endpoints.dart#L181) |
 
 > ملاحظة: `health` مُعرّف في `ApiEndpoints` كـ pre-flight للاتصال، لكن مفيش method حاليًا بتناديه في كود Dart.
 
@@ -155,7 +158,7 @@
 |---------|---------|--------|
 | تحميل ملف artifact | `_dio.download(absoluteUrl, …)` | [artifact_downloader.dart:137](../lib/features/inbox/data/artifact_downloader.dart#L137) |
 | عرض صورة مرفقة | `Image.network(absoluteUrl)` | [attachment_chip.dart:294](../lib/features/chat/widgets/attachment_chip.dart#L294) |
-| بناء الرابط الكامل | `absoluteUrl` getter (artifacts + attachments) | [artifact_models.dart:63](../lib/features/inbox/data/artifact_models.dart#L63) · [attachment_models.dart:54](../lib/features/conversations/data/attachment_models.dart#L54) |
+| بناء الرابط الكامل | `absoluteUrl` getter (artifacts + attachments) | [artifact_models.dart:67](../lib/features/inbox/data/artifact_models.dart#L67) · [attachment_models.dart:55](../lib/features/conversations/data/attachment_models.dart#L55) |
 
 ---
 
@@ -188,9 +191,9 @@
 | Method | Path | الوصف | Auth | المصدر |
 |--------|------|-------|:----:|--------|
 | GET | `/api/v1/billing/history/` | مدفوعات المستخدم + الرصيد (قراءة فقط، آمن للستور) | ✅ | [billing_history_api.dart:17](../lib/features/billing/data/billing_history_api.dart#L17) |
-| GET | `/api/v1/billing/receipt/{ref}/` | تحميل إيصال PDF لصف مدفوع (عبر `ArtifactDownloader`) | ✅ | [api_endpoints.dart](../lib/core/network/api_endpoints.dart) |
+| GET | `/api/v1/billing/receipt/{ref}/` | تحميل إيصال PDF لصف مدفوع (عبر `ArtifactDownloader`) | ✅ | [billing_history_screen.dart:80](../lib/features/billing/view/billing_history_screen.dart#L80) |
 
-> مدخل شاشة History متخفي على iOS ورا `showPaidUpsell` (قراءة فقط لكن بيعرض مبالغ). للـ checkout (الشراء) شوف §20.
+> شاشة History **ظاهرة دايمًا على كل المنصّات** — `showBillingRecords` ثابت `true` وعن قصد مش ورا `showPaidUpsell` ([billing_visibility.dart:87](../lib/features/billing/data/billing_visibility.dart#L87)): إن التطبيق يوري المستخدم فلوس اتخصمت منه فعلًا ده معلومة حساب مش سطح شراء. للـ checkout (الشراء) شوف §21.
 
 ## 18) Artifact detail (`/api/v1/artifacts/{id}/`)
 
@@ -224,29 +227,38 @@
 | POST | `/api/v1/environments/{envId}/odoo/read/` | قراءة بالـ id | ✅ | [odoo_data_api.dart:32](../lib/features/data_api/data/odoo_data_api.dart#L32) |
 | POST | `/api/v1/environments/{envId}/odoo/fields/` | ميتاداتا الحقول | ✅ | [odoo_data_api.dart:36](../lib/features/data_api/data/odoo_data_api.dart#L36) |
 | POST | `/api/v1/environments/{envId}/sql/` | SQL للقراءة فقط | ✅ | [odoo_data_api.dart:40](../lib/features/data_api/data/odoo_data_api.dart#L40) |
-| GET | `/api/v1/report-entities/` | قائمة الكيانات لفلتر التقارير | ✅ | [odoo_data_api.dart:44](../lib/features/data_api/data/odoo_data_api.dart#L44) |
+| GET | `/api/v1/report-entities/` | قائمة الكيانات لفلتر التقارير (`?conversation_id=` **مطلوب**، وإلا 400) | ✅ | [odoo_data_api.dart:48](../lib/features/data_api/data/odoo_data_api.dart#L48) |
 
 ## 21) §4.3 Billing checkout — Paymob (`/api/v1/billing/`)
 
 المصدر: [checkout_api.dart](../lib/features/billing/data/checkout_api.dart) · UI: [checkout_screen.dart](../lib/features/billing/view/checkout_screen.dart)
 
-> ⚠️ **الشاشة متوصّلة بس Android فقط** (ورا `showPaidUpsell` + redirect guard زي `/pricing`) — iOS مش هيشوف سطح شراء نهائيًا. **الشراء داخل التطبيق ممكن يتعارض مع سياسة IAP** بتاعة Apple/Google — لازم تأكيد امتثال قبل أي إصدار.
+> ⚠️ **الـ 3 endpoints دول مش بيتنادوا في التطبيق المنشور — على أي منصّة.** الـ route بتاع `/checkout` متسجّل بس `redirect` ثابت على `/pricing` ([app_router.dart:256](../lib/core/routing/app_router.dart#L256))، فأي deep link أو push قديم بيوصل لكتالوج الخطط مش لفورم دفع. البيع كله بيحصل على saqqaar.com عن طريق §1 `web-session` + `/pricing/`، عشان الشراء جوه التطبيق بيتعارض مع App Store 3.1.1 و Google Play Payments.
+>
+> الكلاس متسايب موصّل ومتختبر عشان الرجوع يبقى قلب مفتاح واحد مش إعادة كتابة عميل دفع.
 
 | Method | Path | الوصف | Auth | المصدر |
 |--------|------|-------|:----:|--------|
-| GET | `/api/v1/billing/plans/` | الباقات (Paymob view) | ✅ | [checkout_api.dart:19](../lib/features/billing/data/checkout_api.dart#L19) |
-| POST | `/api/v1/billing/checkout/` | بدء عملية شراء → رابط دفع + reference | ✅ | [checkout_api.dart:29](../lib/features/billing/data/checkout_api.dart#L29) |
-| GET | `/api/v1/billing/payment/{ref}/status/` | متابعة حالة الدفع (polling) | ✅ | [checkout_api.dart:38](../lib/features/billing/data/checkout_api.dart#L38) |
+| GET | `/api/v1/billing/plans/` | الباقات (Paymob view) | ✅ | [checkout_api.dart:23](../lib/features/billing/data/checkout_api.dart#L23) |
+| POST | `/api/v1/billing/checkout/` | بدء عملية شراء (`{plan, cycle}`) → رابط دفع + reference | ✅ | [checkout_api.dart:44](../lib/features/billing/data/checkout_api.dart#L44) |
+| GET | `/api/v1/billing/payment/{ref}/status/` | متابعة حالة الدفع (polling) | ✅ | [checkout_api.dart:53](../lib/features/billing/data/checkout_api.dart#L53) |
 
 ---
 
 ### ملخّص
 
-- الإجمالي: **~88 endpoint** موزّعة على 21 مجموعة (كل الـ hand-off اتوصّل: Apps + Trial + Billing history/receipt + Artifact detail + Meetings + Direct-data + Checkout).
-- **كل endpoint بقى ليه UI** — مفيش client-only فاضل (Direct-data الـ 7 كلهم في الشاشة، والـ artifact detail ليه sheet).
-- الـ endpoints الـ **Public** (⬜، من غير bearer): كل مسارات **Email-OTP** + `register`/`login`/`google`/`apple` + `plans` + `shares/{token}` + `i18n/{lang}.json` + `health`. كل الجديد محتاج **Bearer** (✅).
-- **تحذيرات مهمة:**
-  - **Billing checkout (§21)** متوصّل بس **Android فقط** ومحتاج تأكيد امتثال IAP قبل الإصدار.
-  - **§4.1/§4.2 payload schemas** مش موثّقة في الـ hand-off (بيحيل على `views_meetings.py` / `views_data_api.py`) — الشاشات اتبنت على contract معقول (أعراف Odoo/Vexa) وفيها بانر "Preview"؛ محتاج تأكيد الباك-إند على مفاتيح الطلب.
+- الإجمالي: **91 عملية** (method + path) على **21 مجموعة**. العدد أكبر من عدد المسارات لأن فيه مسارات بتاخد أكتر من method (زي `/auth/me/` GET+PATCH و `/credentials/{name}/` GET+PATCH+DELETE).
+- الـ endpoints الـ **Public** (⬜، من غير bearer): كل مسارات **Email-OTP** (`/api/auth/…`) + `register`/`login`/`google`/`apple` + `plans` + `shares/{token}` + `i18n/{lang}.json` + `health`. الباقي كله محتاج **Bearer** (✅).
+- **الـ endpoints اللي مش بتتنادى من التطبيق دلوقتي:**
+  - `GET /api/v1/health/` — معرّف في `ApiEndpoints` كـ pre-flight بس مفيش كود Dart بيناديه.
+  - **Billing checkout (§21)** الـ 3 كلهم — الـ route بيعمل redirect دايم على `/pricing` (شوف §21).
+- **§4.1/§4.2 payload schemas** مش موثّقة في الـ hand-off (بيحيل على `views_meetings.py` / `views_data_api.py`) — الشاشات اتبنت على contract معقول (أعراف Odoo/Vexa) وفيها بانر "Preview"؛ محتاج تأكيد الباك-إند على مفاتيح الطلب.
+
+### اتفاقيات عامة على كل الطلبات
+
+- **التوكن:** `Authorization: Bearer <token>` بيتحط أوتوماتيك في [auth_interceptor.dart](../lib/core/network/auth_interceptor.dart) — بس على **نفس الـ host** بتاع `baseUrl`، عشان رابط artifact راجع من سيرفر تاني ما يسرّبش التوكن. الطلبات اللي المفروض تمشي من غير توكن بتتعلّم بـ `extra['skipAuth'] = true`.
+- **مفيش refresh endpoint.** الـ 401 معناها انتهاء الجلسة — بس التطبيق **مش** بيطلّع المستخدم على أي 401؛ لازم الرد يقول صراحة `auth: false` في الـ envelope، عشان 401 عابرة من proxy ما ترميش المستخدم على شاشة الدخول.
+- **شكل الخطأ:** `{ ok: false, error: "..." }` — بيتحوّل لـ `ApiException` في الـ interceptor وبعدين لرسالة متـرجمة عن طريق [api_error_mapper.dart](../lib/core/network/api_error_mapper.dart).
+- **الملفات (attachments / artifacts):** بترجع بحقل `url` **نسبي**، والتطبيق بيكمّله بـ `absoluteUrl` — شوف §14.
 
 _تم التوليد من تحليل الكود — المصدر المرجعي للمسارات هو [api_endpoints.dart](../lib/core/network/api_endpoints.dart). لو اتغيّر مسار أو اتنقل سطر، حدّث الجدول ده._

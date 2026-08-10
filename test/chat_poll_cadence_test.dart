@@ -79,7 +79,7 @@ class _PollRepo implements ConversationsRepository {
     required String content,
     List<String> attachmentIds = const [],
     String? model,
-    bool deepThink = false,
+    bool taskPrep = true,
   }) async =>
       _snap(isRunning: runningInSendResponse);
 

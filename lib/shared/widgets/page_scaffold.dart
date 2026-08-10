@@ -132,7 +132,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
     final blur = elevated ? 14.0 : 6.0;
     final offsetY = elevated ? 4.0 : 1.0;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
+      duration: AppDurations.cardIn,
       curve: Curves.easeOut,
       decoration: BoxDecoration(
         color: s.surface,
@@ -166,7 +166,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
                   // root tab.
                   InkWell(
                     onTap: () => context.go(RouteNames.chatsPath),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadius.smallR,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -174,7 +174,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: s.cardBg,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.smallR,
                         border: Border.all(color: s.cardBorder),
                       ),
                       child: const SaqqarLogo(height: 27),
@@ -183,7 +183,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
                   // Cross-tab "agent is working" pulse — slides in next to the
                   // logo whenever any conversation has the agent mid-run.
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 240),
+                    duration: AppDurations.switcherIn,
                     transitionBuilder: (child, anim) => FadeTransition(
                       opacity: anim,
                       child: SizeTransition(
@@ -252,11 +252,11 @@ class _NotificationsBell extends StatelessWidget {
       child: Tooltip(
         message: tr.notifications,
         child: InkWell(
-          // Rounded-square (radius 10) instead of a circle, matching the
-          // chat screen header's bell (_InboxBellTrigger) so both headers
-          // share one affordance shape.
-          customBorder: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+          // Rounded-square instead of a circle, matching the chat screen
+          // header's bell (_InboxBellTrigger) so both headers share one
+          // affordance shape.
+          customBorder: const RoundedRectangleBorder(
+            borderRadius: AppRadius.smallR,
           ),
           onTap: () => context.pushNamed(RouteNames.notifications),
           child: Stack(
@@ -267,7 +267,7 @@ class _NotificationsBell extends StatelessWidget {
                 height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.smallR,
                   color: s.cardBg,
                   border: Border.all(color: s.cardBorder),
                 ),
@@ -324,7 +324,7 @@ class _AgentPulseDotState extends State<_AgentPulseDot>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1400),
+    duration: AppDurations.agentPulse,
   );
 
   @override

@@ -28,8 +28,14 @@ class MessageBubbleSkeleton extends StatelessWidget {
     const gap = SizedBox(width: 10);
     const avatar = SkeletonBlock(width: 32, height: 32, radius: 16);
 
+    // `maxWidth` + `Flexible`, never a fixed `width`. The avatar and its gap
+    // take 42 px of the row, so a 280 px bubble needs a 322 px viewport —
+    // 2 px more than the narrowest phone we support, and it overflowed there
+    // (found by `overlay_responsive_sweep_test.dart`, 2026-08-04). The screen
+    // sweep could never catch it: skeletons are gone by the time a loaded
+    // screen is measured.
     final bubble = Container(
-      width: bubbleWidth,
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: isUser
@@ -41,24 +47,37 @@ class MessageBubbleSkeleton extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < linesCount; i++) ...[
             if (i > 0) const SizedBox(height: 6),
-            SkeletonBlock(
-              // Vary widths so the placeholder doesn't read as a uniform block.
-              width: bubbleWidth - 28 - (i.isEven ? 0 : 40),
-              height: 11,
+            // Vary widths so the placeholder doesn't read as a uniform block.
+            // A ratio rather than `bubbleWidth - 28 - 40`: once the bubble can
+            // be narrower than requested, px arithmetic against the *asked-for*
+            // width overflows the width it actually got.
+            FractionallySizedBox(
+              alignment: AlignmentDirectional.centerStart,
+              widthFactor: i.isEven ? 1.0 : 0.72,
+              child: const SkeletonBlock(height: 11),
             ),
           ],
         ],
       ),
     );
 
+    // Flexible so the bubble yields to the avatar instead of pushing the row
+    // past the viewport. `bubbleWidth` becomes a ceiling, not a demand.
+    final sized = Flexible(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: bubbleWidth),
+        child: bubble,
+      ),
+    );
+
     final isRtl = context.isRtl;
     final children = isUser
-        ? (isRtl ? [avatar, gap, bubble] : [bubble, gap, avatar])
-        : (isRtl ? [bubble, gap, avatar] : [avatar, gap, bubble]);
+        ? (isRtl ? [avatar, gap, sized] : [sized, gap, avatar])
+        : (isRtl ? [sized, gap, avatar] : [avatar, gap, sized]);
 
     return Row(
       mainAxisAlignment: isUser

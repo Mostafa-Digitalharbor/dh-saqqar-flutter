@@ -165,10 +165,14 @@ class ChatHeaderControls extends StatelessWidget {
   }
 }
 
-/// Bundle of the two chat-level toggles (Deep think + Auto-approve) sized
-/// for the AppBar actions slot. Renders them as a pair so the AppBar code
-/// only carries one widget per chat regardless of how many toggles ship
-/// later. Tap targets stay 36×36 — Material's minimum recommended.
+/// Bundle of the chat-level toggles sized for the AppBar actions slot.
+/// Renders them as a group so the AppBar code only carries one widget per
+/// chat regardless of how many toggles ship later. Tap targets stay 36×36 —
+/// Material's minimum recommended.
+///
+/// Deep think used to sit beside auto-approve here; it was removed with the
+/// rest of the deep-think surface (web parity — the backend now escalates
+/// hard tasks to the stronger model on its own, with no manual toggle).
 ///
 /// Lives in the AppBar (not the dropdown strip) so the dropdowns get the
 /// full row width on small phones — see the rationale on
@@ -176,15 +180,11 @@ class ChatHeaderControls extends StatelessWidget {
 class ChatAppBarToggles extends StatelessWidget {
   const ChatAppBarToggles({
     super.key,
-    required this.deepThink,
     required this.autoApprove,
-    required this.onDeepThinkChanged,
     required this.onAutoApproveChanged,
   });
 
-  final bool deepThink;
   final bool autoApprove;
-  final ValueChanged<bool> onDeepThinkChanged;
   final ValueChanged<bool> onAutoApproveChanged;
 
   @override
@@ -192,15 +192,6 @@ class ChatAppBarToggles extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _ChatToggleIcon(
-          value: deepThink,
-          onChanged: onDeepThinkChanged,
-          icon: AppIcons.sparkles,
-          accent: context.saqqar.brandPurple,
-          tooltipOn: context.tr.deepThinkOn,
-          tooltipOff: context.tr.deepThinkTitle,
-        ),
-        const SizedBox(width: 4),
         _ChatToggleIcon(
           value: autoApprove,
           onChanged: onAutoApproveChanged,

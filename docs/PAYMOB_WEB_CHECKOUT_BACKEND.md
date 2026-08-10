@@ -1,8 +1,38 @@
 # Paymob web checkout: backend implementation contract
 
+> **Read this first — "checkout" here is the website's, never the app's.**
+>
+> Nothing in this document is called by the mobile app. Every endpoint below is
+> either website→backend or Paymob→backend. As of 2026-08-04 the app has no
+> checkout code at all: `checkout_screen.dart`, `checkout_api.dart` and
+> `checkout_models.dart` were deleted, and `/billing/checkout/`,
+> `/billing/plans/` and `/billing/payment/<ref>/status/` are deliberately not
+> declared in `api_endpoints.dart`. `no_in_app_purchase_test.dart` fails the
+> build if any of them comes back.
+>
+> **The entire mobile side is three lines:**
+>
+> 1. `POST /api/v1/auth/web-session/` → open the returned URL in the browser,
+>    landing on `https://saqqaar.com/pricing/` already signed in.
+> 2. The user pays there. The app is not involved and holds no reference.
+> 3. On resume, re-read `GET /api/v1/usage/` and `GET /api/v1/plans/` and show
+>    whatever plan the server reports.
+>
+> The app never decides what someone is subscribed to — the server does, and the
+> app displays it. That is the whole contract on this side, and it is done.
+> What follows is the other half.
+
 Status: required before enabling any external-checkout build. The App Store and
 Google Play release builds must keep `showPaidUpsell == false` unless Saqqar is
 enrolled in, and implements, an applicable regional external-purchase program.
+
+**Correction (2026-08-04, measured against production):** §"Required web flow"
+step 8 names `/billing/result/`. That path returns 404; the live page is
+`/billing/return/`, and it reads its reference from `?ref=`. It polls
+`/api/v1/billing/payment/<ref>/status/`, which is live (401 unauthenticated).
+Whether the processed-callback endpoint in §"API contract" exists under some
+other path could not be determined from outside — it is configured in the
+Paymob dashboard, not in a URL anyone outside the backend can enumerate.
 
 ## Product decision
 

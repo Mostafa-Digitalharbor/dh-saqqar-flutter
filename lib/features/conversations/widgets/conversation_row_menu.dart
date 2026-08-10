@@ -33,10 +33,12 @@ class ConversationRowMenu extends StatelessWidget {
         PopupMenuItem(
           value: ConversationAction.pin,
           child: _MenuRow(
-            // pushPin maps to a thumbtack glyph; AppIcons doesn't have
-            // a dedicated entry so we use Material's directly to avoid
-            // polluting the icon catalog with a single-use addition.
-            icon: isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+            // The glyph shows the ACTION, not the current state — the label
+            // beside it already says which. Material's filled/outline pin
+            // pair only differed in weight; Lucide's `pinOff` is a struck
+            // -through pin, so pointing it at the wrong branch would put an
+            // "unpin" glyph next to the word "Pin".
+            icon: isPinned ? AppIcons.pinOff : AppIcons.pin,
             label: isPinned
                 ? context.tr.unpinConversation
                 : context.tr.pinConversation,
@@ -57,7 +59,7 @@ class ConversationRowMenu extends StatelessWidget {
             // screen's handler already inspects `c.isArchived` and
             // routes to unarchiveConversation when true. We only flip
             // the label/icon here.
-            icon: isArchived ? Icons.unarchive_outlined : AppIcons.archive,
+            icon: isArchived ? AppIcons.unarchive : AppIcons.archive,
             label: isArchived ? context.tr.unarchive : context.tr.archive,
           ),
         ),

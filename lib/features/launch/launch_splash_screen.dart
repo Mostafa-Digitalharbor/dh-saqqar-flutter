@@ -57,10 +57,7 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
     super.initState();
     _entrance = AnimationController(
       vsync: this,
-      // Longer than the old 900 ms so the dramatic zoom has room to
-      // breathe — the wordmark starts at ~25 % of its final size and
-      // grows smoothly, which would feel rushed at the old duration.
-      duration: const Duration(milliseconds: 1600),
+      duration: AppDurations.splashEntrance,
     );
     _progress = AnimationController(
       vsync: this,
@@ -233,7 +230,7 @@ class _SplashLogoCard extends StatelessWidget {
           // Barely-there fill so the card lifts off the plain backdrop
           // without looking like a solid panel.
           color: fill.withValues(alpha: isLight ? 0.55 : 0.45),
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: AppRadius.splashPlateR,
           border: Border.all(
             color: border.withValues(alpha: isLight ? 0.9 : 0.8),
           ),

@@ -166,14 +166,17 @@ class PreferencesCard extends StatelessWidget {
   }
 
   Future<void> _toggleLock(BuildContext context, bool value) async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
+    // Resolved before the await because `context.tr` is unsafe once the
+    // cubit's state change has rebuilt this subtree.
     final failedMsg = context.tr.appLockEnableFailed;
     final enabled = await context
         .read<AppLockCubit>()
         .setEnabled(value, reason: context.tr.appLockReason);
     // Turning ON requires a successful auth; surface a toast if it didn't
-    // take so the switch snapping back isn't mysterious.
-    if (value && !enabled && context.mounted && messenger != null) {
+    // take so the switch snapping back isn't mysterious. No messenger
+    // capture needed — `AppToast.show` resolves one itself and no-ops when
+    // there is none.
+    if (value && !enabled && context.mounted) {
       AppToast.show(context, message: failedMsg, variant: ToastVariant.error);
     }
   }

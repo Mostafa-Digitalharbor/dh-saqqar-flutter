@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/response_body.dart';
 
 /// Voice transcription endpoint wrapper.
 ///
@@ -58,7 +59,10 @@ class TranscribeApi {
       data: form,
       options: Options(contentType: 'multipart/form-data'),
     );
-    final body = res.data ?? const <String, dynamic>{};
+    // `?? ''` handed back an empty transcript, which the composer treats as
+    // "the user said nothing" — the recording is discarded, no error is
+    // shown, and there is nothing to retry. The audio is gone by then.
+    final body = res.requiredBody;
     return (body['text'] as String? ?? '').trim();
   }
 

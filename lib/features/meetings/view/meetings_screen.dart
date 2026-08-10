@@ -9,11 +9,13 @@ import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/preview_banner.dart';
 import '../../../shared/widgets/status_pill.dart';
 import '../view_model/meetings_cubit.dart';
 import '../view_model/meetings_state.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Meetings transcription (API_MOBILE_NEW_ENDPOINTS.md §4.1, Vexa) — start
 /// transcribing an online meeting, watch the live transcript, then stop /
@@ -61,11 +63,11 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
         child: BlocConsumer<MeetingsCubit, MeetingsState>(
           listenWhen: (p, n) => p.error != n.error && n.error != null,
           listener: (context, state) {
-            ScaffoldMessenger.of(context)
-              ..clearSnackBars()
-              ..showSnackBar(SnackBar(
-                content: Text(ApiErrorMapper.message(context, state.error)),
-              ));
+            AppToast.show(
+              context,
+              message: ApiErrorMapper.message(context, state.error),
+              variant: ToastVariant.error,
+            );
           },
           builder: (context, state) => ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
@@ -123,7 +125,7 @@ class _StartForm extends StatelessWidget {
         const SizedBox(height: 18),
         GhostButton(
           label: context.tr.meetingsStart,
-          icon: Icons.fiber_manual_record_outlined,
+          icon: AppIcons.recordDot,
           expand: true,
           loading: busy,
           onPressed: busy ? null : onStart,
@@ -169,7 +171,7 @@ class _SessionView extends StatelessWidget {
             Expanded(
               child: GhostButton(
                 label: context.tr.meetingsStop,
-                icon: Icons.stop_circle_outlined,
+                icon: AppIcons.stopCircle,
                 tone: GhostButtonTone.danger,
                 expand: true,
                 onPressed:
@@ -180,7 +182,7 @@ class _SessionView extends StatelessWidget {
             Expanded(
               child: GhostButton(
                 label: context.tr.meetingsSummarize,
-                icon: Icons.summarize_outlined,
+                icon: AppIcons.fileText,
                 expand: true,
                 onPressed: state.busy ? null : cubit.summarize,
               ),
@@ -210,7 +212,7 @@ class _SessionView extends StatelessWidget {
         const SizedBox(height: 10),
         GhostButton(
           label: context.tr.meetingsAsk,
-          icon: Icons.question_answer_outlined,
+          icon: AppIcons.qa,
           expand: true,
           loading: state.busy,
           onPressed: state.busy ? null : () => cubit.ask(askController.text),
@@ -262,7 +264,7 @@ class _TextBlock extends StatelessWidget {
               if (onRefresh != null)
                 IconButton(
                   visualDensity: VisualDensity.compact,
-                  icon: Icon(Icons.refresh, size: 18, color: s.muted),
+                  icon: Icon(AppIcons.refresh, size: 18, color: s.muted),
                   onPressed: onRefresh,
                 ),
             ],

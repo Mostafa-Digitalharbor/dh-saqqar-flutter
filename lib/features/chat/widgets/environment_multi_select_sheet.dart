@@ -9,6 +9,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../vault/data/project_models.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import 'chat_sheet.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Multi-select environment picker — mirrors the web header's environment
 /// dropdown that carries checkboxes so a single conversation can bind to
@@ -150,10 +151,10 @@ class _EnvCheckRow extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.buttonR,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.buttonR,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
           child: Row(
@@ -165,7 +166,7 @@ class _EnvCheckRow extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: checked ? accent : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: AppRadius.checkboxR,
                   border: Border.all(
                     color: checked ? accent : s.border,
                     width: 1.5,

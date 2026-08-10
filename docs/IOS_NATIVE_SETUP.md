@@ -65,9 +65,47 @@ iOS push **will not deliver a single notification** until all of the following
 are done on a Mac / in the Apple + Firebase consoles. There is no Windows
 substitute for any of them.
 
-### 2.1 Add the missing `GoogleService-Info.plist` (iOS)
-**This file is NOT in the repo** (it's per-Firebase-app and was never
-downloaded for iOS). Without it `Firebase.initializeApp()` throws on iOS.
+### 2.0 ✅ Release entitlements — already fixed on 2026-08-10, do not undo
+
+**All three build configurations used to point at `Runner.entitlements`, which
+declares `aps-environment: development`.** That is right for a debug build
+against the APNs sandbox and wrong for anything you upload: a TestFlight or
+App Store build carrying the development entitlement registers with the
+sandbox while the server pushes to production, so tokens are rejected and
+**not one notification arrives** — with nothing failing at build time to say
+so.
+
+Fixed by splitting the file:
+
+| Configuration | Entitlements | `aps-environment` |
+|---|---|---|
+| Debug | `Runner/Runner.entitlements` | `development` |
+| Profile | `Runner/Runner.entitlements` | `development` |
+| **Release** | **`Runner/RunnerRelease.entitlements`** | **`production`** |
+
+`RunnerRelease.entitlements` also carries the associated domain, Sign in with
+Apple, and the `group.sa.com.digitalharbor.saqqar` app group (needed by the
+Share Extension) — so it is a superset, not a replacement to trim.
+
+**On the Mac:** when you enable capabilities in Xcode (§3 below), Xcode may
+offer to "fix" the Release entitlements back to `development`. **Decline it.**
+If Xcode has already rewritten the file, restore `production` before archiving.
+
+> `Runner/RunnerProfile.entitlements` exists on disk but is referenced by no
+> build configuration. It is dead; ignore it, or delete it.
+
+### 2.1 `GoogleService-Info.plist` (iOS) — present, verify it survived
+
+It **is** in the repo at `ios/Runner/GoogleService-Info.plist` (verified
+2026-08-10). Earlier revisions of this document said it was missing; that is
+no longer true.
+
+What still needs checking on the Mac: the file must be a member of the
+**Runner** target and appear in **Build Phases → Copy Bundle Resources**. A
+file present on disk but not in the target still throws at
+`Firebase.initializeApp()`.
+
+If it is missing or wrong for your Firebase project, re-download it:
 
 1. Firebase Console → project **`saqqar-ai`** → Project settings → your apps
    → the **iOS app** with bundle id `sa.com.digitalharbor.saqqar`

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/response_body.dart';
 import 'attachment_models.dart';
 import 'conversation_models.dart';
 
@@ -18,19 +19,42 @@ class ConversationsApi {
 
   // ── Listing ─────────────────────────────────────────────────────────
 
-  /// `GET /api/v1/conversations/?limit=&include_archived=`
+  /// `GET /api/v1/conversations/?limit=&offset=&include_archived=`
+  ///
+  /// [offset] was sent before the endpoint documented it. The server used to
+  /// cap the page at 100 whatever the client asked for, send no `total`, and
+  /// ignore `offset` — an account with ~140 conversations got 100 rows and no
+  /// way to ask for the rest, on a screen that looked complete.
+  ///
+  /// It became real on 2026-08-09: `limit` (default 30, capped at 200),
+  /// `offset`, and a `total` that counts everything after filters.
+  ///
+  /// Sending `offset` remains safe either way — a server that supports it
+  /// pages correctly, and one that ignores it returns the same first page,
+  /// which the caller detects (no new ids) and stops on. See
+  /// `ConversationsRepository.listAll`.
+  ///
+  /// **Advance `offset` by rows RECEIVED, never by rows requested.** The
+  /// server clamps `limit` to 200, so stepping by a larger requested figure
+  /// would skip everything in between.
   Future<({List<ConversationSummary> conversations, int? total})> list({
     int limit = 30,
+    int offset = 0,
     bool includeArchived = false,
   }) async {
     final res = await _dio.get<Map<String, dynamic>>(
       ApiEndpoints.conversations,
       queryParameters: {
         'limit': limit,
+        if (offset > 0) 'offset': offset,
         'include_archived': includeArchived ? 1 : 0,
       },
     );
-    final data = res.data ?? const {};
+    // A bodiless 200 must not read as "you have no conversations" — that is
+    // the same screen a brand-new account gets, and it offers no retry.
+    // A body that IS present but lists nothing is a real empty account and
+    // still flows through below.
+    final data = res.requiredBody;
     return (
       // whereType skips a malformed row; the post-map filter drops any row
       // we couldn't identify (empty id) — one bad row never blanks the list.
@@ -133,28 +157,34 @@ class ConversationsApi {
       },
       options: Options(responseType: ResponseType.plain),
     );
-    return res.data ?? '';
+    // Plain text, not decoded JSON — the body is handed to a background
+    // isolate so parsing a long transcript never janks the chat. The
+    // required-body rule still applies: `''` reaches
+    // `getSnapshotOffIsolate`, which raises a FormatException for it, but
+    // an outright missing body is worth failing on here rather than
+    // travelling one layer further as an empty string.
+    return res.requiredBody;
   }
 
   // ── Metadata ────────────────────────────────────────────────────────
 
   /// `PATCH /api/v1/conversations/<id>/` — any subset of title / archive
-  /// flag / auto-approve / deep-think / bound environment.
+  /// flag / auto-approve / bound environment.
   ///
   /// To clear the environment binding, pass [environmentId] as the
   /// sentinel empty string `''` (Dio drops keys whose value is `null`,
   /// which would otherwise silently no-op).
   ///
-  /// [deepThink] is forwarded as `deep_think` so the per-conversation
-  /// toggle stays in sync with the web. Servers that don't yet support
-  /// the field silently ignore the key — the snapshot's `deep_think`
-  /// just stays at its previous value and the local UI doesn't break.
+  /// No `deep_think` key: the web removed the manual deep-think toggle and
+  /// the backend routes hard tasks (artifact / code authoring) to the
+  /// stronger model on its own, so a client-sent value would only fight it.
+  /// [Conversation] still *parses* the field the server serializes.
   Future<Conversation> patch({
     required String id,
     String? title,
     bool? isArchived,
     bool? autoApprove,
-    bool? deepThink,
+    bool? taskPrep,
     Map<String, dynamic>? context,
     String? environmentId,
     List<String>? environmentIds,
@@ -163,7 +193,10 @@ class ConversationsApi {
       if (title != null) 'title': title,
       if (isArchived != null) 'is_archived': isArchived,
       if (autoApprove != null) 'auto_approve': autoApprove,
-      if (deepThink != null) 'deep_think': deepThink,
+      // Sent only when the caller has a value, like every key here — so a
+      // build that never touches the toggle sends nothing new, and a server
+      // that does not yet know the field is never handed one.
+      if (taskPrep != null) 'task_prep': taskPrep,
       if (context != null) 'context': context,
       if (environmentId != null)
         'environment_id': environmentId.isEmpty ? null : environmentId,
@@ -196,7 +229,10 @@ class ConversationsApi {
     final res = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.conversationStop(id),
     );
-    final data = res.data ?? const <String, dynamic>{};
+    // Both flags default to false, so a missing body reported the run as
+    // stopped and not running — the composer re-enables and the user is told
+    // the cancel worked while the turn is very likely still going.
+    final data = res.requiredBody;
     return (
       isRunning: data['is_running'] as bool? ?? false,
       stopRequested: data['stop_requested'] as bool? ?? false,
@@ -211,7 +247,10 @@ class ConversationsApi {
     final res = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.conversationShare(id),
     );
-    final data = res.data ?? const <String, dynamic>{};
+    // Every field defaults to empty, so a missing body used to open the OS
+    // share sheet on a blank link. Whatever the user then sent someone is
+    // unrecoverable — better to fail here, where a retry still exists.
+    final data = res.requiredBody;
     return (
       token: data['share_token'] as String? ?? '',
       url: data['share_url'] as String? ?? '',
@@ -237,7 +276,11 @@ class ConversationsApi {
       ApiEndpoints.conversationCredentialsActive(id),
       data: {'name': name},
     );
-    return res.data?['active_credential'] as String?;
+    // Null means "no credential is active". Reading that off a body that
+    // never arrived tells the chat the credential was cleared, and the
+    // header drops the badge — the user believes the agent lost access to
+    // a system it can still reach.
+    return res.requiredBody['active_credential'] as String?;
   }
 
   /// `POST /api/v1/conversations/<id>/credentials/toggle/` — per-conversation
@@ -251,7 +294,11 @@ class ConversationsApi {
       ApiEndpoints.conversationCredentialsToggle(id),
       data: {'name': name, 'enabled': enabled},
     );
-    return (res.data?['disabled_credentials'] as List? ?? [])
+    // An empty list means "nothing is disabled" — so a missing body used to
+    // re-enable every credential in the UI while the server state was
+    // untouched. The next turn then runs against a set the user thinks they
+    // switched off.
+    return (res.requiredBody['disabled_credentials'] as List? ?? [])
         .map((e) => e.toString())
         .toList();
   }
@@ -290,18 +337,25 @@ class ConversationsApi {
   ///
   /// 409 means the agent is mid-task (`is_running=true`) — either wait
   /// or call [stop].
+  ///
+  /// [taskPrep] rides along as `task_prep`. The server already honours the
+  /// key (`payload.get("task_prep", True)`) and gates it itself, coercing to
+  /// `false` when the caller's plan lacks the feature — so sending `true`
+  /// from an ineligible account degrades to today's behaviour rather than
+  /// erroring. On, Saqqar answers a vague task with a `prompt_clarify` card
+  /// instead of guessing.
   Future<ConversationSnapshot> sendMessage({
     required String conversationId,
     required String content,
     List<String> attachmentIds = const [],
     String? model,
-    bool deepThink = false,
+    bool taskPrep = true,
   }) async {
     final body = <String, dynamic>{
       'content': content,
       if (attachmentIds.isNotEmpty) 'attachment_ids': attachmentIds,
       if (model != null) 'model': model,
-      'deep_think': deepThink,
+      'task_prep': taskPrep,
     };
     final res = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.conversationMessages(conversationId),

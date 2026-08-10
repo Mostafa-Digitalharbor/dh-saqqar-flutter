@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/ui_strings.dart';
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_radius.dart';
 
 /// Monospace "plate" for command / stdout / stderr / tool payloads — a
 /// bordered, tinted box with selectable monospace text. Shared by the server
@@ -43,7 +44,7 @@ class CodePlate extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: s.codePlate,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.tightR,
         border: Border.all(color: s.border),
       ),
       child: maxLines == null

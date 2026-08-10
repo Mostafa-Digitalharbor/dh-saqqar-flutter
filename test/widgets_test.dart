@@ -31,6 +31,15 @@ class _StubConversationsRepository implements ConversationsRepository {
   @override
   Future<({List<ConversationSummary> conversations, int? total})> list({
     int limit = 30,
+    int offset = 0,
+    bool includeArchived = false,
+  }) async =>
+      (conversations: const <ConversationSummary>[], total: 0);
+
+  @override
+  Future<({List<ConversationSummary> conversations, int? total})> listAll({
+    int pageSize = 200,
+    int maxPages = 12,
     bool includeArchived = false,
   }) async =>
       (conversations: const <ConversationSummary>[], total: 0);
@@ -102,7 +111,7 @@ class _StubConversationsRepository implements ConversationsRepository {
     String? title,
     bool? isArchived,
     bool? autoApprove,
-    bool? deepThink,
+    bool? taskPrep,
     Map<String, dynamic>? context,
     String? environmentId,
     List<String>? environmentIds,
@@ -155,7 +164,7 @@ class _StubConversationsRepository implements ConversationsRepository {
     required String content,
     List<String> attachmentIds = const [],
     String? model,
-    bool deepThink = false,
+    bool taskPrep = true,
   }) {
     throw UnimplementedError();
   }
@@ -288,7 +297,15 @@ void main() {
         ),
       );
       expect(find.text(text), findsOneWidget);
-      expect(find.text('12:04'), findsOneWidget);
+      // `findRichText`, because the attribution line is one `Text.rich`
+      // paragraph rather than three `Text` widgets in a `Row`. It was the Row
+      // — which hands its children unbounded width, so none of them could ever
+      // wrap — that overflowed a 320 px screen by 26 px once the timestamp
+      // became the long form ("Aug 9, 2026 at 1:00 PM"). See `MessageMeta`.
+      expect(
+        find.textContaining('12:04', findRichText: true),
+        findsOneWidget,
+      );
     });
 
     testWidgets('MessageBubble hides timestamp when showTime is false', (

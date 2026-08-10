@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/response_body.dart';
 import 'plan_tier_models.dart';
 
 /// Reads the public pricing catalogue (Gap L).
@@ -16,6 +17,10 @@ class PlansApi {
 
   Future<PlansResponse> list() async {
     final res = await _dio.get<Map<String, dynamic>>(ApiEndpoints.plans);
-    return PlansResponse.fromJson(res.data ?? const {});
+    // `?? {}` here parsed into an empty catalogue, and the pricing screen
+    // renders an empty catalogue as its ordinary empty state — the user is
+    // told nothing is for sale rather than that the price list failed to
+    // load, and gets no retry.
+    return PlansResponse.fromJson(res.requiredBody);
   }
 }

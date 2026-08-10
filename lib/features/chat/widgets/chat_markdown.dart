@@ -7,6 +7,7 @@ import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Renders an assistant or user message as Markdown that matches the web
 /// chat's typography (paragraphs, bold/italic, inline code, fenced code,
@@ -117,7 +118,7 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
       codeblockPadding: const EdgeInsets.all(12),
       codeblockDecoration: BoxDecoration(
         color: codeBg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppRadius.smallR,
         border: Border.all(color: codeBorder),
       ),
       listBullet: base?.copyWith(color: s.muted, fontWeight: FontWeight.w700),

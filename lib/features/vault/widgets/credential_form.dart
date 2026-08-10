@@ -12,6 +12,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../data/credential_models.dart';
 import '../data/credentials_api.dart';
 import '../view_model/vault_cubit.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Schema-driven credential form rendered inside a tab of
 /// [EnvironmentDetailSheet]. Mirrors the web's `env-credential-form`:
@@ -858,7 +859,7 @@ class _TestBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.tightR,
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
@@ -872,8 +873,8 @@ class _TestBadge extends StatelessWidget {
           else
             Icon(
               status == _TestStatus.ok
-                  ? Icons.check_circle
-                  : Icons.error_outline,
+                  ? AppIcons.success
+                  : AppIcons.error,
               color: color,
               size: 16,
             ),

@@ -129,8 +129,14 @@ class ConversationsCubit extends Cubit<ConversationsState> {
       // approvals + files) concurrently — the meta comes from the flat
       // cross-conversation feeds and is best-effort (never blocks/fails the
       // list; yields empty maps on error). No fabricated counts.
-      final listFuture =
-          _repo.list(limit: _listLimit, includeArchived: includeArchived);
+      // `listAll`, not `list`: the server caps a page below what we ask for,
+      // so a single request returned 100 of ~140 and the UI had no way to
+      // know. Stops on the first page that adds nothing, so it costs exactly
+      // one request on accounts small enough to fit in a page.
+      final listFuture = _repo.listAll(
+        pageSize: _listLimit,
+        includeArchived: includeArchived,
+      );
       final metaFuture = _repo.conversationMeta();
       final res = await listFuture;
       // Carry pins / counts / resolved project-env labels across a refresh
@@ -204,7 +210,6 @@ class ConversationsCubit extends Cubit<ConversationsState> {
       final failure = ApiErrorMapper.toFailure(e);
       emit(state.copyWith(
         data: DataFailure<ConversationsData>(
-          message: 'Failed to load conversations',
           error: failure,
           // Must be `dataOrPrevious` — otherwise the SECOND consecutive
           // failure drops the rows the first one preserved.

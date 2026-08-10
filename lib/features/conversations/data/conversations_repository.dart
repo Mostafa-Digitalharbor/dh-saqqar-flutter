@@ -159,7 +159,15 @@ class ConversationsRepository {
       before: before,
     );
     if (body.isEmpty) {
-      throw StateError('empty snapshot body for $id');
+      // FormatException, not StateError: `ApiErrorMapper` reads it as
+      // `ParseFailure` → "unexpected response from the server", which is
+      // what a 200 with no transcript in it actually is. A StateError fell
+      // through to `UnknownFailure` — "something went wrong, please try
+      // again" — which points the user at a retry that replays the same
+      // empty body. Matches the rule `requiredBody` applies to every JSON
+      // client; this path reads the body as plain text (to decode it off
+      // the UI isolate) so it has to state the rule itself.
+      throw const FormatException('empty conversation snapshot body');
     }
     final map = await compute(decodeSnapshotJson, body);
     final snapshot = ConversationSnapshot.fromJson(map);
@@ -238,13 +246,91 @@ class ConversationsRepository {
 
   Future<({List<ConversationSummary> conversations, int? total})> list({
     int limit = 30,
+    int offset = 0,
     bool includeArchived = false,
   }) async {
     AppLogger.info(
       _tag,
-      'list(limit=$limit, includeArchived=$includeArchived)',
+      'list(limit=$limit, offset=$offset, includeArchived=$includeArchived)',
     );
-    return _api.list(limit: limit, includeArchived: includeArchived);
+    return _api.list(
+      limit: limit,
+      offset: offset,
+      includeArchived: includeArchived,
+    );
+  }
+
+  /// Every conversation, following the server's paging until the list is
+  /// complete.
+  ///
+  /// **Why this exists.** The client asked for `limit=200`; the server
+  /// answered with 100, silently — it capped the page at 100, ignored
+  /// `offset`, and sent no `total` at all. The gap was found by counting the
+  /// list on saqqaar.com (~140) against the app's 100, which is the worst
+  /// kind of missing data: nothing on screen says anything is absent.
+  ///
+  /// The endpoint gained real `limit`/`offset` paging and a `total` on
+  /// 2026-08-09 (cap 200, default 30). The three stop conditions below stay
+  /// as they are: they were written to be safe against a server that ignores
+  /// `offset`, and that is exactly the server anyone on an older deployment
+  /// is still talking to.
+  ///
+  /// Three independent stop conditions, because this must not spin:
+  ///
+  ///   1. **No new ids.** A server that ignores `offset` returns page 1
+  ///      again; zero new ids means paging does not work and we keep what we
+  ///      have. This is the condition that makes sending `offset` safe.
+  ///   2. **`total` reached** — the server told us how many exist.
+  ///   3. **Page budget** — a hard ceiling so a pathological server cannot
+  ///      loop us forever.
+  ///
+  /// Returns whatever was gathered plus the server's `total`, so the caller
+  /// can still tell the user the list is short if paging is unsupported.
+  Future<({List<ConversationSummary> conversations, int? total})> listAll({
+    int pageSize = 200,
+    int maxPages = 12,
+    bool includeArchived = false,
+  }) async {
+    final out = <ConversationSummary>[];
+    final seen = <String>{};
+    int? total;
+    // The server's OWN page size, learned from the first response — not the
+    // `pageSize` we asked for. Comparing against the request would end the
+    // loop on page one for exactly the servers this exists for: the cap is
+    // below what we ask, so every page looks "short".
+    int? serverPage;
+
+    for (var page = 0; page < maxPages; page++) {
+      final res = await list(
+        limit: pageSize,
+        offset: out.length,
+        includeArchived: includeArchived,
+      );
+      total ??= res.total;
+
+      final fresh = [
+        for (final c in res.conversations)
+          if (seen.add(c.id)) c,
+      ];
+      out.addAll(fresh);
+
+      // (1) Paging made no progress — either we have everything, or the
+      // server ignored `offset` and re-sent the same page.
+      if (fresh.isEmpty) break;
+      // (2) We have as many as the server says exist. This is what keeps a
+      // small account at exactly one request.
+      if (total != null && out.length >= total) break;
+      // (3) A page shorter than the server's own page size is the last one.
+      // Only meaningful once we know that size.
+      if (serverPage != null && res.conversations.length < serverPage) break;
+      serverPage ??= res.conversations.length;
+    }
+
+    AppLogger.info(
+      _tag,
+      'listAll() · ${out.length} of ${total ?? out.length}',
+    );
+    return (conversations: out, total: total);
   }
 
   /// Per-conversation meta for the Chats list that the list endpoint doesn't
@@ -330,7 +416,7 @@ class ConversationsRepository {
     String? title,
     bool? isArchived,
     bool? autoApprove,
-    bool? deepThink,
+    bool? taskPrep,
     Map<String, dynamic>? context,
     String? environmentId,
     List<String>? environmentIds,
@@ -338,7 +424,7 @@ class ConversationsRepository {
     AppLogger.info(
       _tag,
       'patch(id=$id, title=$title, isArchived=$isArchived, '
-          'autoApprove=$autoApprove, deepThink=$deepThink, '
+          'autoApprove=$autoApprove, taskPrep=$taskPrep, '
           'contextKeys=${context?.keys.toList()}, '
           'environmentId=$environmentId, environmentIds=$environmentIds)',
     );
@@ -347,7 +433,7 @@ class ConversationsRepository {
       title: title,
       isArchived: isArchived,
       autoApprove: autoApprove,
-      deepThink: deepThink,
+      taskPrep: taskPrep,
       context: context,
       environmentId: environmentId,
       environmentIds: environmentIds,
@@ -424,19 +510,19 @@ class ConversationsRepository {
     required String content,
     List<String> attachmentIds = const [],
     String? model,
-    bool deepThink = false,
+    bool taskPrep = true,
   }) async {
     AppLogger.info(
       _tag,
       'sendMessage(conv=$conversationId, attachments=${attachmentIds.length}, '
-          'deepThink=$deepThink, model=${model ?? '<default>'})',
+          'taskPrep=$taskPrep, model=${model ?? '<default>'})',
     );
     return _api.sendMessage(
       conversationId: conversationId,
       content: content,
       attachmentIds: attachmentIds,
       model: model,
-      deepThink: deepThink,
+      taskPrep: taskPrep,
     );
   }
 

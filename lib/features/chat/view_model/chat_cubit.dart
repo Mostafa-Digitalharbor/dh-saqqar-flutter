@@ -222,7 +222,6 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       AppLogger.error(_tag, 'load() failed', error: e, stackTrace: st);
       emit(state.copyWith(
         data: DataFailure<ConversationSnapshot>(
-          message: 'Failed to load chat',
           error: ApiErrorMapper.toFailure(e),
           previous: state.data.dataOrNull,
         ),
@@ -262,36 +261,28 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   Future<bool> setAutoApprove(bool value) =>
       _patchConversationFlag(autoApprove: value);
 
-  /// PATCH the per-conversation `deep_think` flag. Servers that don't
-  /// surface the field yet silently ignore the key — the next poll
-  /// just returns the previous value and the local UI flips back.
-  Future<bool> setDeepThink(bool value) =>
-      _patchConversationFlag(deepThink: value);
+  /// PATCH the per-conversation `task_prep` flag, on the same terms as
+  /// [setAutoApprove].
+  ///
+  /// **Only call this when the server actually owns the flag** — i.e. when
+  /// `conversation.taskPrep` is non-null. While it is null the setting lives
+  /// in the device-local `TaskPrepCubit` and there is nothing to PATCH; see
+  /// `Conversation.taskPrep`.
+  Future<bool> setTaskPrep(bool value) =>
+      _patchConversationFlag(taskPrep: value);
 
   Future<bool> _patchConversationFlag({
     bool? autoApprove,
-    bool? deepThink,
+    bool? taskPrep,
   }) async {
     final current = state.data.dataOrNull;
     if (current == null) return false;
     // Optimistic: paint the new value in the snapshot before the
     // server round-trip lands so the toggle responds instantly.
-    // Also stash `deep_think` into context so a backend that still
-    // reads it from the legacy scratchpad (and not the new top-level
-    // column) picks the change up. Safe to send both — the new top-
-    // level wins server-side when present, the context copy is a
-    // belt-and-braces fallback for partial rollouts.
-    final mergedContext = deepThink == null
-        ? null
-        : {
-            ...current.conversation.context,
-            'deep_think': deepThink,
-          };
     final optimistic = current.copyWith(
       conversation: current.conversation.copyWith(
         autoApprove: autoApprove ?? current.conversation.autoApprove,
-        deepThink: deepThink ?? current.conversation.deepThink,
-        context: mergedContext ?? current.conversation.context,
+        taskPrep: taskPrep ?? current.conversation.taskPrep,
       ),
     );
     emit(state.copyWith(data: DataSuccess(optimistic)));
@@ -299,17 +290,14 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       final patched = await _repo.patch(
         id: conversationId,
         autoApprove: autoApprove,
-        deepThink: deepThink,
-        context: mergedContext,
+        taskPrep: taskPrep,
       );
       // Log the echoed conversation so a divergence between what we
-      // sent and what the server kept is visible during sync issues
-      // (e.g. server quietly dropping `deep_think` while accepting
-      // `auto_approve`).
+      // sent and what the server kept is visible during sync issues.
       AppLogger.info(
         _tag,
         'PATCH echoed conversation: autoApprove=${patched.autoApprove}, '
-            'deepThink=${patched.deepThink}',
+            'taskPrep=${patched.taskPrep}',
       );
       // Pull the canonical snapshot so any server-side coercion (e.g.
       // the server normalising auto_approve when the env is read_only)
@@ -320,7 +308,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       AppLogger.warn(
         _tag,
         '_patchConversationFlag(autoApprove=$autoApprove, '
-            'deepThink=$deepThink) failed',
+            'taskPrep=$taskPrep) failed',
         error: e,
         stackTrace: st,
       );
@@ -669,7 +657,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   /// hint or call [stopGeneration] first.
   Future<bool> sendMessage({
     required String content,
-    bool deepThink = false,
+    bool taskPrep = true,
     String? model,
   }) async {
     if (state.isSending) return false;
@@ -684,7 +672,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
         conversationId: conversationId,
         content: content,
         attachmentIds: attachmentIds,
-        deepThink: deepThink,
+        taskPrep: taskPrep,
         model: model,
       );
       emit(state.copyWith(

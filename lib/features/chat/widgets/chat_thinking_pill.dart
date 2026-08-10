@@ -151,7 +151,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                   ],
                   const SizedBox(width: 6),
                   AnimatedRotation(
-                    duration: const Duration(milliseconds: 180),
+                    duration: AppDurations.fast,
                     turns: _expanded ? 0.5 : 0,
                     child: Icon(
                       AppIcons.chevronDown,
@@ -167,11 +167,11 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
         // Body: one bulleted line per step. AnimatedSize + AnimatedCrossFade
         // keep the open/close transition matched to the chevron rotation.
         AnimatedSize(
-          duration: const Duration(milliseconds: 220),
+          duration: AppDurations.cardIn,
           curve: Curves.easeOutCubic,
           alignment: Alignment.topLeft,
           child: AnimatedCrossFade(
-            duration: const Duration(milliseconds: 180),
+            duration: AppDurations.fast,
             firstChild: const SizedBox(width: double.infinity, height: 0),
             secondChild: Padding(
               padding: const EdgeInsetsDirectional.only(
