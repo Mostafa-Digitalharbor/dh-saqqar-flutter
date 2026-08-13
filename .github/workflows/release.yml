@@ -158,6 +158,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Same reason as ci.yml's build-android — and it matters more here,
+      # because a release AAB is a bigger build than the debug APK that first
+      # hit this. See that job for what the failure actually looks like.
+      - name: Free disk space
+        run: |
+          set -eu
+          echo "--- before ---"; df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo apt-get clean
+          echo "--- after ---"; df -h /
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

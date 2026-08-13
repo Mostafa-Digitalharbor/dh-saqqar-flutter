@@ -57,6 +57,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # GitHub's ubuntu image leaves ~14 GB free, and this build wants more
+      # once Gradle unpacks the NDK (~1 GB), CMake, and its transform cache
+      # on top of the Flutter SDK. Running out does NOT surface as "no space
+      # left on device" — Gradle reports it as
+      #   Could not add entry '…/transforms/…' to cache file-access.bin
+      # which reads like a corrupt cache and sends you looking in the wrong
+      # place. Dropping toolchains this build never touches buys ~15 GB.
+      # `df` brackets it so the next failure shows a number instead of a guess.
+      - name: Free disk space
+        run: |
+          set -eu
+          echo "--- before ---"; df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo apt-get clean
+          echo "--- after ---"; df -h /
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
