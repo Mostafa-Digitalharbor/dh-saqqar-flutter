@@ -170,6 +170,31 @@ jobs:
           sudo apt-get clean
           echo "--- after ---"; df -h /
 
+      # `android/gradle.properties` asks for `-Xmx8G -XX:MaxMetaspaceSize=4G`
+      # — twelve gigabytes for the Gradle JVM alone. That is fine on the
+      # maintainer's workstation (a local `bundleRelease` finishes in ~5 min)
+      # and impossible here: a private repo's `ubuntu-latest` is 2 vCPU /
+      # 7 GB RAM, so the heap cannot even be reserved. The JVM and its Kotlin
+      # daemon get OOM-killed part-way through, Gradle exits 143 (SIGTERM),
+      # and GitHub reports "The operation was canceled" — which reads like
+      # somebody pressed the cancel button rather than an out-of-memory.
+      #
+      # Written to GRADLE_USER_HOME instead of edited in the repo: that file
+      # outranks the project's, so local builds keep their 8 GB and only the
+      # runner is constrained. `free -h` is left in so the next memory
+      # failure shows numbers rather than a guess.
+      - name: Cap Gradle memory for the runner
+        run: |
+          set -eu
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx3G -XX:MaxMetaspaceSize=768m -XX:ReservedCodeCacheSize=256m
+          org.gradle.daemon=false
+          org.gradle.workers.max=2
+          kotlin.daemon.jvmargs=-Xmx1G
+          EOF
+          free -h
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

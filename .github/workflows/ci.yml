@@ -74,6 +74,21 @@ jobs:
           sudo apt-get clean
           echo "--- after ---"; df -h /
 
+      # Same override as the release workflow — see its "Cap Gradle memory"
+      # step for why the repo's own 8 GB heap cannot run on a hosted runner.
+      # The debug APK is the smaller build, but it comes off the same 7 GB.
+      - name: Cap Gradle memory for the runner
+        run: |
+          set -eu
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx3G -XX:MaxMetaspaceSize=768m -XX:ReservedCodeCacheSize=256m
+          org.gradle.daemon=false
+          org.gradle.workers.max=2
+          kotlin.daemon.jvmargs=-Xmx1G
+          EOF
+          free -h
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
