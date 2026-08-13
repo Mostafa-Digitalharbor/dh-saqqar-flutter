@@ -70,6 +70,25 @@ jobs:
           channel: stable
           cache: true
 
+      # `android/app/google-services.json` is gitignored (it carries the FCM
+      # sender identity), but `com.google.gms.google-services` is applied
+      # unconditionally in android/app/build.gradle.kts, so EVERY Android
+      # build — debug included — hard-fails without it:
+      #   > File google-services.json is missing. The Google Services Plugin
+      #   > cannot function without it.
+      # Same restore as the release workflow. Fails with a readable message
+      # rather than leaving the Gradle error to be decoded.
+      - name: Restore google-services.json
+        env:
+          GS_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GS_JSON}" ]]; then
+            echo "::error::GOOGLE_SERVICES_JSON is not set — no Android build can run without it" >&2
+            exit 1
+          fi
+          printf '%s' "$GS_JSON" > android/app/google-services.json
+
       - name: Install dependencies
         run: flutter pub get
 
