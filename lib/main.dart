@@ -14,6 +14,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/foundation.dart';
 
 import 'app.dart';
+import 'core/app_build_info.dart';
 import 'core/i18n/platform_strings.dart';
 import 'core/i18n/remote_i18n_api.dart';
 import 'core/logging/app_bloc_observer.dart';
@@ -115,11 +116,13 @@ Future<void> main() async {
   try {
     final info = await PackageInfo.fromPlatform();
     release = 'saqqar@${info.version}+${info.buildNumber}';
-    // Same read, second consumer: the update gate compares this against the
-    // backend's supported floor. Kept as the RAW string — see
+    // Same read, other consumers: the update gate compares the build against
+    // the backend's supported floor, and the sign-in screen shows it so a
+    // tester can see which build a device is on. Kept as the RAW string — see
     // `AppUpdateDecision.forBuild` for why coercing it to an int here (and
     // defaulting a failed parse to 0) would show every user the blocking wall.
-    _bootBuildNumber = info.buildNumber;
+    AppBuildInfo.version = info.version;
+    AppBuildInfo.buildNumber = info.buildNumber;
   } catch (e, st) {
     AppLogger.warn('main', 'PackageInfo read failed', error: e, stackTrace: st);
   }
@@ -167,15 +170,6 @@ Future<void> main() async {
     appRunner: _bootApp,
   );
 }
-
-/// The platform build code, read once in [main] and handed to
-/// [AppUpdateCubit] in [_bootApp].
-///
-/// A top-level rather than a second `PackageInfo.fromPlatform()` call inside
-/// `_bootApp`: that call crosses a platform channel, and `_bootApp` runs as
-/// Sentry's `appRunner`, so it cannot receive a value from `main`'s scope.
-/// Empty when the read failed, which resolves to "no opinion".
-String _bootBuildNumber = '';
 
 Future<void> _bootApp() async {
   // Same binding as `main` ensured above — idempotent, and named the same way
@@ -458,7 +452,7 @@ Future<void> _bootApp() async {
             create: (_) => AppUpdateCubit(
               api: appUpdateApi,
               prefs: prefs,
-              currentBuild: _bootBuildNumber,
+              currentBuild: AppBuildInfo.buildNumber,
               // `defaultTargetPlatform`, not `dart:io`'s `Platform`, so this
               // stays compilable on web. Anything that is not iOS asks for
               // the Android listing — the only two platforms this app is
