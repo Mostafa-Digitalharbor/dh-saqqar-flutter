@@ -7,6 +7,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/routing/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
+import '../../features/app_update/view/update_nudge_banner.dart';
 import '../../features/chat/view_model/running_agents_cubit.dart';
 import '../../features/notifications/data/notifications_store.dart';
 import '../extensions/context_extensions.dart';
@@ -82,6 +83,10 @@ class _PageScaffoldState extends State<PageScaffold> {
         children: [
           _SaqqarBrandHeader(title: widget.title, elevated: _isScrolled),
           const OfflineBanner(),
+          // Same slot, same shape as the offline row: both are "something
+          // about the app itself, not this screen" and belong under the
+          // header rather than inside the scrollable content.
+          const UpdateNudgeBanner(),
           Expanded(
             child: NotificationListener<ScrollNotification>(
               onNotification: _handleScroll,

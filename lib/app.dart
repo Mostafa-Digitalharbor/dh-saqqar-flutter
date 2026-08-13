@@ -16,6 +16,7 @@ import 'features/push/data/push_notifications_service.dart';
 import 'features/security/view/app_lock_gate.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/view_model/theme_cubit.dart';
+import 'features/app_update/view/app_update_gate.dart';
 import 'features/auth/view_model/auth_cubit.dart';
 import 'features/auth/view_model/auth_state.dart';
 import 'features/billing/view_model/plan_cubit.dart';
@@ -228,19 +229,27 @@ class _SaqqarAppState extends State<SaqqarApp> {
           // found" the moment the share sheet tries to render.
           return MediaQuery(
             data: media.copyWith(textScaler: clamped),
-            // AppLockGate overlays the biometric lock above EVERYTHING
-            // (including the share sheet + any open dialog) and re-locks on
-            // background. Sits inside the builder so it's below the root
-            // Navigator — the lock screen's sign-out dialog still resolves.
-            child: AppLockGate(
-              child: ShareIntentBootstrap(
-                // Global "tap a blank area to dismiss the keyboard". iOS has
-                // no system button to hide the soft keyboard (Android's back
-                // gesture does), so without this a user can get stuck with
-                // the keyboard covering the UI on any screen that lacks an
-                // obvious "done" affordance.
-                child: _DismissKeyboardOnTap(
-                  child: child ?? const SizedBox.shrink(),
+            // AppUpdateGate sits OUTSIDE AppLockGate: when a build is below
+            // the backend's supported floor there is nothing behind the lock
+            // worth authenticating into, so making the user pass Face ID
+            // first only to meet a wall would be pure friction. The wall
+            // shows no user data, so it is also safe as the app-switcher
+            // snapshot that the lock normally exists to hide.
+            child: AppUpdateGate(
+              // AppLockGate overlays the biometric lock above EVERYTHING
+              // (including the share sheet + any open dialog) and re-locks on
+              // background. Sits inside the builder so it's below the root
+              // Navigator — the lock screen's sign-out dialog still resolves.
+              child: AppLockGate(
+                child: ShareIntentBootstrap(
+                  // Global "tap a blank area to dismiss the keyboard". iOS has
+                  // no system button to hide the soft keyboard (Android's back
+                  // gesture does), so without this a user can get stuck with
+                  // the keyboard covering the UI on any screen that lacks an
+                  // obvious "done" affordance.
+                  child: _DismissKeyboardOnTap(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),

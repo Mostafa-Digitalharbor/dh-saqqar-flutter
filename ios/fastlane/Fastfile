@@ -1,0 +1,118 @@
+require "base64"
+require "fileutils"
+require "shellwords"
+
+default_platform(:ios)
+
+# Saqqar ships four iOS targets — Runner, Share Extension, Watch App and the
+# Watch Complication widget — and Runner.xcodeproj has all of them on
+# `CODE_SIGN_STYLE = Automatic`. Two ways to sign that unattended:
+#
+#   • fastlane match — flip every target to Manual and pin four explicit
+#     provisioning profiles out of an encrypted certificates repo. Robust,
+#     but it needs a second private repo, a deploy key, and a re-run of
+#     `match` every time a target or capability is added.
+#   • Import the distribution certificate and let Xcode manage the four
+#     profiles itself via `-allowProvisioningUpdates`, authenticated with
+#     the same App Store Connect API key used for the upload.
+#
+# We take the second. It keeps the checked-in project on Automatic (so a
+# developer opening Xcode locally sees no drift), and the only state to
+# maintain is one .p12 in GitHub Secrets. `-allowProvisioningUpdates` CAN
+# also mint a distribution certificate on its own, but it does not export
+# the private key, so the next run would mint another and burn through the
+# team's three-certificate limit — hence importing a fixed one.
+platform :ios do
+  desc "Build a release IPA and upload it to TestFlight"
+  lane :beta do
+    # Creates a throwaway keychain and unlocks it. Without this the imported
+    # certificate lands in a login keychain that codesign cannot open on a
+    # headless runner.
+    setup_ci
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8"),
+      in_house: false
+    )
+
+    # xcodebuild reads the key off disk, not out of fastlane's session, so
+    # `-allowProvisioningUpdates` needs its own copy at the path Apple
+    # documents (`AuthKey_<KEY_ID>.p8` inside a private_keys dir).
+    key_dir = File.expand_path("~/private_keys")
+    FileUtils.mkdir_p(key_dir)
+    key_path = File.join(key_dir, "AuthKey_#{ENV.fetch('ASC_KEY_ID')}.p8")
+    File.write(key_path, ENV.fetch("ASC_KEY_P8"))
+    File.chmod(0600, key_path)
+
+    cert_path = File.expand_path("../../build/dist_cert.p12")
+    FileUtils.mkdir_p(File.dirname(cert_path))
+    File.binwrite(cert_path, Base64.decode64(ENV.fetch("IOS_DIST_CERT_P12_BASE64")))
+    import_certificate(
+      certificate_path: cert_path,
+      certificate_password: ENV.fetch("IOS_DIST_CERT_PASSWORD"),
+      keychain_name: "fastlane_tmp_keychain",
+      keychain_password: ""
+    )
+
+    # Flutter first, xcodebuild second. `flutter build ios --no-codesign`
+    # runs the Dart AOT compile, bakes in the --dart-defines, runs
+    # `pod install`, and stamps CFBundleShortVersionString/CFBundleVersion —
+    # then leaves an unsigned .app for gym to archive and sign. Doing it the
+    # other way round (gym driving the whole build) silently drops the
+    # dart-defines, which is how a release ships with no Sentry DSN.
+    #
+    # fastlane runs with CWD = ios/fastlane, so ../.. is the repo root.
+    Dir.chdir("../..") do
+      sh(
+        "flutter", "build", "ios", "--release", "--no-codesign",
+        "--build-name=#{ENV.fetch('BUILD_NAME')}",
+        "--build-number=#{ENV.fetch('BUILD_NUMBER')}",
+        "--no-tree-shake-icons",
+        "--dart-define=SAQQAR_SENTRY_DSN=#{ENV.fetch('SAQQAR_SENTRY_DSN', '')}",
+        "--dart-define=SAQQAR_GOOGLE_SERVER_CLIENT_ID=#{ENV.fetch('SAQQAR_GOOGLE_SERVER_CLIENT_ID', '')}",
+        # iOS deliberately hides every price and paid CTA (App Store 3.1.1 /
+        # the open 2.1(b) hold), so the web-subscribe surface stays off in
+        # the store binary regardless of what Android ships.
+        "--dart-define=SAQQAR_WEB_SUBSCRIBE=false"
+      )
+    end
+
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "Saqqar.ipa",
+      # Every target on the project is Automatic; these three flags are what
+      # let Xcode resolve and download all four profiles without a logged-in
+      # Apple ID.
+      xcargs: [
+        "-allowProvisioningUpdates",
+        "-authenticationKeyPath", key_path,
+        "-authenticationKeyID", ENV.fetch("ASC_KEY_ID"),
+        "-authenticationKeyIssuerID", ENV.fetch("ASC_ISSUER_ID")
+      ].shelljoin,
+      export_options: {
+        # The Watch App is a separate submission surface; bundling its
+        # symbols keeps Organizer crash reports readable.
+        uploadSymbols: true,
+        manageAppVersionAndBuildNumber: false
+      }
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: "./build/Saqqar.ipa",
+      # Internal testers only. External TestFlight testers trigger Beta App
+      # Review, and Saqqar already has build 107 sitting on a 2.1(b) hold —
+      # queueing more reviewer contact from CI is the opposite of helpful.
+      distribute_external: false,
+      skip_waiting_for_build_processing: true,
+      # Nothing here should ever create/modify the App Store listing.
+      skip_submission: true
+    )
+  end
+end

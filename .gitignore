@@ -133,3 +133,16 @@ windows/flutter/ephemeral/
 # ── Web build temporary state ────────────────────────────────────
 # `flutter build web` resets these on every run.
 web/canvaskit/
+
+# ── Release signing / fastlane (CI) ──────────────────────────────
+# The release workflow reconstitutes these from GitHub Secrets on every
+# run; none of them may ever be committed. `dist_cert.p12` is the Apple
+# Distribution certificate decoded by ios/fastlane/Fastfile, and
+# `~/private_keys/AuthKey_*.p8` lives outside the repo by design.
+ios/build/
+ios/fastlane/report.xml
+ios/fastlane/README.md
+ios/fastlane/Preview.html
+ios/fastlane/test_output/
+build/dist_cert.p12
+**/AuthKey_*.p8

@@ -1,0 +1,12 @@
+# The Runner target's bundle id. NOTE it is NOT the Android applicationId —
+# Android ships `sa.com.digitalharbor.saqqar`, iOS ships
+# `sa.com.digitalharbor.saqqarapp` (see Runner.xcodeproj). Mixing them up
+# uploads to the wrong App Store record, so both are spelled out here.
+app_identifier("sa.com.digitalharbor.saqqarapp")
+
+# Digital Harbor's team, matching DEVELOPMENT_TEAM in Runner.xcodeproj.
+team_id("P95FNYY2S2")
+
+# No `apple_id` on purpose — every authenticated call in the Fastfile goes
+# through an App Store Connect API key, which needs no Apple ID and no 2FA
+# prompt (a CI runner has nowhere to type a 2FA code).

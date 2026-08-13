@@ -1722,6 +1722,20 @@ class AppStrings {
       '$kind - $size - $createdLabel';
   String assistantPlan(String credential) =>
       '${_t('assistant_plan_prefix')} $credential. ${_t('assistant_plan_suffix')}';
+
+  // App update gate
+  String get updateRequiredTitle => _t('update_required_title');
+  String get updateRequiredBody => _t('update_required_body');
+  String get updateOptionalTitle => _t('update_optional_title');
+  String get updateOptionalBody => _t('update_optional_body');
+  String get updateAction => _t('update_action');
+  String get updateLater => _t('update_later');
+  String get updateOpenStoreFailed => _t('update_open_store_failed');
+
+  /// Routed through [_f] rather than written as an inline ternary so the
+  /// Arabic stays inside `_ar` where `i18n_parity_test` can see it.
+  String updateNewVersion(String version) =>
+      _f('update_new_version', {'version': version});
 }
 
 const Map<String, String> _en = {
@@ -3010,6 +3024,17 @@ const Map<String, String> _en = {
   'checkout_failed': 'Payment failed or was cancelled.',
   'checkout_open_failed': 'Couldn\'t open the payment page.',
   'checkout_empty': 'No plans available right now.',
+
+  // App update gate — GET /api/v1/app/version/
+  'update_required_title': 'Update required',
+  'update_required_body':
+      'This version of Saqqar is no longer supported. Install the latest one to carry on.',
+  'update_optional_title': 'A new version is ready',
+  'update_optional_body': 'Update for the latest fixes and improvements.',
+  'update_action': 'Update now',
+  'update_later': 'Later',
+  'update_new_version': 'Version {version}',
+  'update_open_store_failed': 'Couldn\'t open the store.',
 };
 
 const Map<String, String> _ar = {
@@ -4209,4 +4234,15 @@ const Map<String, String> _ar = {
   'checkout_failed': 'فشل الدفع أو تم إلغاؤه.',
   'checkout_open_failed': 'تعذّر فتح صفحة الدفع.',
   'checkout_empty': 'لا توجد باقات متاحة حاليًا.',
+
+  // بوابة تحديث التطبيق — GET /api/v1/app/version/
+  'update_required_title': 'التحديث مطلوب',
+  'update_required_body':
+      'هذا الإصدار من صقّار لم يعد مدعومًا. ثبّت أحدث إصدار للمتابعة.',
+  'update_optional_title': 'إصدار جديد جاهز',
+  'update_optional_body': 'حدّث التطبيق للحصول على آخر الإصلاحات والتحسينات.',
+  'update_action': 'حدّث الآن',
+  'update_later': 'لاحقًا',
+  'update_new_version': 'الإصدار {version}',
+  'update_open_store_failed': 'تعذّر فتح المتجر.',
 };

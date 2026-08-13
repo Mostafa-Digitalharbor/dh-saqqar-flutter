@@ -1,0 +1,301 @@
+name: Release
+
+# Tag-driven, NOT push-driven. Every commit on `saqqar-mostafa` must not
+# queue a store review — Play's production review runs hours-to-days and
+# Apple's runs ~24 h, so a per-commit pipeline would just build a backlog
+# that never drains. Shipping is an explicit act:
+#
+#   git tag v1.2.5 && git push origin v1.2.5
+#
+# `workflow_dispatch` is the escape hatch for re-running a build (e.g. a
+# flaky upload) or shipping straight to a different track without cutting
+# a new tag.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Play track (Android). iOS always goes to TestFlight.'
+        type: choice
+        default: internal
+        options: [internal, alpha, beta, production]
+      platforms:
+        description: 'Which platforms to build'
+        type: choice
+        default: android
+        options: [android, ios, both]
+
+concurrency:
+  # Never let two releases race — a half-uploaded AAB plus a second
+  # in-flight one is how duplicate/skipped version codes happen.
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: '3.35.3'
+
+  # `versionCode` must strictly increase on every Play upload, forever.
+  # Deriving it from `github.run_number` makes that mechanical instead of
+  # a thing a human remembers — but run_number restarts at 1 if this
+  # workflow file is ever renamed or deleted, so it is offset past the
+  # highest code already on Play (115, shipped from pubspec as 1.2.4+115).
+  # If you ever DO rename this file, raise the offset past the last live
+  # build code and never lower it.
+  VERSION_CODE_OFFSET: 200
+
+jobs:
+  # ── Gate ──────────────────────────────────────────────────────────────
+  # Deliberately duplicated from ci.yml rather than `workflow_call`-ed:
+  # ci.yml's build-android job is gated on `github.event_name == 'push'`,
+  # which is true for a tag push too, so calling it would also build a
+  # throwaway debug APK on every release.
+  verify:
+    name: Analyze & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test --reporter expanded
+
+  # ── Resolve the version once, share it with both platform jobs ────────
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      build_name: ${{ steps.v.outputs.build_name }}
+      build_number: ${{ steps.v.outputs.build_number }}
+      has_android: ${{ steps.keys.outputs.has_android }}
+      has_ios: ${{ steps.keys.outputs.has_ios }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # A platform whose signing secrets are not configured yet must SKIP,
+      # not fail. Android and iOS get set up weeks apart in practice, and a
+      # permanently-red iOS job trains everyone to ignore the red X — right
+      # up to the release where the red X was real. The iOS runner also bills
+      # at 10x, so failing it on every tag is expensive noise.
+      #
+      # This lives in a job output rather than a job-level `if:` because the
+      # `secrets` context is NOT available in `jobs.<id>.if` — only `github`,
+      # `needs`, `vars` and `inputs` are. Reading them into env here and
+      # exporting booleans is the supported way to gate on a secret existing.
+      - id: keys
+        name: Which platforms are configured?
+        env:
+          ANDROID_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          IOS_KEY: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # if/else, NOT `[[ cond ]] && x=true`.
+          #
+          # Mid-script that idiom is safe — `set -e` exempts a command
+          # followed by `&&`. But as the LAST command of the step it is not:
+          # its status becomes the step's exit code, so a false condition
+          # fails the step. The first draft ended on
+          # `[[ "$ios" == false ]] && echo …`, which exits 1 whenever iOS IS
+          # configured. Verified by running all four secret combinations:
+          # it passed with iOS unset and failed with iOS set — i.e. it would
+          # have looked fine on the Android-only run and broken the day the
+          # iOS keys were added, which is the worst possible time to find it.
+          if [[ -n "${ANDROID_KEY}" ]]; then android=true; else android=false; fi
+          if [[ -n "${IOS_KEY}" ]]; then ios=true; else ios=false; fi
+
+          echo "has_android=$android" >> "$GITHUB_OUTPUT"
+          echo "has_ios=$ios"         >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Platforms"
+            echo "- Android: \`$android\`"
+            echo "- iOS: \`$ios\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$android" == false ]]; then
+            echo "- _Android skipped: \`ANDROID_KEYSTORE_BASE64\` is not set._" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ "$ios" == false ]]; then
+            echo "- _iOS skipped: \`APP_STORE_CONNECT_KEY_ID\` is not set._" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - id: v
+        name: Derive build name + number
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            # v1.2.5 → 1.2.5. Reject anything that is not plain semver so a
+            # typo'd tag fails here instead of shipping a bad CFBundleShortVersionString.
+            BUILD_NAME="${GITHUB_REF_NAME#v}"
+            if [[ ! "$BUILD_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Tag '${GITHUB_REF_NAME}' is not vMAJOR.MINOR.PATCH" >&2
+              exit 1
+            fi
+          else
+            # Manual run — fall back to whatever pubspec says, minus the +N.
+            BUILD_NAME="$(grep -m1 '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9.]+)\+.*/\1/')"
+          fi
+          BUILD_NUMBER=$(( ${{ env.VERSION_CODE_OFFSET }} + GITHUB_RUN_NUMBER ))
+          echo "build_name=$BUILD_NAME"     >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "### Release \`$BUILD_NAME+$BUILD_NUMBER\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # ── Android → Play internal track ─────────────────────────────────────
+  android:
+    name: Android → Play (${{ inputs.track || 'internal' }})
+    runs-on: ubuntu-latest
+    needs: [verify, version]
+    if: >-
+      ${{ needs.version.outputs.has_android == 'true'
+          && (github.event_name == 'push' || inputs.platforms != 'ios') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # `android/app/build.gradle.kts` reads the release keystore out of
+      # `android/key.properties` and silently falls back to DEBUG signing
+      # when that file is absent. A debug-signed AAB is rejected by Play
+      # with a confusing error, so fail loudly here instead.
+      - name: Restore release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${KEYSTORE_B64}" ]]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is not set — refusing to ship a debug-signed bundle" >&2
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > android/saqqar-release.jks
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=saqqar-release.jks
+          EOF
+
+      # Gitignored (it carries the FCM sender identity), but the
+      # `com.google.gms.google-services` Gradle plugin hard-fails without it.
+      - name: Restore google-services.json
+        env:
+          GS_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GS_JSON}" ]]; then
+            echo "::error::GOOGLE_SERVICES_JSON is not set — the google-services Gradle plugin will fail" >&2
+            exit 1
+          fi
+          printf '%s' "$GS_JSON" > android/app/google-services.json
+
+      - run: flutter pub get
+
+      - name: Build app bundle
+        run: |
+          flutter build appbundle --release \
+            --build-name=${{ needs.version.outputs.build_name }} \
+            --build-number=${{ needs.version.outputs.build_number }} \
+            --no-tree-shake-icons \
+            --dart-define=SAQQAR_SENTRY_DSN=${{ secrets.SAQQAR_SENTRY_DSN }} \
+            --dart-define=SAQQAR_GOOGLE_SERVER_CLIENT_ID=${{ secrets.SAQQAR_GOOGLE_SERVER_CLIENT_ID }} \
+            --dart-define=SAQQAR_WEB_SUBSCRIBE=${{ vars.SAQQAR_WEB_SUBSCRIBE || 'true' }}
+
+      # Keep the exact artifact that was uploaded. When Play rejects a
+      # build you want the bytes it rejected, not a rebuild of the same tag.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: saqqar-${{ needs.version.outputs.build_name }}-${{ needs.version.outputs.build_number }}-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+      - name: Upload to Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: sa.com.digitalharbor.saqqar
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          # `internal` by default and on every tag push. Promoting to
+          # production is a deliberate manual step in the Play Console —
+          # see docs/RELEASE.md. Saqqar is mid-resubmit after the v15
+          # "Broken Functionality" rejection; automating a production
+          # push right now would put an unreviewed build in front of the
+          # same reviewers who already rejected one.
+          track: ${{ inputs.track || 'internal' }}
+          status: completed
+          # No `mappingFile:` — `isMinifyEnabled = false` in
+          # android/app/build.gradle.kts, so R8 never emits mapping.txt.
+
+  # ── iOS → TestFlight ──────────────────────────────────────────────────
+  # Runs on macOS, which bills at 10× the Linux minute rate, so it is opt-in
+  # on manual runs and only automatic on a real tag.
+  ios:
+    name: iOS → TestFlight
+    runs-on: macos-14
+    needs: [verify, version]
+    if: >-
+      ${{ needs.version.outputs.has_ios == 'true'
+          && (github.event_name == 'push' || inputs.platforms != 'android') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          architecture: arm64
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: ios
+
+      - run: flutter pub get
+
+      - name: Build & upload
+        working-directory: ios
+        env:
+          # App Store Connect API key (Users and Access → Integrations →
+          # App Store Connect API). Preferred over an Apple ID + app-specific
+          # password: no 2FA prompt, and it is scoped/revocable.
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.APP_STORE_CONNECT_P8 }}
+          # The Apple Distribution certificate, exported from Keychain
+          # Access as .p12 and base64'd. Xcode mints the four provisioning
+          # profiles itself (-allowProvisioningUpdates), but it will not
+          # export a certificate's private key — so the cert is the one
+          # piece of signing state we carry. See ios/fastlane/Fastfile.
+          IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          BUILD_NAME: ${{ needs.version.outputs.build_name }}
+          BUILD_NUMBER: ${{ needs.version.outputs.build_number }}
+          SAQQAR_SENTRY_DSN: ${{ secrets.SAQQAR_SENTRY_DSN }}
+          SAQQAR_GOOGLE_SERVER_CLIENT_ID: ${{ secrets.SAQQAR_GOOGLE_SERVER_CLIENT_ID }}
+        run: bundle exec fastlane beta
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: saqqar-${{ needs.version.outputs.build_name }}-${{ needs.version.outputs.build_number }}-ios-logs
+          path: |
+            ios/build/*.ipa
+            ~/Library/Logs/gym
+          retention-days: 30
+          if-no-files-found: ignore

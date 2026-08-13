@@ -25,6 +25,9 @@ import 'core/network/dio_client.dart';
 import 'core/network/view_model/connectivity_cubit.dart';
 import 'core/storage/secure_token_store.dart';
 import 'core/theme/view_model/theme_cubit.dart';
+import 'features/app_update/data/app_update_api.dart';
+import 'features/app_update/data/play_update_service.dart';
+import 'features/app_update/view_model/app_update_cubit.dart';
 import 'features/apps/data/apps_api.dart';
 import 'features/auth/data/auth_api.dart';
 import 'features/auth/data/social_auth_service.dart';
@@ -112,6 +115,11 @@ Future<void> main() async {
   try {
     final info = await PackageInfo.fromPlatform();
     release = 'saqqar@${info.version}+${info.buildNumber}';
+    // Same read, second consumer: the update gate compares this against the
+    // backend's supported floor. Kept as the RAW string — see
+    // `AppUpdateDecision.forBuild` for why coercing it to an int here (and
+    // defaulting a failed parse to 0) would show every user the blocking wall.
+    _bootBuildNumber = info.buildNumber;
   } catch (e, st) {
     AppLogger.warn('main', 'PackageInfo read failed', error: e, stackTrace: st);
   }
@@ -159,6 +167,15 @@ Future<void> main() async {
     appRunner: _bootApp,
   );
 }
+
+/// The platform build code, read once in [main] and handed to
+/// [AppUpdateCubit] in [_bootApp].
+///
+/// A top-level rather than a second `PackageInfo.fromPlatform()` call inside
+/// `_bootApp`: that call crosses a platform channel, and `_bootApp` runs as
+/// Sentry's `appRunner`, so it cannot receive a value from `main`'s scope.
+/// Empty when the read failed, which resolves to "no opinion".
+String _bootBuildNumber = '';
 
 Future<void> _bootApp() async {
   // Same binding as `main` ensured above — idempotent, and named the same way
@@ -275,6 +292,9 @@ Future<void> _bootApp() async {
   // cubit via `RepositoryProvider`. Cheap to build (no I/O), so doing it
   // here keeps `main` predictable and lets tests override individually.
   final authApi = AuthApi(dio);
+  // Update gate. Cheap to build (one GET, fired post-frame by AppUpdateGate)
+  // and completely inert until the backend serves /api/v1/app/version/.
+  final appUpdateApi = AppUpdateApi(dio);
   // Native Google / Apple sign-in wrapper (docs/MOBILE_AUTH_GUIDE.md). No I/O
   // at construction — the underlying SDKs init lazily on first use.
   final socialAuthService = SocialAuthService();
@@ -429,6 +449,32 @@ Future<void> _bootApp() async {
           // service in app.dart and drives device (un)registration.
           BlocProvider<NotificationsSettingsCubit>(
             create: (_) => NotificationsSettingsCubit(prefs),
+          ),
+          // Update gate. `lazy: false` so the version check is already in
+          // flight while the splash animates, instead of starting on the
+          // first frame the user could otherwise interact with.
+          BlocProvider<AppUpdateCubit>(
+            lazy: false,
+            create: (_) => AppUpdateCubit(
+              api: appUpdateApi,
+              prefs: prefs,
+              currentBuild: _bootBuildNumber,
+              // `defaultTargetPlatform`, not `dart:io`'s `Platform`, so this
+              // stays compilable on web. Anything that is not iOS asks for
+              // the Android listing — the only two platforms this app is
+              // published on, and a wrong guess costs a 404, not a gate.
+              platform: defaultTargetPlatform == TargetPlatform.iOS
+                  ? DevicePlatform.ios
+                  : DevicePlatform.android,
+              // Android only — Play's In-App Update API has no iOS
+              // counterpart and Apple ships no equivalent, so iOS gets a
+              // `null` here and falls through to the store listing. Deciding
+              // it once, at the composition root, is what keeps the cubit
+              // free of platform checks (and therefore testable).
+              play: defaultTargetPlatform == TargetPlatform.android
+                  ? const PlayUpdateService()
+                  : null,
+            ),
           ),
           BlocProvider<PlanCubit>(create: (_) => PlanCubit()),
           // Separate from PlanCubit on purpose: `saqqar_features` rides on

@@ -170,6 +170,22 @@ dependencies:
   record: ^5.1.2
   permission_handler: ^11.3.1
 
+  # Play In-App Updates (Android only). Store auto-update takes 1–7 days to
+  # reach a device *after* review, and does nothing at all for users who
+  # turned it off; this asks Play directly and installs from inside the app.
+  # Two flows — `flexible` (downloads in the background, then a "restart to
+  # update" prompt) and `immediate` (Google's own blocking full-screen UI,
+  # used only when the backend says the running build is unsupported).
+  #
+  # Every call fails safe: the API throws on any install that did not come
+  # from Play (sideloaded APK, emulator, `flutter run`), so `PlayUpdateService`
+  # swallows that into "no opinion" and the flow falls back to opening the
+  # store listing. iOS has no equivalent API at all and never constructs it.
+  #
+  # Pinned to 4.x: 5.0.0 exists but does not resolve against this dependency
+  # set. See docs/RELEASE.md §4.
+  in_app_update: ^4.2.5
+
 # Pub's resolver picks `record_linux 0.7.2` to satisfy `record ^5.1.2`'s
 # constraint, but 0.7.2 predates the `startStream` + `hasPermission(...,
 # request:)` additions to `record_platform_interface 1.6.0`. The mismatch

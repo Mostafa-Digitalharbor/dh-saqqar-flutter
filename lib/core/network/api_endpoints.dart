@@ -209,6 +209,28 @@ class ApiEndpoints {
   /// off to the auth gate.
   static const String health = '/api/v1/health/';
 
+  // ── App version / update gate ────────────────────────────────────────
+  /// `GET /api/v1/app/version/?platform=android|ios` → public, no bearer.
+  ///
+  /// ```json
+  /// { "ok": true,
+  ///   "min_supported_build": 110,   // below this the app must not be used
+  ///   "latest_build": 118,          // newest build live on that store
+  ///   "latest_version": "1.2.5",
+  ///   "store_url": "https://play.google.com/store/apps/details?id=…" }
+  /// ```
+  ///
+  /// `platform` is required because the two stores run independently — a
+  /// build sitting in Apple review is not yet installable by an Android
+  /// user, and gating both off one number would either under- or
+  /// over-block one of them.
+  ///
+  /// **Not built yet** — same treatment as [authWebSession]: `AppUpdateApi`
+  /// reads any non-200, and any body it cannot parse, as "the server has no
+  /// opinion", so the gate stays completely inert until the endpoint ships.
+  /// No app release is needed to switch it on.
+  static const String appVersion = '/api/v1/app/version/';
+
   // ── Saqqar Apps (API_MOBILE_NEW_ENDPOINTS.md §1) ─────────────────────
   /// `GET /api/v1/apps/` — the guided implementation packages (ZATCA,
   /// WhatsApp, Chart of Accounts …). Each tile launches a package-tagged
