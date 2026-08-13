@@ -44,7 +44,7 @@ class AppTheme {
           : AppColors.brandCyanSoftLight,
       brandCyanBorder: AppColors.brandCyanBorder,
       overlay: isDark ? AppColors.overlayDark : AppColors.overlayLight,
-      codePlate: isDark ? const Color(0x40000000) : const Color(0x0F0F172A),
+      codePlate: isDark ? AppColors.codePlateDark : AppColors.codePlateLight,
     );
 
     final colorScheme = ColorScheme(

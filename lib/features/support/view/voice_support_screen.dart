@@ -29,7 +29,16 @@ import '../data/voice_support_models.dart';
 /// rollout. It is not linked from anywhere else, so an account without the
 /// flag has no path to it.
 class VoiceSupportScreen extends StatefulWidget {
-  const VoiceSupportScreen({super.key});
+  const VoiceSupportScreen({super.key, this.environmentId});
+
+  /// Which bound Odoo database a filed ticket is written to.
+  ///
+  /// Passed by the chat that opened this screen, so the ticket lands in the
+  /// database the user was actually talking about. Null when the screen is
+  /// reached without that context — the server then falls back to the
+  /// account's first environment, which is the only environment for most
+  /// accounts and the documented default for the rest.
+  final String? environmentId;
 
   @override
   State<VoiceSupportScreen> createState() => _VoiceSupportScreenState();
@@ -39,6 +48,15 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
   final _controller = TextEditingController();
 
   VoiceSupportDraft? _draft;
+
+  /// The exact text the draft was built from.
+  ///
+  /// Held separately from the field because the user may keep typing after
+  /// the draft comes back: the ticket must carry the words that produced
+  /// *this* diagnosis, not whatever is in the box at the moment they tap
+  /// file.
+  String _draftedProblem = '';
+
   bool _drafting = false;
   bool _filing = false;
 
@@ -67,6 +85,7 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
 
   Future<void> _requestDraft() async {
     if (!_canSubmit) return;
+    final problem = _controller.text.trim();
     setState(() {
       _drafting = true;
       // A new problem invalidates the previous answer AND its filed state:
@@ -77,11 +96,14 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
     });
     try {
       final draft = await context.read<VoiceSupportApi>().draft(
-            problem: _controller.text.trim(),
+            problem: problem,
             lang: Localizations.localeOf(context).languageCode,
           );
       if (!mounted) return;
-      setState(() => _draft = draft);
+      setState(() {
+        _draft = draft;
+        _draftedProblem = problem;
+      });
       if (!draft.hasContent) {
         AppToast.show(context, message: context.tr.voiceSupportEmpty);
       }
@@ -111,13 +133,30 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
     if (!ok || !mounted) return;
     setState(() => _filing = true);
     try {
-      await context.read<VoiceSupportApi>().createTicket(
-            title: draft.title,
-            priority: draft.priority,
+      final ticket = await context.read<VoiceSupportApi>().createTicket(
+            draft: draft,
+            transcript: _draftedProblem,
+            environmentId: widget.environmentId,
           );
       if (!mounted) return;
+      if (!ticket.created) {
+        // A 200 with no record id. The old code called every 200 a success,
+        // which is the one outcome worth guarding against here: the user
+        // believes support has been contacted and stops chasing the problem.
+        // Leave the button live so they can retry.
+        AppToast.show(context, message: tr.voiceSupportTicketNotCreated);
+        return;
+      }
       setState(() => _ticketFiled = true);
-      AppToast.show(context, message: tr.voiceSupportTicketCreated);
+      AppToast.show(
+        context,
+        // Helpdesk isn't installed in every database; the server saves a
+        // project task instead. Say which, so nobody goes looking in the
+        // wrong Odoo app.
+        message: ticket.isProjectTask
+            ? tr.voiceSupportTaskCreated
+            : tr.voiceSupportTicketCreated,
+      );
     } catch (e) {
       if (!mounted) return;
       // Includes the ordinary case of the Odoo Helpdesk module simply not
@@ -230,6 +269,13 @@ class _DraftCard extends StatelessWidget {
           if (draft.summary.isNotEmpty) ...[
             const SizedBox(height: 14),
             _Section(title: tr.voiceSupportSummary, body: draft.summary),
+          ],
+          // Optional on the wire, and the second field this card was dropping
+          // on the floor — the server's read of the cause is the part that
+          // tells the user whether the diagnosis is worth acting on.
+          if (draft.diagnosis.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _Section(title: tr.voiceSupportDiagnosis, body: draft.diagnosis),
           ],
           if (draft.reply.isNotEmpty) ...[
             const SizedBox(height: 14),

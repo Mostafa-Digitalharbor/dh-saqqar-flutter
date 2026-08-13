@@ -265,6 +265,14 @@ class ApiErrorMapper {
       // "try again later" would be a lie the user follows into an infinite
       // retry. `detail` stays out of the UI — it's a Dart type error.
       ParseFailure() => tr.errorUnexpectedResponse,
+      // Nothing was rejected by Saqqar — the native picker failed on the
+      // device. Each arm names the way out; `notConfigured` in particular
+      // cannot be retried, so offering "try again" would loop the user.
+      SocialSignInFailure(problem: final p) => switch (p) {
+          SocialSignInProblem.notConfigured => tr.errorSocialNotConfigured,
+          SocialSignInProblem.noToken => tr.errorSocialNoToken,
+          SocialSignInProblem.rejected => tr.errorSocialRejected,
+        },
       ServerFailure(serverMessage: final m) =>
         tr.presentableServerMessage(m) ?? tr.errorServer,
       UnknownFailure(serverMessage: final m) =>

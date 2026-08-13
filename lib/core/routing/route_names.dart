@@ -41,6 +41,11 @@ class RouteNames {
   static const voiceSupport = 'voice-support';
   static const voiceSupportPath = '/voice-support';
 
+  /// Optional `?env=<id>` on [voiceSupportPath] — which bound Odoo database a
+  /// filed ticket is written to. Set by the chat that opened the screen;
+  /// absent, the server falls back to the account's first environment.
+  static const voiceSupportEnvQuery = 'env';
+
   // In-app notifications inbox — opened from the header bell.
   static const notifications = 'notifications';
   static const notificationsPath = '/notifications';

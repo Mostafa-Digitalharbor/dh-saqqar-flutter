@@ -1,0 +1,94 @@
+{
+  "screens": [
+    {
+      "name": "Launch Splash",
+      "file": "launch-splash.json",
+      "screenshot": "png/launch-splash.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 5
+    },
+    {
+      "name": "Auth Email",
+      "file": "auth-email.json",
+      "screenshot": "png/auth-email.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 31
+    },
+    {
+      "name": "Auth OTP",
+      "file": "auth-otp.json",
+      "screenshot": "png/auth-otp.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 33
+    },
+    {
+      "name": "Account",
+      "file": "account.json",
+      "screenshot": "png/account.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 75
+    },
+    {
+      "name": "Usage",
+      "file": "usage.json",
+      "screenshot": "png/usage.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 21
+    },
+    {
+      "name": "Conversations",
+      "file": "conversations.json",
+      "screenshot": "png/conversations.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 76
+    },
+    {
+      "name": "Vault",
+      "file": "vault.json",
+      "screenshot": "png/vault.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 45
+    },
+    {
+      "name": "Devices",
+      "file": "devices.json",
+      "screenshot": "png/devices.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 20
+    },
+    {
+      "name": "Notifications",
+      "file": "notifications.json",
+      "screenshot": "png/notifications.png",
+      "width": 430.0,
+      "height": 932.0,
+      "locale": "en",
+      "brightness": "light",
+      "layers": 41
+    }
+  ]
+}

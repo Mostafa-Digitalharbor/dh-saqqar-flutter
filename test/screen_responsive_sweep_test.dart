@@ -31,6 +31,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:saqqar_app/core/state/data_state.dart';
 import 'package:saqqar_app/features/account/view/account_screen.dart';
+import 'package:saqqar_app/features/account/widgets/plan_usage_card.dart';
 import 'package:saqqar_app/features/auth/view/auth_flow_screen.dart';
 import 'package:saqqar_app/features/auth/view_model/auth_flow_cubit.dart';
 import 'package:saqqar_app/features/billing/data/plan_models.dart';
@@ -305,7 +306,20 @@ class _SeededVaultCubit extends VaultCubit {
             projectsApi: _FakeProjectsApi(),
             credentialsApi: _FakeCredentialsApi(),
           ),
-        );
+        ) {
+    // Loads itself, because nothing else will.
+    //
+    // `load()` is called in exactly one place in the app — `VaultScreen`'s
+    // `initState` — so a cubit handed straight to one of the three sheets is
+    // idle, and every sheet resolves its subject to `null` and draws an empty
+    // shell. That is what the sheets were being swept as: twenty layouts each
+    // of a form with a `—` where the 55-character Odoo instance name should
+    // be, passing green while measuring nothing. In production a sheet cannot
+    // be reached without going through the screen that loads this first, so
+    // loading here is what makes the fixture match the app rather than a
+    // convenience.
+    load();
+  }
 }
 
 // ── Provider wrappers, named once ────────────────────────────────────────
@@ -532,6 +546,73 @@ void main() {
       await pumpOnce(tester, const DevicesScreen(),
           prefs: prefs, wrap: _withDevices);
       expect(find.textContaining('Android'), findsWidgets);
+    });
+
+    // The four below were swept for twenty layouts each with nothing checking
+    // they had drawn anything. `PricingScreen` is the cautionary one: it spent
+    // months sweeping green while rendering only its error state, because its
+    // fixture was in a wire shape `PlanTier.fromJson` could not read. The
+    // sweep cannot tell a laid-out screen from an empty one — that is what
+    // these assertions are for, and every surface that reads a fixture needs
+    // one.
+
+    testWidgets('PricingScreen shows the real tier catalogue', (tester) async {
+      await pumpOnce(
+        tester,
+        const PricingScreen(),
+        prefs: prefs,
+        wrap: (child) => BlocProvider<PlanCubit>(
+          create: (_) => _SeededPlanCubit(),
+          child: MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<PlansApi>(create: (_) => _FakePlansApi()),
+              RepositoryProvider<Dio>(create: (_) => Dio()),
+            ],
+            child: child,
+          ),
+        ),
+      );
+      // Business is the tier that stresses this layout hardest — five
+      // bullets, a "everything in Professional" header and a two-cycle price
+      // line. If the parse silently dropped the catalogue, it is the first
+      // thing to go missing.
+      expect(find.textContaining('Business'), findsWidgets);
+    });
+
+    testWidgets('UsageScreen shows the usage card, not a spinner or an error',
+        (tester) async {
+      await pumpOnce(tester, const UsageScreen(), prefs: prefs, wrap: _withPlan);
+      // `PlanUsageCard` is built on exactly one branch — `plan != null`. The
+      // other three branches of that `BlocBuilder` (error, loading, public
+      // catalogue fallback) are all short, and all of them sweep green.
+      expect(find.byType(PlanUsageCard), findsOneWidget);
+    });
+
+    testWidgets('ProjectDetailSheet resolves its project', (tester) async {
+      await pumpOnce(
+        tester,
+        const Scaffold(body: ProjectDetailSheet(existingProjectId: 'p1')),
+        prefs: prefs,
+        wrap: _withVault,
+      );
+      expect(find.textContaining('ALZOMMAN'), findsWidgets);
+    });
+
+    testWidgets('EnvironmentDetailSheet resolves its environment',
+        (tester) async {
+      await pumpOnce(
+        tester,
+        const Scaffold(body: EnvironmentDetailSheet(environmentId: 'e0')),
+        prefs: prefs,
+        wrap: _withVault,
+      );
+      expect(find.textContaining('ALZOMMAN'), findsWidgets);
+      // Both sheets fall back to a literal em dash when the lookup misses.
+      // That fallback is a legitimate runtime state, but inside the sweep it
+      // means the widest string in the app was never laid out — so the sweep
+      // measured a dash where it thought it was measuring a 55-character
+      // Odoo instance name.
+      expect(find.text('—'), findsNothing);
     });
   });
 }

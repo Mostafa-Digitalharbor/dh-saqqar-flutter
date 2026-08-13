@@ -541,26 +541,44 @@ class _EnvRowState extends State<_EnvRow> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Row 1: env name (editable) + Live + Read-only ───────
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            // ── Line 1: env name (editable), full width ──────────────
+            //
+            // The name and the two flags used to share one `Row`, with the
+            // field in an `Expanded`. That overflowed by 15 px at 320 px:
+            // `Expanded` shrinks to zero but no further, and "Live" +
+            // "Read-only" — each a `Text` in a `mainAxisSize.min` Row, so
+            // neither wraps nor ellipsizes — are together wider than the card.
+            // No amount of flex on the field could have absorbed it.
+            //
+            // Giving the field the whole line is also the better layout for
+            // what it holds: these are Odoo instance names, routinely 50+
+            // characters, and it is an editable field rather than a label.
+            _InlineNameField(
+              controller: _rename,
+              focusNode: _focusNode,
+              onSubmitted: (_) {
+                _commitRename();
+                _focusNode.unfocus();
+              },
+            ),
+            const SizedBox(height: 8),
+            // ── Line 2: the two env flags, flowing ──────────────────
+            //
+            // `Wrap` rather than `Row` for the same reason as the action band
+            // below: at 320 px in Arabic the pair does not fit on one line,
+            // and a checkbox label that ellipsizes to "Read-o…" is worse than
+            // one that moves down a line.
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 4,
               children: [
-                Expanded(child: _InlineNameField(
-                  controller: _rename,
-                  focusNode: _focusNode,
-                  onSubmitted: (_) {
-                    _commitRename();
-                    _focusNode.unfocus();
-                  },
-                )),
-                const SizedBox(width: 8),
                 _FlagCheckbox(
                   label: context.tr.flagLive,
                   value: env.isLive,
                   activeColor: s.danger,
                   onChanged: _onLiveChanged,
                 ),
-                const SizedBox(width: 10),
                 _FlagCheckbox(
                   label: context.tr.flagReadOnly,
                   value: env.readOnly,
@@ -611,15 +629,24 @@ class _EnvRowState extends State<_EnvRow> {
                   onChanged: (v) =>
                       cubit.updateEnvironment(id: env.id, autoApprove: v),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                // A `Wrap`, not a `Row`. The outer `Wrap` hands this child a
+                // maxWidth equal to its own, so a `Row(mainAxisSize: min)`
+                // here was still 2.8 px too wide at 320 px once the two
+                // buttons had taken their natural size — the outer wrap could
+                // move the group to a second run, but nothing could split the
+                // group itself. Nesting a `Wrap` lets Delete fall under Open
+                // on the narrowest phones while they stay side by side
+                // everywhere else.
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     PrimaryButton(
                       label: context.tr.openEnvironment,
                       minHeight: 36,
                       onPressed: widget.onOpen,
                     ),
-                    const SizedBox(width: 8),
                     GhostButton(
                       label: context.tr.delete,
                       minHeight: 36,
@@ -779,12 +806,24 @@ class _FlagCheckbox extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: context.text.labelMedium?.copyWith(
-                color: value ? activeColor : s.text,
-                fontWeight: value ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
+            // `Flexible`, because a `Row` hands a non-flex child unbounded
+            // main-axis width — so this label neither wrapped nor ellipsized
+            // however narrow the phone, and a single checkbox overflowed by
+            // 14 px at 320 px in Arabic at 1.4× text. Putting the pair of them
+            // in a `Wrap` above fixed the pair; it could not fix one child
+            // that is wider than the line it sits on.
+            //
+            // It wraps rather than ellipsizes on purpose: this is a control's
+            // label, and "قراءة فق…" leaves the user guessing what they are
+            // about to toggle on a live Odoo instance.
+            Flexible(
+              child: Text(
+                label,
+                style: context.text.labelMedium?.copyWith(
+                  color: value ? activeColor : s.text,
+                  fontWeight: value ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],

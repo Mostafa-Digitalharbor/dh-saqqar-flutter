@@ -241,7 +241,7 @@ void main() {
   });
 
   group('Colours are named, not typed', () {
-    test('no `Color(0x…)` literal outside the theme', () {
+    test('no `Color(0x…)` literal outside app_colors.dart', () {
       // A hex colour at a call site is invisible to the theme: it does not
       // change between light and dark, it does not move when the brand does,
       // and it cannot be found by anyone grepping `AppColors`. The radius and
@@ -254,8 +254,15 @@ void main() {
       // must stay white in both modes. Routing those through a token would
       // invert them in dark mode and break contrast on exactly the surfaces
       // that need it most.
+      // The exemption is ONE FILE, not the theme directory. It used to be
+      // `core/theme/`, and that extra breadth is exactly how five literals
+      // survived a sweep: `app_theme.dart` grew its own `Color(0x40000000)`
+      // and `saqqar_theme_extension.dart` grew four shadow tints, all inside
+      // the blind spot — while `app_colors.dart`'s own doc comment claimed to
+      // be the single home for brand hex. A palette with two homes is not a
+      // palette, so the guard now names the one that counts.
       final hits = lib
-          .where((l) => !l.path.contains('core/theme/'))
+          .where((l) => !l.path.endsWith('core/theme/app_colors.dart'))
           .where((l) => RegExp(r'Color\(0x').hasMatch(l.text))
           .where((l) => !_brandLockedColours.any(l.path.endsWith))
           .toList();
@@ -264,7 +271,7 @@ void main() {
         hits,
         isEmpty,
         reason: _report(
-          'Hex colour outside the theme:',
+          'Hex colour outside app_colors.dart:',
           hits,
           'add it to lib/core/theme/app_colors.dart and read it through '
               '`context.saqqar.<role>`, so it follows the theme and a rebrand '
@@ -899,6 +906,70 @@ void main() {
         isFalse,
         reason: 'DataFailure must not reintroduce a `message` field — the '
             'view localizes `error` through ApiErrorMapper instead.',
+      );
+    });
+  });
+
+  group('A per-conversation setting stays in its conversation', () {
+    test('flipping Task prep in an existing chat writes no device default', () {
+      // Reported by the user: turning Task prep on in one chat turned it on
+      // in every other chat.
+      //
+      // The read is `conversation.taskPrep ?? TaskPrepCubit.state`, and the
+      // backend keeps the column nullable and defaulted to null — so every
+      // conversation nobody has flipped yet renders from the device default.
+      // `_setTaskPrep` wrote BOTH the PATCH and that default on every flip, so
+      // one flip re-rendered all of them.
+      //
+      // A widget test cannot see this: it would need two chats, two snapshots
+      // and a shared preferences store, and it would still only prove the case
+      // it happened to set up. The rule is simply that the device default is
+      // written on the NEW-chat branch only, which is checkable where it is
+      // written.
+      final source =
+          File('lib/features/chat/view/chat_screen.dart').readAsStringSync();
+      final body = RegExp(
+        r'void _setTaskPrep\(bool value\) \{(.*?)\n  \}',
+        dotAll: true,
+      ).firstMatch(source)?.group(1);
+
+      expect(body, isNotNull, reason: '_setTaskPrep not found — rename?');
+
+      // Cut out the new-chat branch, then look at what is LEFT. Asking
+      // "is there a write inside the branch?" is not the question — there is
+      // supposed to be one there. The question is whether any write survives
+      // outside it, and the only way to ask that is to remove the legitimate
+      // one first.
+      //
+      // (Written this way after the first attempt — `if (_isNewChat) …
+      // TaskPrepCubit.set` anywhere in the body — passed happily against a
+      // deliberately reintroduced leak, because the legitimate write inside
+      // the branch satisfied it.)
+      final newChatBranch = RegExp(
+        r'if \(_isNewChat\) \{.*?\n    \}',
+        dotAll: true,
+      ).firstMatch(body!)?.group(0);
+
+      expect(
+        newChatBranch,
+        isNotNull,
+        reason: '_setTaskPrep no longer branches on `_isNewChat` — this rule '
+            'cannot tell the two writes apart any more.',
+      );
+
+      final outsideBranch = body.replaceFirst(newChatBranch!, '');
+
+      expect(
+        outsideBranch.contains('TaskPrepCubit>().set('),
+        isFalse,
+        reason: '_setTaskPrep writes the device-wide TaskPrepCubit outside the '
+            '`_isNewChat` branch.\n\n'
+            'That default is the fallback for every conversation the server '
+            'has no value for, so writing it from an existing chat turns the '
+            'toggle on in all of them — the bug this rule exists for.\n\n'
+            'Fix: PATCH the conversation only. Write the device default just '
+            'for a chat that does not exist server-side yet, where there is '
+            'nothing to PATCH and it is what the first send carries.',
       );
     });
   });

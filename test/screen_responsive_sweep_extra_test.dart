@@ -24,6 +24,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:saqqar_app/core/constants/ui_strings.dart';
 import 'package:saqqar_app/features/apps/data/app_package_models.dart';
 import 'package:saqqar_app/features/apps/data/apps_api.dart';
 import 'package:saqqar_app/features/apps/view/apps_screen.dart';
@@ -312,14 +313,56 @@ void main() {
         wrap: _withBillingHistory);
   });
 
-  testWidgets('DataExplorerScreen survives the matrix', (tester) async {
-    await sweepMatrix(tester, prefs: prefs, () => const DataExplorerScreen(),
-        wrap: _withDataExplorer);
+  // Both of these screens open on a *form*, and everything worth measuring —
+  // the result card, the live status panel, the transcript, the summary —
+  // exists only after the user acts. Swept on first paint alone they were two
+  // text fields and a button, which is not what they overflow at.
+  //
+  // Driven through the cubit rather than by tapping a labelled button: the
+  // matrix runs each screen in English and Arabic, so a finder keyed on button
+  // copy passes in one locale and silently does nothing in the other.
+
+  testWidgets('DataExplorerScreen survives the matrix, with a result',
+      (tester) async {
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => const DataExplorerScreen(),
+      wrap: _withDataExplorer,
+      afterPump: (tester) async {
+        final cubit = BlocProvider.of<DataExplorerCubit>(
+          tester.element(find.byType(DataExplorerScreen)),
+        );
+        // `run` needs a selected environment or it refuses; the picker is
+        // populated by the `loadEnvironments()` that `initState` fires.
+        final env = cubit.state.environments.first;
+        cubit.selectEnv(env.id);
+        await cubit.run('{"domain": []}');
+      },
+    );
   });
 
-  testWidgets('MeetingsScreen survives the matrix', (tester) async {
-    await sweepMatrix(tester, prefs: prefs, () => const MeetingsScreen(),
-        wrap: _withMeetings);
+  testWidgets('MeetingsScreen survives the matrix, mid-meeting',
+      (tester) async {
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => const MeetingsScreen(),
+      wrap: _withMeetings,
+      afterPump: (tester) async {
+        final cubit = BlocProvider.of<MeetingsCubit>(
+          tester.element(find.byType(MeetingsScreen)),
+        );
+        await cubit.start(UiStrings.meetingUrlExample);
+        // `start` only arms a 5-second poll; it never fetches the transcript
+        // itself. Without this the panel renders with an empty transcript
+        // placeholder, which is shorter than every real state.
+        await cubit.refreshTranscript();
+        // The tallest state this screen reaches: status panel + two-speaker
+        // transcript + summary + the ask field, all at once.
+        await cubit.summarize();
+      },
+    );
   });
 
   testWidgets('TrialScreen survives the matrix', (tester) async {
@@ -360,6 +403,30 @@ void main() {
       await pumpOnce(tester, const SharedTranscriptScreen(token: 'tok-1'),
           prefs: prefs, wrap: _withSharedTranscript);
       expect(find.textContaining('اتضاف 30 مستخدم'), findsWidgets);
+    });
+
+    testWidgets('DataExplorerScreen lists the seeded environments',
+        (tester) async {
+      await pumpOnce(tester, const DataExplorerScreen(),
+          prefs: prefs, wrap: _withDataExplorer);
+      // `loadEnvironments()` is fired from `initState`; if it fails the screen
+      // renders "no environments" and the whole query form is never built.
+      expect(find.textContaining('ALZOMMAN'), findsWidgets);
+    });
+
+    testWidgets('MeetingsScreen reaches the live panel', (tester) async {
+      await pumpOnce(tester, const MeetingsScreen(),
+          prefs: prefs, wrap: _withMeetings);
+      final cubit = BlocProvider.of<MeetingsCubit>(
+        tester.element(find.byType(MeetingsScreen)),
+      );
+      await cubit.start(UiStrings.meetingUrlExample);
+      await cubit.refreshTranscript();
+      await tester.pump(const Duration(milliseconds: 350));
+      // The two-speaker transcript is the payload the fake returns. Seeing it
+      // proves the sweep's `afterPump` above lands on the populated screen
+      // rather than leaving the intro form up.
+      expect(find.textContaining('أرقام المبيعات'), findsWidgets);
     });
   });
 }

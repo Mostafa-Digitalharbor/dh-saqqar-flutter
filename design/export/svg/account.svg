@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="932" viewBox="0 0 430 932">
+<title>Account</title>
+<defs>
+<filter id="shadow6" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#000000" flood-opacity="0.03"/></filter>
+<filter id="shadow7" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#0F172A" flood-opacity="0.06"/></filter>
+<linearGradient id="grad8" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#06B6D4"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient>
+<filter id="shadow9" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#0F172A" flood-opacity="0.06"/></filter>
+<linearGradient id="grad10" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F3C88"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+<filter id="shadow11" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#0F172A" flood-opacity="0.06"/></filter>
+</defs>
+<rect width="430" height="932" fill="#FFFFFF"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="0" width="430" height="63" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#shadow6)" data-name="DecoratedBox"/>
+<rect x="16" y="9.5" width="131.23" height="43" rx="10" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="17.5" width="105.23" height="27" fill="#CBD5E1" fill-opacity="0.25" data-name="RawImage (image)"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="262.62" y="36.07">Account</tspan></text>
+<rect x="378" y="11" width="40" height="40" rx="10" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="19" font-weight="400" fill="#0F172A" data-name="Icon U+E059 (Lucide)"><tspan x="388.5" y="36.32"></tspan></text>
+<rect x="0" y="63" width="430" height="869" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="16" y="77" width="398" height="216" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow7)" data-name="DecoratedBox"/>
+<rect x="35" y="100.5" width="68" height="68" rx="34" fill="#06B6D4" fill-opacity="0.16" data-name="DecoratedBox"/>
+<rect x="40" y="105.5" width="58" height="58" rx="29" fill="url(#grad8)" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="24" font-weight="900" fill="#FFFFFF" letter-spacing="0.5" data-name="RichText"><tspan x="61.06" y="141.22">D</tspan></text>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" letter-spacing="-0.2" data-name="RichText"><tspan x="117" y="111.28">Digital Harbor</tspan></text>
+<rect x="312.11" y="96" width="82.89" height="22" rx="11" fill="#06B6D4" fill-opacity="0.12" stroke="#06B6D4" stroke-opacity="0.35" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="11" font-weight="800" fill="#06B6D4" data-name="RichText"><tspan x="321.11" y="110.1">Professional</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="117" y="134.22">ai-tools@digital-harbor.net</tspan></text>
+<rect x="117" y="148" width="46.03" height="25" rx="12.5" fill="#06B6D4" fill-opacity="0.16" stroke="#06B6D4" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="10" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="126" y="163.3">STAFF</tspan></text>
+<rect x="35" y="189" width="360" height="1" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="56.79" y="217.68">1432</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="76.63" y="234.21">conversations</tspan></text>
+<rect x="122.25" y="204" width="1" height="22" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="154" y="217.68">199</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="168.88" y="234.21">credentials</tspan></text>
+<rect x="214.5" y="204" width="1" height="22" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="236.33" y="217.68">24515</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="261.12" y="234.21">approvals</tspan></text>
+<rect x="306.75" y="204" width="1" height="22" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="333.54" y="217.68">8801</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="353.38" y="234.21">artifacts</tspan></text>
+<rect x="35" y="252" width="360" height="1" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" fill-opacity="0.8" data-name="Icon U+E087 (Lucide)"><tspan x="35" y="274.14"></tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText"><tspan x="54" y="273.38">Joined May 8, 2026</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" fill-opacity="0.7" data-name="RichText"><tspan x="165.13" y="273.38">·</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText"><tspan x="175.04" y="273.38">Last login Aug 3, 2026 · 8:19 PM</tspan></text>
+<rect x="16" y="307" width="194" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="16" y="307" width="194" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E04F (Lucide)"><tspan x="66.34" y="336.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="127" y="334.91">See plans</tspan></text>
+<rect x="220" y="307" width="194" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="220" y="307" width="194" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E2A3 (Lucide)"><tspan x="282.08" y="336.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="331.01" y="334.91">Usage</tspan></text>
+<rect x="16" y="369" width="398" height="353" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow9)" data-name="DecoratedBox"/>
+<rect x="33" y="386" width="34" height="34" rx="12" fill="#8B5CF6" fill-opacity="0.12" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#8B5CF6" data-name="Icon U+E462 (Lucide)"><tspan x="41" y="408.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="15" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="79" y="399.2">Personal information</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="79" y="419.87">The details you gave when you signed up.</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="33" y="451.83">FIRST NAME</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="221" y="451.83">LAST NAME</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="33" y="536.83">EMAIL (LOGIN)</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="51" y="612.1">Your email is your login and can't be changed here.</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="334.19" y="644.1">No changes</tspan></text>
+<rect x="33" y="657" width="364" height="48" fill="#000000" fill-opacity="0" opacity="0.5" data-name="PhysicalShape"/>
+<rect x="33" y="657" width="364" height="48" rx="12" fill="url(#grad10)" opacity="0.5" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#FFFFFF" opacity="0.5" data-name="Icon U+E14D (Lucide)"><tspan x="154.07" y="686.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#FFFFFF" opacity="0.5" data-name="RichText" text-anchor="middle"><tspan x="229" y="684.91">Save changes</tspan></text>
+<rect x="16" y="736" width="398" height="436" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow11)" data-name="DecoratedBox"/>
+<rect x="33" y="753" width="34" height="34" rx="12" fill="#06B6D4" fill-opacity="0.12" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#06B6D4" data-name="Icon U+E154 (Lucide)"><tspan x="41" y="775.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="15" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="79" y="766.2">Preferences</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="33" y="816.91">Theme</tspan></text>
+<rect x="33" y="831" width="93.76" height="48" fill="#F1F5F9" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E178 (Lucide)"><tspan x="51.96" y="860.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="77.96" y="856.55">Light</tspan></text>
+<rect x="126.76" y="831" width="93.76" height="48" fill="#F1F5F9" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E11E (Lucide)"><tspan x="147.85" y="860.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="173.85" y="856.55">Dark</tspan></text>
+<rect x="220.53" y="831" width="93.76" height="48" fill="#06B6D4" fill-opacity="0.16" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#06B6D4" data-name="Icon U+E154 (Lucide)"><tspan x="232.53" y="860.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#06B6D4" data-name="RichText"><tspan x="258.53" y="856.55">System</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="33" y="910.91">Language</tspan></text>
+<rect x="33" y="925" width="67.76" height="48" fill="#F1F5F9" data-name="PhysicalShape"/>
+<rect x="100.76" y="925" width="67.76" height="48" fill="#F1F5F9" data-name="PhysicalShape"/>
+<rect x="168.53" y="925" width="67.76" height="48" fill="#06B6D4" fill-opacity="0.16" data-name="PhysicalShape"/>
+</svg>

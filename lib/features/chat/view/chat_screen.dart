@@ -15,6 +15,7 @@ import 'package:record/record.dart';
 
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/format/byte_size.dart';
+import '../../../core/format/file_kind.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
@@ -824,7 +825,7 @@ class _ChatScreenState extends State<ChatScreen>
         name: name,
         kind: _kindForExtension(ext),
         size: humanBytes(size, context.tr),
-        imageUrl: _isImageExt(ext) ? f.path : null,
+        imageUrl: FileKinds.isImage(ext) ? f.path : null,
         localPath: f.path,
       ));
       keptFiles.add(f);
@@ -1170,6 +1171,30 @@ class _ChatScreenState extends State<ChatScreen>
   /// `cacheExtent`, so the prepended rows are built off-screen too.
   static const _autoLoadEarlierThreshold = 600.0;
 
+  /// Console tag for the upward-paging machinery. One tag so a tester can
+  /// `logcat | grep ChatScroll` and see the whole decision chain.
+  static const _scrollTag = 'ChatScroll';
+
+  /// How close to the hard top edge counts as "pinned there".
+  ///
+  /// A few pixels, not a zone: the question is only whether the correction
+  /// left the user against the boundary with nothing above them. Anything
+  /// larger would nudge readers who are legitimately near the top of a chat
+  /// they have finished loading.
+  static const _topEdgeSlack = 8.0;
+
+  /// How far [_nudgeOffTopEdge] eases the list down, as a share of the
+  /// viewport.
+  ///
+  /// A fraction rather than a pixel count so it reads as *a few messages* on
+  /// any screen — roughly five short ones on a phone — without trying to count
+  /// rows whose heights range from a one-word reply to a full report.
+  ///
+  /// It does not need to clear [_autoLoadEarlierThreshold]: the trigger is
+  /// latched off after firing and only a fresh finger-down drag re-arms it, so
+  /// landing inside the trigger zone re-fires nothing.
+  static const _topEdgeBumpFraction = 0.6;
+
   /// Re-entrancy guard for [_loadEarlier].
   ///
   /// Scroll notifications arrive on essentially every frame of a drag, so
@@ -1306,6 +1331,15 @@ class _ChatScreenState extends State<ChatScreen>
       loadedCount: loadedBefore,
       hasMoreOlder: cubit.state.hasMoreOlder,
     );
+    // Same reason as the nudge log: "sometimes it doesn't load" is a decision
+    // taken from state that no longer exists by the time anyone can ask.
+    AppLogger.debug(
+      _scrollTag,
+      'earlier? auto=$auto armed=$_autoLoadArmed loading=$_loadingEarlier '
+      'shown=$shownBefore loaded=$loadedBefore '
+      'more=${cubit.state.hasMoreOlder} failed=$_autoLoadEarlierFailed '
+      '=> ${action.name}',
+    );
     if (action == EarlierPageAction.none) return;
     final needsFetch = action == EarlierPageAction.fetchOlder;
 
@@ -1351,9 +1385,19 @@ class _ChatScreenState extends State<ChatScreen>
       setState(() => _visibleLimit = shownBefore + _visibleStep);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        // The row-anchor correction is exact when it can be measured, and
+        // simply does nothing when the row has been culled — which a fast
+        // fling guarantees. There is deliberately no fallback: the only other
+        // signal available is `maxScrollExtent`, and it is an estimate that
+        // moves in both directions, so a correction derived from it is noise
+        // (see the note in `earlier_paging.dart`). `_nudgeOffTopEdge` covers
+        // the unmeasurable case with a bounded move instead.
         _reanchorAfterPrepend(anchorYAtReveal);
         _scrollAnchorId = null;
         _loadingEarlier = false;
+        // Only after the corrections, so this sees where the user actually
+        // ended up rather than where they were mid-prepend.
+        _nudgeOffTopEdge();
         _fillViewportIfNotScrollable();
         _topUpPrefetch();
       });
@@ -1443,20 +1487,106 @@ class _ChatScreenState extends State<ChatScreen>
   /// the offset exactly as far as the anchor row moved.
   ///
   /// Measured, not estimated — see [_scrollAnchorKey].
-  void _reanchorAfterPrepend(double? anchorYBefore) {
-    if (anchorYBefore == null) return;
-    if (!_scroll.hasClients) return;
+  /// Puts the row the user was reading back under their eye after a prepend.
+  ///
+  /// Returns whether a correction was actually applied — the caller needs to
+  /// know, because "could not measure" and "no correction needed" look
+  /// identical from outside and only the first one needs a fallback.
+  bool _reanchorAfterPrepend(double? anchorYBefore) {
+    if (anchorYBefore == null) return false;
+    if (!_scroll.hasClients) return false;
     final position = _scroll.position;
-    if (!position.hasContentDimensions) return;
+    if (!position.hasContentDimensions) return false;
     final anchorYAfter = _anchorRowY();
-    if (anchorYAfter == null) return;
+    // The anchor row is not laid out. This is the common case after a fast
+    // fling: the lazy list culls the row we sampled long before the reveal
+    // lands, so there is nothing to measure against. [_reanchorByGrowth] takes
+    // over.
+    if (anchorYAfter == null) return false;
     // The row moved DOWN by `shift`; scrolling down by the same amount puts
     // it back under the user's eye.
     final shift = anchorYAfter - anchorYBefore;
-    if (shift.abs() < 0.5) return;
+    AppLogger.debug(
+      _scrollTag,
+      'row-fix shift=${shift.toStringAsFixed(0)} '
+      'px=${position.pixels.toStringAsFixed(0)}',
+    );
+    // Already in place — a real outcome, not a failure, so the caller must not
+    // apply a second correction on top.
+    if (shift.abs() < 0.5) return true;
     _scroll.jumpTo(
       (position.pixels + shift).clamp(0.0, position.maxScrollExtent),
     );
+    return true;
+  }
+
+  /// Eases the list down a few messages once a page has landed at the edge.
+  ///
+  /// Reported by the user: flinging to the top of a long chat parks you there
+  /// with older messages still unloaded, and the only way forward is to scroll
+  /// down and back up. That is not a discoverable gesture, and sitting against
+  /// a dead edge reads as the app being broken.
+  ///
+  /// Two things were wrong. The correction above could silently not apply, and
+  /// the auto-load trigger disarms after firing and re-arms only once the user
+  /// travels back past twice the threshold — which needs a scroll event, and a
+  /// user resting at the edge produces none. So the list stopped asking.
+  ///
+  /// A small animated nudge fixes both at once: it moves the newly revealed
+  /// rows above the reader where they can scroll into them, it emits the
+  /// scroll notification that re-arms the trigger, and it makes the moment
+  /// legible — the list visibly answers instead of freezing.
+  ///
+  /// Deliberately does nothing at the true start of the conversation. Bumping
+  /// a user away from the first message they came to read, to reveal nothing,
+  /// would be the same rudeness in the other direction.
+  void _nudgeOffTopEdge() {
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (!position.hasContentDimensions) return;
+    final target = topEdgeNudgeTarget(
+      pixels: position.pixels,
+      extentBefore: position.extentBefore,
+      maxScrollExtent: position.maxScrollExtent,
+      viewportDimension: position.viewportDimension,
+      hasMoreToReveal: _hasMoreToReveal,
+      slack: _topEdgeSlack,
+      bumpFraction: _topEdgeBumpFraction,
+    );
+    // Debug-only, and load-bearing for diagnosis: both reported failures of
+    // this feature ("it still parks me at the top", "it threw me to the end")
+    // are intermittent and depend on scroll metrics at one instant, which is
+    // the one thing a static read of the code cannot recover. `AppLogger`
+    // compiles out in release.
+    AppLogger.debug(
+      _scrollTag,
+      'nudge? px=${position.pixels.toStringAsFixed(0)} '
+      'before=${position.extentBefore.toStringAsFixed(0)} '
+      'max=${position.maxScrollExtent.toStringAsFixed(0)} '
+      'vp=${position.viewportDimension.toStringAsFixed(0)} '
+      'more=$_hasMoreToReveal => ${target?.toStringAsFixed(0) ?? 'skip'}',
+    );
+    if (target == null) return;
+    // Honour Reduce Motion: the point is to leave the edge, and the animation
+    // is only how that is communicated.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _scroll.jumpTo(target);
+      return;
+    }
+    unawaited(
+      _scroll.animateTo(
+        target,
+        duration: AppDurations.cardIn,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+  }
+
+  /// Whether anything older is still available — loaded but not yet revealed,
+  /// or still on the server.
+  bool get _hasMoreToReveal {
+    if (_loadedVisibleCount() > _visibleLimit) return true;
+    return context.read<ChatCubit>().state.hasMoreOlder;
   }
 
   /// Pulls another page when the rendered window doesn't fill the viewport.
@@ -1901,35 +2031,53 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// Flips Task prep and confirms it in words.
   ///
-  /// Writes wherever the setting actually lives:
+  /// PATCHes on every flip of an existing chat, on exactly the same terms as
+  /// [_setAutoApprove], and writes the device preference too so a chat the
+  /// server has no opinion about still has a value to fall back on.
   ///
-  ///   * **The server owns it** (`conversation.task_prep` is non-null) →
-  ///     PATCH it, exactly as auto-approve does, so the website sees the
-  ///     change. Optimistic with rollback, via `_applyToggle`.
-  ///   * **The server owns nothing** (the field is absent — every deployment
-  ///     as of 2026-08-10) → write the device preference, which is precisely
-  ///     the behaviour that shipped.
+  /// **This used to PATCH only when `conversation.task_prep` was already
+  /// non-null**, and that condition was a deadlock. The backend shipped the
+  /// field nullable with **every existing row reset to `null`**
+  /// (`BACKEND_FIXES_RESPONSE_2.md` §1), so:
   ///
-  /// The branch is what lets this ship ahead of the backend: the day the
-  /// field appears in the snapshot, the toggle starts syncing on builds
-  /// already installed. Until then nothing changes. Writing the local
-  /// preference too, in both branches, keeps the fallback warm for chats the
-  /// server has no opinion about.
+  ///   `task_prep` is null → the app refuses to PATCH → the value stays null
+  ///   → the app refuses to PATCH …
+  ///
+  /// The app could therefore never be the one to give the field its first
+  /// value. Only the **web** could, and once it had, mobile started syncing —
+  /// which is why this looked intermittent rather than broken. Auto-approve
+  /// sits in the same row with no such guard and synced every time, and two
+  /// adjacent switches behaving differently is exactly what the user reported,
+  /// twice.
+  ///
+  /// Confirmed on a real device against production on 2026-08-12: the live
+  /// snapshot carries `"auto_approve": false, "task_prep": null`, so the guard
+  /// was false on every conversation in the account.
+  ///
+  /// The guard was right when it was written — the server then had no such key
+  /// and "never hand it one" was the correct posture. It stopped being right
+  /// the day the field shipped. Reading is unchanged and still prefers the
+  /// server's value when it has one (see the `taskPrep` line in `build`); only
+  /// the write is unconditional now.
   void _setTaskPrep(bool value) {
-    final serverOwnsIt = !_isNewChat &&
-        context
-                .read<ChatCubit>()
-                .state
-                .data
-                .dataOrNull
-                ?.conversation
-                .taskPrep !=
-            null;
-
-    context.read<TaskPrepCubit>().set(value);
-    if (serverOwnsIt) {
-      // Awaited inside `_applyToggle` for the same reason auto-approve is:
-      // a refused PATCH has to surface, or the switch snaps back with no
+    if (_isNewChat) {
+      // Nothing exists server-side to PATCH yet, so the device preference is
+      // the only place the choice can live — and it is exactly what the first
+      // send carries (`_sendAsNewConversation(taskPrep: …)`).
+      context.read<TaskPrepCubit>().set(value);
+    } else {
+      // An existing chat writes ONLY that conversation, and deliberately does
+      // NOT touch the device preference.
+      //
+      // Writing both is what made a flip in one chat turn the toggle on in
+      // every other one, which the user reported: the read below is
+      // `conversation.taskPrep ?? deviceDefault`, so raising the device
+      // default re-renders every chat the server still has no opinion about —
+      // i.e. every chat nobody has flipped yet. A per-conversation setting
+      // that moves its neighbours is not per-conversation.
+      //
+      // Awaited inside `_applyToggle` for the same reason auto-approve is: a
+      // refused PATCH has to surface, or the switch snaps back with no
       // explanation and leaves a stale failure on the state.
       _applyToggle(() => context.read<ChatCubit>().setTaskPrep(value));
     }
@@ -2015,7 +2163,30 @@ class _ChatScreenState extends State<ChatScreen>
         // Unawaited: the future completes when the user pops back, and
         // awaiting it here would hold the tools-sheet handler open for the
         // whole visit.
-        unawaited(context.pushNamed(RouteNames.voiceSupport));
+        //
+        // Carries this conversation's bound database, so a ticket filed from
+        // here is created in the Odoo the user was actually asking about
+        // rather than whichever environment the account happens to list
+        // first. `read`, not the `_activeEnvironmentId` getter — that one
+        // watches, and this runs from a callback rather than build.
+        final envId = context
+                .read<ChatCubit>()
+                .state
+                .data
+                .dataOrNull
+                ?.conversation
+                .environment
+                ?.id ??
+            _environmentId;
+        unawaited(
+          context.pushNamed(
+            RouteNames.voiceSupport,
+            queryParameters: {
+              if (envId != null && envId.isNotEmpty)
+                RouteNames.voiceSupportEnvQuery: envId,
+            },
+          ),
+        );
     }
   }
 
@@ -2332,19 +2503,14 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// Documents: the original allow-list, minus nothing. Images stay in the
   /// list so a user who keeps screenshots in Files can still reach them.
+  ///
+  /// The list is [FileKinds.pickerExtensions] rather than a literal here —
+  /// it was the fifth independent copy of the extension table, and the one
+  /// that could reject a file the other four were happy to classify.
   Future<void> _pickFromFiles() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: const [
-        'png', 'jpg', 'jpeg', 'gif', 'webp',
-        'pdf',
-        'csv', 'tsv',
-        'xlsx', 'xls', 'xlsm',
-        'docx', 'doc',
-        // Archives (Gap F) — Odoo addon bundles. 500 MB cap (vs 25 MB for
-        // the rest), enforced per-file below to match the server.
-        'zip', 'tar', 'gz', 'tgz',
-      ],
+      allowedExtensions: FileKinds.pickerExtensions,
       withData: false,
       // Multi-select shipped in 1.0.2 after testers asked for "أرفق أكتر
       // من ملف لنفس الشات". The composer renders one chip per file and
@@ -2366,7 +2532,7 @@ class _ChatScreenState extends State<ChatScreen>
       if (path == null || path.isEmpty) continue;
       // Kind-aware size cap (Gap F): archives up to 500 MB (addon zips),
       // everything else 25 MB. Matches the server, which 413s over the cap.
-      final capMb = _isArchiveExt(picked.extension) ? 500 : 25;
+      final capMb = FileKinds.isArchive(picked.extension) ? 500 : 25;
       if (picked.size > capMb * kBytesPerMb) {
         tooLarge.add(picked.name);
         continue;
@@ -2375,7 +2541,7 @@ class _ChatScreenState extends State<ChatScreen>
         name: picked.name,
         kind: _kindForExtension(picked.extension),
         size: humanBytes(picked.size, context.tr),
-        imageUrl: _isImageExt(picked.extension) ? picked.path : null,
+        imageUrl: FileKinds.isImage(picked.extension) ? picked.path : null,
         localPath: path,
       ));
       newFiles.add(File(path));
@@ -2387,7 +2553,7 @@ class _ChatScreenState extends State<ChatScreen>
           .extension;
       _toast(context.tr.attachmentTooLarge(
         tooLarge.first,
-        _isArchiveExt(firstExt) ? 500 : 25,
+        FileKinds.isArchive(firstExt) ? 500 : 25,
       ));
     }
     if (newFiles.isEmpty) return;
@@ -2427,27 +2593,15 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// Maps a file extension to one of the [DemoAttachment.kind] tokens
   /// the chat bubble + attachment chip already know how to render.
-  String _kindForExtension(String? ext) {
-    final e = (ext ?? '').toLowerCase();
-    // "Image" is a category word, so it translates; the rest are format
-    // identifiers that read the same in every locale and live in UiStrings.
-    if (_isImageExt(e)) return context.tr.fileKindImage;
-    if (e == 'pdf') return UiStrings.formatPdf;
-    if (['xlsx', 'xls', 'xlsm'].contains(e)) return UiStrings.formatXlsx;
-    if (['csv', 'tsv'].contains(e)) return UiStrings.formatCsv;
-    if (['docx', 'doc'].contains(e)) return UiStrings.formatDocx;
-    if (_isArchiveExt(e)) return UiStrings.formatZip;
-    return e.toUpperCase().padRight(3, ' ').trimRight();
-  }
-
-  bool _isImageExt(String? ext) =>
-      ['png', 'jpg', 'jpeg', 'gif', 'webp']
-          .contains((ext ?? '').toLowerCase());
-
-  /// Archive extensions get the 500 MB cap (Odoo addon bundles); everything
-  /// else stays at 25 MB. Mirrors the server's per-kind limit (Gap F).
-  bool _isArchiveExt(String? ext) =>
-      ['zip', 'tar', 'gz', 'tgz'].contains((ext ?? '').toLowerCase());
+  /// The chip's kind label.
+  ///
+  /// "Image" is a category *word*, so it translates and is resolved here
+  /// where there is a `BuildContext`; every other label is a format
+  /// identifier that reads the same in Arabic and comes straight from
+  /// [FileKinds.badge]. The extension table itself lives in `FileKinds` —
+  /// five surfaces used to keep their own, and they disagreed about HEIC.
+  String _kindForExtension(String? ext) =>
+      FileKinds.isImage(ext) ? context.tr.fileKindImage : FileKinds.badge(ext);
 
   /// Human-readable file size — "184 KB" / "2.4 MB". Used in the
   /// attachment chip subtitle so the user gets a sense of upload cost

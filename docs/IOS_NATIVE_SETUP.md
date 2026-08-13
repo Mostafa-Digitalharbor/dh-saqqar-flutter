@@ -270,16 +270,60 @@ and `NSFaceIDUsageDescription`.
 
 ---
 
-## 7) Deep links — already covered, no Associated Domains needed
+## 7) Deep links — the custom scheme is free, Universal Links are not
 
-The app uses a **custom URL scheme** (`saqqar://…`), already registered in
-`CFBundleURLTypes`. Custom schemes need **no** entitlement and **no** Apple
-configuration — they work as soon as the app is installed.
+> **Corrected 2026-08-12.** This section used to say the app does not use
+> Universal Links and needs no Associated Domains. That stopped being true on
+> 2026-07-22, when `applinks:saqqaar.com` was added to all three entitlements
+> files. Left visible rather than silently rewritten, because anyone who read
+> the old text would have skipped a capability the build now requires.
 
-The app does **not** use **Universal Links** (https links that open the app),
-so **no Associated Domains capability and no `apple-app-site-association` file
-are required.** Only revisit this if product later wants `https://saqqaar.com/…`
-links to open the app directly instead of the custom `saqqar://` scheme.
+The **custom URL scheme** (`saqqar://…`) is registered in `CFBundleURLTypes`
+and needs no entitlement and no Apple configuration — it works as soon as the
+app is installed. Push notification payloads still use it.
+
+**Universal Links do need Mac/portal work.** All three entitlements files
+declare `com.apple.developer.associated-domains → applinks:saqqaar.com`, so:
+
+- [ ] Enable **Associated Domains** on App ID `sa.com.digitalharbor.saqqarapp`
+      in the Apple Developer portal, and regenerate the provisioning profiles.
+      Without it the build **fails to sign** — this is not a silent
+      degradation.
+- [ ] Confirm the backend serves
+      `https://saqqaar.com/.well-known/apple-app-site-association` over HTTPS
+      with `Content-Type: application/json` and **no** redirect.
+
+---
+
+## 7b) ✅ Localized OS permission prompts — **done, nothing to do**
+
+**Committed 2026-08-12. Pull and build; there is no Xcode step.**
+
+`ios/Runner/en.lproj/InfoPlist.strings` and `ios/Runner/ar.lproj/InfoPlist.strings`
+hold the four permission sentences — camera, microphone, photo library, Face ID.
+iOS draws those in its own dialog *before* the user has seen a single Saqqar
+screen, so nothing in `AppStrings` can reach them: without these files an Arabic
+user is asked for their microphone in English.
+
+Both files are already wired into `Runner.xcodeproj/project.pbxproj` as a
+single `InfoPlist.strings` **variant group** in the Runner target's
+**Copy Bundle Resources** phase, with `ar` added to `knownRegions`. That is the
+same set of objects Xcode itself writes, so opening the project and adding them
+again would only create duplicates.
+
+It works at all because `Info.plist` declares `CFBundleLocalizations = [en, ar]`
+— iOS does not look for `ar.lproj` in a bundle that claims not to speak Arabic.
+
+**To verify on a device (worth doing once):** set the phone's language to
+العربية, delete and reinstall, and tap the composer's mic button. The prompt
+must read «يستخدم صقّار الميكروفون للإدخال الصوتي في المحادثة…». If it is in
+English, the variant group did not survive a project merge — see below.
+
+**Guarded by `test/platform_manifest_test.dart`**, which fails if a permission
+is added to `Info.plist` without a matching line in both `.strings` files, **and**
+if the four `pbxproj` objects or the `ar` region go missing. A merge conflict in
+`project.pbxproj` resolved the wrong way is the realistic way this breaks, and
+it now turns the suite red instead of shipping English prompts.
 
 ---
 

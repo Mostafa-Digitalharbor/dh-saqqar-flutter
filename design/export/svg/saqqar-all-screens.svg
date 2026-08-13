@@ -1,0 +1,413 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="4670" height="1056" viewBox="0 0 4670 1056">
+<title>Saqqar — all screens</title>
+<defs>
+<filter id="shadow25" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="14" stdDeviation="15" flood-color="#000000" flood-opacity="0.05"/></filter>
+<filter id="shadow26" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#0F172A" flood-opacity="0.09"/></filter>
+<linearGradient id="grad27" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F3C88"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+<filter id="shadow28" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#0F172A" flood-opacity="0.09"/></filter>
+<linearGradient id="grad29" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F3C88"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+<filter id="shadow30" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#000000" flood-opacity="0.03"/></filter>
+<filter id="shadow31" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#0F172A" flood-opacity="0.06"/></filter>
+<linearGradient id="grad32" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#06B6D4"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient>
+<filter id="shadow33" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#0F172A" flood-opacity="0.06"/></filter>
+<linearGradient id="grad34" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F3C88"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+<filter id="shadow35" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#0F172A" flood-opacity="0.06"/></filter>
+<filter id="shadow36" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#0F172A" flood-opacity="0.06"/></filter>
+<filter id="shadow37" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#000000" flood-opacity="0.03"/></filter>
+<linearGradient id="grad38" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F3C88"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+<filter id="shadow39" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#06B6D4" flood-opacity="0.18"/></filter>
+<filter id="shadow40" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#0F172A" flood-opacity="0.09"/></filter>
+<linearGradient id="grad41" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E3A8A"/><stop offset="1" stop-color="#6366F1"/></linearGradient>
+<filter id="shadow42" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#0F172A" flood-opacity="0.09"/></filter>
+<linearGradient id="grad43" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E3A8A"/><stop offset="1" stop-color="#6366F1"/></linearGradient>
+<filter id="shadow44" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#0F172A" flood-opacity="0.09"/></filter>
+<linearGradient id="grad45" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F3C88"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+<filter id="shadow46" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#000000" flood-opacity="0.03"/></filter>
+<filter id="shadow47" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#0F172A" flood-opacity="0.09"/></filter>
+<filter id="shadow48" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#0F172A" flood-opacity="0.09"/></filter>
+</defs>
+<rect width="4670" height="1056" fill="#F8FAFC"/>
+<g transform="translate(80, 44)" data-name="Launch Splash">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Launch Splash label">Launch Splash</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#FFFFFF" data-name="PhysicalModel"/>
+<rect x="8.52" y="376" width="412.96" height="180" rx="28" fill="#FFFFFF" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.9" stroke-width="1" filter="url(#shadow25)" data-name="DecoratedBox"/>
+<rect x="43.52" y="407" width="342.96" height="88" fill="#CBD5E1" fill-opacity="0.25" data-name="RawImage (image)"/>
+<text font-family="Space Grotesk" font-size="13" font-weight="500" fill="#64748B" letter-spacing="0.4" data-name="RichText"><tspan x="134.1" y="518.89">Odoo Operations Copilot</tspan></text>
+<rect x="135" y="865" width="160" height="3" fill="#06B6D4" fill-opacity="0.18" data-name="ColoredBox"/>
+</g>
+<g transform="translate(590, 44)" data-name="Auth Email">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Auth Email label">Auth Email</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="320.44" y="8" width="55.56" height="34" fill="#FFFFFF" fill-opacity="0.82" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#06B6D4" data-name="Icon U+E0E8 (Lucide)"><tspan x="332.44" y="30.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="800" fill="#06B6D4" letter-spacing="0.4" data-name="RichText"><tspan x="364" y="28.11">ع</tspan></text>
+<rect x="384" y="8" width="38" height="34" fill="#FFFFFF" fill-opacity="0.82" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#8B5CF6" data-name="Icon U+E11E (Lucide)"><tspan x="394" y="30.04"></tspan></text>
+<rect x="106.06" y="183" width="217.89" height="90" rx="26" fill="#FFFFFF" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow26)" data-name="DecoratedBox"/>
+<rect x="137.06" y="208" width="155.89" height="40" fill="#CBD5E1" fill-opacity="0.25" data-name="RawImage (image)"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="24" y="318.07">Welcome back</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="24" y="345.42">Sign in to continue to your workspace.</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="24" y="388.83">EMAIL</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="42" y="428.42">you@example.com</tspan></text>
+<rect x="24" y="465" width="382" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="24" y="465" width="382" height="48" rx="12" fill="url(#grad27)" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#FFFFFF" data-name="Icon U+E049 (Lucide)"><tspan x="134.43" y="494.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#FFFFFF" data-name="RichText" text-anchor="middle"><tspan x="229" y="492.91">Continue with email</tspan></text>
+<rect x="24" y="523" width="382" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#06B6D4" data-name="RichText"><tspan x="133.27" y="546.91">Continue with password</tspan></text>
+<rect x="24" y="596.5" width="135.25" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="215" y="600.1">or continue with</tspan></text>
+<rect x="270.75" y="596.5" width="135.25" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="24" y="623" width="382" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="24" y="623" width="382" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="215" y="650.91">Continue with Google</tspan></text>
+<rect x="24" y="700.5" width="137.07" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="215" y="704.1">New to Saqqar?</tspan></text>
+<rect x="268.93" y="700.5" width="137.07" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="24" y="727" width="382" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="24" y="727" width="382" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="215" y="754.91">Create an account</tspan></text>
+</g>
+<g transform="translate(1100, 44)" data-name="Auth OTP">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Auth OTP label">Auth OTP</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="320.44" y="8" width="55.56" height="34" fill="#FFFFFF" fill-opacity="0.82" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#06B6D4" data-name="Icon U+E0E8 (Lucide)"><tspan x="332.44" y="30.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="800" fill="#06B6D4" letter-spacing="0.4" data-name="RichText"><tspan x="364" y="28.11">ع</tspan></text>
+<rect x="384" y="8" width="38" height="34" fill="#FFFFFF" fill-opacity="0.82" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#8B5CF6" data-name="Icon U+E11E (Lucide)"><tspan x="394" y="30.04"></tspan></text>
+<rect x="106.06" y="167" width="217.89" height="90" rx="26" fill="#FFFFFF" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow28)" data-name="DecoratedBox"/>
+<rect x="137.06" y="192" width="155.89" height="40" fill="#CBD5E1" fill-opacity="0.25" data-name="RawImage (image)"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="24" y="302.07">Check your email</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="24" y="329.42">Enter the 6-digit code we just sent.</tspan></text>
+<rect x="24" y="362" width="382" height="70" rx="12" fill="#F1F5F9" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="16" font-weight="400" fill="#06B6D4" data-name="Icon U+E10F (Lucide)"><tspan x="37" y="401.48"></tspan></text>
+<text x="63" y="400.92" font-family="Space Grotesk" font-size="14" font-weight="700" fill="#0F172A" data-name="RichText"></text>
+<rect x="230.61" y="377" width="166.39" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#06B6D4" data-name="RichText"><tspan x="242.61" y="400.91">USE DIFFERENT EMAIL</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="24" y="460.83">VERIFICATION CODE</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="42" y="500.42">1 2 3 4 5 6</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="24" y="538.1">We sent a 6-digit code to your email. It expires in 10 minutes.</tspan></text>
+<rect x="24" y="559" width="382" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="24" y="559" width="382" height="48" rx="12" fill="url(#grad29)" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#FFFFFF" data-name="Icon U+E049 (Lucide)"><tspan x="151.37" y="588.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#FFFFFF" data-name="RichText" text-anchor="middle"><tspan x="229" y="586.91">Verify &amp; sign in</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="110.07" y="630.38">Didn't get the code?</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="236.02" y="630.38">Resend in 58 s</tspan></text>
+<rect x="24" y="643" width="382" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#06B6D4" data-name="RichText"><tspan x="106.19" y="666.91">Continue with password instead</tspan></text>
+<rect x="24" y="716.5" width="137.07" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="215" y="720.1">New to Saqqar?</tspan></text>
+<rect x="268.93" y="716.5" width="137.07" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="24" y="743" width="382" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="24" y="743" width="382" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="215" y="770.91">Create an account</tspan></text>
+</g>
+<g transform="translate(1610, 44)" data-name="Account">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Account label">Account</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="0" width="430" height="63" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#shadow30)" data-name="DecoratedBox"/>
+<rect x="16" y="9.5" width="131.23" height="43" rx="10" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="17.5" width="105.23" height="27" fill="#CBD5E1" fill-opacity="0.25" data-name="RawImage (image)"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="262.62" y="36.07">Account</tspan></text>
+<rect x="378" y="11" width="40" height="40" rx="10" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="19" font-weight="400" fill="#0F172A" data-name="Icon U+E059 (Lucide)"><tspan x="388.5" y="36.32"></tspan></text>
+<rect x="0" y="63" width="430" height="869" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="16" y="77" width="398" height="216" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow31)" data-name="DecoratedBox"/>
+<rect x="35" y="100.5" width="68" height="68" rx="34" fill="#06B6D4" fill-opacity="0.16" data-name="DecoratedBox"/>
+<rect x="40" y="105.5" width="58" height="58" rx="29" fill="url(#grad32)" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="24" font-weight="900" fill="#FFFFFF" letter-spacing="0.5" data-name="RichText"><tspan x="61.06" y="141.22">D</tspan></text>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" letter-spacing="-0.2" data-name="RichText"><tspan x="117" y="111.28">Digital Harbor</tspan></text>
+<rect x="312.11" y="96" width="82.89" height="22" rx="11" fill="#06B6D4" fill-opacity="0.12" stroke="#06B6D4" stroke-opacity="0.35" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="11" font-weight="800" fill="#06B6D4" data-name="RichText"><tspan x="321.11" y="110.1">Professional</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="117" y="134.22">ai-tools@digital-harbor.net</tspan></text>
+<rect x="117" y="148" width="46.03" height="25" rx="12.5" fill="#06B6D4" fill-opacity="0.16" stroke="#06B6D4" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="10" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="126" y="163.3">STAFF</tspan></text>
+<rect x="35" y="189" width="360" height="1" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="56.79" y="217.68">1432</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="76.63" y="234.21">conversations</tspan></text>
+<rect x="122.25" y="204" width="1" height="22" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="154" y="217.68">199</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="168.88" y="234.21">credentials</tspan></text>
+<rect x="214.5" y="204" width="1" height="22" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="236.33" y="217.68">24515</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="261.12" y="234.21">approvals</tspan></text>
+<rect x="306.75" y="204" width="1" height="22" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="333.54" y="217.68">8801</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="353.38" y="234.21">artifacts</tspan></text>
+<rect x="35" y="252" width="360" height="1" fill="#E2E8F0" fill-opacity="0.95" data-name="ColoredBox"/>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" fill-opacity="0.8" data-name="Icon U+E087 (Lucide)"><tspan x="35" y="274.14"></tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText"><tspan x="54" y="273.38">Joined May 8, 2026</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" fill-opacity="0.7" data-name="RichText"><tspan x="165.13" y="273.38">·</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="500" fill="#64748B" data-name="RichText"><tspan x="175.04" y="273.38">Last login Aug 3, 2026 · 8:19 PM</tspan></text>
+<rect x="16" y="307" width="194" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="16" y="307" width="194" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E04F (Lucide)"><tspan x="66.34" y="336.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="127" y="334.91">See plans</tspan></text>
+<rect x="220" y="307" width="194" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="220" y="307" width="194" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E2A3 (Lucide)"><tspan x="282.08" y="336.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="331.01" y="334.91">Usage</tspan></text>
+<rect x="16" y="369" width="398" height="353" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow33)" data-name="DecoratedBox"/>
+<rect x="33" y="386" width="34" height="34" rx="12" fill="#8B5CF6" fill-opacity="0.12" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#8B5CF6" data-name="Icon U+E462 (Lucide)"><tspan x="41" y="408.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="15" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="79" y="399.2">Personal information</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="79" y="419.87">The details you gave when you signed up.</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="33" y="451.83">FIRST NAME</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="221" y="451.83">LAST NAME</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="33" y="536.83">EMAIL (LOGIN)</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="51" y="612.1">Your email is your login and can't be changed here.</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="334.19" y="644.1">No changes</tspan></text>
+<rect x="33" y="657" width="364" height="48" fill="#000000" fill-opacity="0" opacity="0.5" data-name="PhysicalShape"/>
+<rect x="33" y="657" width="364" height="48" rx="12" fill="url(#grad34)" opacity="0.5" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#FFFFFF" opacity="0.5" data-name="Icon U+E14D (Lucide)"><tspan x="154.07" y="686.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#FFFFFF" opacity="0.5" data-name="RichText" text-anchor="middle"><tspan x="229" y="684.91">Save changes</tspan></text>
+<rect x="16" y="736" width="398" height="436" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow35)" data-name="DecoratedBox"/>
+<rect x="33" y="753" width="34" height="34" rx="12" fill="#06B6D4" fill-opacity="0.12" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#06B6D4" data-name="Icon U+E154 (Lucide)"><tspan x="41" y="775.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="15" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="79" y="766.2">Preferences</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="33" y="816.91">Theme</tspan></text>
+<rect x="33" y="831" width="93.76" height="48" fill="#F1F5F9" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E178 (Lucide)"><tspan x="51.96" y="860.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="77.96" y="856.55">Light</tspan></text>
+<rect x="126.76" y="831" width="93.76" height="48" fill="#F1F5F9" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E11E (Lucide)"><tspan x="147.85" y="860.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="173.85" y="856.55">Dark</tspan></text>
+<rect x="220.53" y="831" width="93.76" height="48" fill="#06B6D4" fill-opacity="0.16" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#06B6D4" data-name="Icon U+E154 (Lucide)"><tspan x="232.53" y="860.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#06B6D4" data-name="RichText"><tspan x="258.53" y="856.55">System</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="33" y="910.91">Language</tspan></text>
+<rect x="33" y="925" width="67.76" height="48" fill="#F1F5F9" data-name="PhysicalShape"/>
+<rect x="100.76" y="925" width="67.76" height="48" fill="#F1F5F9" data-name="PhysicalShape"/>
+<rect x="168.53" y="925" width="67.76" height="48" fill="#06B6D4" fill-opacity="0.16" data-name="PhysicalShape"/>
+</g>
+<g transform="translate(2120, 44)" data-name="Usage">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Usage label">Usage</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="60" width="430" height="872" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="16" y="76" width="398" height="317" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow36)" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="15" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="33" y="110.45">Plan &amp; usage</tspan></text>
+<rect x="304.21" y="93" width="92.79" height="26" rx="13" fill="#06B6D4" fill-opacity="0.12" stroke="#06B6D4" stroke-opacity="0.35" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="12" font-weight="800" fill="#06B6D4" data-name="RichText"><tspan x="315.21" y="109.38">Professional</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="33" y="148.91">Today</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="342.14" y="148.38">3.2K / 10K</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="33" y="183.11">32% used</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="33" y="215.91">This week</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="334.3" y="215.38">18.4K / 60K</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="33" y="250.11">31% used</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="33" y="282.91">This month</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="327.23" y="282.38">41.2K / 200K</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="33" y="317.11">21% used</tspan></text>
+<rect x="33" y="336" width="127.32" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="33" y="336" width="127.32" height="40" rx="12" fill="#F1F5F9" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#0F172A" data-name="Icon U+E412 (Lucide)"><tspan x="50" y="361.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="110.66" y="359.91">See plans</tspan></text>
+<rect x="0" y="0" width="430" height="60" fill="#FFFFFF" fill-opacity="0.96" data-name="PhysicalShape"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" letter-spacing="-0.2" data-name="RichText"><tspan x="16" y="32.06">Usage</tspan></text>
+</g>
+<g transform="translate(2630, 44)" data-name="Conversations">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Conversations label">Conversations</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="0" width="430" height="63" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#shadow37)" data-name="DecoratedBox"/>
+<rect x="16" y="9.5" width="131.23" height="43" rx="10" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="17.5" width="105.23" height="27" fill="#CBD5E1" fill-opacity="0.25" data-name="RawImage (image)"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="262.62" y="36.07">Chats</tspan></text>
+<rect x="378" y="11" width="40" height="40" rx="10" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="19" font-weight="400" fill="#0F172A" data-name="Icon U+E059 (Lucide)"><tspan x="388.5" y="36.32"></tspan></text>
+<rect x="0" y="63" width="430" height="869" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="16" y="77" width="398" height="48" rx="14" fill="#F1F5F9" fill-opacity="0.86" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#64748B" data-name="Icon U+E151 (Lucide)"><tspan x="31" y="106.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="68" y="103.42">Search conversations</tspan></text>
+<rect x="87.78" y="139" width="66.4" height="38" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="87.78" y="139" width="66.4" height="38" rx="19" fill="url(#grad38)" stroke="#000000" stroke-opacity="0" stroke-width="1" filter="url(#shadow39)" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="14" font-weight="400" fill="#FFFFFF" data-name="Icon U+E0FF (Lucide)"><tspan x="102.78" y="161.92"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#FFFFFF" data-name="RichText"><tspan x="123.78" y="161.91">All</tspan></text>
+<rect x="162.18" y="139" width="180.05" height="38" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="162.18" y="139" width="180.05" height="38" rx="19" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="14" font-weight="400" fill="#64748B" data-name="Icon U+E1FE (Lucide)"><tspan x="177.18" y="161.92"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="198.18" y="161.91">Needs approval</tspan></text>
+<rect x="309.22" y="149" width="18" height="18" rx="9" fill="#F59E0B" fill-opacity="0.2" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#F59E0B" data-name="RichText"><tspan x="316" y="160.98">1</tspan></text>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="171.4" y="210.07">Yesterday</tspan></text>
+<rect x="16" y="229" width="398" height="153" fill="#000000" fill-opacity="0" data-name="PhysicalModel"/>
+<rect x="16" y="229" width="398" height="153" rx="16" fill="#FEF9F1" fill-opacity="0.86" stroke="#F59E0B" stroke-opacity="0.35" stroke-width="1" filter="url(#shadow40)" data-name="DecoratedBox"/>
+<rect x="17" y="230" width="3" height="151" fill="#F59E0B" data-name="ColoredBox"/>
+<rect x="36" y="246" width="54" height="54" rx="27" fill="none" stroke="#000000" stroke-opacity="0" stroke-width="2" data-name="DecoratedBox"/>
+<rect x="40" y="250" width="46" height="46" rx="23" fill="url(#grad41)" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#FFFFFF" data-name="RichText"><tspan x="57.01" y="278.14">Q</tspan></text>
+<text font-family="Space Grotesk" font-size="15" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="102" y="261.95">Q3 receivables ageing report</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="305.47" y="260.88">21 h ago</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="102" y="285.21">Pulled 142 open invoices past 60 days. Total exposure is SAR 1.24M, concentrated in three accounts.</tspan></text>
+<rect x="102" y="301" width="110.22" height="20" rx="10" fill="#F59E0B" fill-opacity="0.14" stroke="#F59E0B" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="12" font-weight="400" fill="#F59E0B" data-name="Icon U+E1FE (Lucide)"><tspan x="112" y="314.36"></tspan></text>
+<text font-family="Space Grotesk" font-size="10" font-weight="700" fill="#F59E0B" letter-spacing="0.6" data-name="RichText"><tspan x="129.3" y="313.8">2 TO APPROVE</tspan></text>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" data-name="Icon U+E0E2 (Lucide)"><tspan x="102" y="338.64"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="120" y="338.38">ALZOMMAN Trading · Production</tspan></text>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" data-name="Icon U+E116 (Lucide)"><tspan x="102" y="360.64"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="120" y="360.38">24</tspan></text>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" data-name="Icon U+E0CC (Lucide)"><tspan x="148.29" y="360.64"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="166.29" y="360.38">3</tspan></text>
+<rect x="361" y="250" width="40" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#64748B" data-name="Icon U+E0B7 (Lucide)"><tspan x="371" y="275.6"></tspan></text>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="147.61" y="425.07">Previous 7 days</tspan></text>
+<rect x="16" y="444" width="398" height="127" fill="#000000" fill-opacity="0" data-name="PhysicalModel"/>
+<rect x="16" y="444" width="398" height="127" rx="16" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow42)" data-name="DecoratedBox"/>
+<rect x="33" y="461" width="54" height="54" rx="27" fill="none" stroke="#000000" stroke-opacity="0" stroke-width="2" data-name="DecoratedBox"/>
+<rect x="37" y="465" width="46" height="46" rx="23" fill="url(#grad43)" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#FFFFFF" data-name="RichText"><tspan x="54.32" y="493.14">R</tspan></text>
+<text font-family="Space Grotesk" font-size="15" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="99" y="476.95">Reconcile the Riyadh warehouse stock count</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="294.87" y="475.88">Yesterday</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="99" y="500.22">Found 11 SKUs where the physical count differs from the system.</tspan></text>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" data-name="Icon U+E0E2 (Lucide)"><tspan x="99" y="527.64"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="117" y="527.38">ALZOMMAN Trading · Staging</tspan></text>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" data-name="Icon U+E116 (Lucide)"><tspan x="99" y="549.64"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="117" y="549.38">8</tspan></text>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" data-name="Icon U+E0CC (Lucide)"><tspan x="138.58" y="549.64"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="156.58" y="549.38">1</tspan></text>
+<rect x="361" y="465" width="40" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#64748B" data-name="Icon U+E0B7 (Lucide)"><tspan x="371" y="490.6"></tspan></text>
+<rect x="16" y="581" width="398" height="127" fill="#000000" fill-opacity="0" data-name="PhysicalModel"/>
+<rect x="16" y="581" width="398" height="127" rx="16" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow44)" data-name="DecoratedBox"/>
+<rect x="33" y="598" width="54" height="54" rx="27" fill="none" stroke="#000000" stroke-opacity="0" stroke-width="2" data-name="DecoratedBox"/>
+<rect x="37" y="602" width="46" height="46" rx="23" fill="url(#grad45)" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#FFFFFF" data-name="RichText"><tspan x="54.04" y="630.14">D</tspan></text>
+<text font-family="Space Grotesk" font-size="15" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="99" y="613.95">Draft the renewal quotation</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="309.91" y="612.88">2 d ago</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="99" y="637.22">Quotation SO-2291 is ready for your approval.</tspan></text>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" data-name="Icon U+E0E2 (Lucide)"><tspan x="99" y="664.64"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="117" y="664.38">ALZOMMAN Trading · Production</tspan></text>
+<text font-family="Lucide" font-size="13" font-weight="400" fill="#64748B" data-name="Icon U+E116 (Lucide)"><tspan x="99" y="686.64"></tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="117" y="686.38">16</tspan></text>
+<rect x="361" y="602" width="40" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#64748B" data-name="Icon U+E0B7 (Lucide)"><tspan x="371" y="627.6"></tspan></text>
+<rect x="222.4" y="867" width="191.6" height="49" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#FFFFFF" data-name="Icon U+E13D (Lucide)"><tspan x="240.4" y="897.1"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="800" fill="#FFFFFF" letter-spacing="0.2" data-name="RichText"><tspan x="268.5" y="895.42">New conversation</tspan></text>
+</g>
+<g transform="translate(3140, 44)" data-name="Vault">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Vault label">Vault</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="0" width="430" height="63" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" filter="url(#shadow46)" data-name="DecoratedBox"/>
+<rect x="16" y="9.5" width="131.23" height="43" rx="10" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="17.5" width="105.23" height="27" fill="#CBD5E1" fill-opacity="0.25" data-name="RawImage (image)"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="262.62" y="36.07">Companies</tspan></text>
+<rect x="378" y="11" width="40" height="40" rx="10" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="19" font-weight="400" fill="#0F172A" data-name="Icon U+E059 (Lucide)"><tspan x="388.5" y="36.32"></tspan></text>
+<rect x="0" y="63" width="430" height="869" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="16" y="77" width="398" height="80" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow47)" data-name="DecoratedBox"/>
+<rect x="16" y="77" width="398" height="80" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="32" y="93" width="48" height="48" rx="12" fill="#06B6D4" fill-opacity="0.12" stroke="#06B6D4" stroke-opacity="0.28" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="24" font-weight="400" fill="#06B6D4" data-name="Icon U+E0AD (Lucide)"><tspan x="44" y="123.72"></tspan></text>
+<text font-family="Space Grotesk" font-size="18" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="94" y="111.57">ALZOMMAN Trading</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="94" y="133.72">2 environments · 1 live</tspan></text>
+<rect x="328" y="101" width="36" height="32" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#64748B" data-name="Icon U+E172 (Lucide)"><tspan x="336" y="122.6"></tspan></text>
+<rect x="368" y="101" width="36" height="32" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#64748B" data-name="Icon U+E18D (Lucide)"><tspan x="376" y="122.6"></tspan></text>
+<rect x="16" y="171" width="398" height="195" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow48)" data-name="DecoratedBox"/>
+<rect x="17" y="172" width="396" height="96" fill="#000000" fill-opacity="0" data-name="PhysicalModel"/>
+<rect x="33" y="187" width="42" height="42" rx="12" fill="#C9E2E3" stroke="#ABDCD3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="19" font-weight="400" fill="#10B981" data-name="Icon U+E153 (Lucide)"><tspan x="44.5" y="213.32"></tspan></text>
+<rect x="65" y="219" width="12" height="12" rx="6" fill="#10B981" stroke="#FFFFFF" stroke-width="2" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="15" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="89" y="202.95">Production</tspan></text>
+<rect x="327.3" y="189.5" width="53.7" height="18" rx="9" fill="#10B981" fill-opacity="0.14" stroke="#10B981" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="336.3" y="195.5" width="6" height="6" rx="3" fill="#10B981" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="10" font-weight="700" fill="#10B981" letter-spacing="1" data-name="RichText"><tspan x="348.8" y="201.3">LIVE</tspan></text>
+<text font-family="JetBrains Mono" font-size="12" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="89" y="224.66">production</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="89" y="248.38">No credentials</tspan></text>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#64748B" data-name="Icon U+E06F (Lucide)"><tspan x="381" y="206.6"></tspan></text>
+<rect x="17" y="268" width="396" height="1" fill="none" stroke="#E2E8F0" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="17" y="269" width="396" height="96" fill="#000000" fill-opacity="0" data-name="PhysicalModel"/>
+<rect x="33" y="284" width="42" height="42" rx="12" fill="#D3DAE4" stroke="#C1CAD6" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="19" font-weight="400" fill="#64748B" data-name="Icon U+E153 (Lucide)"><tspan x="44.5" y="310.32"></tspan></text>
+<rect x="62" y="313" width="16" height="16" rx="8" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="9" font-weight="400" fill="#64748B" data-name="Icon U+E10B (Lucide)"><tspan x="65.5" y="323.52"></tspan></text>
+<text font-family="Space Grotesk" font-size="15" font-weight="600" fill="#0F172A" data-name="RichText"><tspan x="89" y="299.95">Staging</tspan></text>
+<rect x="300.96" y="286.5" width="80.04" height="18" rx="9" fill="#64748B" fill-opacity="0.14" stroke="#64748B" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="10" font-weight="700" fill="#64748B" letter-spacing="1" data-name="RichText"><tspan x="310.46" y="298.3">READ-ONLY</tspan></text>
+<text font-family="JetBrains Mono" font-size="12" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="89" y="321.66">staging</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="600" fill="#64748B" data-name="RichText"><tspan x="89" y="345.38">No credentials</tspan></text>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#64748B" data-name="Icon U+E06F (Lucide)"><tspan x="381" y="303.6"></tspan></text>
+<rect x="250.03" y="867" width="163.97" height="49" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#FFFFFF" data-name="Icon U+E13D (Lucide)"><tspan x="268.03" y="897.1"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="800" fill="#FFFFFF" letter-spacing="0.2" data-name="RichText"><tspan x="296.13" y="895.42">Add company</tspan></text>
+</g>
+<g transform="translate(3650, 44)" data-name="Devices">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Devices label">Devices</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="60" width="430" height="872" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="14" y="74" width="402" height="89" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="99.5" width="38" height="38" rx="11" fill="#06B6D4" fill-opacity="0.14" stroke="#06B6D4" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="MaterialIcons" font-size="19" font-weight="400" fill="#06B6D4" data-name="Icon U+E4A3 (MaterialIcons)"><tspan x="38.5" y="123.82"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="79" y="102.91">Android · v1.0.22+23</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="79" y="124.22">fcm-token-abcdef0123456789</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="79" y="143.11">Last active 21 h ago</tspan></text>
+<rect x="357" y="98.5" width="40" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#EF4444" data-name="Icon U+E18D (Lucide)"><tspan x="367" y="124.1"></tspan></text>
+<rect x="14" y="171" width="402" height="89" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="196.5" width="38" height="38" rx="11" fill="#06B6D4" fill-opacity="0.14" stroke="#06B6D4" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="MaterialIcons" font-size="19" font-weight="400" fill="#06B6D4" data-name="Icon U+E4AA (MaterialIcons)"><tspan x="38.5" y="220.82"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="79" y="199.91">iOS · v1.0.22+23</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="79" y="221.22">apns-token-9f8e7d6c5b4a3210</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="79" y="240.11">Last active Yesterday</tspan></text>
+<rect x="357" y="195.5" width="40" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="20" font-weight="400" fill="#EF4444" data-name="Icon U+E18D (Lucide)"><tspan x="367" y="221.1"></tspan></text>
+<rect x="0" y="0" width="430" height="60" fill="#FFFFFF" fill-opacity="0.96" data-name="PhysicalShape"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" letter-spacing="-0.2" data-name="RichText"><tspan x="16" y="32.06">Devices</tspan></text>
+</g>
+<g transform="translate(4160, 44)" data-name="Notifications">
+<text x="0" y="-14" font-family="Space Grotesk" font-size="15" font-weight="700" fill="#0F172A" data-name="Notifications label">Notifications</text>
+<rect width="430" height="932" fill="#FFFFFF" stroke="#E2E8F0" data-name="Frame"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="60" width="430" height="872" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="69.08" y="70" width="43.2" height="34" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="69.08" y="70" width="43.2" height="34" rx="17" fill="#06B6D4" fill-opacity="0.12" stroke="#06B6D4" stroke-opacity="0.4" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="12" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="84.08" y="90.38">All</tspan></text>
+<rect x="120.28" y="70" width="86.7" height="34" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="120.28" y="70" width="86.7" height="34" rx="17" fill="#F1F5F9" fill-opacity="0.86" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="12" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="135.28" y="90.38">Approvals</tspan></text>
+<rect x="214.98" y="70" width="61.69" height="34" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="214.98" y="70" width="61.69" height="34" rx="17" fill="#F1F5F9" fill-opacity="0.86" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="12" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="229.98" y="90.38">Tasks</tspan></text>
+<rect x="284.67" y="70" width="76.25" height="34" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="284.67" y="70" width="76.25" height="34" rx="17" fill="#F1F5F9" fill-opacity="0.86" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="12" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="299.67" y="90.38">Reports</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="800" fill="#64748B" letter-spacing="0.4" data-name="RichText"><tspan x="18.2" y="143.38">Yesterday</tspan></text>
+<rect x="14" y="154" width="402" height="91" fill="#000000" fill-opacity="0" data-name="PhysicalModel"/>
+<rect x="14" y="154" width="402" height="91" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="169" width="38" height="38" rx="11" fill="#F59E0B" fill-opacity="0.14" stroke="#F59E0B" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#F59E0B" data-name="Icon U+E1FE (Lucide)"><tspan x="39" y="193.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="79" y="182.91">Approval needed</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="357.43" y="182.11">21 h ago</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="79" y="205.22">Saqqar wants to post quotation SO-2291 to </tspan><tspan x="79" y="224.22">Production.</tspan></text>
+<rect x="14" y="253" width="402" height="91" fill="#000000" fill-opacity="0" data-name="PhysicalModel"/>
+<rect x="14" y="253" width="402" height="91" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="268" width="38" height="38" rx="11" fill="#06B6D4" fill-opacity="0.14" stroke="#06B6D4" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#06B6D4" data-name="Icon U+E059 (Lucide)"><tspan x="39" y="292.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="79" y="281.91">Stock reconciliation finished</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="355.21" y="281.11">22 h ago</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="79" y="304.21">11 SKUs need review before the count can be </tspan><tspan x="79" y="323.21">posted.</tspan></text>
+<text font-family="Space Grotesk" font-size="12" font-weight="800" fill="#64748B" letter-spacing="0.4" data-name="RichText"><tspan x="18.2" y="377.38">Earlier</tspan></text>
+<rect x="14" y="388" width="402" height="72" fill="#000000" fill-opacity="0" data-name="PhysicalModel"/>
+<rect x="14" y="388" width="402" height="72" rx="20" fill="#FFFFFF" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="29" y="403" width="38" height="38" rx="11" fill="#EF4444" fill-opacity="0.14" stroke="#EF4444" stroke-opacity="0.3" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#EF4444" data-name="Icon U+E1FE (Lucide)"><tspan x="39" y="427.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="700" fill="#0F172A" data-name="RichText"><tspan x="79" y="416.91">Daily quota at 80%</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText"><tspan x="347.72" y="416.11">Yesterday</tspan></text>
+<text font-family="Space Grotesk" font-size="13" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="79" y="439.22">You have used 8,000 of 10,000 requests today.</tspan></text>
+<rect x="0" y="0" width="430" height="60" fill="#FFFFFF" fill-opacity="0.96" data-name="PhysicalShape"/>
+<text font-family="Space Grotesk" font-size="16" font-weight="800" fill="#0F172A" letter-spacing="-0.2" data-name="RichText"><tspan x="16" y="32.06">Notifications</tspan></text>
+<rect x="386" y="10" width="40" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="22" font-weight="400" fill="#0F172A" data-name="Icon U+E18D (Lucide)"><tspan x="395" y="36.16"></tspan></text>
+</g>
+</svg>

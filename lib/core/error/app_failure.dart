@@ -167,6 +167,40 @@ class ParseFailure extends AppFailure {
   List<Object?> get props => [detail];
 }
 
+/// Why a native Google / Apple sign-in failed before any Saqqar request was
+/// made. See [SocialSignInFailure].
+enum SocialSignInProblem {
+  /// The build carries no provider client id, so the picker cannot open.
+  notConfigured,
+
+  /// The picker completed but handed back no ID token — there is nothing to
+  /// exchange for a Saqqar session.
+  noToken,
+
+  /// The OS refused the request (Apple's `failed` / `invalidResponse` /
+  /// `notHandled`). Usually the account isn't signed in at the system level.
+  rejected,
+}
+
+/// Native social sign-in failed on the device, before the network.
+///
+/// Separate from [UnauthorizedFailure] and friends because nothing was
+/// rejected by Saqqar: the exchange never happened. These used to travel as
+/// a plain `Exception` carrying English text, which
+/// [ApiErrorMapper.toFailure] could not classify — so all three landed on
+/// [UnknownFailure] and rendered "Something went wrong. Please try again."
+/// For a build with no client id configured, "try again" is advice that can
+/// never work, and it hides the one route that does: sign in by email.
+///
+/// User *cancellation* is deliberately not in here — the service returns null
+/// for that so the UI resets quietly instead of accusing the user of an error.
+class SocialSignInFailure extends AppFailure {
+  const SocialSignInFailure(this.problem);
+  final SocialSignInProblem problem;
+  @override
+  List<Object?> get props => [problem];
+}
+
 /// Default fallback for anything that doesn't fit the categories above.
 /// [serverMessage] is the backend's `error` field when present.
 class UnknownFailure extends AppFailure {

@@ -18,6 +18,7 @@ class VoiceSupportDraft extends Equatable {
     required this.steps,
     required this.reply,
     this.summary = '',
+    this.diagnosis = '',
   });
 
   final String title;
@@ -29,6 +30,11 @@ class VoiceSupportDraft extends Equatable {
   /// server sends it; the card had no slot for it because this model never
   /// read it.
   final String summary;
+
+  /// The server's reading of the likely cause. Optional on the wire (the
+  /// backend documents it as `diagnosis?`), and rendered only when present —
+  /// an empty heading over nothing is worse than no heading.
+  final String diagnosis;
 
   /// Follow-up questions the diagnosis still needs answered.
   final List<String> questions;
@@ -46,8 +52,34 @@ class VoiceSupportDraft extends Equatable {
   bool get hasContent =>
       reply.isNotEmpty ||
       summary.isNotEmpty ||
+      diagnosis.isNotEmpty ||
       steps.isNotEmpty ||
       questions.isNotEmpty;
+
+  /// The draft as `POST /voice-support/ticket/` wants it.
+  ///
+  /// The backend composes the Odoo ticket **description** out of these keys
+  /// (Appendix B, 2026-08-12) — `title` and `priority` are the only two that
+  /// map onto Odoo fields directly. Sending just those two, which is what
+  /// this feature did until now, filed a real ticket in a real database with
+  /// a title and an **empty body**: support would have received a subject
+  /// line and nothing to act on, and the user would have been told it was
+  /// sent.
+  ///
+  /// [transcript] is the user's own words — what they typed into the box.
+  /// The server uses it as the summary only when [summary] is empty, so it is
+  /// both a fallback and the verbatim record of the report.
+  Map<String, Object?> toTicketPayload({required String transcript}) => {
+        if (title.isNotEmpty) 'title': title,
+        if (priority.isNotEmpty) 'priority': priority,
+        if (summary.isNotEmpty) 'summary': summary,
+        if (transcript.isNotEmpty) 'transcript': transcript,
+        if (steps.isNotEmpty) 'reproduction_steps': steps,
+        if (questions.isNotEmpty) 'questions': questions,
+        if (reply.isNotEmpty) 'customer_reply': reply,
+        if (module.isNotEmpty) 'module': module,
+        if (category.isNotEmpty) 'category': category,
+      };
 
   /// Reads the draft, wherever the server put it and whichever spelling it
   /// used.
@@ -78,6 +110,7 @@ class VoiceSupportDraft extends Equatable {
       category: _str(d['category']),
       priority: _str(d['priority']),
       summary: _str(d['summary']),
+      diagnosis: _str(d['diagnosis']),
       questions: _strings(d['questions']),
       steps: _strings(d['reproduction_steps'] ?? d['steps']),
       reply: _str(d['customer_reply'] ?? d['reply']),
@@ -85,8 +118,81 @@ class VoiceSupportDraft extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [title, module, category, priority, summary, questions, steps, reply];
+  List<Object?> get props => [
+        title,
+        module,
+        category,
+        priority,
+        summary,
+        diagnosis,
+        questions,
+        steps,
+        reply,
+      ];
+}
+
+/// What `POST /api/v1/voice-support/ticket/` created.
+///
+/// The call used to return `void`, so the screen said "ticket filed" for any
+/// 200 — including a 200 that created nothing. The backend's contract is that
+/// **a row exists iff `ok` is true and `ticket_id` is present**, so that pair
+/// is what [created] tests, and the screen only claims success when it holds.
+///
+/// [kind] matters to the user, not just to us: when Odoo Helpdesk isn't
+/// installed the server falls back to creating a `project.task` instead. That
+/// is still a real, saved record — but calling it a support ticket would send
+/// someone looking in a Helpdesk app that isn't there.
+@immutable
+class VoiceSupportTicket extends Equatable {
+  const VoiceSupportTicket({
+    required this.ticketId,
+    required this.name,
+    required this.target,
+    required this.kind,
+  });
+
+  /// The Odoo record id. Null when the server answered without one.
+  final int? ticketId;
+
+  /// The record's title, as Odoo stored it.
+  final String name;
+
+  /// Odoo model the row lives in — `helpdesk.ticket` or `project.task`.
+  final String target;
+
+  /// `helpdesk` or `task`. Empty when the server didn't say.
+  final String kind;
+
+  /// Whether a real row exists. See the class doc: presence of the id is the
+  /// server's own success signal.
+  bool get created => ticketId != null;
+
+  /// True when the fallback fired and this is a project task, not a helpdesk
+  /// ticket. Reads [target] as well as [kind] so either field alone answers.
+  bool get isProjectTask =>
+      kind == kindTask || target == targetProjectTask;
+
+  static const String kindTask = 'task';
+  static const String targetProjectTask = 'project.task';
+
+  factory VoiceSupportTicket.fromJson(Map<String, dynamic> json) {
+    final id = json['ticket_id'];
+    return VoiceSupportTicket(
+      ticketId: id is int
+          ? id
+          : id is num
+              ? id.toInt()
+              // A string id is not in the contract, but costs one line to
+              // accept and would otherwise read as "nothing was created".
+              : int.tryParse(_str(id)),
+      name: _str(json['name']),
+      target: _str(json['target']),
+      kind: _str(json['kind']),
+    );
+  }
+
+  @override
+  List<Object?> get props => [ticketId, name, target, kind];
 }
 
 String _str(Object? value) {

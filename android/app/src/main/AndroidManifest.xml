@@ -20,11 +20,20 @@
          The client requests it at runtime via FirebaseMessaging. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <!-- Voice input via the composer mic button. The audio is handed
-         to Android's on-device SpeechRecognizer (no audio bytes leave
-         the phone). Declared as a runtime permission — the chat asks
-         the user the first time they tap the mic; subsequent taps reuse
-         the granted permission. -->
+    <!-- Voice input via the composer mic button. Declared as a runtime
+         permission — the chat asks the user the first time they tap the mic;
+         subsequent taps reuse the granted permission.
+
+         The recording is captured by the `record` plugin and UPLOADED to
+         `POST /api/v1/transcribe/`, which proxies it to Whisper and returns
+         text; the audio is not kept afterwards. This comment used to claim
+         the opposite ("handed to Android's on-device SpeechRecognizer, no
+         audio bytes leave the phone"), which was never true of this app and
+         contradicted the iOS NSMicrophoneUsageDescription string that
+         describes the upload correctly. It is recorded here because the Play
+         Console **Data safety** form is filled in from exactly this kind of
+         note: audio must be declared as collected-and-transmitted, and a
+         declaration written off the old comment would have been false. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <!-- Strip the broad photo/video permissions that the image_picker_android
          plugin injects for its gallery feature. This app never uses that path:

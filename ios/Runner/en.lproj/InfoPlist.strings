@@ -1,0 +1,10 @@
+/* Permission prompts, English.
+   
+   These override the values in Info.plist when the app runs in English.
+   Kept identical to Info.plist so the two can never say different things —
+   Info.plist remains the fallback for any language with no .lproj here. */
+
+"NSCameraUsageDescription" = "Saqqar can use the camera to capture a photo to attach to a chat message so the AI assistant can read it.";
+"NSMicrophoneUsageDescription" = "Saqqar uses the microphone for voice input in chat. Your recording is sent to Saqqar's servers to be transcribed into text, and is not kept afterwards.";
+"NSPhotoLibraryUsageDescription" = "Saqqar lets you attach photos to chat messages so the AI assistant can read them.";
+"NSFaceIDUsageDescription" = "Saqqar uses Face ID to unlock the app and protect your saved Odoo credentials.";

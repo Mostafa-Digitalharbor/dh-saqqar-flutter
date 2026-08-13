@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../../../core/error/app_failure.dart';
 import '../../../core/logging/app_logger.dart';
 import 'social_auth_config.dart';
 
@@ -24,16 +25,6 @@ class AppleSignInResult {
   final String idToken;
   final String? firstName;
   final String? lastName;
-}
-
-/// Raised for real sign-in failures (misconfiguration, no token returned).
-/// User cancellation is NOT an error — the service returns null for that so
-/// the UI can quietly reset instead of showing a toast.
-class SocialAuthException implements Exception {
-  const SocialAuthException(this.message);
-  final String message;
-  @override
-  String toString() => 'SocialAuthException: $message';
 }
 
 /// Wraps the native Google / Apple sign-in SDKs and hands back the provider's
@@ -62,13 +53,20 @@ class SocialAuthService {
       );
 
   /// Opens the native Google account picker. Returns null if the user
-  /// cancels; throws [SocialAuthException] if unconfigured or no token comes
+  /// cancels; throws a [SocialSignInFailure] if unconfigured or no token comes
   /// back.
+  ///
+  /// The failure is thrown as a typed [AppFailure] rather than a bespoke
+  /// exception carrying an English sentence: `ApiErrorMapper` passes an
+  /// `AppFailure` straight through, so the user reads localized copy that
+  /// names the actual problem instead of the generic "Something went wrong".
   Future<GoogleSignInResult?> signInWithGoogle() async {
     if (!SocialAuthConfig.isGoogleConfigured) {
-      throw const SocialAuthException(
-        'Google sign-in is not configured (missing web serverClientId).',
+      AppLogger.warn(
+        'GoogleSignIn',
+        'not configured — SocialAuthConfig.googleServerClientId is empty',
       );
+      throw const SocialSignInFailure(SocialSignInProblem.notConfigured);
     }
     // Sign out of any cached session first so the account chooser always
     // appears — otherwise a returning user is silently locked to their last
@@ -84,7 +82,8 @@ class SocialAuthService {
     final auth = await account.authentication;
     final idToken = auth.idToken;
     if (idToken == null || idToken.isEmpty) {
-      throw const SocialAuthException('Google returned no ID token.');
+      AppLogger.error('GoogleSignIn', '✗ Google returned no ID token');
+      throw const SocialSignInFailure(SocialSignInProblem.noToken);
     }
     return GoogleSignInResult(idToken: idToken);
   }
@@ -119,7 +118,7 @@ class SocialAuthService {
       );
       if (idToken == null || idToken.isEmpty) {
         AppLogger.error(_appleTag, '✗ Apple returned NO identity token');
-        throw const SocialAuthException('Apple returned no identity token.');
+        throw const SocialSignInFailure(SocialSignInProblem.noToken);
       }
       _logTokenClaims(idToken);
       return AppleSignInResult(
@@ -136,7 +135,11 @@ class SocialAuthService {
         _appleTag,
         '✗ Apple authorization failed — code=${e.code}, message=${e.message}',
       );
-      rethrow;
+      // Rethrowing the plugin's own exception put a Dart type name on the
+      // path to the user: `ApiErrorMapper` cannot classify it, so it became
+      // "Something went wrong" — the same sentence a 500 gets, for a problem
+      // the user can actually fix (sign in to Apple in system Settings).
+      throw const SocialSignInFailure(SocialSignInProblem.rejected);
     } catch (e, st) {
       AppLogger.error(
         _appleTag,
@@ -144,7 +147,10 @@ class SocialAuthService {
         error: e,
         stackTrace: st,
       );
-      rethrow;
+      // A SocialSignInFailure thrown above lands here on its way out; let it
+      // pass rather than flattening it back into the generic case.
+      if (e is AppFailure) rethrow;
+      throw const SocialSignInFailure(SocialSignInProblem.rejected);
     }
   }
 

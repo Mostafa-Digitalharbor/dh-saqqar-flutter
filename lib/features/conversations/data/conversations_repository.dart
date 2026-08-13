@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/logging/app_logger.dart';
+import '../../../core/network/api_exception.dart';
 import '../../chat/data/chat_snapshot_disk_cache.dart';
 import '../../inbox/data/approval_models.dart';
 import '../../inbox/data/approvals_api.dart';
@@ -170,6 +171,30 @@ class ConversationsRepository {
       throw const FormatException('empty conversation snapshot body');
     }
     final map = await compute(decodeSnapshotJson, body);
+    // The failure envelope, checked here because nothing else can.
+    //
+    // `ErrorInterceptor` turns `200 {"ok": false, "error": "…"}` into an
+    // ApiException for every JSON client in the app — but only when Dio has
+    // decoded the body into a Map. This one call asks for `ResponseType.plain`
+    // so the transcript can be decoded off the UI isolate, so the interceptor
+    // sees a String, finds no `ok` key, and waves it through. The snapshot
+    // parser then reads a body with no `messages` and produces a perfectly
+    // valid EMPTY snapshot: the chat opens blank, the server's own
+    // explanation is discarded, and nothing offers a retry — the false
+    // success this envelope check exists to prevent, arriving through the one
+    // door the central guard cannot watch.
+    //
+    // Raised as the same `ApiException` shape the interceptor would, so
+    // `ApiErrorMapper` reaches the identical copy it would for any other
+    // endpoint, including the server's `error` string when there is one.
+    if (map['ok'] == false) {
+      final error = map['error'];
+      throw ApiException(
+        kind: ApiExceptionKind.badResponse,
+        message: error is String ? error : '',
+        statusCode: 200,
+      );
+    }
     final snapshot = ConversationSnapshot.fromJson(map);
     // Persist only a page that represents the LATEST state of the chat.
     //

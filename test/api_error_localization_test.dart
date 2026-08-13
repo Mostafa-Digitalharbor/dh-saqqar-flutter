@@ -411,6 +411,38 @@ void main() {
       }
     });
 
+    test('a native sign-in failure is localized, and never generic', () {
+      // These reached the user as "Something went wrong. Please try again."
+      // — the same sentence a 500 gets — because they travelled as a bespoke
+      // `Exception` carrying an English sentence that `toFailure` could not
+      // classify. For the `notConfigured` case that copy is worse than vague:
+      // retrying is the one thing that can never work, and the route that
+      // does (sign in by email) went unmentioned.
+      for (final tr in [en, ar]) {
+        final messages = {
+          for (final p in SocialSignInProblem.values)
+            p: ApiErrorMapper.messageForLocale(tr, SocialSignInFailure(p)),
+        };
+
+        for (final entry in messages.entries) {
+          expect(
+            entry.value,
+            isNot(tr.errorUnknown),
+            reason: '${entry.key.name} still falls through to the generic '
+                'copy — add its arm to ApiErrorMapper.',
+          );
+          expect(entry.value.split(RegExp(r'\s+')).length,
+              greaterThanOrEqualTo(6),
+              reason: '${entry.key.name} must name the next step, not just '
+                  'the problem.');
+        }
+
+        // Three distinct problems, three distinct sentences: collapsing any
+        // two would put a user on a path that cannot resolve their case.
+        expect(messages.values.toSet().length, SocialSignInProblem.values.length);
+      }
+    });
+
     test('the two failures a retry cannot fix say so', () {
       // `forbidden` and `notFound` are the pair where "try again" is a lie:
       // the same request will fail identically every time. Their copy has to

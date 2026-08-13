@@ -14,6 +14,28 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<!-- The languages this app supports, declared to iOS.
+
+	     Load-bearing, and it was missing. iOS filters `NSLocale.preferred-
+	     Languages` down to the localizations a bundle actually declares, and
+	     that filtered list is what Flutter surfaces as
+	     `platformDispatcher.locale`. With only `Base.lproj` present the OS
+	     reported English to an Arabic iPhone — so a Saudi user who had never
+	     touched the in-app language switch (the "follow system" default, which
+	     is every user on first launch) opened Saqqar in English, on a phone set
+	     to Arabic, and had to find the toggle to fix it.
+
+	     Android has no equivalent step: it hands the app the device locale
+	     directly, which is why this only ever misbehaved on one platform.
+
+	     Must stay in step with `AppStrings.supported` — `ios_localizations_
+	     test` fails if the two lists diverge. It is also what App Store Connect
+	     reads to list the app's languages on the product page. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ar</string>
+	</array>
 	<!-- Disable the Flutter engine's built-in deep-linking so it doesn't forward
 	     Universal Links to go_router alongside the app_links plugin. app_links
 	     receives the link via the plugin openURL/continueUserActivity callbacks

@@ -1,0 +1,13 @@
+{
+  "name": "Saqqar Design Import",
+  "id": "saqqar-design-import",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "reasoning": "Everything is read from local files the user picks. The plugin never makes a request."
+  }
+}

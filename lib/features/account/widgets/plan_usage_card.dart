@@ -10,6 +10,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/widgets/title_trailing_row.dart';
 import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/plan_copy.dart';
 import '../../billing/data/plan_models.dart';
@@ -160,25 +161,41 @@ class _UsageRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: context.text.labelLarge?.copyWith(color: s.muted),
-              ),
+        // `TitleTrailingRow`, not a bare `Row`, for the reason that widget
+        // documents: a Row lays its NON-flexible children out first, against
+        // an unbounded constraint, and hands `Expanded` whatever is left —
+        // clamped at zero. This row had exactly that shape, and the count is
+        // the wide half in Arabic ("24.5 ألف / 100 ألف" spells out the
+        // thousands where English writes "K"), so at 320 px × 1.4× text the
+        // count measured wider than the whole lane and the row overflowed by
+        // 15 px with the label collapsed to nothing.
+        //
+        // The cap is raised to 0.6 rather than the default 0.45 because here
+        // the trailing half is the DATA and the leading half is a fixed,
+        // short label ("Today" / "هذا الشهر"). Truncating a number to protect
+        // a word the user already knows is the wrong trade; this way the
+        // label ellipsizes first and only in the tightest cell.
+        TitleTrailingRow(
+          trailingMaxFraction: 0.6,
+          title: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.labelLarge?.copyWith(color: s.muted),
+          ),
+          trailing: Text(
+            context.tr.planUsageLine(
+              compactCount(window.used, context.tr),
+              compactCount(window.cap, context.tr),
             ),
-            Text(
-              context.tr.planUsageLine(
-                compactCount(window.used, context.tr),
-                compactCount(window.cap, context.tr),
-              ),
-              style: context.text.labelMedium?.copyWith(
-                color: s.text,
-                fontWeight: FontWeight.w700,
-              ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: context.text.labelMedium?.copyWith(
+              color: s.text,
+              fontWeight: FontWeight.w700,
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 6),
         ClipRRect(

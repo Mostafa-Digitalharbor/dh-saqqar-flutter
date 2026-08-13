@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'api_exception.dart';
+import 'api_headers.dart';
 
 /// Converts every [DioException] into an [ApiException] so the upper layers
 /// don't have to know Dio.
@@ -214,7 +215,7 @@ class _ParsedBody {
     }
 
     // Honor Retry-After header when the body omits it.
-    retryAfter ??= int.tryParse(headers?.value('retry-after') ?? '');
+    retryAfter ??= int.tryParse(headers?.value(ApiHeaders.retryAfter) ?? '');
 
     return _ParsedBody(
       message: message,

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="932" viewBox="0 0 430 932">
+<title>Auth Email</title>
+<defs>
+<filter id="shadow2" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#0F172A" flood-opacity="0.09"/></filter>
+<linearGradient id="grad3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F3C88"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+</defs>
+<rect width="430" height="932" fill="#FFFFFF"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="PhysicalModel"/>
+<rect x="0" y="0" width="430" height="932" fill="#F8FAFC" data-name="ColoredBox"/>
+<rect x="320.44" y="8" width="55.56" height="34" fill="#FFFFFF" fill-opacity="0.82" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#06B6D4" data-name="Icon U+E0E8 (Lucide)"><tspan x="332.44" y="30.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="800" fill="#06B6D4" letter-spacing="0.4" data-name="RichText"><tspan x="364" y="28.11">ع</tspan></text>
+<rect x="384" y="8" width="38" height="34" fill="#FFFFFF" fill-opacity="0.82" data-name="PhysicalShape"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#8B5CF6" data-name="Icon U+E11E (Lucide)"><tspan x="394" y="30.04"></tspan></text>
+<rect x="106.06" y="183" width="217.89" height="90" rx="26" fill="#FFFFFF" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" filter="url(#shadow2)" data-name="DecoratedBox"/>
+<rect x="137.06" y="208" width="155.89" height="40" fill="#CBD5E1" fill-opacity="0.25" data-name="RawImage (image)"/>
+<text font-family="Space Grotesk" font-size="18" font-weight="800" fill="#0F172A" data-name="RichText"><tspan x="24" y="318.07">Welcome back</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="24" y="345.42">Sign in to continue to your workspace.</tspan></text>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#06B6D4" data-name="RichText"><tspan x="24" y="388.83">EMAIL</tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="400" fill="#64748B" data-name="RichText"><tspan x="42" y="428.42">you@example.com</tspan></text>
+<rect x="24" y="465" width="382" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="24" y="465" width="382" height="48" rx="12" fill="url(#grad3)" data-name="DecoratedBox"/>
+<text font-family="Lucide" font-size="18" font-weight="400" fill="#FFFFFF" data-name="Icon U+E049 (Lucide)"><tspan x="134.43" y="494.04"></tspan></text>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#FFFFFF" data-name="RichText" text-anchor="middle"><tspan x="229" y="492.91">Continue with email</tspan></text>
+<rect x="24" y="523" width="382" height="40" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#06B6D4" data-name="RichText"><tspan x="133.27" y="546.91">Continue with password</tspan></text>
+<rect x="24" y="596.5" width="135.25" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="215" y="600.1">or continue with</tspan></text>
+<rect x="270.75" y="596.5" width="135.25" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="24" y="623" width="382" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="24" y="623" width="382" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.85" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="215" y="650.91">Continue with Google</tspan></text>
+<rect x="24" y="700.5" width="137.07" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="11" font-weight="700" fill="#64748B" data-name="RichText" text-anchor="middle"><tspan x="215" y="704.1">New to Saqqar?</tspan></text>
+<rect x="268.93" y="700.5" width="137.07" height="1" fill="none" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<rect x="24" y="727" width="382" height="48" fill="#000000" fill-opacity="0" data-name="PhysicalShape"/>
+<rect x="24" y="727" width="382" height="48" rx="12" fill="#F1F5F9" fill-opacity="0.55" stroke="#E2E8F0" stroke-opacity="0.95" stroke-width="1" data-name="DecoratedBox"/>
+<text font-family="Space Grotesk" font-size="14" font-weight="600" fill="#0F172A" data-name="RichText" text-anchor="middle"><tspan x="215" y="754.91">Create an account</tspan></text>
+</svg>

@@ -518,6 +518,7 @@ class AppStrings {
   String get voiceSupportHint => _t('voice_support_hint');
   String get voiceSupportSubmit => _t('voice_support_submit');
   String get voiceSupportSummary => _t('voice_support_summary');
+  String get voiceSupportDiagnosis => _t('voice_support_diagnosis');
   String get voiceSupportReply => _t('voice_support_reply');
   String get voiceSupportSteps => _t('voice_support_steps');
   String get voiceSupportQuestions => _t('voice_support_questions');
@@ -527,6 +528,9 @@ class AppStrings {
   String get voiceSupportTicketConfirmBody =>
       _t('voice_support_ticket_confirm_body');
   String get voiceSupportTicketCreated => _t('voice_support_ticket_created');
+  String get voiceSupportTaskCreated => _t('voice_support_task_created');
+  String get voiceSupportTicketNotCreated =>
+      _t('voice_support_ticket_not_created');
   String get voiceSupportEmpty => _t('voice_support_empty');
   String get toolsPromptBank => _t('tools_prompt_bank');
   String get toolsHealthRadar => _t('tools_health_radar');
@@ -684,6 +688,9 @@ class AppStrings {
   String get errorQuotaExceeded => _t('error_quota_exceeded');
   String get errorUnsupportedMedia => _t('error_unsupported_media');
   String get errorServer => _t('error_server');
+  String get errorSocialNotConfigured => _t('error_social_not_configured');
+  String get errorSocialNoToken => _t('error_social_no_token');
+  String get errorSocialRejected => _t('error_social_rejected');
   String get errorUnknown => _t('error_unknown');
 
   /// Copy for the last-resort crash screen ([AppErrorScreen], wired to
@@ -1965,6 +1972,7 @@ const Map<String, String> _en = {
   'voice_support_hint': 'What went wrong?',
   'voice_support_submit': 'Get help',
   'voice_support_summary': 'What we understood',
+  'voice_support_diagnosis': 'Likely cause',
   'voice_support_reply': 'Suggested reply',
   'voice_support_steps': 'Steps to try',
   'voice_support_questions': 'Still needs answering',
@@ -1973,6 +1981,15 @@ const Map<String, String> _en = {
   'voice_support_ticket_confirm_body':
       'This creates a real helpdesk ticket in your connected database.',
   'voice_support_ticket_created': 'Ticket created',
+  // Odoo Helpdesk isn't installed everywhere; the server falls back to
+  // creating a project task. Naming which one was created stops the user
+  // hunting for a ticket in an app their database doesn't have.
+  'voice_support_task_created': 'Saved as a task in Odoo',
+  // A 200 that carried no record id. Nothing was created, so the one thing
+  // this must not say is "sent".
+  'voice_support_ticket_not_created':
+      "The server accepted the request but didn't return a ticket. Nothing was "
+          'created — please try again.',
   'voice_support_empty': 'No draft came back. Try describing it differently.',
   'tools_prompt_bank': 'Prompt bank',
   'tools_health_radar': 'Health radar',
@@ -2093,6 +2110,18 @@ const Map<String, String> _en = {
       'That file type isn\'t supported. Try a document, spreadsheet, image '
           'or PDF.',
   'error_server': 'The server hit a problem. Please try again in a moment.',
+  // Native Google / Apple sign-in, failing on the device before any request
+  // reaches Saqqar. Each names the way out, because "try again" is advice
+  // that cannot work for the first of the three.
+  'error_social_not_configured':
+      'This sign-in option isn\'t available in this version. You can sign in '
+          'with your email address instead.',
+  'error_social_no_token':
+      'The sign-in didn\'t complete. Try again, or sign in with your email '
+          'address.',
+  'error_social_rejected':
+      'Your device refused the sign-in. Check that you\'re signed in to that '
+          'account in your phone settings, then try again.',
   'error_unknown': 'Something went wrong. Please try again.',
   'crash_screen_title': 'Something went wrong',
   'crash_screen_body': 'This screen ran into a problem. The error has been '
@@ -3219,6 +3248,7 @@ const Map<String, String> _ar = {
   'voice_support_hint': 'ما الذي حدث؟',
   'voice_support_submit': 'اطلب المساعدة',
   'voice_support_summary': 'اللي فهمناه',
+  'voice_support_diagnosis': 'السبب المرجّح',
   'voice_support_reply': 'الرد المقترح',
   'voice_support_steps': 'خطوات للتجربة',
   'voice_support_questions': 'ما زال بحاجة إلى إجابة',
@@ -3227,6 +3257,10 @@ const Map<String, String> _ar = {
   'voice_support_ticket_confirm_body':
       'سيؤدي هذا إلى إنشاء تذكرة دعم حقيقية في قاعدة بياناتك المتصلة.',
   'voice_support_ticket_created': 'تم إنشاء التذكرة',
+  'voice_support_task_created': 'تم الحفظ كمهمة في Odoo',
+  'voice_support_ticket_not_created':
+      'قبل الخادم الطلب لكنه لم يُرجع تذكرة. لم يتم إنشاء أي شيء — من فضلك '
+          'حاول مرة أخرى.',
   'voice_support_empty': 'لم يصل أي تشخيص. جرّب صياغة المشكلة بطريقة أخرى.',
   'tools_prompt_bank': 'بنك الصياغات',
   'tools_health_radar': 'رادار الصحة',
@@ -3331,6 +3365,14 @@ const Map<String, String> _ar = {
   'error_unsupported_media':
       'نوع الملف غير مدعوم. جرّب مستنداً أو جدولاً أو صورة أو PDF.',
   'error_server': 'وقعت مشكلة في الخادم. حاول بعد قليل.',
+  'error_social_not_configured':
+      'طريقة الدخول هذه غير متاحة في هذه النسخة. يمكنك الدخول ببريدك '
+          'الإلكتروني بدلاً منها.',
+  'error_social_no_token':
+      'لم تكتمل عملية الدخول. حاول مرة أخرى، أو ادخل ببريدك الإلكتروني.',
+  'error_social_rejected':
+      'رفض جهازك عملية الدخول. تأكد من تسجيل دخولك لهذا الحساب في إعدادات '
+          'الهاتف ثم حاول مرة أخرى.',
   'error_unknown': 'حدث خطأ. حاول مرة أخرى.',
   'crash_screen_title': 'حدث خطأ ما',
   'crash_screen_body': 'واجهت هذه الشاشة مشكلة، وتم تسجيل الخطأ. جرّب الرجوع '

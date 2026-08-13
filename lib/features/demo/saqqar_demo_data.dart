@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/format/file_kind.dart';
 import '../chat/data/delete_confirmation.dart';
 
 /// Shared chat/vault view-model TYPES (the `Demo*` names are legacy — they
@@ -190,25 +191,19 @@ class DemoAttachment {
   /// fell back to the generic file glyph. The bug was invisible on an
   /// English emulator and reproduced on every Arabic device.
   bool get isImage {
-    final dot = name.lastIndexOf('.');
-    if (dot != -1 && dot < name.length - 1) {
-      final ext = name.substring(dot + 1).toLowerCase();
-      if (_imageExtensions.contains(ext)) return true;
-    }
+    if (name.contains('.') && FileKinds.isImage(name)) return true;
     // Fallback for server-supplied rows: the API's `kind` is a machine
     // token ('image'), never localized, and a name may lack an extension.
-    final k = kind.toUpperCase();
-    return k == 'IMAGE' ||
-        k == 'PNG' ||
-        k == 'JPG' ||
-        k == 'JPEG' ||
-        k == 'GIF' ||
-        k == 'WEBP';
+    // `FileKinds` reads a bare token as an extension, so a `kind` of "png"
+    // resolves through the same table as a filename would; "image" is the
+    // one token that is a category rather than a format, so it is named
+    // here.
+    return kind.toUpperCase() == _serverImageToken || FileKinds.isImage(kind);
   }
 
-  static const Set<String> _imageExtensions = {
-    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'heic', 'heif',
-  };
+  /// The API's own machine token for a picture. Not a file extension, so it
+  /// cannot come out of the extension table.
+  static const String _serverImageToken = 'IMAGE';
 
   bool get isAgentGenerated => source == AttachmentSource.generatedOutput;
 }

@@ -162,7 +162,13 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
         name: RouteNames.voiceSupport,
         pageBuilder: (_, state) => _transitionPage(
           state: state,
-          child: const VoiceSupportScreen(),
+          child: VoiceSupportScreen(
+            // Which database a filed ticket lands in. Carried on the URL
+            // rather than in `extra` so it survives the route restoration
+            // that `extra` does not.
+            environmentId:
+                state.uri.queryParameters[RouteNames.voiceSupportEnvQuery],
+          ),
           kind: _RouteTransitionKind.detail,
         ),
       ),

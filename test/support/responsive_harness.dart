@@ -55,10 +55,17 @@ const kViewports = <Viewport>[
 
 const kLocales = <Locale>[Locale('en'), Locale('ar')];
 
-/// 1.3× is where the OS "Larger text" slider sits at roughly two notches up —
-/// common enough that shipping an overflow there is shipping it to real
-/// users, and large enough to break a `Row` that fits at 1.0×.
-const kTextScales = <double>[1.0, 1.3];
+/// 1.4× is the app's own ceiling, not an arbitrary "large" value: `app.dart`
+/// clamps the OS Dynamic Type scaler to `0.85…1.4`, so 1.4 is the widest type
+/// any user can actually produce — and therefore the only upper bound worth
+/// testing. This row used to sit at 1.3, which left the top 0.1 of the
+/// supported range unswept: an overflow that only appears at maximum
+/// "Larger text" would have shipped green.
+///
+/// The sweep applies the scaler directly rather than going through
+/// `app.dart`, so it has to name the ceiling itself. If that clamp ever
+/// moves, this constant moves with it.
+const kTextScales = <double>[1.0, 1.4];
 
 /// Deliberately hostile but *realistic*: names this long come straight off
 /// the Odoo instances the app talks to.
@@ -217,6 +224,11 @@ Widget buildHarness(
 }) {
   final app = MaterialApp(
     locale: locale,
+    // Off because `figma_export_test.dart` rasterises these trees, and the
+    // banner is a red diagonal stripe across the top-right corner of every
+    // captured screen. It occupies no layout space, so no sweep in this repo
+    // measures differently without it.
+    debugShowCheckedModeBanner: false,
     localizationsDelegates: const [
       AppLocalizations.delegate,
       GlobalMaterialLocalizations.delegate,
@@ -247,11 +259,19 @@ Widget buildHarness(
 /// the failure message can quote the *widget* that overflowed. Without it,
 /// `takeException()` hands back only "A RenderFlex overflowed by 2.6 pixels"
 /// — true, but it leaves you bisecting a whole screen to find which `Row`.
+/// [afterPump] drives the screen into a state its first paint does not reach —
+/// a filled form, a loaded result card, an expanded section.
+///
+/// Without it a sweep can only ever measure empty states, which is how a
+/// screen whose *populated* layout overflows passes at every cell. It runs
+/// inside the same error-capturing window as the initial pump, so an overflow
+/// it provokes is attributed to the same cell.
 Future<void> sweepMatrix(
   WidgetTester tester,
   Widget Function() build, {
   required SharedPreferences prefs,
   WrapBuilder? wrap,
+  Future<void> Function(WidgetTester tester)? afterPump,
 }) async {
   for (final viewport in kViewports) {
     for (final locale in kLocales) {
@@ -290,6 +310,11 @@ Future<void> sweepMatrix(
         // time out and bury the real failure.
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
+
+        if (afterPump != null) {
+          await afterPump(tester);
+          await tester.pump(const Duration(milliseconds: 350));
+        }
 
         FlutterError.onError = previousOnError;
         final error = tester.takeException();

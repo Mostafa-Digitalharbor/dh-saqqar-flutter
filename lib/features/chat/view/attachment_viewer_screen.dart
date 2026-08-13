@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:pdfx/pdfx.dart';
 
+import '../../../core/format/file_kind.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
@@ -73,24 +74,21 @@ class AttachmentViewerScreen extends StatefulWidget {
 
   /// Render mode for [name]'s extension. Public so callers can decide
   /// whether opening in-app is even worth a download.
+  /// Render mode for [name]'s extension.
+  ///
+  /// Classification is [FileKinds]', not this screen's — it used to keep its
+  /// own image list, which was the only one that knew about `bmp` and the
+  /// only one that did NOT know about `heic`. An iPhone photo therefore drew
+  /// a thumbnail in the chat and then opened here as "we can't display this".
+  ///
+  /// DOCX / XLSX / ZIP and friends stay unsupported on purpose: they are
+  /// archives of XML, and rendering them faithfully needs an office engine
+  /// this app deliberately doesn't ship. The user gets "open in another app".
   static AttachmentViewerKind kindFor(String name) {
-    final dot = name.lastIndexOf('.');
-    final ext = dot == -1 ? '' : name.substring(dot + 1).toLowerCase();
-    if (const ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].contains(ext)) {
-      return AttachmentViewerKind.image;
-    }
-    if (ext == 'pdf') return AttachmentViewerKind.pdf;
-    // Text-shaped documents we can show verbatim. CSV/TSV are in the
-    // composer's allow-list, the rest show up as agent-generated
-    // artifacts (logs, JSON dumps, SQL).
-    if (const [
-      'csv', 'tsv', 'txt', 'md', 'json', 'log',
-      'xml', 'yaml', 'yml', 'ini', 'sql', 'html',
-    ].contains(ext)) {
-      return AttachmentViewerKind.text;
-    }
-    // DOCX / XLSX / ZIP and friends are archives of XML — rendering them
-    // faithfully needs an office engine we deliberately don't ship.
+    final kind = FileKinds.of(name);
+    if (kind == FileKind.image) return AttachmentViewerKind.image;
+    if (kind == FileKind.pdf) return AttachmentViewerKind.pdf;
+    if (kind.isTextRenderable) return AttachmentViewerKind.text;
     return AttachmentViewerKind.unsupported;
   }
 

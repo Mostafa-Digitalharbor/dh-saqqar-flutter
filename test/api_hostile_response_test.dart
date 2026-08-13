@@ -34,6 +34,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:saqqar_app/core/error/app_failure.dart';
 import 'package:saqqar_app/core/i18n/app_strings.dart';
+import 'package:saqqar_app/core/i18n/remote_i18n_api.dart';
 import 'package:saqqar_app/core/network/api_error_mapper.dart';
 import 'package:saqqar_app/core/network/error_interceptor.dart';
 
@@ -45,7 +46,9 @@ import 'package:saqqar_app/features/billing/data/usage_api.dart';
 import 'package:saqqar_app/features/chat/data/saqqar_tools_api.dart';
 import 'package:saqqar_app/features/chat/data/transcribe_api.dart';
 import 'package:saqqar_app/features/conversations/data/conversations_api.dart';
+import 'package:saqqar_app/features/conversations/data/conversations_repository.dart';
 import 'package:saqqar_app/features/support/data/voice_support_api.dart';
+import 'package:saqqar_app/features/support/data/voice_support_models.dart';
 import 'package:saqqar_app/features/data_api/data/odoo_data_api.dart';
 import 'package:saqqar_app/features/inbox/data/approvals_api.dart';
 import 'package:saqqar_app/features/inbox/data/artifacts_api.dart';
@@ -54,6 +57,7 @@ import 'package:saqqar_app/features/push/data/devices_api.dart';
 import 'package:saqqar_app/features/share/data/shares_api.dart';
 import 'package:saqqar_app/features/trial/data/trial_api.dart';
 import 'package:saqqar_app/features/trial/data/trial_models.dart';
+import 'package:saqqar_app/features/vault/data/credential_models.dart';
 import 'package:saqqar_app/features/vault/data/credentials_api.dart';
 import 'package:saqqar_app/features/vault/data/projects_api.dart';
 
@@ -183,13 +187,17 @@ const _cases = <_Case>[
   // each endpoint keeps its own lenient read of that, because the server
   // really does answer `{}` on some deploys.
   (
-    name: '200 with no body',
+    name: _bodilessOk,
     status: 200,
     body: '',
     contentType: _json,
     failure: ParseFailure,
   ),
 ];
+
+/// Named so `contractForAcknowledgement` can exclude exactly this case by
+/// identity rather than by re-typing the string.
+const _bodilessOk = '200 with no body';
 
 /// Copy that must never reach a user, whatever the server sent.
 final _leaks = <RegExp>[
@@ -246,6 +254,51 @@ void main() {
                 reason: '$client · ${c.name} leaked developer text to the '
                     'user: "$msg"',
               );
+            }
+          }
+        });
+      }
+    });
+  }
+
+  /// Same contract, minus the bodiless-200 case, for endpoints that read no
+  /// body at all.
+  ///
+  /// `signupStart`, `revokeShare`, `deleteEnvironment` and friends return
+  /// `void`: the 2xx **is** the answer. A 200 with an empty body is a
+  /// perfectly good "done" for them, so asserting `ParseFailure` there would
+  /// pin the opposite of the contract — that a successful delete must fail.
+  ///
+  /// Everything else still applies, and is the part that matters: a 500 or a
+  /// dropped connection on "send me a code" must reach the user, or they sit
+  /// on a code-entry screen waiting for a message nobody sent.
+  void contractForAcknowledgement(
+    String client,
+    Future<void> Function(Dio dio) call,
+  ) {
+    group(client, () {
+      for (final c in _cases.where((c) => c.name != _bodilessOk)) {
+        test('${c.name} → ${c.failure} with localized copy', () async {
+          Object? thrown;
+          try {
+            await call(_dio(c));
+          } catch (e) {
+            thrown = e;
+          }
+
+          expect(
+            thrown,
+            isNotNull,
+            reason: '$client swallowed ${c.name} and returned normally — the '
+                'caller reads that as "done".',
+          );
+          expect(ApiErrorMapper.toFailure(thrown).runtimeType, c.failure);
+          for (final tr in [ar, en]) {
+            final msg = ApiErrorMapper.messageForLocale(tr, thrown);
+            expect(msg.trim(), isNotEmpty);
+            for (final leak in _leaks) {
+              expect(leak.hasMatch(msg), isFalse,
+                  reason: '$client · ${c.name} leaked developer text: "$msg"');
             }
           }
         });
@@ -437,8 +490,217 @@ void main() {
   );
   contractFor(
     'VoiceSupportApi.createTicket',
-    (d) => VoiceSupportApi(d).createTicket(title: 'Printer', priority: '2'),
+    (d) => VoiceSupportApi(d).createTicket(
+      draft: VoiceSupportDraft.fromJson(const {
+        'title': 'Printer',
+        'priority': '2',
+        'customer_reply': 'جرّب تعيد تشغيل الطابعة.',
+      }),
+      transcript: 'الطابعة لا تعمل',
+    ),
   );
+
+  // ── The rest of every client ───────────────────────────────────────────
+  //
+  // Added 2026-08-12. An audit listed every public method on every `*Api`
+  // class and diffed it against the entries above: 50 of 89 were covered, and
+  // the 39 that were not were not the obscure ones. They included the whole
+  // OTP entry path (`signupStart`, `loginEmailStart`, `passwordResetStart`),
+  // every credential write, and every project/environment mutation — i.e. the
+  // calls behind "send me a code", "save this password" and "delete this
+  // environment".
+  //
+  // Coverage that stops at the methods someone remembered is coverage that
+  // ages badly. This block closes the list so the next audit finds nothing.
+
+  // Profile + session.
+  contractFor(
+    'AuthApi.updateProfile',
+    (d) => AuthApi(d).updateProfile(firstName: 'Digital', lastName: 'Harbor'),
+  );
+  contractFor(
+    'AuthApi.loginWithGoogle',
+    (d) => AuthApi(d).loginWithGoogle(idToken: 'tok'),
+  );
+  contractFor(
+    'AuthApi.loginWithApple',
+    (d) => AuthApi(d).loginWithApple(idToken: 'tok'),
+  );
+  contractFor(
+    'AuthApi.passwordResetComplete',
+    (d) => AuthApi(d).passwordResetComplete(resetToken: 'rt', password: 'pw'),
+  );
+
+  // "We sent you a code." Every one of these returns `void`, so the 2xx is
+  // the whole answer — but a failure that does not reach the user leaves them
+  // staring at a code-entry screen for a message that was never sent.
+  contractForAcknowledgement(
+    'AuthApi.signupStart',
+    (d) => AuthApi(d).signupStart(email: 'a@b.co'),
+  );
+  contractForAcknowledgement(
+    'AuthApi.signupResend',
+    (d) => AuthApi(d).signupResend(email: 'a@b.co'),
+  );
+  contractForAcknowledgement(
+    'AuthApi.loginEmailStart',
+    (d) => AuthApi(d).loginEmailStart(email: 'a@b.co'),
+  );
+  contractForAcknowledgement(
+    'AuthApi.loginEmailResend',
+    (d) => AuthApi(d).loginEmailResend(email: 'a@b.co'),
+  );
+  contractForAcknowledgement(
+    'AuthApi.passwordResetStart',
+    (d) => AuthApi(d).passwordResetStart(email: 'a@b.co'),
+  );
+  contractForAcknowledgement(
+    'AuthApi.passwordResetResend',
+    (d) => AuthApi(d).passwordResetResend(email: 'a@b.co'),
+  );
+  // `logout` reads `revoked` off the body and answers `false` when there
+  // isn't one, which is the honest reading of "we cannot tell" — so it is an
+  // acknowledgement, not a body-reader. Sign-out proceeds locally either way.
+  contractForAcknowledgement('AuthApi.logout', (d) => AuthApi(d).logout());
+
+  // Conversations: the reads and writes not already listed.
+  // The transcript read, checked at the REPOSITORY rather than at the client.
+  //
+  // `ConversationsApi.fetchSnapshotBody` asks for `ResponseType.plain` so a
+  // long transcript can be decoded off the UI isolate. That is deliberate,
+  // and it costs it the central guard: `ErrorInterceptor` only recognises the
+  // `{"ok": false}` envelope once Dio has decoded a Map, so on this one call
+  // it sees a String and waves the failure through. The client is a faithful
+  // pass-through of whatever arrived — there is nothing for it to classify.
+  //
+  // `getSnapshotOffIsolate` is where the body becomes a map, so it is where
+  // the envelope is caught, and it is the seam every chat actually calls.
+  // Running the contract here rather than one layer down is the difference
+  // between testing the transport and testing what the user gets.
+  contractFor(
+    'ConversationsRepository.getSnapshotOffIsolate',
+    (d) => ConversationsRepository(ConversationsApi(d))
+        .getSnapshotOffIsolate('c1'),
+  );
+  contractFor(
+    'ConversationsApi.getAttachmentStatus',
+    (d) => ConversationsApi(d)
+        .getAttachmentStatus(conversationId: 'c1', attachmentId: 'at1'),
+  );
+  contractFor(
+    'ConversationsApi.setActiveCredential',
+    (d) => ConversationsApi(d).setActiveCredential(id: 'c1', name: 'odoo'),
+  );
+  contractForAcknowledgement(
+    'ConversationsApi.delete',
+    (d) => ConversationsApi(d).delete('c1'),
+  );
+  // Revoking a share is the one write whose silent failure leaves a LIVE
+  // public link the user believes they have killed.
+  contractForAcknowledgement(
+    'ConversationsApi.revokeShare',
+    (d) => ConversationsApi(d).revokeShare('c1'),
+  );
+
+  // Credentials. These carry the user's live Odoo passwords; a save that
+  // failed silently is a password the user believes is stored.
+  contractFor(
+    'CredentialsApi.save',
+    (d) => CredentialsApi(d).save(
+      name: 'odoo',
+      kind: CredentialKind.xmlrpc,
+      payload: const {'url': 'https://x.odoo.com'},
+    ),
+  );
+  contractFor(
+    'CredentialsApi.update',
+    (d) => CredentialsApi(d).update(name: 'odoo', label: 'Production'),
+  );
+  contractFor(
+    'CredentialsApi.listDatabases',
+    (d) => CredentialsApi(d).listDatabases('https://x.odoo.com'),
+  );
+
+  // Projects and environments — the Vault's whole write surface.
+  contractFor(
+    'ProjectsApi.rename',
+    (d) => ProjectsApi(d).rename(id: 'p1', name: 'Acme'),
+  );
+  contractFor(
+    'ProjectsApi.createEnvironment',
+    (d) => ProjectsApi(d).createEnvironment(projectId: 'p1', name: 'Prod'),
+  );
+  contractFor(
+    'ProjectsApi.getEnvironment',
+    (d) => ProjectsApi(d).getEnvironment('e1'),
+  );
+  contractFor(
+    'ProjectsApi.updateEnvironment',
+    (d) => ProjectsApi(d).updateEnvironment(id: 'e1', name: 'Prod'),
+  );
+  contractFor(
+    'ProjectsApi.listEnvironmentCredentials',
+    (d) => ProjectsApi(d).listEnvironmentCredentials('e1'),
+  );
+  contractFor(
+    'ProjectsApi.getEnvironmentCredential',
+    (d) => ProjectsApi(d).getEnvironmentCredential(
+      environmentId: 'e1',
+      kind: CredentialKind.xmlrpc,
+    ),
+  );
+  contractFor(
+    'ProjectsApi.upsertEnvironmentCredential',
+    (d) => ProjectsApi(d).upsertEnvironmentCredential(
+      environmentId: 'e1',
+      kind: CredentialKind.xmlrpc,
+      payload: const {'url': 'https://x.odoo.com'},
+    ),
+  );
+  contractForAcknowledgement(
+    'ProjectsApi.delete',
+    (d) => ProjectsApi(d).delete('p1'),
+  );
+  contractForAcknowledgement(
+    'ProjectsApi.deleteEnvironment',
+    (d) => ProjectsApi(d).deleteEnvironment('e1'),
+  );
+  contractForAcknowledgement(
+    'ProjectsApi.deleteEnvironmentCredential',
+    (d) => ProjectsApi(d).deleteEnvironmentCredential(
+      environmentId: 'e1',
+      kind: CredentialKind.xmlrpc,
+    ),
+  );
+
+  contractForAcknowledgement(
+    'DevicesApi.revoke',
+    (d) => DevicesApi(d).revoke('d1'),
+  );
+
+  // The raw-JSON data clients. No UI reads them yet — which is the reason to
+  // pin them now rather than after a screen inherits whatever they do today.
+  contractFor('MeetingsApi.stop', (d) => MeetingsApi(d).stop('m1'));
+  contractFor('MeetingsApi.summarize', (d) => MeetingsApi(d).summarize('m1'));
+  contractFor('MeetingsApi.chat', (d) => MeetingsApi(d).chat('m1', const {}));
+  contractFor(
+    'OdooDataApi.read',
+    (d) => OdooDataApi(d).read('e1', const {}),
+  );
+  contractFor(
+    'OdooDataApi.readGroup',
+    (d) => OdooDataApi(d).readGroup('e1', const {}),
+  );
+  contractFor(
+    'OdooDataApi.fields',
+    (d) => OdooDataApi(d).fields('e1', const {}),
+  );
+  contractFor('OdooDataApi.sql', (d) => OdooDataApi(d).sql('e1', const {}));
+
+  // The remote string bundle. It layers over the local table, so a failure
+  // is survivable — but it must still be a failure the caller can see rather
+  // than an empty map that reads as "the server has no strings".
+  contractFor('RemoteI18nApi.getBundle', (d) => RemoteI18nApi(d).getBundle('ar'));
 
   // The only client that uploads. `MultipartFile.fromFile` reads from disk, so
   // this needs a real file rather than the pure-in-memory stub the others use.

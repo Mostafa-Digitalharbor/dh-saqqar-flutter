@@ -3,44 +3,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/ui_strings.dart';
 
-/// Global "Task prep" preference (NOT per-conversation), persisted via
-/// SharedPreferences.
+/// The device-wide **default** for Task prep — the value a chat uses until the
+/// server has an opinion of its own. Persisted via SharedPreferences.
 ///
-/// **This does not sync with the website, and cannot today.** The comment
-/// here used to claim it was "the same shape the web keeps it in", which
-/// implied parity it never had. Verified against production on 2026-08-10:
+/// ## What this is, and what it is not
 ///
-///   * The conversation snapshot carries `auto_approve` and `deep_think` as
-///     real server-side fields, and `PATCH /conversations/<id>/` writes them
-///     — which is exactly why the auto-approve switch DOES stay in step
-///     across surfaces.
-///   * There is **no `task_prep` field on the conversation**, and no
-///     user-preferences endpoint at all (`/preferences/`, `/settings/`,
-///     `/user/preferences/`, `/account/settings/` all 404 while `/usage/`
-///     401s, so the routes genuinely do not exist).
-///   * The only `task_prep` on the wire is inside `saqqar_features` on
-///     `/usage/`, and that is a *capability* flag — "may this account use the
-///     feature" — not the user's on/off choice.
+/// Since 2026-08-12 `task_prep` is a real per-conversation field: the snapshot
+/// carries it and `PATCH /conversations/<id>/` writes it, exactly like
+/// `auto_approve`. The chat screen reads
+/// `conversation.taskPrep ?? <this cubit>` — so this is the **fallback**, and
+/// the server is the source of truth wherever it has a value.
 ///
-/// So the server stores nothing: it reads `task_prep` off each message body
-/// (`payload.get("task_prep", True)`) and forgets it. The app keeps its copy
-/// here, the website keeps its own copy on its side, and the two have no
-/// shared state to agree through. Flipping it in one place will never move
-/// the other.
+/// **Flipping the toggle in an existing chat must NOT write this.** That is
+/// not a style preference, it is the fix for a reported bug: because the read
+/// falls back to this value, writing it on every flip raised the default for
+/// every conversation the server still had no opinion about — so turning Task
+/// prep on in one chat turned it on in all of them. A per-conversation setting
+/// that moves its neighbours is not per-conversation. `_setTaskPrep` therefore
+/// writes here only for a chat that does not exist server-side yet, where
+/// there is nothing to PATCH and this value is what the first send carries.
 ///
-/// **Decided 2026-08-10: Task prep becomes per-conversation**, mirroring
-/// `auto_approve`. The client half is already built and shipping — see
-/// [Conversation.taskPrep]:
-///
-///   * while the server sends no `task_prep`, this cubit is the source of
-///     truth, exactly as described above;
-///   * the moment the field appears in the snapshot, the chat screen reads
-///     the conversation instead and PATCHes on change.
-///
-/// So this class does not go away — it stays the fallback for any chat the
-/// server has no opinion about, and the local write still happens in both
-/// branches to keep that fallback warm. Backend side is one serializer field
-/// plus one accepted PATCH key; see `docs/BACKEND_CURRENT_ISSUES.md` §1.
+/// The backend keeps the field **nullable, defaulting to `null`** on purpose,
+/// so a conversation nobody has touched inherits this default rather than
+/// being forced to one. That is why the class stays.
 ///
 /// When enabled, the send flow attaches `task_prep: true` to the outgoing
 /// message body and Saqqar asks 1–3 short clarifying questions before

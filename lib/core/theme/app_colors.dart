@@ -62,6 +62,24 @@ class AppColors {
   static const shadowDark = Color(0xFF020617);
   static const shadowLight = Color(0xFF0F172A);
 
+  /// The two shared elevations, pre-tinted.
+  ///
+  /// These are the alpha variants of [shadowDark] / [shadowLight] that
+  /// `SaqqarThemeExtension.glassShadow` and `.modalShadow` cast. They are
+  /// spelled as literals rather than `shadowDark.withValues(alpha: …)` because
+  /// the `BoxShadow` lists that consume them are `const`, and `withValues` is
+  /// not a const expression — so the choice was a literal here or a literal
+  /// there. Here, where the rest of the palette lives.
+  static const glassShadowDark = Color(0x66020617); // shadowDark @ 40%
+  static const glassShadowLight = Color(0x170F172A); // shadowLight @ 9%
+  static const modalShadowDark = Color(0x8C020617); // shadowDark @ 55%
+  static const modalShadowLight = Color(0x1F0F172A); // shadowLight @ 12%
+
+  /// Inline-code / pre-block plate. Dark tints from pure black rather than
+  /// [shadowDark] so the plate reads as a recess on an already-navy surface.
+  static const codePlateDark = Color(0x40000000);
+  static const codePlateLight = Color(0x0F0F172A); // shadowLight @ 6%
+
   /// Per-conversation avatar gradient palette (ports the design system's
   /// `AVATAR_GRADS`). Lives here — the one home for brand hex — instead of
   /// being hand-duplicated inside the conversation card. Reuses the brand /

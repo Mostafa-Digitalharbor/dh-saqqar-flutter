@@ -33,10 +33,19 @@ import 'support/responsive_harness.dart';
 // ── Wire stub ────────────────────────────────────────────────────────────
 
 class _Recorder implements HttpClientAdapter {
-  _Recorder({this.draftBody, this.ticketStatus = 200});
+  _Recorder({
+    this.draftBody,
+    this.ticketStatus = 200,
+    this.ticketBody = _ticketJson,
+  });
 
   final Object? draftBody;
   final int ticketStatus;
+
+  /// What `/ticket/` answers on a 2xx. Defaults to a real created helpdesk
+  /// row; override to exercise the fallback (`project.task`) and the
+  /// accepted-but-created-nothing case.
+  final Object? ticketBody;
 
   final paths = <String>[];
   final bodies = <Map<String, dynamic>>[];
@@ -62,7 +71,7 @@ class _Recorder implements HttpClientAdapter {
         type: DioExceptionType.badResponse,
       );
     }
-    final body = isTicket ? const {'ok': true} : draftBody;
+    final body = isTicket ? ticketBody : draftBody;
     return ResponseBody.fromString(
       body == null ? '' : jsonEncode(body),
       200,
@@ -104,6 +113,32 @@ const _draftJson = {
     ],
     'customer_reply': 'شكلها مشكلة في تسلسل اليومية. جرّب تتأكد من الإعداد.',
   },
+};
+
+/// A created helpdesk row, as `POST /voice-support/ticket/` answers it
+/// (BACKEND_FIXES_RESPONSE_2.md, Appendix B).
+///
+/// `ticket_id` is the field that matters: the backend's own rule is that a
+/// row exists **iff `ok` is true and `ticket_id` is present**. The old
+/// fixture here was `{'ok': true}` alone, which is exactly the shape that
+/// must NOT be reported to the user as a filed ticket.
+const _ticketJson = {
+  'ok': true,
+  'ticket_id': 42,
+  'name': 'Invoices are not posting',
+  'target': 'helpdesk.ticket',
+  'kind': 'helpdesk',
+};
+
+/// The same call when Odoo Helpdesk isn't installed: the server saves a
+/// `project.task` instead. Still a real record — but not a helpdesk ticket,
+/// and the user has to be told which.
+const _taskJson = {
+  'ok': true,
+  'ticket_id': 7,
+  'name': 'Invoices are not posting',
+  'target': 'project.task',
+  'kind': 'task',
 };
 
 /// The same draft with no envelope and the short key spellings — the shape
@@ -326,23 +361,128 @@ void main() {
       );
     });
 
-    test('ticket posts title and priority', () async {
+    test('ticket posts the WHOLE draft, not just its header', () async {
+      // `title` and `priority` were the right names — and were also the only
+      // two this client sent. They are the only two that map onto Odoo
+      // columns; the ticket's *description* is composed server-side out of
+      // the fields below. Sending the header alone filed a real ticket, in a
+      // real database, with an empty body — and told the user support had
+      // been contacted.
       final recorder = _Recorder(draftBody: _draftJson);
       final api = VoiceSupportApi(Dio()..httpClientAdapter = recorder);
+      final draft = VoiceSupportDraft.fromJson(_draftJson);
 
-      await api.createTicket(title: 'Invoices', priority: '2');
+      await api.createTicket(draft: draft, transcript: 'الفواتير مش بتترحّل');
 
       expect(recorder.paths.single, '/api/v1/voice-support/ticket/');
-      expect(recorder.bodies.single, {'title': 'Invoices', 'priority': '2'});
+      expect(recorder.bodies.single, {
+        'title': 'Invoices are not posting',
+        'priority': '2',
+        'summary': 'العميل ما يقدر يرحّل الفواتير، وتبقى بحالة مسودة.',
+        'transcript': 'الفواتير مش بتترحّل',
+        'reproduction_steps': [
+          'Check the journal sequence',
+          'Re-run the posting',
+        ],
+        'questions': ['Which Odoo version?', 'Does it affect all journals?'],
+        'customer_reply': 'شكلها مشكلة في تسلسل اليومية. جرّب تتأكد من الإعداد.',
+        'module': 'account',
+        'category': 'bug',
+      });
     });
 
-    test('an empty priority is omitted rather than sent blank', () async {
+    test('empty draft fields are omitted rather than sent blank', () async {
+      final recorder = _Recorder(draftBody: _draftJson);
+      final api = VoiceSupportApi(Dio()..httpClientAdapter = recorder);
+      final draft = VoiceSupportDraft.fromJson(const {'title': 'Invoices'});
+
+      await api.createTicket(draft: draft, transcript: '');
+
+      // A blank `priority` would be mapped to Normal anyway, but a blank
+      // `customer_reply` or `module` writes an empty section heading into the
+      // Odoo description — the server composes the body from whatever keys
+      // arrive.
+      expect(recorder.bodies.single, {'title': 'Invoices'});
+    });
+
+    test('the chosen environment rides along as env_id', () async {
       final recorder = _Recorder(draftBody: _draftJson);
       final api = VoiceSupportApi(Dio()..httpClientAdapter = recorder);
 
-      await api.createTicket(title: 'Invoices', priority: '');
+      await api.createTicket(
+        draft: VoiceSupportDraft.fromJson(_draftJson),
+        transcript: 'x',
+        environmentId: 'env-9',
+      );
 
-      expect(recorder.bodies.single.containsKey('priority'), isFalse);
+      expect(recorder.bodies.single['env_id'], 'env-9');
+    });
+
+    test('no environment means no env_id key at all', () async {
+      // The server falls back to the account's first bound database when the
+      // key is absent — but an explicit empty string is a value, and a value
+      // it cannot resolve is a 400 the user would read as "support is broken".
+      final recorder = _Recorder(draftBody: _draftJson);
+      final api = VoiceSupportApi(Dio()..httpClientAdapter = recorder);
+
+      await api.createTicket(
+        draft: VoiceSupportDraft.fromJson(_draftJson),
+        transcript: 'x',
+        environmentId: '',
+      );
+
+      expect(recorder.bodies.single.containsKey('env_id'), isFalse);
+    });
+
+    test('a ticket response reports the created row', () async {
+      final api = VoiceSupportApi(
+        Dio()..httpClientAdapter = _Recorder(draftBody: _draftJson),
+      );
+
+      final ticket = await api.createTicket(
+        draft: VoiceSupportDraft.fromJson(_draftJson),
+        transcript: 'x',
+      );
+
+      expect(ticket.created, isTrue);
+      expect(ticket.ticketId, 42);
+      expect(ticket.isProjectTask, isFalse);
+    });
+
+    test('the project.task fallback is reported as a task, not a ticket',
+        () async {
+      final api = VoiceSupportApi(
+        Dio()
+          ..httpClientAdapter =
+              _Recorder(draftBody: _draftJson, ticketBody: _taskJson),
+      );
+
+      final ticket = await api.createTicket(
+        draft: VoiceSupportDraft.fromJson(_draftJson),
+        transcript: 'x',
+      );
+
+      expect(ticket.created, isTrue);
+      expect(ticket.isProjectTask, isTrue);
+    });
+
+    test('a 200 with no ticket_id is NOT a created ticket', () async {
+      // The worst outcome in this feature: the user is told support has been
+      // contacted and stops chasing a problem nobody received.
+      final api = VoiceSupportApi(
+        Dio()
+          ..httpClientAdapter = _Recorder(
+            draftBody: _draftJson,
+            ticketBody: const {'ok': true},
+          ),
+      );
+
+      final ticket = await api.createTicket(
+        draft: VoiceSupportDraft.fromJson(_draftJson),
+        transcript: 'x',
+      );
+
+      expect(ticket.created, isFalse);
     });
 
     test('a bodiless 200 on draft is a parse failure', () async {

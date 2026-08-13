@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/ui_strings.dart';
+import '../../../core/format/file_kind.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
@@ -28,80 +29,67 @@ class _ArtifactStyle {
 /// extension first, falling back to its `kind` string. Mirrors the web's
 /// `artifactKind()` switch.
 _ArtifactStyle _styleFor(String name, String kindRaw) {
-  final lower = name.toLowerCase();
-  final ext = lower.contains('.')
-      ? lower.substring(lower.lastIndexOf('.') + 1)
-      : kindRaw.toLowerCase();
-  if (['xlsx', 'xls', 'xlsm'].contains(ext)) {
-    return const _ArtifactStyle(
-      label: UiStrings.formatXlsx,
-      icon: AppIcons.table,
-      accent: AppColors.success,
-    );
-  }
-  if (ext == 'pdf') {
-    return const _ArtifactStyle(
-      label: UiStrings.formatPdf,
-      icon: AppIcons.fileText,
-      accent: AppColors.danger,
-    );
-  }
-  if (['docx', 'doc'].contains(ext)) {
-    return const _ArtifactStyle(
-      label: UiStrings.formatDocx,
-      icon: AppIcons.fileText,
-      accent: AppColors.brandCyan,
-    );
-  }
-  if (['csv', 'tsv'].contains(ext)) {
-    return const _ArtifactStyle(
-      label: UiStrings.formatCsv,
-      icon: AppIcons.table,
-      accent: AppColors.warning,
-    );
-  }
-  if (ext == 'json') {
-    return const _ArtifactStyle(
-      label: UiStrings.formatJson,
-      icon: AppIcons.code,
-      accent: AppColors.brandPurple,
-    );
-  }
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].contains(ext)) {
-    return _ArtifactStyle(
-      label: ext.toUpperCase(),
-      icon: AppIcons.image,
-      accent: AppColors.brandPurple,
-    );
-  }
-  if (['log', 'txt'].contains(ext)) {
-    return _ArtifactStyle(
-      label: ext.toUpperCase(),
-      icon: AppIcons.fileText,
-      accent: AppColors.darkMuted,
-    );
-  }
-  // Archives (Gap M) — Odoo addon bundles come back as a rebuilt `.zip`.
-  // Give them a distinct package icon so the produced addon stands out in
-  // the artifacts list.
-  if (['zip', 'tar', 'gz', 'tgz'].contains(ext)) {
-    return _ArtifactStyle(
-      label: ext.toUpperCase(),
-      icon: AppIcons.archive,
-      accent: AppColors.brandPurple,
-    );
-  }
-  // Fallback — first 5 chars of the extension uppercased, neutral colour.
-  final fallback = ext.isEmpty
-      ? (kindRaw.isEmpty ? UiStrings.formatUnknown : kindRaw)
-      : ext;
-  return _ArtifactStyle(
-    label: fallback.length > 5
-        ? fallback.substring(0, 5).toUpperCase()
-        : fallback.toUpperCase(),
-    icon: AppIcons.file,
-    accent: AppColors.brandCyan,
-  );
+  // The extension comes from the filename when it has one, and from the
+  // server's `kind` token when it doesn't. Classification itself is
+  // [FileKinds]' — this file used to carry its own copy of the table, one of
+  // five that had drifted apart on which extensions count as images.
+  final source = name.contains('.') ? name : kindRaw;
+  final ext = FileKinds.extensionOf(source);
+  // Archives (Gap M) get a distinct package icon: Odoo addon bundles come
+  // back as a rebuilt `.zip` and should stand out in the artifacts list.
+  //
+  // The label is the badge for named formats and the raw extension for the
+  // rest, which is what makes "PNG" and "TGZ" show their own name rather
+  // than a category word.
+  return switch (FileKinds.of(ext)) {
+    FileKind.spreadsheet => const _ArtifactStyle(
+        label: UiStrings.formatXlsx,
+        icon: AppIcons.table,
+        accent: AppColors.success,
+      ),
+    FileKind.pdf => const _ArtifactStyle(
+        label: UiStrings.formatPdf,
+        icon: AppIcons.fileText,
+        accent: AppColors.danger,
+      ),
+    FileKind.document => const _ArtifactStyle(
+        label: UiStrings.formatDocx,
+        icon: AppIcons.fileText,
+        accent: AppColors.brandCyan,
+      ),
+    FileKind.csv => const _ArtifactStyle(
+        label: UiStrings.formatCsv,
+        icon: AppIcons.table,
+        accent: AppColors.warning,
+      ),
+    FileKind.json => const _ArtifactStyle(
+        label: UiStrings.formatJson,
+        icon: AppIcons.code,
+        accent: AppColors.brandPurple,
+      ),
+    FileKind.image => _ArtifactStyle(
+        label: ext.toUpperCase(),
+        icon: AppIcons.image,
+        accent: AppColors.brandPurple,
+      ),
+    FileKind.text => _ArtifactStyle(
+        label: ext.toUpperCase(),
+        icon: AppIcons.fileText,
+        accent: AppColors.darkMuted,
+      ),
+    FileKind.archive => _ArtifactStyle(
+        label: ext.toUpperCase(),
+        icon: AppIcons.archive,
+        accent: AppColors.brandPurple,
+      ),
+    // Unknown: the badge shows the first five characters of whatever the
+    // extension was, so "PPTX" still reads as itself.
+    FileKind.other => _ArtifactStyle(
+        label: FileKinds.badge(ext),
+        icon: AppIcons.file,
+        accent: AppColors.brandCyan,
+      ),
+  };
 }
 
 /// One artifact row used inside the chat "Artifacts" sheet. Kind-coloured

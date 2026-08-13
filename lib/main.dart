@@ -246,6 +246,14 @@ Future<void> _bootApp() async {
 
   final prefs = await SharedPreferences.getInstance();
   final tokenStore = SecureTokenStore();
+  // Resolves localized copy for the surfaces that render OUTSIDE the widget
+  // tree — Android's notification channels (shown in system Settings) and
+  // the Apple Watch face. Neither has a BuildContext, so neither can reach
+  // `context.tr`; without this they'd be hardcoded English.
+  //
+  // Built before Dio because it also answers "what language is the user
+  // reading right now?" for the `Accept-Language` header below.
+  final platformStrings = PlatformStrings(prefs);
 
   // Chicken-and-egg: Dio's auth interceptor needs to notify AuthCubit
   // on 401, but the cubit can't exist until Dio is built (it depends on
@@ -257,6 +265,10 @@ Future<void> _bootApp() async {
   final Dio dio = buildDio(
     tokenStore,
     onUnauthorized: () => authCubitRef?.handleUnauthorized(),
+    // Read per request, so flipping the language switch changes the very
+    // next call — `PlatformStrings` reads the stored preference each time
+    // rather than caching what was active at boot.
+    localeResolver: () => platformStrings.locale,
   );
 
   // Repositories are constructed once at boot and shared across every
@@ -287,11 +299,6 @@ Future<void> _bootApp() async {
   final transcribeApi = TranscribeApi(dio);
   final saqqarToolsApi = SaqqarToolsApi(dio);
   final voiceSupportApi = VoiceSupportApi(dio);
-  // Resolves localized copy for the surfaces that render OUTSIDE the widget
-  // tree — Android's notification channels (shown in system Settings) and
-  // the Apple Watch face. Neither has a BuildContext, so neither can reach
-  // `context.tr`; without this they'd be hardcoded English.
-  final platformStrings = PlatformStrings(prefs);
   // Companion Apple Watch bridge — pushes the pending-approvals feed to a
   // paired watch, relays approve/deny taps back to this same
   // ApprovalsApi, and turns a watch-recorded voice note into a normal

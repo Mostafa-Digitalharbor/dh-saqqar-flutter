@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../storage/secure_token_store.dart';
+import 'api_headers.dart';
 
 /// Attaches the bearer token to every outbound request, and on 401 clears
 /// the stored token (no refresh endpoint exists per SAQQAR_MOBILE_API.md §1
@@ -38,7 +39,8 @@ class AuthInterceptor extends QueuedInterceptor {
     if (options.extra['skipAuth'] != true && _isApiHost(options)) {
       final token = await _store.readAccessToken();
       if (token != null && token.isNotEmpty) {
-        options.headers['Authorization'] = 'Bearer $token';
+        options.headers[ApiHeaders.authorization] =
+            '${ApiHeaders.bearerPrefix}$token';
       }
     }
     handler.next(options);

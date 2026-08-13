@@ -56,10 +56,13 @@ import 'package:saqqar_app/features/inbox/data/artifacts_api.dart';
 import 'package:saqqar_app/features/security/view/app_lock_screen.dart';
 import 'package:saqqar_app/features/share/intake/share_intake_service.dart';
 import 'package:saqqar_app/features/support/data/voice_support_api.dart';
+import 'package:saqqar_app/features/support/data/voice_support_models.dart';
 import 'package:saqqar_app/features/support/view/voice_support_screen.dart';
+import 'package:saqqar_app/features/vault/data/credential_models.dart';
 import 'package:saqqar_app/features/vault/data/project_models.dart';
 import 'package:saqqar_app/features/vault/data/projects_api.dart';
 import 'package:saqqar_app/features/vault/data/vault_repository.dart';
+import 'package:saqqar_app/shared/widgets/primary_button.dart';
 import 'package:saqqar_app/features/vault/view_model/vault_cubit.dart';
 import 'package:saqqar_app/core/state/data_state.dart';
 
@@ -273,6 +276,19 @@ class _FakeProjectsApi implements ProjectsApi {
 class _FakeVaultRepo implements VaultRepository {
   @override
   Future<List<Project>> listProjects() async => _projects;
+
+  /// `VaultCubit.load()` calls this too, and letting `noSuchMethod` take it
+  /// returns `null` where a `Future` is expected — the cubit catches the
+  /// resulting error and emits a failure, so every sheet reading out of it
+  /// resolves to nothing. Both calls `load()` makes are answered here; if it
+  /// ever makes a third, the fix is another override rather than a
+  /// `noSuchMethod` that quietly hollows the fixture out again.
+  @override
+  Future<List<CredentialSchema>> getCredentialSchemas({
+    bool forceRefresh = false,
+  }) async =>
+      const [];
+
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
@@ -336,6 +352,41 @@ class _FakeTranscribeApi implements TranscribeApi {
 }
 
 class _FakeVoiceSupportApi implements VoiceSupportApi {
+  /// A full draft, so the sweep can measure the CARD and not just the empty
+  /// form. Deliberately hostile-but-real: Arabic prose, a long Odoo module
+  /// name, and every optional section populated — the widest the card gets.
+  @override
+  Future<VoiceSupportDraft> draft({
+    required String problem,
+    required String lang,
+  }) async =>
+      VoiceSupportDraft.fromJson(const {
+        'ok': true,
+        'draft': {
+          'title': 'الفواتير لا تُرحَّل في يومية المبيعات',
+          'module': 'account_accountant',
+          'category': 'bug',
+          'priority': 'High',
+          'summary':
+              'العميل ما يقدر يرحّل الفواتير، وتبقى بحالة مسودة رغم اكتمال '
+                  'كل الحقول المطلوبة.',
+          'diagnosis':
+              'الأرجح أن تسلسل اليومية وصل إلى نهايته أو أن الفترة المحاسبية '
+                  'مقفلة لهذا الشهر.',
+          'questions': [
+            'ما إصدار أودو المستخدم لدى العميل؟',
+            'هل تظهر المشكلة في كل اليوميات أم في يومية المبيعات فقط؟',
+          ],
+          'reproduction_steps': [
+            'افتح الإعدادات ثم تسلسل اليومية وتأكد من المدى المتاح.',
+            'أعد محاولة الترحيل من فاتورة واحدة للتأكد.',
+          ],
+          'customer_reply':
+              'شكلها مشكلة في تسلسل اليومية. جرّب تتأكد من الإعداد وبعدها '
+                  'أعد الترحيل، وإذا استمرت المشكلة ابعتلنا رقم الفاتورة.',
+        },
+      });
+
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
@@ -343,6 +394,36 @@ class _FakeVoiceSupportApi implements VoiceSupportApi {
 class _FakeSaqqarToolsApi implements SaqqarToolsApi {
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+/// Types a problem into §8 and asks for a draft, so the sweep measures the
+/// result card rather than the empty form.
+///
+/// The scroll loop is not defensive padding: `PageScaffold` lays its children
+/// out in a lazy list, and the 568×320 landscape cell is barely taller than
+/// the five-line text box — so the submit button is genuinely not built yet
+/// and `find.byType` reports nothing at all. Dragging brings it into the
+/// build window. Bounded, so a screen that never renders the button fails
+/// loudly on the tap instead of spinning.
+Future<void> _requestVoiceSupportDraft(WidgetTester tester) async {
+  await tester.enterText(
+    find.byType(TextField).first,
+    'الفواتير مش بتترحّل في يومية المبيعات',
+  );
+  await tester.pump();
+
+  final submit = find.byType(PrimaryButton);
+  for (var i = 0; i < 4 && submit.evaluate().isEmpty; i++) {
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -160));
+    await tester.pump();
+  }
+  await tester.ensureVisible(submit.first);
+  await tester.pump();
+  // `warnIfMissed: false` — the button can sit partly under the viewport edge
+  // in the landscape cell, which is a hit-test miss but not a layout problem,
+  // and the tap still dispatches.
+  await tester.tap(submit.first, warnIfMissed: false);
+  await tester.pump();
 }
 
 void main() {
@@ -437,15 +518,59 @@ void main() {
 
   group('the five other uncovered surfaces', () {
     testWidgets('VoiceSupportScreen survives the matrix', (tester) async {
+      // Driven past its first paint on purpose. An untouched §8 screen is an
+      // intro line, a text box and a button — a layout that essentially
+      // cannot overflow, so sweeping only that measured nothing. Everything
+      // that competes for width (the chip row, the four prose sections, the
+      // bulleted lists) exists only once a draft has come back, which is what
+      // `afterPump` produces here.
       await sweepMatrix(
         tester,
-        () => const VoiceSupportScreen(),
+        // A fresh key per cell, deliberately. `pumpWidget` with the same
+        // widget type at the same position UPDATES the existing element, so
+        // the `State` — and with it the scroll offset and the draft already
+        // fetched — survives into the next cell. The first cell would then
+        // leave the list scrolled past the text box, and the second cell's
+        // `enterText` would fail on a field the lazy list had culled. Keying
+        // each cell makes every one start from the pristine screen.
+        () => VoiceSupportScreen(key: UniqueKey()),
         prefs: prefs,
         wrap: (child) => RepositoryProvider<VoiceSupportApi>(
           create: (_) => _FakeVoiceSupportApi(),
           child: child,
         ),
+        afterPump: _requestVoiceSupportDraft,
       );
+    });
+
+    testWidgets('the voice-support fake actually fills the card',
+        (tester) async {
+      // The sweep above is only meaningful if the draft really rendered. A
+      // fake whose `draft()` threw would leave the screen in its empty state
+      // and every cell would pass — the exact way this repo has been fooled
+      // before.
+      await pumpOnce(
+        tester,
+        const VoiceSupportScreen(),
+        prefs: prefs,
+        locale: const Locale('ar'),
+        wrap: (child) => RepositoryProvider<VoiceSupportApi>(
+          create: (_) => _FakeVoiceSupportApi(),
+          child: child,
+        ),
+      );
+      await _requestVoiceSupportDraft(tester);
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(
+        find.textContaining('تسلسل اليومية'),
+        findsWidgets,
+        reason: 'the seeded draft never reached the card — the sweep was '
+            'stressing the empty form',
+      );
+      // The field the model used to drop on the floor. It has a section now,
+      // so it has to survive the round trip too.
+      expect(find.textContaining('الفترة المحاسبية'), findsWidgets);
     });
 
     testWidgets('AppLockScreen survives the matrix', (tester) async {
@@ -483,7 +608,11 @@ void main() {
                 create: (_) => _FakeVaultRepo()),
           ],
           child: BlocProvider<VaultCubit>(
-            create: (_) => VaultCubit(repository: _FakeVaultRepo()),
+            // `..load()`, because nothing else calls it. In the app a sheet is
+            // only reachable through a screen that has already loaded this;
+            // pumped standalone the cubit is idle and the sheet renders an
+            // empty picker, which is a layout that cannot overflow.
+            create: (_) => VaultCubit(repository: _FakeVaultRepo())..load(),
             child: child,
           ),
         ),
@@ -507,7 +636,11 @@ void main() {
             RepositoryProvider<VaultRepository>(create: (_) => _FakeVaultRepo()),
           ],
           child: BlocProvider<VaultCubit>(
-            create: (_) => VaultCubit(repository: _FakeVaultRepo()),
+            // `..load()`, because nothing else calls it. In the app a sheet is
+            // only reachable through a screen that has already loaded this;
+            // pumped standalone the cubit is idle and the sheet renders an
+            // empty picker, which is a layout that cannot overflow.
+            create: (_) => VaultCubit(repository: _FakeVaultRepo())..load(),
             child: child,
           ),
         ),
@@ -530,6 +663,73 @@ void main() {
           child: child,
         ),
       );
+    });
+  });
+
+  // ── Anti-false-green guard ───────────────────────────────────────────────
+  //
+  // Same rule as the other two sweep files: a sweep that renders an empty
+  // shell cannot overflow, so it passes while measuring nothing. Both sheets
+  // below read their subject out of `VaultCubit`, and `load()` is called in
+  // exactly one place in the app — `VaultScreen.initState` — which a sheet
+  // pumped on its own never goes through.
+  group('the sheets actually resolve their subject', () {
+    testWidgets('EnvironmentMultiSelectSheet lists the project\'s envs',
+        (tester) async {
+      await pumpOnce(
+        tester,
+        const Scaffold(
+          body: EnvironmentMultiSelectSheet(
+            projectId: 'p1',
+            selectedEnvironmentIds: ['e0', 'e2'],
+          ),
+        ),
+        prefs: prefs,
+        wrap: (child) => MultiRepositoryProvider(
+          providers: [
+            RepositoryProvider<ProjectsApi>(create: (_) => _FakeProjectsApi()),
+            RepositoryProvider<VaultRepository>(create: (_) => _FakeVaultRepo()),
+          ],
+          child: BlocProvider<VaultCubit>(
+            create: (_) => VaultCubit(repository: _FakeVaultRepo())..load(),
+            child: child,
+          ),
+        ),
+      );
+      expect(find.textContaining('ALZOMMAN'), findsWidgets);
+    });
+
+    testWidgets('AppLaunchDialog offers an environment to launch into',
+        (tester) async {
+      final app = SaqqarApp.fromJson(const {
+        'slug': 'zatca',
+        'name': 'ZATCA e-invoicing (Fatoora Phase-2 onboarding)',
+        'tagline': 'ربط فواتيرك بمنصة فاتورة',
+        'category': 'Compliance · KSA',
+        'group': 'Finance',
+        'accent': '#14B8A6',
+        'icon_svg': '<svg/>',
+        'env_required': true,
+      });
+
+      await pumpOnce(
+        tester,
+        Scaffold(body: AppLaunchDialog(app: app)),
+        prefs: prefs,
+        wrap: (child) => MultiRepositoryProvider(
+          providers: [
+            RepositoryProvider<ProjectsApi>(create: (_) => _FakeProjectsApi()),
+            RepositoryProvider<VaultRepository>(create: (_) => _FakeVaultRepo()),
+          ],
+          child: BlocProvider<VaultCubit>(
+            create: (_) => VaultCubit(repository: _FakeVaultRepo())..load(),
+            child: child,
+          ),
+        ),
+      );
+      // `env_required: true`, so the picker is the whole point of this dialog
+      // — an empty one means the sweep measured a title and a disabled button.
+      expect(find.textContaining('ALZOMMAN'), findsWidgets);
     });
   });
 

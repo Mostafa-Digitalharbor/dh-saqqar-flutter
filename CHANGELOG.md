@@ -6,6 +6,148 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed — 2026-08-12
+
+- **Flinging to the top of a long chat parked you against a dead edge.** The
+  fling outran the fetch: by the time the page landed the reader was already at
+  `extentBefore == 0`, and the row the correction re-anchors against had been
+  culled by the lazy list — so no correction applied and the list did not move
+  at all, which is exactly what "it froze" looks like. The only way out was to
+  scroll down and back up, which nobody discovers. The lane now eases down off
+  the edge, which puts the freshly revealed messages above the reader and
+  re-arms the load trigger that had latched off.
+- **…and the first version of that fix threw the reader to the newest
+  message.** Reported immediately. Two separate causes, both found by measuring
+  on a signed-in device rather than reasoning about it. The nudge clamped its
+  target to `maxScrollExtent`, so whenever the rendered transcript was shorter
+  than the bump — often, since a page reveals a bounded number of rows — the
+  clamp resolved to the very bottom. The ceiling is now
+  `maxScrollExtent - viewportDimension`, which keeps a full screen of history
+  below the landing point by arithmetic rather than by hope. Separately, a
+  `prependGrowthTarget` correction was **removed outright**: its premise, that
+  growth in `maxScrollExtent` is the height inserted above, is false —
+  `ListView.builder` *estimates* its extent and revises that estimate in both
+  directions. One burst of flings measured `3617 → 7251 → 5494 → … → 181096`,
+  and on the last step it computed a jump of 152,048 px. The same capture
+  showed the precise row-anchored correction firing **zero** times under a fast
+  fling, so the honest position is that no correction is available in that case.
+  Verified over 25 rapid flings: no growth correction fires, every nudge lands
+  at the same offset regardless of the overscroll it was sampled at, and paging
+  reaches the true start of the conversation.
+- **Three overflows in the environment card of `ProjectDetailSheet`**, at
+  320 px. They had gone unseen because the sheet was never actually rendering
+  its data: `VaultCubit.load()` is called from exactly one place in the app,
+  `VaultScreen.initState`, and the sweep pumped the sheet standalone against
+  an idle cubit — so twenty layouts per sheet were measured on an empty shell,
+  which cannot overflow. With the fixture loaded, all three appeared at once:
+  the env-name field and the Live / Read-only checkboxes shared a `Row`
+  (15 px — `Expanded` shrinks to zero but no further, and the two labels alone
+  are wider than the card); Open and Delete were a `Row(mainAxisSize: min)`
+  inside a `Wrap`, so the group could move to a second run but never split
+  (2.8 px); and `_FlagCheckbox` gave its own label unbounded width, so one
+  checkbox overflowed by 14 px in Arabic at 1.4× text. Name now takes its own
+  line, both button and flag groups flow, and the label is `Flexible` — it
+  wraps rather than ellipsizes, because "قراءة فق…" leaves the user guessing
+  what they are about to toggle on a live Odoo instance.
+
+### Changed — 2026-08-12
+
+- **Every responsive sweep now proves its fixture rendered.** Ten of the
+  twenty-four swept surfaces asserted only "no layout exception", which an
+  empty screen satisfies trivially — the failure mode that had already hidden
+  a 126 px overflow behind `PricingScreen`'s error state for months. Content
+  proofs added for Pricing, Usage, the three Vault sheets, Data Explorer,
+  Meetings, `AppLaunchDialog` and `EnvironmentMultiSelectSheet`; Data Explorer
+  and Meetings are additionally driven into their populated states, since both
+  open on a form and everything worth measuring exists only after the user
+  acts.
+- **All brand hex now lives in `app_colors.dart`.** The invariant guarding this
+  exempted the whole `core/theme/` directory, and five literals had settled
+  into the blind spot — four shadow tints in `SaqqarThemeExtension` and the
+  code plate in `AppTheme` — while `app_colors.dart` claimed in its own doc
+  comment to be the single home for them. The guard now names that one file,
+  and was verified to fail against a reintroduced literal.
+
+- **Turning Task prep on in one chat turned it on in every chat.** The second
+  half of the same report. The toggle renders as
+  `conversation.taskPrep ?? deviceDefault`, and the flip handler wrote *both*
+  the PATCH and that device-wide default — so raising the default re-rendered
+  every conversation the server still had no value for, which (the backend
+  keeps the column nullable and defaulted to `null`) is every conversation
+  nobody has flipped yet. An existing chat now writes only its own
+  conversation; the device default is written solely for a chat that does not
+  exist server-side yet, where there is nothing to PATCH and it is what the
+  first send carries. Verified on a real device: conversations now hold
+  different values simultaneously. Guarded by a `source_invariants_test` rule
+  that was rewritten after the first attempt passed against a deliberately
+  reintroduced leak.
+- **The Task-prep toggle never synced to the web.** Reported twice by the user,
+  and the asymmetry was the clue: Auto-approve sits in the same row and synced
+  every time. `_setTaskPrep` PATCHed only when `conversation.task_prep` was
+  already non-null, but the backend ships the field nullable with every
+  existing row reset to `null` — a deadlock, because the app could then never
+  give the field its first value. Only the web could, and once it had, mobile
+  started syncing, which is why it read as intermittent rather than broken.
+  Confirmed on a real device against production (`"task_prep": null` in the
+  live snapshot). A flip now PATCHes on the same terms as auto-approve;
+  reading still prefers the server's value and falls back to the device
+  preference on `null`. Pinned by `test/task_prep_sync_test.dart`, verified to
+  fail against the old code.
+
+- **Voice Support filed empty tickets.** `POST /voice-support/ticket/` was
+  sent `title` + `priority` only. Those are the two fields that map onto Odoo
+  columns; the ticket *description* is composed server-side from the draft
+  body, so a filed ticket carried a subject line and nothing else — and the
+  user was told support had been contacted. The whole draft now goes on the
+  wire, success requires `ok && ticket_id`, and the `project.task` fallback is
+  reported as a task rather than a helpdesk ticket. The draft's `diagnosis`
+  field is rendered too; nothing had ever read it.
+- **Arabic iPhones opened the app in English.** `Info.plist` declared no
+  `CFBundleLocalizations`, so iOS filtered Arabic out of the preferred-language
+  list Flutter reads — every first launch on an Arabic device defaulted to
+  English until the user found the in-app switch. Android was never affected.
+- **iOS permission prompts were English-only.** Added
+  `en.lproj`/`ar.lproj` `InfoPlist.strings` (camera / microphone / photos /
+  Face ID). These are drawn by the OS before any Saqqar screen exists, so
+  `AppStrings` cannot reach them. Both are wired into `project.pbxproj` as an
+  `InfoPlist.strings` variant group in Copy Bundle Resources with `ar` in
+  `knownRegions` — a fresh clone builds them with no Xcode step.
+- **An iPhone photo was three different things at once.** Five places
+  classified file extensions independently and disagreed about HEIC: the
+  composer labelled it "HEIC", the sent message drew it as a picture, and the
+  viewer refused it. One table now (`FileKinds`), which also knows `bmp`,
+  `heic` and `heif` everywhere.
+- **A failure envelope on the transcript read parsed as an empty chat.**
+  `GET /conversations/{id}/` is read as plain text so it can be decoded off
+  the UI isolate, which bypasses the interceptor that catches
+  `200 {"ok": false}` — the chat opened blank with the server's explanation
+  discarded. Checked after the decode now.
+- **Usage rows overflowed at maximum text size.** The plan card's `Row` gave
+  the count an unbounded width; at 320 px × 1.4× text in Arabic it measured
+  wider than the lane. Now uses `TitleTrailingRow`, which caps the accessory.
+- **Native sign-in failures read "Something went wrong."** Google/Apple
+  failures travelled as an untyped exception carrying English text, so all
+  three landed on the generic copy — including the one case where retrying can
+  never work. Now a typed `SocialSignInFailure` with copy that names the way
+  out, in both languages.
+
+### Added — 2026-08-12
+
+- **`Accept-Language` on every request**, from the live language preference
+  (re-read per call, so the in-app switch takes effect immediately). Retires
+  the need for the client-side Arabic plan table and lets the backend localize
+  its `error` strings for Arabic readers.
+- **`env_id` on filed support tickets**, carried from the conversation the
+  user opened support from, so the ticket lands in the database they were
+  actually asking about.
+- **`test/platform_manifest_test.dart`** — pins the Android manifest and iOS
+  Info.plist/entitlements against what the Dart code actually does:
+  permissions, usage strings, production APNs, deep-link hosts, no-backup
+  posture, and the localization list.
+- **Full API contract coverage.** The hostile-response sweep went from 50 of
+  89 client methods to all of them — including the entire OTP entry path,
+  every credential write and every project/environment mutation.
+
 ### Added
 
 - **Skeleton loading** for the Conversations / Vault / Files lists. Animated

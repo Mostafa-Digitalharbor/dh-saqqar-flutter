@@ -99,11 +99,25 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
           context,
           message: context.tr.billingReceiptNoViewer,
         );
+      // The file arrived but the OS refused to open it — the download is not
+      // the problem, so "try again" is the right advice.
       case ArtifactOpenFailed():
-      case ArtifactDownloadFailed():
         AppToast.show(
           context,
           message: context.tr.billingReceiptFailed,
+          variant: ToastVariant.error,
+        );
+      // The download itself failed, and the status code says why. It used to
+      // share the line above, which told a user with no connection to "try
+      // again" and a user whose receipt is not yet issued the same thing —
+      // neither of which names what to do. `artifactDownloadMessage` already
+      // splits offline / forbidden / gone for artifact downloads; a receipt
+      // fails the same four ways, so it reads from the same map rather than
+      // growing a second one.
+      case ArtifactDownloadFailed(:final statusCode):
+        AppToast.show(
+          context,
+          message: context.tr.artifactDownloadMessage(statusCode),
           variant: ToastVariant.error,
         );
     }

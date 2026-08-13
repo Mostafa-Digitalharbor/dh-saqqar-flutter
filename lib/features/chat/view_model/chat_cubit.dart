@@ -262,12 +262,14 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       _patchConversationFlag(autoApprove: value);
 
   /// PATCH the per-conversation `task_prep` flag, on the same terms as
-  /// [setAutoApprove].
+  /// [setAutoApprove] — including **when the current value is null**.
   ///
-  /// **Only call this when the server actually owns the flag** — i.e. when
-  /// `conversation.taskPrep` is non-null. While it is null the setting lives
-  /// in the device-local `TaskPrepCubit` and there is nothing to PATCH; see
-  /// `Conversation.taskPrep`.
+  /// This doc used to say the opposite ("only call this when the server
+  /// actually owns the flag"), and the caller obeyed it. The backend ships the
+  /// field nullable with every existing row reset to `null`, so "wait for a
+  /// non-null value before writing one" is a deadlock: the app can never give
+  /// the field its first value, and only the web ever could. Sending `null →
+  /// true` is precisely the PATCH that ends it.
   Future<bool> setTaskPrep(bool value) =>
       _patchConversationFlag(taskPrep: value);
 

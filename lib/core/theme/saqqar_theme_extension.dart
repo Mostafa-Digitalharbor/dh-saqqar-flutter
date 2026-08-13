@@ -79,14 +79,14 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
   List<BoxShadow> get glassShadow => _isDark
       ? const [
           BoxShadow(
-            color: Color(0x66020617), // rgba(2,6,23,0.40)
+            color: AppColors.glassShadowDark,
             blurRadius: 28,
             offset: Offset(0, 8),
           ),
         ]
       : const [
           BoxShadow(
-            color: Color(0x170F172A), // rgba(15,23,42,0.09)
+            color: AppColors.glassShadowLight,
             blurRadius: 30,
             offset: Offset(0, 10),
           ),
@@ -102,14 +102,14 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
   List<BoxShadow> get modalShadow => _isDark
       ? const [
           BoxShadow(
-            color: Color(0x8C020617), // rgba(2,6,23,0.55)
+            color: AppColors.modalShadowDark,
             blurRadius: 36,
             offset: Offset(0, 16),
           ),
         ]
       : const [
           BoxShadow(
-            color: Color(0x1F0F172A), // rgba(15,23,42,0.12)
+            color: AppColors.modalShadowLight,
             blurRadius: 36,
             offset: Offset(0, 16),
           ),
