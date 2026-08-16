@@ -58,7 +58,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 76
+      "layers": 75
     },
     {
       "name": "Vault",
@@ -88,7 +88,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 41
+      "layers": 40
     }
   ]
 }
