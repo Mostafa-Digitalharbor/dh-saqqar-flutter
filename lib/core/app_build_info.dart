@@ -23,10 +23,12 @@ class AppBuildInfo {
   /// `1.2.6 (203)`, or just the version when the build code is unknown, or
   /// empty when neither was read.
   ///
-  /// Shown on the sign-in screen so a tester can see at a glance which build
-  /// a device is actually running. That is the whole point of a staged
-  /// rollout: "did the update land?" should be answerable by looking, not by
-  /// digging through Android's app-info screen.
+  /// Sent as `app_version` when this device registers for push, so the
+  /// Devices screen can answer "which build is that phone on?" for every
+  /// signed-in device — not just the one in your hand. It used to also be
+  /// rendered as a badge on the sign-in screen; that was removed, so an
+  /// empty value now costs nothing visible and the field is simply omitted
+  /// from the registration body.
   static String get label {
     if (version.isEmpty) return '';
     if (buildNumber.isEmpty) return version;

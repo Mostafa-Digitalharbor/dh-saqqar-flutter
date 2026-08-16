@@ -3995,7 +3995,12 @@ class _InboxBellTrigger extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         shape: shape,
-        child: InkWell(
+        // A bare InkWell + Icon reaches a screen reader as an unnamed button.
+        // The sibling search action already carries a tooltip; this one — the
+        // only way into a conversation's approvals — carried nothing.
+        child: Tooltip(
+          message: context.tr.inboxTitle,
+          child: InkWell(
           onTap: onTap,
           customBorder: shape,
           child: SizedBox(
@@ -4034,6 +4039,7 @@ class _InboxBellTrigger extends StatelessWidget {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

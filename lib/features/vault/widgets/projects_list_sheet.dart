@@ -8,6 +8,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/ghost_button.dart';
+import '../../../shared/widgets/app_card_dialog.dart';
 import '../../../shared/widgets/inline_add_form.dart';
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
@@ -103,29 +104,14 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
     final data = state.data.dataOrNull;
     final projects = data?.projects ?? const <Project>[];
 
-    // Dialog body sits at ~60% of the screen height (slightly past
-    // mid-screen so the user can comfortably scroll a handful of
-    // projects). The Flutter [Dialog] widget already adds
-    // `MediaQuery.viewInsets` to its own padding when the keyboard
-    // opens, so it floats the whole dialog above the keyboard
-    // automatically — no inner AnimatedPadding needed (that was
-    // doubling the offset and overflowing the column by a few px).
-    final screenH = MediaQuery.sizeOf(context).height;
-    final maxHeight = (screenH * 0.6).clamp(380.0, 560.0);
-
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      backgroundColor: s.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(20)),
-      ),
-      child: ConstrainedBox(
-        // Match the cap used by ProjectDetailSheet so the dialog
-        // doesn't stretch the full width on foldables / landscape
-        // phones — the project list becomes hard to scan past ~520 px.
-        constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: 520),
-        child: Padding(
+    // Body sits at ~60 % of the screen height — slightly past mid-screen, so
+    // the user can comfortably scroll a handful of projects without the
+    // dialog reading as a full-screen page.
+    return AppCardDialog(
+      heightFactor: 0.6,
+      minHeight: 380,
+      maxHeight: 560,
+      child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
           child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -229,7 +215,6 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
               ),
             ],
           ),
-        ),
       ),
     );
   }

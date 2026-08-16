@@ -13,6 +13,7 @@ import '../../../shared/widgets/primary_button.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../../core/theme/app_radius.dart';
 import '../data/delete_confirmation.dart';
+import 'accent_card_chrome.dart';
 import 'delete_approval_confirm_dialog.dart';
 import 'email_approval_preview.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
@@ -85,178 +86,153 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
     final s = context.saqqar;
     final approval = widget.approval;
     final email = EmailApprovalPreview.of(approval.payload);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
-        borderRadius: AppRadius.bubbleR,
-        border: Border.all(color: s.cardBorder),
-      ),
-      child: Stack(
+    return AccentCardChrome(
+      accent: s.warning,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PositionedDirectional(
-            start: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 4,
-              decoration: BoxDecoration(
+          Row(
+            children: [
+              ColoredIconBox(
+                icon: AppIcons.shieldAlert,
                 color: s.warning,
-                borderRadius: const BorderRadiusDirectional.horizontal(
-                  start: Radius.circular(16),
+                size: 34,
+                radius: AppRadius.small,
+                iconSize: 17,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  approval.title,
+                  style: context.text.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: s.text,
+                    letterSpacing: -0.1,
+                  ),
                 ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 14, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    ColoredIconBox(
-                      icon: AppIcons.shieldAlert,
-                      color: s.warning,
-                      size: 34,
-                      radius: AppRadius.small,
-                      iconSize: 17,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        approval.title,
-                        style: context.text.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: s.text,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                    ),
-                    if (approval.isGrouped) ...[
-                      MiniChip(
-                          '${UiStrings.timesSign}${approval.groupedCount ?? 1}',
-                          color: s.warning),
-                      const SizedBox(width: 6),
-                    ],
-                    MiniChip(approval.risk, color: s.warning),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  approval.prompt,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: s.muted,
-                    height: 1.5,
-                  ),
-                ),
-                // §9 — when the payload is an email, show it AS an email
-                // (recipient / subject / body) rather than as key-value
-                // chips. The raw payload stays available under "Show
-                // details" below, so nothing is hidden, only laid out.
-                if (email != null) email,
-                // Gap E — raw payload collapsed by default behind a
-                // "Show details" disclosure; the friendly title above is
-                // enough for non-technical users.
-                if (approval.payload.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => setState(() => _showDetails = !_showDetails),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _showDetails
-                              ? AppIcons.chevronUp
-                              : AppIcons.chevronDown,
-                          size: 15,
-                          color: s.muted,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _showDetails
-                              ? context.tr.hideDetails
-                              : context.tr.showDetails,
-                          style: context.text.labelMedium?.copyWith(
-                            color: s.muted,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_showDetails) ...[
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final entry in approval.payload.entries)
-                          MiniChip(context.tr.keyValue(entry.key, entry.value)),
-                      ],
-                    ),
-                  ],
-                ],
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GhostButton(
-                        label: context.tr.reject,
-                        icon: AppIcons.close,
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          widget.onReject();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      // Always the singular "Approve". The card cannot label
-                      // a count: the backend has no `grouped_count` field, and
-                      // the number of siblings a batch clears is only known
-                      // from the decision RESPONSE. "Approve all 6" here would
-                      // be a number the client invented.
-                      child: PrimaryButton(
-                        label: context.tr.approve,
-                        icon: AppIcons.check,
-                        onPressed: _approve,
-                      ),
-                    ),
-                  ],
-                ),
-                // Batch resolve — a separate, quieter action rather than the
-                // primary button, because it does strictly more than the user
-                // asked: it clears every pending sibling AND pre-approves
-                // future writes of the same shape. Hidden for deletes (the
-                // server 400s) and for approvals already covered by a scope.
-                if (widget.onApproveAllSimilar != null &&
-                    approval.canBatchApprove) ...[
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: GhostButton(
-                      label: context.tr.approveAllSimilar,
-                      icon: AppIcons.check,
-                      onPressed: () {
-                        unawaited(HapticFeedback.mediumImpact());
-                        widget.onApproveAllSimilar!();
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.tr.preApprovalTip,
-                    style: context.text.labelSmall?.copyWith(
-                      color: s.muted,
-                      height: 1.4,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
+              if (approval.isGrouped) ...[
+                MiniChip(
+                    '${UiStrings.timesSign}${approval.groupedCount ?? 1}',
+                    color: s.warning),
+                const SizedBox(width: 6),
               ],
+              MiniChip(approval.risk, color: s.warning),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            approval.prompt,
+            style: context.text.bodyMedium?.copyWith(
+              color: s.muted,
+              height: 1.5,
             ),
           ),
+          // §9 — when the payload is an email, show it AS an email
+          // (recipient / subject / body) rather than as key-value
+          // chips. The raw payload stays available under "Show
+          // details" below, so nothing is hidden, only laid out.
+          if (email != null) email,
+          // Gap E — raw payload collapsed by default behind a
+          // "Show details" disclosure; the friendly title above is
+          // enough for non-technical users.
+          if (approval.payload.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _showDetails = !_showDetails),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _showDetails
+                        ? AppIcons.chevronUp
+                        : AppIcons.chevronDown,
+                    size: 15,
+                    color: s.muted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _showDetails
+                        ? context.tr.hideDetails
+                        : context.tr.showDetails,
+                    style: context.text.labelMedium?.copyWith(
+                      color: s.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_showDetails) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final entry in approval.payload.entries)
+                    MiniChip(context.tr.keyValue(entry.key, entry.value)),
+                ],
+              ),
+            ],
+          ],
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: GhostButton(
+                  label: context.tr.reject,
+                  icon: AppIcons.close,
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    widget.onReject();
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                // Always the singular "Approve". The card cannot label
+                // a count: the backend has no `grouped_count` field, and
+                // the number of siblings a batch clears is only known
+                // from the decision RESPONSE. "Approve all 6" here would
+                // be a number the client invented.
+                child: PrimaryButton(
+                  label: context.tr.approve,
+                  icon: AppIcons.check,
+                  onPressed: _approve,
+                ),
+              ),
+            ],
+          ),
+          // Batch resolve — a separate, quieter action rather than the
+          // primary button, because it does strictly more than the user
+          // asked: it clears every pending sibling AND pre-approves
+          // future writes of the same shape. Hidden for deletes (the
+          // server 400s) and for approvals already covered by a scope.
+          if (widget.onApproveAllSimilar != null &&
+              approval.canBatchApprove) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: GhostButton(
+                label: context.tr.approveAllSimilar,
+                icon: AppIcons.check,
+                onPressed: () {
+                  unawaited(HapticFeedback.mediumImpact());
+                  widget.onApproveAllSimilar!();
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.tr.preApprovalTip,
+              style: context.text.labelSmall?.copyWith(
+                color: s.muted,
+                height: 1.4,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -26,9 +26,11 @@ Future<void> showArtifactDetailsSheet(
     context: context,
     backgroundColor: s.surface,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
+    // No `shape:` override on purpose. `AppTheme.bottomSheetTheme` already
+    // rounds every modal sheet to `AppRadius.sheetTopR` (24), and this was the
+    // one call site in the app that overrode it — to 20. So the artifact sheet
+    // rendered a visibly different corner from the other ten sheets, and a
+    // re-theme of `sheetTop` would have moved all of them except this one.
     builder: (_) => ArtifactDetailsSheet(api: api, id: id, name: name),
   );
 }

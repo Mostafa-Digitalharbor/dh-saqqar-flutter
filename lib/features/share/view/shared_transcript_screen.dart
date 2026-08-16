@@ -217,12 +217,7 @@ class _SharedMessage extends StatelessWidget {
             decoration: BoxDecoration(
               color: s.brandCyan.withValues(alpha: context.isDark ? 0.18 : 0.10),
               border: Border.all(color: s.brandCyan.withValues(alpha: 0.30)),
-              borderRadius: const BorderRadiusDirectional.only(
-                topStart: Radius.circular(14),
-                topEnd: Radius.circular(4), // signature cut corner
-                bottomStart: Radius.circular(14),
-                bottomEnd: Radius.circular(14),
-              ),
+              borderRadius: AppRadius.userBubbleR,
             ),
             child: ChatMarkdown(data: message.content, isUser: true),
           ),

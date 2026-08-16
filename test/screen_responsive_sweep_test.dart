@@ -29,6 +29,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:saqqar_app/core/app_build_info.dart';
 import 'package:saqqar_app/core/state/data_state.dart';
 import 'package:saqqar_app/features/account/view/account_screen.dart';
 import 'package:saqqar_app/features/account/widgets/plan_usage_card.dart';
@@ -54,6 +55,7 @@ import 'package:saqqar_app/features/notifications/data/notifications_store.dart'
 import 'package:saqqar_app/features/notifications/view/notifications_inbox_screen.dart';
 import 'package:saqqar_app/features/push/data/devices_api.dart';
 import 'package:saqqar_app/features/push/view/devices_screen.dart';
+import 'package:saqqar_app/features/share/intake/share_destination_sheet.dart';
 import 'package:saqqar_app/features/vault/data/credential_models.dart';
 import 'package:saqqar_app/features/vault/data/credentials_api.dart';
 import 'package:saqqar_app/features/vault/data/project_models.dart';
@@ -392,6 +394,30 @@ void main() {
     }
   });
 
+  testWidgets('AuthFlowScreen shows no build/version string', (tester) async {
+    // The version badge that used to sit above the header was removed by
+    // request. `AppBuildInfo` still carries the label — push registration
+    // reports it as `app_version` — so "the value is empty" is NOT what keeps
+    // it off this screen, and a test that left it empty would pass even if
+    // the badge came back. Seed it, then assert nothing renders it.
+    AppBuildInfo.version = '1.2.6';
+    AppBuildInfo.buildNumber = '203';
+    addTearDown(() {
+      AppBuildInfo.version = '';
+      AppBuildInfo.buildNumber = '';
+    });
+
+    await pumpOnce(
+      tester,
+      const AuthFlowScreen(initial: AuthFlowStep.signInEmail),
+      prefs: prefs,
+    );
+
+    expect(find.text('1.2.6 (203)'), findsNothing);
+    expect(find.textContaining('1.2.6'), findsNothing);
+    expect(find.textContaining('(203)'), findsNothing);
+  });
+
   testWidgets('PricingScreen survives the matrix', (tester) async {
     await sweepMatrix(
       tester,
@@ -424,6 +450,33 @@ void main() {
       tester,
       prefs: prefs,
       () => const ConversationsScreen(),
+      wrap: _withConversations,
+    );
+  });
+
+  testWidgets('ShareDestinationOverlayContent survives the matrix',
+      (tester) async {
+    // The share-intake picker: the full-screen surface that comes up when the
+    // user shares files into Saqqar from another app. It is a routed-looking
+    // screen that no route builds — `ShareIntentBootstrap` renders it into a
+    // `Stack` — so the router-derived screen list never named it, and no test
+    // in the suite rendered it even once.
+    //
+    // That is the whole reason it is swept here rather than trusted: it
+    // reprints a conversation title and its last-message preview in list rows
+    // whose widths nobody had ever measured, and the copy that lands in them
+    // comes from a live Odoo instance, not from the fixture someone imagined.
+    //
+    // A file count of 3 on purpose — the subtitle is pluralised, and the
+    // plural branch is the longer string in both locales.
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => ShareDestinationOverlayContent(
+        fileCount: 3,
+        onCancel: () {},
+        onPick: (_) {},
+      ),
       wrap: _withConversations,
     );
   });
@@ -586,6 +639,36 @@ void main() {
       // other three branches of that `BlocBuilder` (error, loading, public
       // catalogue fallback) are all short, and all of them sweep green.
       expect(find.byType(PlanUsageCard), findsOneWidget);
+    });
+
+    testWidgets('ShareDestinationOverlayContent lists real conversations',
+        (tester) async {
+      await pumpOnce(
+        tester,
+        ShareDestinationOverlayContent(
+          fileCount: 3,
+          onCancel: () {},
+          onPick: (_) {},
+        ),
+        prefs: prefs,
+        wrap: _withConversations,
+      );
+      // The picker has three states that all render without throwing —
+      // spinner, empty hint, and the error state — and the sweep above is
+      // happy with any of them. Only one of those is the screen this test
+      // exists for, and it is the one whose rows carry the long titles.
+      //
+      // Asserting on the seeded row is what tells the difference: if the
+      // cubit ever stops reaching this widget, the sweep keeps passing on an
+      // empty column and this goes red instead.
+      //
+      // The assertion is on the TITLE, not on the project name every other
+      // fixture check in this file uses. `_ConversationRow` here renders only
+      // the title and the preview — unlike the Chats list's card, it prints no
+      // project or environment tag — so `ALZOMMAN` is genuinely absent from
+      // this screen and asserting on it would have failed against a perfectly
+      // correct render.
+      expect(find.textContaining('الصلاحيات'), findsWidgets);
     });
 
     testWidgets('ProjectDetailSheet resolves its project', (tester) async {

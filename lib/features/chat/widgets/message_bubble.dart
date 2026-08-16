@@ -78,12 +78,8 @@ class _UserBubble extends StatelessWidget {
               border: Border.all(
                 color: s.brandCyan.withValues(alpha: 0.30),
               ),
-              borderRadius: const BorderRadiusDirectional.only(
-                topStart: Radius.circular(14),
-                topEnd: Radius.circular(4), // signature cut corner
-                bottomStart: Radius.circular(14),
-                bottomEnd: Radius.circular(14),
-              ).resolve(Directionality.of(context)),
+              borderRadius:
+                  AppRadius.userBubbleR.resolve(Directionality.of(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

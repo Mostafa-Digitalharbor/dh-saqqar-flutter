@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../../core/app_build_info.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/platform_strings.dart';
 import '../../../core/logging/app_logger.dart';
@@ -283,9 +284,16 @@ class PushNotificationsService {
 
   Future<void> _registerToken(String token) async {
     try {
+      // Without this the server stores "" and the Devices screen — whose
+      // whole job is "which build is this phone on?" — showed every row as
+      // a bare "Android". `label` is empty only when the PackageInfo read
+      // failed, and `register` omits the field entirely in that case rather
+      // than writing a blank over a previously-known value.
+      final build = AppBuildInfo.label;
       final res = await _devices.register(
         platform: Platform.isIOS ? DevicePlatform.ios : DevicePlatform.android,
         token: token,
+        appVersion: build.isEmpty ? null : build,
         locale: _localeCode,
       );
       _deviceId = res.device.id;

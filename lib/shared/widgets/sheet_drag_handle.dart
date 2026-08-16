@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_gradients.dart';
+import '../../core/theme/app_radius.dart';
 
 /// The standard 64×3 gradient grab handle shown at the top of every bottom
 /// sheet. Centralized here so the four sheets that used to hand-roll the
@@ -19,7 +20,7 @@ class SheetDragHandle extends StatelessWidget {
         height: 3,
         decoration: const BoxDecoration(
           gradient: AppGradients.primaryCta,
-          borderRadius: BorderRadius.all(Radius.circular(999)),
+          borderRadius: AppRadius.pillR,
         ),
       ),
     );

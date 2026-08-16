@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_radius.dart';
 
 /// Custom design tokens that don't fit Material's [ColorScheme].
 ///
@@ -133,7 +134,7 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
   }) => BoxDecoration(
     color: background ?? cardBg,
     border: Border.all(color: border ?? cardBorder),
-    borderRadius: borderRadius ?? const BorderRadius.all(Radius.circular(12)),
+    borderRadius: borderRadius ?? AppRadius.rowR,
     boxShadow: shadow ? glassShadow : null,
   );
 

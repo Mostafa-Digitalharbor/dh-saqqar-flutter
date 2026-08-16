@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
+import 'accent_card_chrome.dart';
 
 /// Shared chrome for the three in-chat interactive cards (clarify, report
 /// builder, prompt suggestion) so they read as one family rather than three
@@ -27,60 +28,35 @@ class InteractiveCardShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
-        borderRadius: AppRadius.bubbleR,
-        border: Border.all(color: s.cardBorder),
-      ),
-      child: Stack(
+    return AccentCardChrome(
+      accent: s.brandCyan,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PositionedDirectional(
-            start: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 4,
-              decoration: BoxDecoration(
+          Row(
+            children: [
+              ColoredIconBox(
+                icon: icon,
                 color: s.brandCyan,
-                borderRadius: const BorderRadiusDirectional.horizontal(
-                  start: Radius.circular(16),
+                size: 34,
+                radius: AppRadius.small,
+                iconSize: 17,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: context.text.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: s.text,
+                    letterSpacing: -0.1,
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 14, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    ColoredIconBox(
-                      icon: icon,
-                      color: s.brandCyan,
-                      size: 34,
-                      radius: AppRadius.small,
-                      iconSize: 17,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: context.text.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: s.text,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ...children,
-              ],
-            ),
-          ),
+          const SizedBox(height: 12),
+          ...children,
         ],
       ),
     );

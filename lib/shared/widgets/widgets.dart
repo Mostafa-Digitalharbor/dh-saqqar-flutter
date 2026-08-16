@@ -10,8 +10,8 @@
 library;
 
 export 'accent_banner.dart';
-export 'action_card.dart';
 export 'ambient_background.dart';
+export 'app_card_dialog.dart';
 export 'app_dialog_shell.dart';
 export 'app_error_screen.dart';
 export 'app_error_state.dart';

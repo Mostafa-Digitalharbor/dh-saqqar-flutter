@@ -34,6 +34,8 @@ import 'package:saqqar_app/features/vault/widgets/project_card_skeleton.dart';
 import 'package:saqqar_app/shared/widgets/blocking_progress_dialog.dart';
 import 'package:saqqar_app/shared/widgets/confirm_dialog.dart';
 
+import 'support/responsive_harness.dart';
+
 /// An exempt plan: every gate open, so every tools row renders its widest.
 const _allFeatures = PlanSnapshot(
   slug: 'max-20x',
@@ -83,7 +85,17 @@ const _viewports = <({String name, Size size})>[
 ];
 
 const _locales = [Locale('en'), Locale('ar')];
-const _textScales = [1.0, 1.3];
+
+/// The app's own ceiling, imported rather than re-typed.
+///
+/// This file used to declare `[1.0, 1.3]` privately. `app.dart` clamps the OS
+/// scaler to `0.85…1.4`, so 1.4 — not 1.3 — is the widest type a user can
+/// actually produce, and the shared harness had already been corrected to say
+/// so. The correction did not reach here, because the constant was maintained
+/// in three places: the top 0.1 of the supported range stayed unswept for
+/// every dialog, sheet and skeleton in this file, which are precisely the
+/// surfaces with the least room to give.
+const _textScales = kTextScales;
 
 Widget _harness(Widget child, {required Locale locale, required double scale}) {
   return MaterialApp(

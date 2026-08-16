@@ -293,10 +293,21 @@ void main() {
       // Only *literal* radii are caught: `circular(radius)` and
       // `circular(widget.radius)` forward a caller's value, and those
       // callers' defaults are themselves `AppRadius` constants.
+      //
+      // The pattern is `Radius.circular(` and NOT `BorderRadius.circular(`,
+      // because the second is a substring of the first and the narrower
+      // spelling was the whole hole: this rule shipped watching only
+      // `BorderRadius.circular(12)` while eighteen literals sat in the four
+      // other spellings of the same decision —
+      // `BorderRadius.all(Radius.circular(20))`,
+      // `BorderRadius.vertical(top: Radius.circular(20))`,
+      // `BorderRadiusDirectional.only(topStart: Radius.circular(14))` and a
+      // bare `Radius.circular(999)`. Every one of them is a corner radius
+      // typed at a call site, which is the thing this rule exists to stop;
+      // the rule simply could not see the way they were written.
       final hits = lib
           .where((l) => !l.path.endsWith('core/theme/app_radius.dart'))
-          .where((l) => RegExp(r'BorderRadius\.circular\(\s*[0-9]')
-              .hasMatch(l.text))
+          .where((l) => RegExp(r'Radius\.circular\(\s*[0-9]').hasMatch(l.text))
           .toList();
 
       expect(

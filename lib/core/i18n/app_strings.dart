@@ -1718,8 +1718,12 @@ class AppStrings {
   String opening(String title) => '${_t('opening')} $title.';
   String downloading(String title) => '${_t('downloading')} $title.';
   String actionOnConversation(String action, String title) => '$action: $title';
+  /// Joins only the parts the server actually sent. `size` is absent whenever
+  /// the artifact carries no `size_kb` in its metadata, which is most of them
+  /// in production — joining unconditionally rendered every row as
+  /// "XLSX -  - ".
   String artifactMeta(String kind, String size, String createdLabel) =>
-      '$kind - $size - $createdLabel';
+      [kind, size, createdLabel].where((p) => p.isNotEmpty).join(' - ');
   String assistantPlan(String credential) =>
       '${_t('assistant_plan_prefix')} $credential. ${_t('assistant_plan_suffix')}';
 

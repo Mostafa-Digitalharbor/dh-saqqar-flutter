@@ -235,7 +235,7 @@ class ChatComposer extends StatelessWidget {
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: s.surface2,
-                  borderRadius: const BorderRadius.all(Radius.circular(20)),
+                  borderRadius: AppRadius.composerR,
                   border: Border.all(color: s.cardBorder),
                 ),
                 child: recording || transcribing

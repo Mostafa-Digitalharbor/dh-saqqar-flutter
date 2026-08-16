@@ -1,11 +1,12 @@
-// The build label shown at the top of the sign-in screen.
+// The build label reported as `app_version` when a device registers for push.
 //
 // It exists to answer one question on a real device — "which build is this
 // phone actually running?" — so the thing worth pinning is that it never
 // answers it WRONGLY. An empty or half-read `PackageInfo` must produce no
-// badge at all, never `1.2.6 ()` or a bare `(203)`, because a tester
-// comparing it against the Play Console listing would read a malformed
-// string as a mismatch and chase a rollout problem that does not exist.
+// label at all, never `1.2.6 ()` or a bare `(203)`: the Devices screen renders
+// it verbatim next to the platform, and a malformed string there reads as a
+// mismatch against the Play Console listing and sends someone chasing a
+// rollout problem that does not exist.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/app_build_info.dart';

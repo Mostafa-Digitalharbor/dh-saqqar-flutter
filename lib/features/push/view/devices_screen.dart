@@ -183,8 +183,11 @@ class _DeviceRowTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
+                  // `isNotEmpty`, not `!= null`: the server stores "" (not
+                  // null) for a device that registered without a version, so
+                  // the null-check rendered a bare "Android · v".
                   '${isIos ? UiStrings.platformIos : UiStrings.platformAndroid}'
-                  '${device.appVersion != null ? ' · v${device.appVersion}' : ''}',
+                  '${(device.appVersion ?? '').isNotEmpty ? ' · v${device.appVersion}' : ''}',
                   style: context.text.titleSmall
                       ?.copyWith(fontWeight: FontWeight.w700),
                   maxLines: 1,

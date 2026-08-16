@@ -12,6 +12,7 @@ import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/inline_add_form.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/app_card_dialog.dart';
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
 import 'environment_detail_sheet.dart';
@@ -165,34 +166,17 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
     final envs = data?.environmentsForProject(widget.existingProjectId) ??
         const <Environment>[];
 
-    // Centred dialog sized like the projects list popup — body grows
-    // with content but never past ~70 % screen height; long env lists
-    // scroll inside the body.
-    //
-    // Flutter's [Dialog] already adds `MediaQuery.viewInsets` to its
-    // own padding when computing position, so it floats above the
-    // keyboard automatically. The old AnimatedPadding here was
-    // injecting `viewInsets.bottom` INTO the dialog body, which
-    // stretched the card by the keyboard height and made the env-name
-    // edit field look like a tall blank panel.
-    final screenH = MediaQuery.sizeOf(context).height;
-    final maxHeight = (screenH * 0.7).clamp(420.0, 640.0);
-
+    // Centred dialog sized like the projects list popup — body grows with
+    // content but never past ~70 % screen height; long env lists scroll
+    // inside the body. Taller than the list dialog because this one carries
+    // an edit field and its environments, not just rows.
     final projectName = project?.name ?? '—';
 
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      backgroundColor: s.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(20)),
-      ),
-      // Cap the dialog width so it doesn't stretch the full viewport
-      // on landscape phones, foldables, or tablets — the project name
-      // field and env list become hard to scan past ~520 px wide.
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: 520),
-        child: Padding(
+    return AppCardDialog(
+      heightFactor: 0.7,
+      minHeight: 420,
+      maxHeight: 640,
+      child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -309,9 +293,8 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                 ),
               ],
             ),
-          ),
-        ),
-      );
+      ),
+    );
   }
 }
 

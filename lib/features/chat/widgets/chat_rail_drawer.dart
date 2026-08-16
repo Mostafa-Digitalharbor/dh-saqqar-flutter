@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/format/byte_size.dart';
+import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/app_strings.dart';
 import '../../../core/i18n/view_model/locale_cubit.dart';
@@ -327,8 +328,13 @@ String _riskFor(inbox_api.ApprovalActionType t) {
   };
 }
 
-DemoArtifact _adaptApiArtifact(inbox_api.Artifact a, AppStrings tr) {
+DemoArtifact _adaptApiArtifact(
+  BuildContext context,
+  inbox_api.Artifact a,
+  AppStrings tr,
+) {
   final bytes = a.sizeBytes;
+  final created = a.createdAt;
   return DemoArtifact(
     id: a.id,
     name: a.name,
@@ -338,7 +344,9 @@ DemoArtifact _adaptApiArtifact(inbox_api.Artifact a, AppStrings tr) {
     size: bytes == null ? '' : humanBytes(bytes, tr),
     conversation: a.conversation?.title ?? '',
     conversationId: a.conversation?.id ?? '',
-    createdLabel: '',
+    // The model has carried `createdAt` all along; hardcoding '' here is what
+    // made every row's meta line end in a dangling separator.
+    createdLabel: created == null ? '' : AppDateFormat.date(context, created),
   );
 }
 
@@ -486,7 +494,7 @@ class _ArtifactsTab extends StatelessWidget {
       itemCount: artifacts.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) => ChatArtifactTile(
-        artifact: _adaptApiArtifact(artifacts[i], context.tr),
+        artifact: _adaptApiArtifact(context, artifacts[i], context.tr),
         onOpen: () => onOpen(artifacts[i]),
         // Long-press → artifact detail metadata (API §4.4). Additive; the
         // tap still downloads/opens as before.

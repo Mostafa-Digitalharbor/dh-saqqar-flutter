@@ -38,6 +38,7 @@ import 'package:saqqar_app/core/i18n/remote_i18n_api.dart';
 import 'package:saqqar_app/core/network/api_error_mapper.dart';
 import 'package:saqqar_app/core/network/error_interceptor.dart';
 
+import 'package:saqqar_app/features/app_update/data/app_update_api.dart';
 import 'package:saqqar_app/features/apps/data/apps_api.dart';
 import 'package:saqqar_app/features/auth/data/auth_api.dart';
 import 'package:saqqar_app/features/billing/data/billing_history_api.dart';
@@ -701,6 +702,42 @@ void main() {
   // is survivable — but it must still be a failure the caller can see rather
   // than an empty map that reads as "the server has no strings".
   contractFor('RemoteI18nApi.getBundle', (d) => RemoteI18nApi(d).getBundle('ar'));
+
+  // ── The one client that must do the OPPOSITE ────────────────────────────
+  //
+  // `AppUpdateApi` is the sole exception to everything above, and it was the
+  // sole client with no entry in this file — which is the wrong way round.
+  // A client that swallows every error looks exactly like the bug the rest of
+  // this file exists to prevent, so it is the one most likely to be "fixed"
+  // by someone reading it cold. Nothing was watching, so the fix would have
+  // shipped.
+  //
+  // What it protects: `GET /api/v1/app/version/` **does not exist on the
+  // backend yet**. Every call is a 404 today. The gate's whole contract is
+  // that an unavailable version check is indistinguishable from "nothing to
+  // report" — so if this client ever starts propagating, the app puts a
+  // failure in front of a user who simply opened it, on every launch, until
+  // the endpoint ships.
+  //
+  // Asserted as `isNull` rather than merely "did not throw": returning a
+  // default `AppUpdateStatus` would also not throw, and would silently feed
+  // the decision table a verdict the server never gave — the same invented
+  // answer, one layer up.
+  group('AppUpdateApi.fetch (must never surface a failure)', () {
+    for (final c in _cases) {
+      test('${c.name} → null, not an exception', () async {
+        final status = await AppUpdateApi(_dio(c)).fetch(DevicePlatform.android);
+        expect(
+          status,
+          isNull,
+          reason: 'AppUpdateApi turned ${c.name} into $status. The version '
+              'check is advisory: any answer it cannot read must degrade to '
+              '"no opinion", because the alternative is blocking or nagging a '
+              'user on the strength of a response the server never sent.',
+        );
+      });
+    }
+  });
 
   // The only client that uploads. `MultipartFile.fromFile` reads from disk, so
   // this needs a real file rather than the pure-in-memory stub the others use.

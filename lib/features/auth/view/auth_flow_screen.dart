@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/app_build_info.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
@@ -16,6 +15,7 @@ import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/labeled_divider.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
+import '../../app_update/view/update_nudge_banner.dart';
 import '../data/auth_api.dart';
 import '../data/social_auth_service.dart';
 import '../view_model/auth_cubit.dart';
@@ -94,17 +94,18 @@ class _AuthFlowView extends StatelessWidget {
             builder: (context, state) {
               return Column(
                 children: [
-                  // Which build this device is actually running, above
-                  // everything else. A staged rollout's central question is
-                  // "did the update land on this phone?", and answering it
-                  // otherwise means leaving the app for Android's app-info
-                  // screen — so a tester reads it here, at a glance, before
-                  // even signing in.
-                  const _BuildBadge(),
                   // Language (EN ↔ AR) + theme (light ↔ dark) toggles pinned
                   // to the top — reachable before signing in, when the
                   // account preferences card isn't yet available.
                   const AuthHeaderActions(),
+                  // The update nudge lives in [PageScaffold], which this
+                  // screen does not use — it builds a bare Scaffold. So a
+                  // signed-OUT user on a stale build saw nothing at all,
+                  // which is the state a fresh tester is in for the whole
+                  // time they are deciding whether to sign in. The blocking
+                  // wall already covered this screen (AppUpdateGate wraps the
+                  // entire app); only the dismissible nudge was missing.
+                  const UpdateNudgeBanner(),
                   Expanded(
                     child: Center(
                       child: SingleChildScrollView(
@@ -167,42 +168,6 @@ class _AuthFlowView extends StatelessWidget {
       AuthFlowStep.resetNewPassword =>
         const _ResetPasswordBody(key: ValueKey('rs_pwd')),
     };
-  }
-}
-
-/// `1.2.6 (203)`, centred above the auth header.
-///
-/// Not localized and not translated on purpose: it is an identifier, not
-/// copy. Rendering it through the i18n tables would invite a translated
-/// version string, which is the one thing it must never be — a tester
-/// comparing it against the Play Console listing needs the two to match
-/// character for character.
-///
-/// Collapses to nothing when [AppBuildInfo] is empty (its `PackageInfo` read
-/// failed), rather than showing an empty parenthesis or a stray bracket.
-class _BuildBadge extends StatelessWidget {
-  const _BuildBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    final label = AppBuildInfo.label;
-    if (label.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        // LTR regardless of locale: "1.2.6 (203)" reversed by the Arabic
-        // paragraph direction reads as "(203) 1.2.6", which no longer matches
-        // what the Play Console shows.
-        textDirection: TextDirection.ltr,
-        style: context.text.labelSmall?.copyWith(
-          color: context.saqqar.muted,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
   }
 }
 

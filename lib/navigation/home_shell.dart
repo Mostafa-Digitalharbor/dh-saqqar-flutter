@@ -166,7 +166,16 @@ class _NavTab extends StatelessWidget {
     final s = context.saqqar;
     final color = selected ? s.brandCyan : s.muted;
 
-    return Material(
+    // The visible label is drawn only for the selected tab (Material 3), so
+    // without this the other tabs reach a screen reader as an unnamed icon.
+    // `Semantics` carries the name whatever the visual state, and `selected`
+    // is what makes TalkBack/VoiceOver announce "selected" on the active one.
+    return Semantics(
+      label: label,
+      button: true,
+      selected: selected,
+      container: true,
+      child: Material(
       color: Colors.transparent,
       borderRadius: AppRadius.bubbleR,
       child: InkWell(
@@ -199,7 +208,12 @@ class _NavTab extends StatelessWidget {
                 child: selected
                     ? Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(
+                        // The name is on the Semantics container above, which
+                        // covers selected and unselected alike. Without this
+                        // the visible copy is merged in as well and the node
+                        // announces the tab twice.
+                        child: ExcludeSemantics(
+                          child: Text(
                           label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -211,6 +225,7 @@ class _NavTab extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.2,
                           ),
+                          ),
                         ),
                       )
                     : const SizedBox.shrink(),
@@ -218,6 +233,7 @@ class _NavTab extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

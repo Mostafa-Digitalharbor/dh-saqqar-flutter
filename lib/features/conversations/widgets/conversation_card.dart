@@ -19,8 +19,9 @@ import 'conversation_row_menu.dart';
 
 /// Card corner radius — a touch softer than the global row radius so each
 /// conversation reads as a distinct, well-rounded card (design parity with
-/// the Chats mock).
-const BorderRadius _kCardRadius = BorderRadius.all(Radius.circular(16));
+/// the Chats mock). The value lives in [AppRadius.conversationCard]; the alias
+/// stays because this file references it a dozen times.
+const BorderRadius _kCardRadius = AppRadius.conversationCardR;
 
 /// Status driving the avatar ring, mirroring the Saqqar Design System's
 /// `ConversationRow`: thinking (agent mid-run, cyan ring), live (recent,

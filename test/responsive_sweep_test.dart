@@ -61,6 +61,8 @@ import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
 import 'package:saqqar_app/features/vault/data/project_models.dart';
 import 'package:saqqar_app/features/vault/widgets/project_card.dart';
 
+import 'support/responsive_harness.dart';
+
 /// `ConversationCard` reads its pinned flag via
 /// `context.select<ConversationsCubit, bool>`, so the card needs the cubit in
 /// scope even though this file is only testing layout. The cubit is never
@@ -84,7 +86,10 @@ const _viewports = <_Viewport>[
 ];
 
 const _locales = <Locale>[Locale('en'), Locale('ar')];
-const _textScales = <double>[1.0, 1.3];
+/// The app's own ceiling, imported rather than re-typed — see the note beside
+/// `kTextScales`. This file's private `[1.0, 1.3]` was the second of three
+/// copies, and the one covering the individual bubbles, cards and chips.
+const _textScales = kTextScales;
 
 /// The real chat lane clamps its content to 760 px and pads 14 px a side, so
 /// a bubble on a wide phone never gets the full viewport. Pumping into the

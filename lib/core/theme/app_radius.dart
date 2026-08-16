@@ -71,6 +71,38 @@ class AppRadius {
   /// splash mark is drawn bigger.
   static const double splashPlate = 28;
 
+  /// The conversation card in the Chats list. Deliberately softer than [row]
+  /// so each conversation reads as a distinct card rather than a list row —
+  /// design parity with the Chats mock.
+  ///
+  /// Shares a value with [bubble] today and is named separately anyway: they
+  /// are two unrelated design decisions that happen to agree, and collapsing
+  /// them would silently re-shape every chat bubble the day the Chats list is
+  /// re-styled.
+  static const double conversationCard = 16;
+
+  /// The chat composer pill — the rounded box holding the text field and the
+  /// action bar.
+  static const double composer = 20;
+
+  /// The three rounded corners of a user's chat bubble. See [bubbleCut] for
+  /// the fourth.
+  static const double bubbleCorner = 14;
+
+  /// The user bubble's signature cut corner — the top-inline-end one. It is a
+  /// brand mark, not a radius: it is what makes a Saqqar bubble recognisable
+  /// at a glance, which is exactly why it must not drift.
+  static const double bubbleCut = 4;
+
+  /// A floating card dialog — the vault's project list and project detail.
+  ///
+  /// Differs from [modal] (18), which `AppTheme.dialogTheme` applies to every
+  /// `AlertDialog`. Both call sites had typed `20` inline with no stated
+  /// reason, so the divergence is recorded rather than silently "corrected":
+  /// changing it is a design decision, and naming it here is what makes that
+  /// decision available to make. `AppCardDialog` is the only consumer.
+  static const double cardDialog = 20;
+
   // ── Convenience BorderRadius constants ─────────────────────────────────
   static const BorderRadius cardR = BorderRadius.all(Radius.circular(card));
   static const BorderRadius buttonR = BorderRadius.all(Radius.circular(button));
@@ -98,6 +130,38 @@ class AppRadius {
     topLeft: Radius.circular(sheetTop),
     topRight: Radius.circular(sheetTop),
   );
+
+  static const BorderRadius conversationCardR =
+      BorderRadius.all(Radius.circular(conversationCard));
+  static const BorderRadius composerR =
+      BorderRadius.all(Radius.circular(composer));
+  static const BorderRadius cardDialogR =
+      BorderRadius.all(Radius.circular(cardDialog));
+
+  /// The user chat bubble, cut corner and all.
+  ///
+  /// Directional so the cut lands on the *inline* end — top-right in English,
+  /// top-left in Arabic. A `BorderRadius` here would put the cut on the wrong
+  /// corner in RTL, which is the whole reason the shape is declared once
+  /// instead of re-typed per surface: `message_bubble.dart` and
+  /// `shared_transcript_screen.dart` had both spelled these four corners out
+  /// by hand, comment included, so the brand mark was maintained in two
+  /// places and the shared transcript was one edit away from disagreeing with
+  /// the chat it was a transcript of.
+  static const BorderRadiusDirectional userBubbleR = BorderRadiusDirectional.only(
+    topStart: Radius.circular(bubbleCorner),
+    topEnd: Radius.circular(bubbleCut),
+    bottomStart: Radius.circular(bubbleCorner),
+    bottomEnd: Radius.circular(bubbleCorner),
+  );
+
+  /// The 4 px accent rail down the inline-start edge of a chat card, rounded
+  /// to sit flush inside the card's own [bubble] corner.
+  ///
+  /// Shared by the approval card (warning) and the interactive card shell
+  /// (cyan) — see `AccentRail`, which owns the whole strip.
+  static const BorderRadiusDirectional accentRailR =
+      BorderRadiusDirectional.horizontal(start: Radius.circular(bubble));
 }
 
 class AppSpacing {
