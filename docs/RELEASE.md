@@ -111,10 +111,48 @@ The Play service account:
 | `APP_STORE_CONNECT_KEY_ID` | App Store Connect → Users and Access → Integrations → App Store Connect API |
 | `APP_STORE_CONNECT_ISSUER_ID` | same page, above the key list |
 | `APP_STORE_CONNECT_P8` | contents of the downloaded `AuthKey_XXXX.p8` (downloadable **once**) |
-| `IOS_DIST_CERT_P12_BASE64` | Keychain Access → export the *Apple Distribution* certificate **with its private key** as `.p12`, then base64 it |
+| `IOS_DIST_CERT_P12_BASE64` | the Apple Distribution certificate + private key as a base64'd `.p12` — see below |
 | `IOS_DIST_CERT_PASSWORD` | the password you set on that export |
 
-The API key needs the **App Manager** role to upload builds.
+The API key needs the **App Manager** role to upload builds. Note it is created
+on **appstoreconnect.apple.com** (Users and Access → Integrations), *not* on
+developer.apple.com — the APNs auth key Firebase uses is a different key of the
+same `AuthKey_XXXX.p8` shape, created in the other portal, and it cannot upload
+anything.
+
+### Making the `.p12` without a Mac
+
+No Mac is needed anywhere in this pipeline. The build runs on a hosted macOS
+runner; the certificate is produced with OpenSSL on any platform. Keychain
+Access is the usual route and it is not the only one — an earlier revision of
+this file said a Mac was required, which was wrong.
+
+```bash
+openssl genrsa -out ios_dist.key 2048
+openssl req -new -key ios_dist.key -out ios_dist.csr \
+  -subj "/emailAddress=you@example.com/CN=Your Name/C=SA"
+# upload ios_dist.csr at developer.apple.com → Certificates → + → Apple Distribution
+# download distribution.cer, then:
+openssl x509 -in distribution.cer -inform DER -out ios_dist.pem -outform PEM
+openssl pkcs12 -export -legacy -inkey ios_dist.key -in ios_dist.pem \
+  -out ios_dist.p12 -name "Apple Distribution"
+base64 -w0 ios_dist.p12          # → IOS_DIST_CERT_P12_BASE64
+```
+
+Two traps. On Git Bash, prefix the `req` line with `MSYS_NO_PATHCONV=1` or the
+`-subj` argument is mangled into a Windows path. And `-legacy` is required for
+macOS's `security import` to accept an OpenSSL 3 bundle — it works in Git Bash
+but fails in PowerShell, where the legacy provider DLL is not on the MSYS path.
+
+Verify before uploading the secret — a `.p12` without the private key signs
+nothing, and the CI failure for that is not obvious:
+
+```bash
+openssl pkcs12 -in ios_dist.p12 -legacy -nodes -nocerts | grep -c "PRIVATE KEY"
+```
+
+Keep `ios_dist.key` in the password manager. Losing it makes the certificate
+worthless and burns one of the team's three distribution-certificate slots.
 
 Saqqar has four iOS targets — Runner, Share Extension, Watch App and the Watch
 Complication — all on `CODE_SIGN_STYLE = Automatic`. `ios/fastlane/Fastfile`

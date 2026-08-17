@@ -64,20 +64,31 @@ platform :ios do
     # dart-defines, which is how a release ships with no Sentry DSN.
     #
     # fastlane runs with CWD = ios/fastlane, so ../.. is the repo root.
-    Dir.chdir("../..") do
-      sh(
-        "flutter", "build", "ios", "--release", "--no-codesign",
-        "--build-name=#{ENV.fetch('BUILD_NAME')}",
-        "--build-number=#{ENV.fetch('BUILD_NUMBER')}",
-        "--no-tree-shake-icons",
-        "--dart-define=SAQQAR_SENTRY_DSN=#{ENV.fetch('SAQQAR_SENTRY_DSN', '')}",
-        "--dart-define=SAQQAR_GOOGLE_SERVER_CLIENT_ID=#{ENV.fetch('SAQQAR_GOOGLE_SERVER_CLIENT_ID', '')}",
-        # iOS deliberately hides every price and paid CTA (App Store 3.1.1 /
-        # the open 2.1(b) hold), so the web-subscribe surface stays off in
-        # the store binary regardless of what Android ships.
-        "--dart-define=SAQQAR_WEB_SUBSCRIBE=false"
-      )
+    args = [
+      "flutter", "build", "ios", "--release", "--no-codesign",
+      "--build-name=#{ENV.fetch('BUILD_NAME')}",
+      "--build-number=#{ENV.fetch('BUILD_NUMBER')}",
+      "--no-tree-shake-icons",
+      "--dart-define=SAQQAR_SENTRY_DSN=#{ENV.fetch('SAQQAR_SENTRY_DSN', '')}",
+      # iOS deliberately hides every price and paid CTA (App Store 3.1.1 /
+      # the open 2.1(b) hold), so the web-subscribe surface stays off in
+      # the store binary regardless of what Android ships.
+      "--dart-define=SAQQAR_WEB_SUBSCRIBE=false"
+    ]
+
+    # Appended only when set. `--dart-define=K=` is NOT equivalent to omitting
+    # it: `String.fromEnvironment` uses its compiled-in `defaultValue` only for
+    # an ABSENT key, and `SocialAuthConfig.googleServerClientId` carries the
+    # real production web client ID as that default. Passing an unset secret
+    # through blanked it and disabled the Google sign-in button in a build
+    # where it otherwise works. Sentry's default is '' either way, so it does
+    # not need the same treatment.
+    google_client_id = ENV.fetch("SAQQAR_GOOGLE_SERVER_CLIENT_ID", "")
+    unless google_client_id.empty?
+      args << "--dart-define=SAQQAR_GOOGLE_SERVER_CLIENT_ID=#{google_client_id}"
     end
+
+    Dir.chdir("../..") { sh(*args) }
 
     build_app(
       workspace: "Runner.xcworkspace",

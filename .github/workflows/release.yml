@@ -243,14 +243,37 @@ jobs:
       - run: flutter pub get
 
       - name: Build app bundle
+        env:
+          SENTRY_DSN: ${{ secrets.SAQQAR_SENTRY_DSN }}
+          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.SAQQAR_GOOGLE_SERVER_CLIENT_ID }}
+          WEB_SUBSCRIBE: ${{ vars.SAQQAR_WEB_SUBSCRIBE || 'true' }}
         run: |
+          set -euo pipefail
+          # `--dart-define=K=` is NOT the same as omitting it.
+          # `String.fromEnvironment` falls back to its compiled-in
+          # `defaultValue` only when the key is ABSENT; an empty define is a
+          # value, and it wins. `SocialAuthConfig.googleServerClientId` ships
+          # the real production web client ID as that default, so passing an
+          # unset secret through replaced it with '' — which flips
+          # `isGoogleConfigured` to false and disables the Google sign-in
+          # button. The CI build was breaking a flow that works by default.
+          #
+          # Only SAQQAR_GOOGLE_SERVER_CLIENT_ID needs this: the other two
+          # define `defaultValue: ''` anyway, so an empty pass-through is a
+          # no-op for them.
+          overrides=()
+          if [[ -n "${GOOGLE_SERVER_CLIENT_ID}" ]]; then
+            overrides+=("--dart-define=SAQQAR_GOOGLE_SERVER_CLIENT_ID=${GOOGLE_SERVER_CLIENT_ID}")
+          else
+            echo "SAQQAR_GOOGLE_SERVER_CLIENT_ID unset — keeping the app's built-in default"
+          fi
           flutter build appbundle --release \
             --build-name=${{ needs.version.outputs.build_name }} \
             --build-number=${{ needs.version.outputs.build_number }} \
             --no-tree-shake-icons \
-            --dart-define=SAQQAR_SENTRY_DSN=${{ secrets.SAQQAR_SENTRY_DSN }} \
-            --dart-define=SAQQAR_GOOGLE_SERVER_CLIENT_ID=${{ secrets.SAQQAR_GOOGLE_SERVER_CLIENT_ID }} \
-            --dart-define=SAQQAR_WEB_SUBSCRIBE=${{ vars.SAQQAR_WEB_SUBSCRIBE || 'true' }}
+            --dart-define=SAQQAR_SENTRY_DSN="${SENTRY_DSN}" \
+            --dart-define=SAQQAR_WEB_SUBSCRIBE="${WEB_SUBSCRIBE}" \
+            ${overrides[@]+"${overrides[@]}"}
 
       # Keep the exact artifact that was uploaded. When Play rejects a
       # build you want the bytes it rejected, not a rebuild of the same tag.
@@ -297,11 +320,19 @@ jobs:
           cache: true
           architecture: arm64
 
+      # `bundler-cache: true` keys its cache off `ios/Gemfile.lock`, which is
+      # not committed — and committing one generated on the maintainer's
+      # Windows box would pin `x64-mingw-ucrt` platforms that a macOS runner
+      # then has to `bundle lock --add-platform` its way out of. Resolving on
+      # the runner instead costs ~30 s on a 25-minute build and cannot drift.
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
-          bundler-cache: true
           working-directory: ios
+
+      - name: Install fastlane
+        working-directory: ios
+        run: bundle install --jobs 4
 
       - run: flutter pub get
 
