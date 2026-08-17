@@ -5,11 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../vault/data/project_models.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import 'environment_multi_select_sheet.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Two-dropdown header strip — Project + Environment pickers only.
 ///
@@ -94,7 +96,12 @@ class ChatHeaderControls extends StatelessWidget {
         // every width. Earlier revision stacked them on phones ≤340 px,
         // which testers (2026-05-23) flagged as eating too much vertical
         // space — chat surface gets the height back here.
-        padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s10,
+          AppSpacing.s6,
+          AppSpacing.s10,
+          AppSpacing.s8,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -122,7 +129,7 @@ class ChatHeaderControls extends StatelessWidget {
                       onChanged: onProjectChanged,
                     ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.s8),
             Expanded(
               // When the selected project has no envs, swap the
               // dropdown for a tappable "+ Add environment" pill so
@@ -229,32 +236,27 @@ class _ChatToggleIcon extends StatelessWidget {
     final s = context.saqqar;
     return Tooltip(
       message: value ? tooltipOn : tooltipOff,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppRadius.buttonR,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onChanged(!value);
-          },
-          borderRadius: AppRadius.buttonR,
-          child: Container(
-            width: 36,
-            height: 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
+      child: TappableSurface(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onChanged(!value);
+        },
+        child: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: value
+                ? accent.withValues(alpha: 0.14)
+                : Colors.transparent,
+            borderRadius: AppRadius.buttonR,
+            border: Border.all(
               color: value
-                  ? accent.withValues(alpha: 0.14)
+                  ? accent.withValues(alpha: 0.40)
                   : Colors.transparent,
-              borderRadius: AppRadius.buttonR,
-              border: Border.all(
-                color: value
-                    ? accent.withValues(alpha: 0.40)
-                    : Colors.transparent,
-              ),
             ),
-            child: Icon(icon, size: 18, color: value ? accent : s.muted),
           ),
+          child: Icon(icon, size: AppIconSizes.regular, color: value ? accent : s.muted),
         ),
       ),
     );
@@ -289,43 +291,38 @@ class _CreateCtaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            // Brand-cyan tinted fill so the "this is the next thing to
-            // do" CTA visually pops vs. the muted disabled dropdown
-            // state it replaces.
-            color: s.brandCyan.withValues(alpha: 0.12),
-            borderRadius: AppRadius.buttonR,
-            border: Border.all(
-              color: s.brandCyan.withValues(alpha: 0.40),
-            ),
+    return TappableSurface(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s10),
+        decoration: BoxDecoration(
+          // Brand-cyan tinted fill so the "this is the next thing to
+          // do" CTA visually pops vs. the muted disabled dropdown
+          // state it replaces.
+          color: s.brandCyan.withValues(alpha: 0.12),
+          borderRadius: AppRadius.buttonR,
+          border: Border.all(
+            color: s.brandCyan.withValues(alpha: 0.40),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: s.brandCyan),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodySmall?.copyWith(
-                    color: s.brandCyan,
-                    fontWeight: FontWeight.w800,
-                  ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: AppIconSizes.small, color: s.brandCyan),
+            const SizedBox(width: AppSpacing.s6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.bodySmall?.copyWith(
+                  color: s.brandCyan,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -360,74 +357,87 @@ class _MultiEnvPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final hasSelection = primaryLabel != null && primaryLabel!.isNotEmpty;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: AppRadius.buttonR,
-        child: Container(
-          height: 40,
-          padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
-          decoration: BoxDecoration(
-            color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
-            borderRadius: AppRadius.buttonR,
-            border: Border.all(
-              color:
-                  enabled ? s.cardBorder : s.cardBorder.withValues(alpha: 0.4),
-            ),
+    return TappableSurface(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s10, 0, AppSpacing.s10, 0),
+        decoration: BoxDecoration(
+          color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
+          borderRadius: AppRadius.buttonR,
+          border: Border.all(
+            color:
+                enabled ? s.cardBorder : s.cardBorder.withValues(alpha: 0.4),
           ),
-          child: Row(
-            children: [
-              Text(
+        ),
+        child: Row(
+          children: [
+            // `Flexible`, not a bare `Text`. A `Row` lays its NON-flexible
+            // children out first against an unbounded main-axis constraint,
+            // so a bare caption takes its full intrinsic width and leaves the
+            // `Expanded` beside it whatever is left — which is negative on a
+            // 320 px phone, where each pill only gets ~146 px. It overflowed
+            // by 50 px in English at 1.0× text, i.e. the mildest cell in the
+            // matrix, whenever the vault had no project selected.
+            //
+            // Loose fit rather than `Expanded`: at normal widths the caption
+            // still takes its natural size and the value keeps the rest, so
+            // this only changes what happens once there genuinely is not room.
+            Flexible(
+              child: Text(
                 '$caption · ',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: context.text.labelSmall?.copyWith(
                   color: s.muted,
                   fontWeight: FontWeight.w700,
-                  fontSize: 11,
+                  fontSize: AppFontSizes.caption,
                 ),
               ),
-              Expanded(
-                child: Text(
-                  hasSelection ? primaryLabel! : hint,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: hasSelection
-                        ? (enabled ? s.text : s.muted)
-                        : s.muted,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
+            ),
+            Expanded(
+              child: Text(
+                hasSelection ? primaryLabel! : hint,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.bodyMedium?.copyWith(
+                  color: hasSelection
+                      ? (enabled ? s.text : s.muted)
+                      : s.muted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: AppFontSizes.dense,
                 ),
               ),
-              if (extraCount > 0) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: s.brandCyan.withValues(alpha: 0.14),
-                    borderRadius: AppRadius.pillR,
-                  ),
-                  child: Text(
-                    '+$extraCount',
-                    style: context.text.labelSmall?.copyWith(
-                      color: s.brandCyan,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
+            ),
+            if (extraCount > 0) ...[
+              const SizedBox(width: AppSpacing.s6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s6,
+                      vertical: AppSpacing.s2,
                     ),
+                decoration: BoxDecoration(
+                  color: s.brandCyan.withValues(alpha: 0.14),
+                  borderRadius: AppRadius.pillR,
+                ),
+                child: Text(
+                  '+$extraCount',
+                  style: context.text.labelSmall?.copyWith(
+                    color: s.brandCyan,
+                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSizes.caption,
                   ),
                 ),
-              ],
-              const SizedBox(width: 4),
-              Icon(
-                AppIcons.chevronDown,
-                size: 16,
-                color: enabled ? s.text : s.muted,
               ),
             ],
-          ),
+            const SizedBox(width: AppSpacing.s4),
+            Icon(
+              AppIcons.chevronDown,
+              size: AppIconSizes.small,
+              color: enabled ? s.text : s.muted,
+            ),
+          ],
         ),
       ),
     );
@@ -467,7 +477,7 @@ class _DropdownPill extends StatelessWidget {
     final hasValue = value != null && items.any((i) => i.value == value);
     return Container(
       height: 40,
-      padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s10, 0, AppSpacing.s10, 0),
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
         borderRadius: AppRadius.buttonR,
@@ -477,12 +487,19 @@ class _DropdownPill extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(
-            '$caption · ',
-            style: context.text.labelSmall?.copyWith(
-              color: s.muted,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
+          // Flexible for the same reason as `_MultiEnvPill`'s caption above:
+          // a bare `Text` here is laid out unbounded and squeezes the
+          // `Expanded` beside it into negative space on a narrow phone.
+          Flexible(
+            child: Text(
+              '$caption · ',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.labelSmall?.copyWith(
+                color: s.muted,
+                fontWeight: FontWeight.w700,
+                fontSize: AppFontSizes.caption,
+              ),
             ),
           ),
           Expanded(
@@ -498,13 +515,13 @@ class _DropdownPill extends StatelessWidget {
                 ),
                 icon: Icon(
                   AppIcons.chevronDown,
-                  size: 16,
+                  size: AppIconSizes.small,
                   color: enabled ? s.text : s.muted,
                 ),
                 style: context.text.bodyMedium?.copyWith(
                   color: enabled ? s.text : s.muted,
                   fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontSize: AppFontSizes.dense,
                 ),
                 dropdownColor: s.surface,
                 borderRadius: AppRadius.buttonR,

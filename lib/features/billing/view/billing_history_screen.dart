@@ -7,6 +7,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
@@ -148,7 +149,12 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
     if (history != null) {
       if (history.rows.isEmpty) {
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 48, 16, 28),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            AppSpacing.s48,
+            AppSpacing.s16,
+            AppSpacing.s28,
+          ),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             EmptyState(
@@ -160,25 +166,30 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
         );
       }
       return ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s16,
+          AppSpacing.s16,
+          AppSpacing.s16,
+          AppSpacing.s28,
+        ),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           _BalanceHeader(history: history),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s14),
           for (final row in history.rows) ...[
             _PaymentRowCard(
               row: row,
               opening: _openingReceiptRef == row.receiptRef,
               onReceipt: () => _openReceipt(row),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
           ],
         ],
       );
     }
     if (_failure != null) {
       return ListView(
-        padding: const EdgeInsets.only(top: 64),
+        padding: const EdgeInsets.only(top: AppSpacing.s64),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           AppErrorState(
@@ -193,7 +204,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 64),
+            padding: const EdgeInsets.only(top: AppSpacing.s64),
             child: Center(
               child: CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
             ),
@@ -214,7 +225,7 @@ class _BalanceHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.s16),
       decoration: BoxDecoration(
         color: s.cardBg,
         borderRadius: AppRadius.cardR,
@@ -262,7 +273,7 @@ class _PaymentRowCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
         color: s.cardBg,
         borderRadius: AppRadius.cardR,
@@ -285,7 +296,7 @@ class _PaymentRowCard extends StatelessWidget {
                       style: context.text.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
                       _metaLine(context, row),
                       style: context.text.bodySmall?.copyWith(color: s.muted),
@@ -293,7 +304,7 @@ class _PaymentRowCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.s10),
               // Flexible so a long amount can shrink/ellipsize instead of
               // overflowing the row on a narrow screen.
               Flexible(
@@ -307,7 +318,7 @@ class _PaymentRowCard extends StatelessWidget {
                       style: context.text.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.s4),
                     _StatusChip(row: row),
                   ],
                 ),
@@ -321,7 +332,7 @@ class _PaymentRowCard extends StatelessWidget {
           // "still processing" from "my money went nowhere". Say which, and
           // hand them the reference to quote.
           if (row.isAwaitingConfirmation) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             Text(
               context.tr.billingPendingNote(row.ref),
               style: context.text.bodySmall
@@ -329,21 +340,21 @@ class _PaymentRowCard extends StatelessWidget {
             ),
           ],
           if (row.hasReceipt) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
             Align(
               alignment: AlignmentDirectional.centerEnd,
               child: TextButton.icon(
                 onPressed: opening ? null : onReceipt,
                 icon: opening
                     ? SizedBox(
-                        width: 15,
-                        height: 15,
+                        width: AppControlSizes.spinnerTiny,
+                        height: AppControlSizes.spinnerTiny,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: s.brandCyan,
                         ),
                       )
-                    : Icon(AppIcons.download, size: 16, color: s.brandCyan),
+                    : Icon(AppIcons.download, size: AppIconSizes.small, color: s.brandCyan),
                 label: Text(context.tr.billingReceipt),
               ),
             ),

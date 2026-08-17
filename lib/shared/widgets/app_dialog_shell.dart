@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_gradients.dart';
 import '../../core/theme/app_radius.dart';
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// The app's standard modal dialog chrome: surface card, hairline border,
 /// rounded clip, and a 3 px accent bar along the top edge.
@@ -57,7 +58,7 @@ class AppDialogShell extends StatelessWidget {
   /// push back against and overflows — in landscape (~320 px tall), or with
   /// a long user-supplied name at 1.4× Arabic. Keep both axes.
   static const insetPadding =
-      EdgeInsets.symmetric(horizontal: 32, vertical: 24);
+      EdgeInsets.symmetric(horizontal: AppSpacing.s32, vertical: AppSpacing.s24);
 
   @override
   Widget build(BuildContext context) {

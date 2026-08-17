@@ -16,6 +16,7 @@ import '../../../shared/widgets/preview_banner.dart';
 import '../view_model/data_explorer_cubit.dart';
 import '../view_model/data_explorer_state.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Read-only Odoo data explorer (API_MOBILE_NEW_ENDPOINTS.md §4.2) — pick a
 /// bound environment + an operation, edit the JSON request body, and run it.
@@ -82,7 +83,7 @@ class _DataExplorerScreenState extends State<DataExplorerScreen> {
             }
             if (state.envError != null) {
               return ListView(
-                padding: const EdgeInsets.only(top: 64),
+                padding: const EdgeInsets.only(top: AppSpacing.s64),
                 children: [
                   AppErrorState(
                     message: ApiErrorMapper.message(context, state.envError),
@@ -94,7 +95,12 @@ class _DataExplorerScreenState extends State<DataExplorerScreen> {
             }
             if (state.environments.isEmpty) {
               return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 48, 16, 28),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  AppSpacing.s48,
+                  AppSpacing.s16,
+                  AppSpacing.s28,
+                ),
                 children: [
                   EmptyState(
                     icon: AppIcons.server,
@@ -122,10 +128,15 @@ class _Body extends StatelessWidget {
     final s = context.saqqar;
     final cubit = context.read<DataExplorerCubit>();
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s16,
+        AppSpacing.s16,
+        AppSpacing.s28,
+      ),
       children: [
         PreviewBanner(text: context.tr.dataExplorerPreviewNote),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         // Environment picker.
         _Label(context.tr.dataExplorerEnv),
         _Dropdown<String>(
@@ -136,7 +147,7 @@ class _Body extends StatelessWidget {
           ],
           onChanged: (v) => v == null ? null : cubit.selectEnv(v),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         // Operation picker.
         _Label(context.tr.dataExplorerOperation),
         _Dropdown<DataOp>(
@@ -147,7 +158,7 @@ class _Body extends StatelessWidget {
           ],
           onChanged: (v) => v == null ? null : cubit.selectOperation(v),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         // Every op takes a JSON object; GET ops send theirs as query params.
         if (state.operation.needsBody)
           AppTextField(
@@ -156,7 +167,7 @@ class _Body extends StatelessWidget {
             maxLines: 8,
             minLines: 4,
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         GhostButton(
           label: context.tr.dataExplorerRun,
           icon: AppIcons.play,
@@ -165,7 +176,7 @@ class _Body extends StatelessWidget {
           onPressed: state.running ? null : () => cubit.run(body.text),
         ),
         if (state.result.isNotEmpty) ...[
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.s18),
           _Label(context.tr.dataExplorerResult),
           // Long unbroken values (a big record, a URL) scroll sideways inside
           // the plate instead of overflowing; the ListView scrolls vertically.
@@ -183,7 +194,7 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s6),
       child: Text(
         text,
         style: context.text.labelMedium?.copyWith(color: context.saqqar.muted),
@@ -207,7 +218,7 @@ class _Dropdown<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
       decoration: BoxDecoration(
         color: s.surface2,
         borderRadius: AppRadius.rowR,

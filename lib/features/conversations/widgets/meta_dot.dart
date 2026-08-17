@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
 /// Tiny icon-plus-label pair used in the conversation row footer.
@@ -21,8 +22,8 @@ class MetaDot extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
+        Icon(icon, size: AppIconSizes.meta, color: color),
+        const SizedBox(width: AppSpacing.s4),
         Flexible(
           child: Text(
             text,

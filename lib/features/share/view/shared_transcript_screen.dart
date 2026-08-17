@@ -7,6 +7,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/data_state_view.dart';
@@ -72,7 +73,7 @@ class SharedTranscriptScreen extends StatelessWidget {
               title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
               actions: const [
                 Padding(
-                  padding: EdgeInsetsDirectional.only(end: 12),
+                  padding: EdgeInsetsDirectional.only(end: AppSpacing.s12),
                   child: Center(child: _ReadOnlyBadge()),
                 ),
               ],
@@ -100,7 +101,10 @@ class _ReadOnlyBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s9,
+        vertical: AppSpacing.s4,
+      ),
       decoration: BoxDecoration(
         color: s.muted.withValues(alpha: 0.12),
         borderRadius: AppRadius.pillR,
@@ -110,7 +114,7 @@ class _ReadOnlyBadge extends StatelessWidget {
         context.tr.readOnlyBadge,
         style: context.text.labelSmall?.copyWith(
           color: s.muted,
-          fontSize: 10,
+          fontSize: AppFontSizes.chipLabel,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
         ),
@@ -142,7 +146,7 @@ class _TranscriptBody extends StatelessWidget {
       return Center(
         child: ResponsiveContent(
           maxWidth: 560,
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.s24),
           child: EmptyState(
             title: context.tr.sharedConversationTitle,
             body: context.tr.sharedConversationEmpty,
@@ -160,9 +164,14 @@ class _TranscriptBody extends StatelessWidget {
           // agent voice spans the full width, so it needs no cap.
           final maxBubbleWidth = constraints.maxWidth * 0.88;
           return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s16,
+              AppSpacing.s16,
+              AppSpacing.s32,
+            ),
             itemCount: messages.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s16),
             itemBuilder: (context, index) {
               if (index == 0) {
                 return _UpdatedHeader(updatedAt: transcript.updatedAt);
@@ -213,7 +222,10 @@ class _SharedMessage extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxBubbleWidth),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s14,
+              vertical: AppSpacing.s11,
+            ),
             decoration: BoxDecoration(
               color: s.brandCyan.withValues(alpha: context.isDark ? 0.18 : 0.10),
               border: Border.all(color: s.brandCyan.withValues(alpha: 0.30)),
@@ -235,10 +247,10 @@ class _SharedMessage extends StatelessWidget {
           style: context.text.labelSmall?.copyWith(
             color: s.brandCyan,
             fontWeight: FontWeight.w700,
-            fontSize: 11,
+            fontSize: AppFontSizes.caption,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.s4),
         ChatMarkdown(data: message.content, isUser: false),
       ],
     );

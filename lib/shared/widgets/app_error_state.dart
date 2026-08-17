@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import 'colored_icon_box.dart';
 import 'ghost_button.dart';
@@ -66,22 +67,25 @@ class AppErrorState extends StatelessWidget {
     final showBody = body.isNotEmpty && body != headline.trim();
 
     final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s24,
+        vertical: AppSpacing.s16,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
             ColoredIconBox(
               icon: icon ?? AppIcons.warning,
               color: s.danger,
-              size: 56,
+              size: AppIconSizes.errorHero,
               // A square with a half-side radius IS a circle — same pixels
               // as the `BoxShape.circle` this replaced.
               radius: 28,
-              iconSize: 26,
+              iconSize: AppIconSizes.boxGlyphHero,
               backgroundAlpha: 0.12,
               borderAlpha: 0.32,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             Text(
               headline,
               textAlign: TextAlign.center,
@@ -91,7 +95,7 @@ class AppErrorState extends StatelessWidget {
               ),
             ),
             if (showBody) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.s6),
               Text(
                 message,
                 textAlign: TextAlign.center,
@@ -102,7 +106,7 @@ class AppErrorState extends StatelessWidget {
               ),
             ],
             if (onRetry != null) ...[
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.s18),
               GhostButton(
                 label: retryLabel ?? context.tr.retry,
                 icon: AppIcons.refresh,

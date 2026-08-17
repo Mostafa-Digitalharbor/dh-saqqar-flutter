@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/saqqar_theme_extension.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../../core/theme/app_radius.dart';
 import 'pdf_thumbnail.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Attachment row used both inside chat bubbles and in the composer preview
 /// tray.
@@ -70,14 +72,9 @@ class AttachmentChip extends StatelessWidget {
           : _FileAttachment(attachment: attachment);
     }
     if (onTap == null) return child;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: child,
-      ),
+    return TappableSurface(
+      onTap: onTap,
+      child: child,
     );
   }
 }
@@ -154,7 +151,7 @@ class _CompactAttachment extends StatelessWidget {
         Center(
           child: Icon(
             attachment.isImage ? AppIcons.image : AppIcons.fileText,
-            size: 28,
+            size: AppIconSizes.tileLarge,
             color: s.brandCyan,
           ),
         ),
@@ -163,7 +160,10 @@ class _CompactAttachment extends StatelessWidget {
           right: 4,
           bottom: 4,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s4,
+              vertical: AppSpacing.s1,
+            ),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: s.brandCyan.withValues(alpha: 0.16),
@@ -177,7 +177,7 @@ class _CompactAttachment extends StatelessWidget {
               style: TextStyle(
                 color: s.brandCyan,
                 fontWeight: FontWeight.w800,
-                fontSize: 9,
+                fontSize: AppFontSizes.microCaps,
                 letterSpacing: 0.4,
               ),
             ),
@@ -244,7 +244,12 @@ class _GalleryAttachment extends StatelessWidget {
             // system text scale from overflowing the card.
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s8,
+                  AppSpacing.s6,
+                  AppSpacing.s8,
+                  AppSpacing.s6,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -257,14 +262,14 @@ class _GalleryAttachment extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
                       '${attachment.kind} · ${attachment.size}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.text.labelSmall?.copyWith(
                         color: s.muted,
-                        fontSize: 10,
+                        fontSize: AppFontSizes.chipLabel,
                       ),
                     ),
                   ],
@@ -317,7 +322,7 @@ class _GalleryAttachment extends StatelessWidget {
       alignment: Alignment.center,
       child: Icon(
         attachment.isImage ? AppIcons.image : AppIcons.fileText,
-        size: 26,
+        size: AppIconSizes.tile,
         color: s.brandCyan,
       ),
     );
@@ -362,7 +367,7 @@ class _ImageAttachment extends StatelessWidget {
                     child: Icon(
                       AppIcons.image,
                       color: s.muted,
-                      size: 28,
+                      size: AppIconSizes.tileLarge,
                     ),
                   );
                 },
@@ -373,8 +378,8 @@ class _ImageAttachment extends StatelessWidget {
                     color: s.surface2,
                     alignment: Alignment.center,
                     child: SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: AppControlSizes.spinnerMedium,
+                      height: AppControlSizes.spinnerMedium,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: s.brandCyan,
@@ -390,7 +395,12 @@ class _ImageAttachment extends StatelessWidget {
             // name — testers asked for the same detail line a file chip
             // gets, since two screenshots look alike as thumbnails.
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s10,
+                AppSpacing.s8,
+                AppSpacing.s10,
+                AppSpacing.s8,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -403,13 +413,13 @@ class _ImageAttachment extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.s4),
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
+                          horizontal: AppSpacing.s8,
+                          vertical: AppSpacing.s3,
                         ),
                         decoration: BoxDecoration(
                           color: s.brandCyan.withValues(alpha: 0.12),
@@ -424,7 +434,7 @@ class _ImageAttachment extends StatelessWidget {
                             color: s.brandCyan,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.4,
-                            fontSize: 10,
+                            fontSize: AppFontSizes.chipLabel,
                           ),
                         ),
                       ),
@@ -433,7 +443,7 @@ class _ImageAttachment extends StatelessWidget {
                         attachment.size,
                         style: context.text.labelSmall?.copyWith(
                           color: s.muted,
-                          fontSize: 10,
+                          fontSize: AppFontSizes.chipLabel,
                         ),
                       ),
                     ],
@@ -457,7 +467,12 @@ class _FileAttachment extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 8, 10, 8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s8,
+        AppSpacing.s8,
+        AppSpacing.s10,
+        AppSpacing.s8,
+      ),
       decoration: BoxDecoration(
         color: s.surface,
         borderRadius: AppRadius.smallR,
@@ -469,12 +484,12 @@ class _FileAttachment extends StatelessWidget {
           ColoredIconBox(
             icon: AppIcons.attach,
             color: s.brandCyan,
-            size: 28,
+            size: AppIconSizes.tileLarge,
             radius: 7,
-            iconSize: 14,
+            iconSize: AppIconSizes.boxGlyphSmall,
             borderAlpha: null,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.s8),
           Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,7 +507,7 @@ class _FileAttachment extends StatelessWidget {
                   '${attachment.kind} · ${attachment.size}',
                   style: context.text.labelSmall?.copyWith(
                     color: s.muted,
-                    fontSize: 10,
+                    fontSize: AppFontSizes.chipLabel,
                   ),
                 ),
               ],

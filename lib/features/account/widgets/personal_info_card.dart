@@ -13,6 +13,7 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/save_status_hint.dart';
 import '../../auth/view_model/auth_cubit.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Personal-information card (Gap I) — mirrors the web `/profile/` form:
 /// editable first / last name, read-only email (the login), and a
@@ -146,7 +147,7 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
             subtitle: tr.personalInfoHint,
             tint: s.brandPurple,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -158,7 +159,7 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
                   textInputAction: TextInputAction.next,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.s12),
               Expanded(
                 child: AppTextField(
                   label: tr.authLastName,
@@ -169,14 +170,14 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s14),
           AppTextField(
             label: tr.emailLoginLabel,
             initialValue: email,
             enabled: false,
             helper: tr.emailLoginHint,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s16),
           // Status chip — explains a disabled Save: "Saved" right after a
           // successful write, "No changes" when the form matches the stored
           // profile. Nothing while there's a real pending edit (the enabled
@@ -190,7 +191,7 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
                     _justSaved ? SaveStatusTone.saved : SaveStatusTone.neutral,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
           ],
           PrimaryButton(
             label: tr.saveChanges,

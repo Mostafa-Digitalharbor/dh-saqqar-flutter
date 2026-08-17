@@ -20,6 +20,7 @@ import '../data/web_checkout.dart';
 import '../view_model/plan_cubit.dart';
 import '../widgets/plan_feature_line.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Pricing screen (Gap L) — renders the live tiers from `GET /api/v1/plans/`,
 /// marks the caller's current tier, and hands off to saqqaar.com to subscribe.
@@ -192,7 +193,12 @@ class _PricingScreenState extends State<PricingScreen>
                     .map((p) => p.sort)
                     .firstOrNull;
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s16,
+                AppSpacing.s16,
+                AppSpacing.s32,
+              ),
               children: [
                 Text(
                   tr.pricingSubtitle,
@@ -203,7 +209,7 @@ class _PricingScreenState extends State<PricingScreen>
                   ),
                 ),
                 if (showPaidUpsell) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.s16),
                   _CycleSwitch(
                     annual: _annual,
                     onChanged: (v) => setState(() => _annual = v),
@@ -214,7 +220,7 @@ class _PricingScreenState extends State<PricingScreen>
                   // through any rate change, and would have kept claiming tax
                   // applied at all in a market where it doesn't.
                   if (data.vat.addedAtCheckout) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.s10),
                     Text(
                       tr.pricingVatNote(data.vat.rateLabel),
                       textAlign: TextAlign.center,
@@ -223,7 +229,7 @@ class _PricingScreenState extends State<PricingScreen>
                     ),
                   ],
                 ],
-                const SizedBox(height: 18),
+                const SizedBox(height: AppSpacing.s18),
                 for (final tier in data.plans) ...[
                   _PlanTierCard(
                     tier: tier,
@@ -241,7 +247,7 @@ class _PricingScreenState extends State<PricingScreen>
                     opening: _opening == tier.slug,
                     onSubscribe: () => _openWeb(tier.slug),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.s14),
                 ],
                 // The one entry point that is always here.
                 //
@@ -256,7 +262,7 @@ class _PricingScreenState extends State<PricingScreen>
                 // Opens the plain `/pricing/` (empty slug → no `?plan=`),
                 // signed in via the hand-off.
                 if (showPaidUpsell) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.s4),
                   GhostButton(
                     label: tr.pricingManageCta,
                     icon: AppIcons.open,
@@ -264,9 +270,9 @@ class _PricingScreenState extends State<PricingScreen>
                     loading: _opening == '',
                     onPressed: () => _openWeb(''),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.s14),
                 ],
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.s4),
                 Text(
                   // With the purchase surface off this is the only thing that
                   // tells the user where their plan lives. Plain text, no
@@ -302,7 +308,7 @@ class _CycleSwitch extends StatelessWidget {
     final tr = context.tr;
     return Center(
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(AppSpacing.s4),
         decoration: BoxDecoration(
           color: s.cardBorder.withValues(alpha: 0.35),
           borderRadius: AppRadius.pillR,
@@ -322,7 +328,7 @@ class _CycleSwitch extends StatelessWidget {
         // rendering this screen's error state.
         child: Wrap(
           alignment: WrapAlignment.center,
-          runSpacing: 4,
+          runSpacing: AppSpacing.s4,
           children: [
             _CycleChip(
               label: tr.pricingCycleMonthly,
@@ -367,7 +373,10 @@ class _CycleChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppRadius.pillR,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s16,
+            vertical: AppSpacing.s9,
+          ),
           decoration: BoxDecoration(
             color: selected ? s.brandCyan : Colors.transparent,
             borderRadius: AppRadius.pillR,
@@ -379,7 +388,7 @@ class _CycleChip extends StatelessWidget {
           child: Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 6,
+            spacing: AppSpacing.s6,
             children: [
               Text(
                 label,
@@ -474,7 +483,7 @@ class _PlanTierCard extends StatelessWidget {
               color: s.brandCyan,
               filled: true,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
           ],
           Row(
             children: [
@@ -490,7 +499,7 @@ class _PlanTierCard extends StatelessWidget {
             ],
           ),
           if (tagline.isNotEmpty) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: AppSpacing.s2),
             Text(
               tagline,
               style: context.text.bodyMedium?.copyWith(color: s.muted),
@@ -501,7 +510,7 @@ class _PlanTierCard extends StatelessWidget {
           // bullet list below is what actually differentiates the tiers, and
           // it reads fine without a number attached.
           if (showPaidUpsell) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.s12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
@@ -522,7 +531,7 @@ class _PlanTierCard extends StatelessWidget {
                   ),
                 ),
                 if (!tier.isFree && vat.addedAtCheckout) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.s6),
                   Text(
                     tr.pricePlusVat,
                     style: context.text.bodySmall?.copyWith(color: s.muted),
@@ -530,7 +539,7 @@ class _PlanTierCard extends StatelessWidget {
                 ],
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.s6),
             Text(
               // Both cycles, always — the figure above only ever shows one of
               // them, and the switch that reveals the other is off-card.
@@ -558,9 +567,9 @@ class _PlanTierCard extends StatelessWidget {
             ),
           ],
           if (tier.featuresText.isNotEmpty) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             Divider(height: 1, thickness: 1, color: s.cardBorder),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             // "Everything in Solo, plus:" — the ladder that makes a bullet
             // list of four items mean "four *more* than the tier below".
             // Absent on the entry tier, whose list is absolute. Sent as a
@@ -571,7 +580,7 @@ class _PlanTierCard extends StatelessWidget {
                 style: context.text.bodyMedium
                     ?.copyWith(fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s8),
             ],
             for (final bullet in tier.featuresText)
               PlanFeatureLine(label: PlanCopy.translate(tr, bullet)),
@@ -582,7 +591,7 @@ class _PlanTierCard extends StatelessWidget {
           // icon is the only thing that says so before the tap — which is why
           // this keeps its own label instead of the website's "Choose Solo".
           if (showPaidUpsell && sellable && !isCurrent && !tier.isFree) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
             PrimaryButton(
               label: tr.pricingWebCta,
               icon: AppIcons.open,
@@ -615,7 +624,10 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s10,
+        vertical: AppSpacing.s4,
+      ),
       decoration: BoxDecoration(
         color: filled ? color : color.withValues(alpha: 0.12),
         borderRadius: AppRadius.pillR,

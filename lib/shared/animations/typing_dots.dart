@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// Spec §12 — three-dot indicator with a 1 s staggered pulse.
 ///
@@ -12,7 +13,7 @@ class TypingDots extends StatefulWidget {
   const TypingDots({
     super.key,
     required this.color,
-    this.dotSize = 6,
+    this.dotSize = AppControlSizes.dot,
     this.bounce = false,
   });
 

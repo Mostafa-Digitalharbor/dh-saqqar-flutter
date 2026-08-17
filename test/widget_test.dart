@@ -100,6 +100,7 @@ class _FakeApprovalsApi implements ApprovalsApi {
     required bool approved,
     String? note,
     bool batchScope = false,
+    String? confirmPhrase,
   }) async {
     decided.add(id);
     _approvals = [

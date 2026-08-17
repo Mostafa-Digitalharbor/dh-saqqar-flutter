@@ -147,36 +147,6 @@ void main() {
     });
   });
 
-  group('§10 — the delete phrase is typeable in both locales', () {
-    test('reads as verb + count', () {
-      expect(en.deleteConfirmPhrase(6), 'Delete 6');
-      expect(ar.deleteConfirmPhrase(6), 'حذف 6');
-    });
-
-    test('the count is interpolated, never hardcoded', () {
-      for (final n in [1, 6, 42, 1000]) {
-        expect(en.deleteConfirmPhrase(n), 'Delete $n');
-        expect(ar.deleteConfirmPhrase(n), 'حذف $n');
-      }
-    });
-
-    test('the body sentence names both the count and the phrase', () {
-      final body = en.deleteConfirmBody(6, en.deleteConfirmPhrase(6));
-
-      expect(body, contains('6'));
-      expect(body, contains('Delete 6'));
-      // A leftover `{slot}` would render literally to the user.
-      expect(body, isNot(contains('{')));
-    });
-
-    test('the Arabic body interpolates too', () {
-      final body = ar.deleteConfirmBody(6, ar.deleteConfirmPhrase(6));
-
-      expect(body, contains('حذف 6'));
-      expect(body, isNot(contains('{')));
-    });
-  });
-
   group('no parity string is written and then never shown', () {
     // Copy that exists but is never rendered is worse than missing copy: it
     // reads as "handled" in review, translators keep it alive, and it hides a
@@ -242,11 +212,10 @@ void main() {
       'emailPreviewCc',
       'emailPreviewBcc',
       'emailPreviewReply',
-      'deleteConfirmTitle',
-      'deleteConfirmBody',
-      'deleteConfirmHint',
-      'deleteConfirmMismatch',
-      'deleteConfirmPhrase',
+      // The typed-confirm gate was replaced on 2026-08-17 by a one-tap red
+      // button; its five getters went with it.
+      'deleteApprovalAction',
+      'deleteApprovalRecordsHeader',
       // §11 — batch approvals, once `grouped_count` turned out not to exist.
       'approveAllSimilar',
       'approvalBatchResolved',
@@ -373,7 +342,7 @@ void main() {
           'report_needs_type': tr.reportNeedsType,
           'email_preview_to': tr.emailPreviewTo,
           'email_preview_cc': tr.emailPreviewCc,
-          'delete_confirm_title': tr.deleteConfirmTitle,
+          'delete_approval_action': tr.deleteApprovalAction(12),
         };
 
         values.forEach((key, value) {
@@ -388,9 +357,8 @@ void main() {
         final interpolated = [
           tr.reportRecordsTruncated(7),
           tr.reportSelectedCount(3),
-          tr.deleteConfirmHint('Delete 6'),
-          tr.deleteConfirmMismatch('Delete 6'),
-          tr.deleteConfirmBody(6, 'Delete 6'),
+          tr.deleteApprovalAction(6),
+          tr.deleteApprovalRecordsHeader(6),
           tr.reportCompose(
             type: 'Sales orders',
             period: 'This month',

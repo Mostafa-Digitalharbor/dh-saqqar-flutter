@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/skeleton_block.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Placeholder shimmer matching the silhouette of a [MessageBubble] row:
 /// avatar slot + bubble plate with two text lines. Renders on the assistant
@@ -25,7 +26,7 @@ class MessageBubbleSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    const gap = SizedBox(width: 10);
+    const gap = SizedBox(width: AppSpacing.s10);
     const avatar = SkeletonBlock(width: 32, height: 32, radius: 16);
 
     // `maxWidth` + `Flexible`, never a fixed `width`. The avatar and its gap
@@ -36,7 +37,12 @@ class MessageBubbleSkeleton extends StatelessWidget {
     // screen is measured.
     final bubble = Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s14,
+        AppSpacing.s12,
+        AppSpacing.s14,
+        AppSpacing.s12,
+      ),
       decoration: BoxDecoration(
         color: isUser
             ? s.brandCyan.withValues(alpha: 0.08)
@@ -50,7 +56,7 @@ class MessageBubbleSkeleton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < linesCount; i++) ...[
-            if (i > 0) const SizedBox(height: 6),
+            if (i > 0) const SizedBox(height: AppSpacing.s6),
             // Vary widths so the placeholder doesn't read as a uniform block.
             // A ratio rather than `bubbleWidth - 28 - 40`: once the bubble can
             // be narrower than requested, px arithmetic against the *asked-for*

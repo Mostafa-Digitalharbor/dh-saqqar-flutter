@@ -6,9 +6,11 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Visual style for one artifact kind — drives the leading icon plate and
 /// the uppercase kind badge so file types are recognisable at a glance.
@@ -114,79 +116,80 @@ class ChatArtifactTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final style = _styleFor(artifact.name, artifact.kind);
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.cardR,
-      child: InkWell(
-        onTap: onOpen,
-        onLongPress: onLongPress,
-        borderRadius: AppRadius.cardR,
-        child: Container(
-          decoration: BoxDecoration(
-            color: s.surface2,
-            borderRadius: AppRadius.cardR,
-            border: Border.all(
-              color: style.accent.withValues(alpha: 0.35),
-            ),
+    return TappableSurface(
+      radius: AppRadius.cardR,
+      onTap: onOpen,
+      onLongPress: onLongPress,
+      child: Container(
+        decoration: BoxDecoration(
+          color: s.surface2,
+          borderRadius: AppRadius.cardR,
+          border: Border.all(
+            color: style.accent.withValues(alpha: 0.35),
           ),
-          padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
-          child: Row(
-            children: [
-              // Kind-coloured icon plate. Bigger than the old 36-px square
-              // (44 px) so the file kind reads from across the sheet.
-              ColoredIconBox(
-                icon: style.icon,
-                color: style.accent,
-                size: 44,
-                radius: AppRadius.button,
-                iconSize: 20,
-                borderAlpha: 0.45,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            artifact.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+        ),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s12,
+          AppSpacing.s12,
+          AppSpacing.s10,
+          AppSpacing.s12,
+        ),
+        child: Row(
+          children: [
+            // Kind-coloured icon plate. Bigger than the old 36-px square
+            // (44 px) so the file kind reads from across the sheet.
+            ColoredIconBox(
+              icon: style.icon,
+              color: style.accent,
+              size: AppIconSizes.feature,
+              radius: AppRadius.button,
+              iconSize: AppIconSizes.boxGlyphTile,
+              borderAlpha: 0.45,
+            ),
+            const SizedBox(width: AppSpacing.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          artifact.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        _KindBadge(style: style),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      context.tr.artifactMeta(
-                        artifact.kind,
-                        artifact.size,
-                        artifact.createdLabel,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.bodySmall?.copyWith(
-                        color: s.muted,
-                      ),
+                      const SizedBox(width: AppSpacing.s6),
+                      _KindBadge(style: style),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(
+                    context.tr.artifactMeta(
+                      artifact.kind,
+                      artifact.size,
+                      artifact.createdLabel,
                     ),
-                  ],
-                ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodySmall?.copyWith(
+                      color: s.muted,
+                    ),
+                  ),
+                ],
               ),
-              IconButton(
-                tooltip: context.tr.download,
-                onPressed: onOpen,
-                icon: Icon(AppIcons.download, color: style.accent),
-              ),
-            ],
-          ),
+            ),
+            IconButton(
+              tooltip: context.tr.download,
+              onPressed: onOpen,
+              icon: Icon(AppIcons.download, color: style.accent),
+            ),
+          ],
         ),
       ),
     );
@@ -201,7 +204,10 @@ class _KindBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s6,
+        vertical: AppSpacing.s2,
+      ),
       decoration: BoxDecoration(
         color: style.accent.withValues(alpha: 0.18),
         borderRadius: AppRadius.pillR,
@@ -211,7 +217,7 @@ class _KindBadge extends StatelessWidget {
         style.label,
         style: context.text.labelSmall?.copyWith(
           color: style.accent,
-          fontSize: 9,
+          fontSize: AppFontSizes.microCaps,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.8,
         ),

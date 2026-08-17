@@ -387,7 +387,7 @@
       "name": "RichText",
       "x": 79.0,
       "y": 169.0,
-      "w": 274.59,
+      "w": 274.45,
       "h": 20.0,
       "type": "text",
       "text": "Approval needed",
@@ -416,15 +416,15 @@
     },
     {
       "name": "RichText",
-      "x": 361.59,
+      "x": 361.45,
       "y": 171.0,
-      "w": 39.41,
+      "w": 39.55,
       "h": 16.0,
       "type": "text",
-      "text": "5 d ago",
+      "text": "6 d ago",
       "lines": [
         {
-          "text": "5 d ago",
+          "text": "6 d ago",
           "x": 0.0,
           "top": 0.05
         }
@@ -566,7 +566,7 @@
       "name": "RichText",
       "x": 79.0,
       "y": 268.0,
-      "w": 274.59,
+      "w": 274.45,
       "h": 20.0,
       "type": "text",
       "text": "Stock reconciliation finished",
@@ -595,15 +595,15 @@
     },
     {
       "name": "RichText",
-      "x": 361.59,
+      "x": 361.45,
       "y": 270.0,
-      "w": 39.41,
+      "w": 39.55,
       "h": 16.0,
       "type": "text",
-      "text": "5 d ago",
+      "text": "6 d ago",
       "lines": [
         {
-          "text": "5 d ago",
+          "text": "6 d ago",
           "x": 0.0,
           "top": 0.05
         }
@@ -745,7 +745,7 @@
       "name": "RichText",
       "x": 79.0,
       "y": 367.0,
-      "w": 274.59,
+      "w": 278.99,
       "h": 20.0,
       "type": "text",
       "text": "Daily quota at 80%",
@@ -774,15 +774,15 @@
     },
     {
       "name": "RichText",
-      "x": 361.59,
+      "x": 365.99,
       "y": 369.0,
-      "w": 39.41,
+      "w": 35.01,
       "h": 16.0,
       "type": "text",
-      "text": "5 d ago",
+      "text": "Aug 10",
       "lines": [
         {
-          "text": "5 d ago",
+          "text": "Aug 10",
           "x": 0.0,
           "top": 0.05
         }

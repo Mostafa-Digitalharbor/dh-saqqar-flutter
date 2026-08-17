@@ -5,6 +5,7 @@ import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
@@ -70,10 +71,15 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
             );
           },
           builder: (context, state) => ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s16,
+              AppSpacing.s16,
+              AppSpacing.s28,
+            ),
             children: [
               PreviewBanner(text: context.tr.meetingsPreviewNote),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               if (state.session == null || !state.session!.isValid)
                 _StartForm(
                   controller: _url,
@@ -112,7 +118,7 @@ class _StartForm extends StatelessWidget {
       children: [
         Text(context.tr.meetingsIntro,
             style: context.text.bodyMedium?.copyWith(color: s.muted)),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.s18),
         AppTextField(
           label: context.tr.meetingsUrlLabel,
           controller: controller,
@@ -122,7 +128,7 @@ class _StartForm extends StatelessWidget {
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => onStart(),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.s18),
         GhostButton(
           label: context.tr.meetingsStart,
           icon: AppIcons.recordDot,
@@ -165,7 +171,7 @@ class _SessionView extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.s12),
         Row(
           children: [
             Expanded(
@@ -178,7 +184,7 @@ class _SessionView extends StatelessWidget {
                     (state.busy || !session.isActive) ? null : cubit.stop,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.s10),
             Expanded(
               child: GhostButton(
                 label: context.tr.meetingsSummarize,
@@ -189,7 +195,7 @@ class _SessionView extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         _TextBlock(
           title: context.tr.meetingsTranscript,
           body: state.transcript.isEmpty
@@ -199,17 +205,17 @@ class _SessionView extends StatelessWidget {
           onRefresh: cubit.refreshTranscript,
         ),
         if (state.summary.isNotEmpty) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s14),
           _TextBlock(title: context.tr.meetingsSummary, body: state.summary),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         AppTextField(
           label: context.tr.meetingsAskLabel,
           controller: askController,
           textInputAction: TextInputAction.send,
           onSubmitted: cubit.ask,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.s10),
         GhostButton(
           label: context.tr.meetingsAsk,
           icon: AppIcons.qa,
@@ -218,7 +224,7 @@ class _SessionView extends StatelessWidget {
           onPressed: state.busy ? null : () => cubit.ask(askController.text),
         ),
         if (state.chatReply.isNotEmpty) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s14),
           _TextBlock(title: context.tr.meetingsReply, body: state.chatReply),
         ],
       ],
@@ -243,7 +249,7 @@ class _TextBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
         color: s.cardBg,
         borderRadius: AppRadius.cardR,
@@ -264,12 +270,12 @@ class _TextBlock extends StatelessWidget {
               if (onRefresh != null)
                 IconButton(
                   visualDensity: VisualDensity.compact,
-                  icon: Icon(AppIcons.refresh, size: 18, color: s.muted),
+                  icon: Icon(AppIcons.refresh, size: AppIconSizes.regular, color: s.muted),
                   onPressed: onRefresh,
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s8),
           SelectableText(
             body,
             style: mono

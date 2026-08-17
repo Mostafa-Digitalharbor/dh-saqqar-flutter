@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../extensions/context_extensions.dart';
 import 'ambient_background.dart';
+import '../../core/theme/app_sizes.dart';
 
 class SaqqarScreen extends StatelessWidget {
   const SaqqarScreen({
     super.key,
     required this.children,
     this.controller,
-    this.padding = const EdgeInsets.fromLTRB(16, 16, 16, 28),
+    this.padding = const EdgeInsets.fromLTRB(
+      AppSpacing.s16,
+      AppSpacing.s16,
+      AppSpacing.s16,
+      AppSpacing.s28,
+    ),
     this.physics,
     this.onRefresh,
   });

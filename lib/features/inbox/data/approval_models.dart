@@ -3,6 +3,20 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/constants/ui_strings.dart';
 
+/// Wire value of the destructive operation on an `odoo_write` approval.
+///
+/// The single string that decides whether an approval is irreversible, so it
+/// is named once and read from the server's `payload.operation` — never
+/// inferred from the prompt, which is a human sentence in the user's own
+/// language.
+///
+/// It used to live in `chat/data/delete_confirmation.dart` beside a
+/// type-to-confirm matcher and an Arabic-Indic digit normalizer. That whole
+/// file was deleted on 2026-08-17: the user no longer types anything, so there
+/// is nothing to match, and the constant belongs next to the model that reads
+/// it. See `docs/updates/WEB_TO_MOBILE_PARITY_AND_DELETE_FIX.md` §A.3.
+const kDeleteOperation = 'delete';
+
 /// The five `action_type` values the backend emits per
 /// SAQQAR_MOBILE_API.md §3 / §8. `unknown` is the safe fallback for
 /// forward-compat (so a new server-side action_type doesn't crash the
@@ -115,18 +129,65 @@ class Approval extends Equatable {
   /// (e.g. `"delete 3"`), from `confirm_phrase`. `null` on every non-delete
   /// approval, and on a server that predates the field.
   ///
-  /// Prefer this over building the string client-side: the server owns the
-  /// canonical wording and has already changed it once (the Odoo model name
-  /// used to be part of it). Reading it means inheriting the next change for
-  /// free. The locale-built phrases stay accepted alongside it — the server
-  /// takes `delete N`, `حذف N` and `احذف N` interchangeably, so refusing a
-  /// user's own language would be a client-only restriction.
+  /// This is **echoed back verbatim** in the decision POST when the user taps
+  /// the red "Delete N" button — the user is never asked to reproduce it.
+  ///
+  /// Never build the string client-side. The server owns the canonical
+  /// wording and has already changed it once (the Odoo model name used to be
+  /// part of it), so reading it is what inherits the next change for free. It
+  /// also re-normalizes whatever it receives and accepts a superset (`delete
+  /// N`, `حذف N`, `احذف N`), which means its own string is always in the
+  /// accepted set.
+  ///
+  /// `null` here on a delete is why `decide` omits the key rather than
+  /// sending null: a server that predates the field does not want it.
   final String? confirmPhrase;
 
   /// `payload.batch_scope` — this approval was auto-resolved by a scope the
   /// user already approved. Suppresses "approve all similar", which would
   /// offer to do something that has already happened.
   final bool batchScoped;
+
+  /// See the top-level [kDeleteOperation].
+  ///
+  /// Whether approving this destroys Odoo records irreversibly.
+  ///
+  /// Read off the SERVER's `payload.operation`, never guessed from the prompt
+  /// text — the prompt is a human sentence in the user's own language, and
+  /// matching on it would make the most dangerous branch in the app depend on
+  /// wording.
+  ///
+  /// This is the single flag the delete design keys on: it decides whether the
+  /// card shows a red one-tap "Delete N", whether "Approve all" is offered at
+  /// all, and whether the decision POST has to carry [confirmPhrase].
+  bool get isDestructiveDelete => payload['operation'] == kDeleteOperation;
+
+  /// Display labels for the records this delete would destroy, in the order
+  /// the server listed them.
+  ///
+  /// `payload.records` (`{id, name}` each) when present, else
+  /// `payload.record_ids` rendered as `#id`. Empty when the server sent
+  /// neither, which some deletes do.
+  ///
+  /// The list is what the count in the button label means — a user about to
+  /// approve an irreversible delete should be able to see *which* rows die,
+  /// not just how many. It is deliberately built here rather than in the card
+  /// so both approval surfaces render the same thing.
+  List<String> get deleteRecords {
+    final records = payload['records'];
+    if (records is List && records.isNotEmpty) {
+      return [
+        for (final r in records)
+          if (r is Map)
+            (r['name'] as Object?)?.toString().trim().isNotEmpty ?? false
+                ? r['name'].toString().trim()
+                : '#${r['id']}',
+      ];
+    }
+    final ids = payload['record_ids'];
+    if (ids is List) return [for (final id in ids) '#$id'];
+    return const [];
+  }
 
   /// Locale-aware model name — Arabic when [isArabic], else English; falls
   /// back to the other locale when one side is missing. `null` when neither

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
@@ -78,7 +79,10 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
     // INTO the dialog body, which stretched the card by the keyboard
     // height and made it look like a tall blank panel.
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s24,
+        vertical: AppSpacing.s24,
+      ),
       backgroundColor: s.surface,
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.modalR),
@@ -89,7 +93,12 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
         // header/buttons past the dialog's max height. On a normal
         // device the content fits and no scrollbar is shown.
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s20,
+            AppSpacing.s22,
+            AppSpacing.s20,
+            AppSpacing.s18,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -99,14 +108,14 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
                     ColoredIconBox(
                       icon: AppIcons.edit,
                       color: s.brandCyan,
-                      size: 32,
+                      size: AppIconSizes.emptyState,
                       radius: AppRadius.button,
-                      iconSize: 16,
+                      iconSize: AppIconSizes.boxGlyphCompact,
                       backgroundAlpha: 0.14,
                       // This one has no hairline — that's what null means.
                       borderAlpha: null,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSpacing.s10),
                     Expanded(
                       child: Text(
                         context.tr.renameConversation,
@@ -117,7 +126,7 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.s16),
                 AppTextField(
                   controller: _controller,
                   hint: context.tr.renameConversationHint,
@@ -125,7 +134,7 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
                   autofocus: true,
                   onSubmitted: (_) => _save(),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: AppSpacing.s18),
                 DialogActions(
                   cancel: GhostButton(
                     label: context.tr.cancel,

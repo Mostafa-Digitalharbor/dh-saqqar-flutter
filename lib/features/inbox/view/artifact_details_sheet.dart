@@ -11,6 +11,7 @@ import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/code_plate.dart';
 import '../data/artifact_models.dart';
 import '../data/artifacts_api.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Opens the artifact-details bottom sheet (API_MOBILE_NEW_ENDPOINTS.md
 /// §4.4). Reads [ArtifactsApi] from the caller's context, so it works
@@ -101,7 +102,12 @@ class _ArtifactDetailsSheetState extends State<ArtifactDetailsSheet> {
       // content when it fits and scrolls when it does not, so the tall-phone
       // layout is pixel-identical to before.
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s16,
+          AppSpacing.s12,
+          AppSpacing.s16,
+          AppSpacing.s20,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -110,7 +116,7 @@ class _ArtifactDetailsSheetState extends State<ArtifactDetailsSheet> {
               child: Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 14),
+                margin: const EdgeInsets.only(bottom: AppSpacing.s14),
                 decoration: BoxDecoration(
                   color: s.border,
                   borderRadius: AppRadius.pillR,
@@ -122,14 +128,14 @@ class _ArtifactDetailsSheetState extends State<ArtifactDetailsSheet> {
               style:
                   context.text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: AppSpacing.s2),
             Text(
               widget.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.text.bodySmall?.copyWith(color: s.muted),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _buildBody(context),
           ],
         ),
@@ -141,7 +147,7 @@ class _ArtifactDetailsSheetState extends State<ArtifactDetailsSheet> {
     final s = context.saqqar;
     if (_loading) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s32),
         child: Center(
           child: CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
         ),

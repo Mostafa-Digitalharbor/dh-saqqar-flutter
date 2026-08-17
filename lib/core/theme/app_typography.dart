@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_sizes.dart';
+
 /// Typography scale from §2.2 of the spec.
 ///
 /// **Fonts are bundled** (not fetched via `google_fonts` CDN) so they render
@@ -62,29 +64,39 @@ class AppTypography {
 
     return TextTheme(
       // Display — auth hero, profile name.
-      displayLarge: styled(28, FontWeight.w700),
-      displayMedium: styled(28, FontWeight.w700),
-      displaySmall: styled(24, FontWeight.w700),
+      displayLarge: styled(AppFontSizes.displayLarge, FontWeight.w700),
+      displayMedium: styled(AppFontSizes.displayMedium, FontWeight.w700),
+      displaySmall: styled(AppFontSizes.displaySmall, FontWeight.w700),
 
       // Title — screen / conversation title.
-      headlineLarge: styled(22, FontWeight.w700),
-      headlineMedium: styled(20, FontWeight.w700),
-      headlineSmall: styled(18, FontWeight.w700),
+      headlineLarge: styled(AppFontSizes.headlineLarge, FontWeight.w700),
+      headlineMedium: styled(AppFontSizes.headlineMedium, FontWeight.w700),
+      headlineSmall: styled(AppFontSizes.headlineSmall, FontWeight.w700),
 
       // Subtitle — section heading.
-      titleLarge: styled(16, FontWeight.w600),
-      titleMedium: styled(15, FontWeight.w600),
-      titleSmall: styled(14, FontWeight.w600),
+      titleLarge: styled(AppFontSizes.titleLarge, FontWeight.w600),
+      titleMedium: styled(AppFontSizes.titleMedium, FontWeight.w600),
+      titleSmall: styled(AppFontSizes.titleSmall, FontWeight.w600),
 
       // Body — chat text, lists.
-      bodyLarge: styled(16, FontWeight.w400, height: 1.5),
-      bodyMedium: styled(14, FontWeight.w400, height: 1.5, color: text),
-      bodySmall: styled(13, FontWeight.w400, height: 1.45, color: muted),
+      bodyLarge: styled(AppFontSizes.bodyLarge, FontWeight.w400, height: 1.5),
+      bodyMedium: styled(
+        AppFontSizes.bodyMedium,
+        FontWeight.w400,
+        height: 1.5,
+        color: text,
+      ),
+      bodySmall: styled(
+        AppFontSizes.bodySmall,
+        FontWeight.w400,
+        height: 1.45,
+        color: muted,
+      ),
 
       // Label / caption / micro.
-      labelLarge: styled(14, FontWeight.w600),
-      labelMedium: styled(12, FontWeight.w600, color: muted),
-      labelSmall: styled(11, FontWeight.w700, color: muted),
+      labelLarge: styled(AppFontSizes.labelLarge, FontWeight.w600),
+      labelMedium: styled(AppFontSizes.labelMedium, FontWeight.w600, color: muted),
+      labelSmall: styled(AppFontSizes.labelSmall, FontWeight.w700, color: muted),
     );
   }
 
@@ -94,7 +106,7 @@ class AppTypography {
     return TextStyle(
       fontFamily: fontSans,
       fontFamilyFallback: fontFallback,
-      fontSize: 11,
+      fontSize: AppFontSizes.caption,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
       color: color,
@@ -106,7 +118,7 @@ class AppTypography {
     return TextStyle(
       fontFamily: fontSans,
       fontFamilyFallback: fontFallback,
-      fontSize: 10,
+      fontSize: AppFontSizes.chipLabel,
       fontWeight: FontWeight.w700,
       letterSpacing: 0,
       color: color,
@@ -118,7 +130,10 @@ class AppTypography {
   /// network round-trip on first render. On Android that's
   /// "RobotoMono" (always installed); on iOS "Menlo". Both are good
   /// enough for `<pre>` code blocks in agent replies.
-  static TextStyle mono({required Color color, double size = 12}) {
+  static TextStyle mono({
+    required Color color,
+    double size = AppFontSizes.mono,
+  }) {
     return TextStyle(
       fontSize: size,
       color: color,

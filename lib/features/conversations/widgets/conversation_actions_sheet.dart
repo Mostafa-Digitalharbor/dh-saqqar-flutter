@@ -3,11 +3,12 @@ import 'package:flutter/services.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/conversation_models.dart';
 import 'conversation_action.dart';
-import '../../../core/theme/app_radius.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Bottom sheet surfaced when the user long-presses a conversation row
 /// in the list. Same set of actions the ⋯ kebab exposes (Pin, Rename,
@@ -68,27 +69,27 @@ class ConversationActionsSheet extends StatelessWidget {
         ),
         child: Padding(
           padding: EdgeInsets.fromLTRB(
-            18,
-            4,
-            18,
-            22 + MediaQuery.viewInsetsOf(context).bottom,
+            AppSpacing.s18,
+            AppSpacing.s4,
+            AppSpacing.s18,
+            AppSpacing.s22 + MediaQuery.viewInsetsOf(context).bottom,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SheetDragHandle(),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.s18),
               Text(
                 tr.longPressActionsTitle,
                 style: context.text.labelSmall?.copyWith(
                   color: s.muted,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.0,
-                  fontSize: 10,
+                  fontSize: AppFontSizes.chipLabel,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.s4),
               Text(
                 title,
                 maxLines: 2,
@@ -98,7 +99,7 @@ class ConversationActionsSheet extends StatelessWidget {
                   letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               // Only the action rows scroll — the drag handle and the
               // conversation title stay pinned, so the user can always see
               // which conversation they're acting on.
@@ -178,38 +179,36 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final fg = danger ? s.danger : s.text;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: (danger ? s.danger : s.muted).withValues(alpha: 0.10),
-                ),
-                child: Icon(icon, size: 18, color: fg),
+    return TappableSurface(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s6,
+          vertical: AppSpacing.s12,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: (danger ? s.danger : s.muted).withValues(alpha: 0.10),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: fg,
-                    fontWeight: FontWeight.w600,
-                  ),
+              child: Icon(icon, size: AppIconSizes.regular, color: fg),
+            ),
+            const SizedBox(width: AppSpacing.s14),
+            Expanded(
+              child: Text(
+                label,
+                style: context.text.bodyMedium?.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

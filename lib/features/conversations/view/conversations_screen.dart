@@ -15,6 +15,7 @@ import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -31,6 +32,7 @@ import '../view_model/conversations_state.dart';
 import '../widgets/rename_conversation_dialog.dart';
 import '../widgets/swipe_archive_background.dart';
 import '../widgets/widgets.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Triage segments for the Chats list, mirroring the Saqqar Design System.
 /// `all` shows everything; `pending` keeps only conversations with pending
@@ -405,10 +407,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       final c = entry.value;
       final group = _dateGroupKey(context, c);
       if (group != currentGroup) {
-        if (currentGroup != null) widgets.add(const SizedBox(height: 16));
+        if (currentGroup != null) widgets.add(const SizedBox(height: AppSpacing.s16));
         widgets.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: AppSpacing.s12),
             child: Text(
               group,
               style: context.text.headlineSmall?.copyWith(
@@ -490,7 +492,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
         ),
       );
-      widgets.add(const SizedBox(height: 10));
+      widgets.add(const SizedBox(height: AppSpacing.s10));
     }
     return widgets;
   }
@@ -547,7 +549,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               bordered: false,
               onPressed: () => context.read<ConversationsCubit>().refresh(),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.s6),
           ],
           floatingActionButton: showsEmptyState
               ? null
@@ -569,13 +571,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 key: ValueKey('conversations-skeleton'),
                 children: [
                   ConversationCardSkeleton(),
-                  SizedBox(height: 10),
+                  SizedBox(height: AppSpacing.s10),
                   ConversationCardSkeleton(),
-                  SizedBox(height: 10),
+                  SizedBox(height: AppSpacing.s10),
                   ConversationCardSkeleton(),
-                  SizedBox(height: 10),
+                  SizedBox(height: AppSpacing.s10),
                   ConversationCardSkeleton(),
-                  SizedBox(height: 10),
+                  SizedBox(height: AppSpacing.s10),
                   ConversationCardSkeleton(),
                 ],
               ),
@@ -610,7 +612,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             // Bottom clearance so the floating "New conversation" FAB never
             // covers the last item (the pagination controls / final card)
             // when the list is scrolled to the bottom.
-            const SizedBox(height: 80),
+            const SizedBox(height: AppSpacing.s80),
           ],
         );
       },
@@ -687,13 +689,13 @@ class _ConversationsBody extends StatelessWidget {
           query: query,
           onQueryChanged: onSearchChanged,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         _ChatsFilterChips(
           mode: filterMode,
           onChanged: onFilterModeChanged,
           pendingCount: pendingTotal,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         // Archived collapsible card. Only mounted when there's at least
         // one archived conversation — otherwise the word "Archived"
         // doesn't appear in the UI at all.
@@ -704,7 +706,7 @@ class _ConversationsBody extends StatelessWidget {
             onToggle: onArchivedToggle,
             onRowAction: onRowAction,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
         ],
         if (filtered.isEmpty &&
             archivedRows.isEmpty &&
@@ -736,7 +738,7 @@ class _ConversationsBody extends StatelessWidget {
         // Page navigation sits at the BOTTOM of the list (moved down on
         // request) so it follows the conversations instead of preceding them.
         if (filtered.length > pageSize) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
           PaginationBar(
             page: pageIndex + 1,
             pageCount: pageCount,
@@ -794,7 +796,7 @@ class _ChatsFilterChips extends StatelessWidget {
             active: mode == ChatsFilterMode.all,
             onTap: () => onChanged(ChatsFilterMode.all),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.s8),
           _FilterChip(
             icon: AppIcons.shieldAlert,
             label: tr.filterNeedsApproval,
@@ -830,65 +832,64 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final fg = active ? Colors.white : s.muted;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.pillR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.pillR,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            gradient: active ? AppGradients.primaryCta : null,
-            color: active ? null : s.cardBg,
-            borderRadius: AppRadius.pillR,
-            border: Border.all(
-              color: active ? Colors.transparent : s.border,
-            ),
-            boxShadow: active ? s.cyanPopShadow : null,
+    return TappableSurface(
+      radius: AppRadius.pillR,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s14,
+          vertical: AppSpacing.s8,
+        ),
+        decoration: BoxDecoration(
+          gradient: active ? AppGradients.primaryCta : null,
+          color: active ? null : s.cardBg,
+          borderRadius: AppRadius.pillR,
+          border: Border.all(
+            color: active ? Colors.transparent : s.border,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: fg),
-              const SizedBox(width: 7),
-              Text(
-                label,
-                style: context.text.titleSmall?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w600,
+          boxShadow: active ? s.cyanPopShadow : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: AppIconSizes.compact, color: fg),
+            const SizedBox(width: AppSpacing.s7),
+            Text(
+              label,
+              style: context.text.titleSmall?.copyWith(
+                color: fg,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (badge > 0) ...[
+              const SizedBox(width: AppSpacing.s7),
+              Container(
+                constraints: const BoxConstraints(minWidth: 18),
+                height: 18,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s5),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: active
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : (warn
+                          ? s.warning.withValues(alpha: 0.20)
+                          : s.surface3),
+                  borderRadius: AppRadius.pillR,
+                ),
+                child: Text(
+                  '$badge',
+                  style: TextStyle(
+                    fontSize: AppFontSizes.caption,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700,
+                    color: active
+                        ? Colors.white
+                        : (warn ? s.warning : s.muted),
+                  ),
                 ),
               ),
-              if (badge > 0) ...[
-                const SizedBox(width: 7),
-                Container(
-                  constraints: const BoxConstraints(minWidth: 18),
-                  height: 18,
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? Colors.white.withValues(alpha: 0.25)
-                        : (warn
-                            ? s.warning.withValues(alpha: 0.20)
-                            : s.surface3),
-                    borderRadius: AppRadius.pillR,
-                  ),
-                  child: Text(
-                    '$badge',
-                    style: TextStyle(
-                      fontSize: 11,
-                      height: 1.2,
-                      fontWeight: FontWeight.w700,
-                      color: active
-                          ? Colors.white
-                          : (warn ? s.warning : s.muted),
-                    ),
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -929,38 +930,37 @@ class _ArchivedSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Material(
-            color: Colors.transparent,
-            borderRadius: AppRadius.inputR,
-            child: InkWell(
-              onTap: onToggle,
-              borderRadius: AppRadius.inputR,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
-                  children: [
-                    Icon(AppIcons.archive, size: 18, color: s.muted),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${context.tr.archived} (${archived.length})',
-                        style: context.text.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+          TappableSurface(
+            radius: AppRadius.inputR,
+            onTap: onToggle,
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s14,
+                    vertical: AppSpacing.s12,
+                  ),
+              child: Row(
+                children: [
+                  Icon(AppIcons.archive, size: AppIconSizes.regular, color: s.muted),
+                  const SizedBox(width: AppSpacing.s10),
+                  Expanded(
+                    child: Text(
+                      '${context.tr.archived} (${archived.length})',
+                      style: context.text.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    AnimatedRotation(
-                      duration: AppDurations.fast,
-                      turns: expanded ? 0.5 : 0,
-                      child: Icon(
-                        AppIcons.chevronDown,
-                        size: 20,
-                        color: s.muted,
-                      ),
+                  ),
+                  AnimatedRotation(
+                    duration: AppDurations.fast,
+                    turns: expanded ? 0.5 : 0,
+                    child: Icon(
+                      AppIcons.chevronDown,
+                      size: AppIconSizes.action,
+                      color: s.muted,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -980,7 +980,12 @@ class _ArchivedSection extends StatelessWidget {
               secondChild: !expanded
                   ? const SizedBox(width: double.infinity, height: 0)
                   : Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.s10,
+                        0,
+                        AppSpacing.s10,
+                        AppSpacing.s10,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -991,7 +996,7 @@ class _ArchivedSection extends StatelessWidget {
                               onTap: () => context.go(RouteNames.chatPath(c.id)),
                               onAction: (action) => onRowAction(c, action),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.s8),
                           ],
                         ],
                       ),

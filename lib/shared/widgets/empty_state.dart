@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 
 /// Spec §5.12 — dashed-bordered empty plate.
@@ -27,7 +28,10 @@ class EmptyState extends StatelessWidget {
     return CustomPaint(
       painter: _DashedBorderPainter(color: s.border),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s18,
+          vertical: AppSpacing.s24,
+        ),
         decoration: BoxDecoration(
           color: s.surface2,
           borderRadius: AppRadius.rowR,
@@ -37,8 +41,8 @@ class EmptyState extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 32, color: s.muted),
-              const SizedBox(height: 12),
+              Icon(icon, size: AppIconSizes.emptyState, color: s.muted),
+              const SizedBox(height: AppSpacing.s12),
             ],
             Text(
               title,
@@ -48,7 +52,7 @@ class EmptyState extends StatelessWidget {
               ),
             ),
             if (body != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.s6),
               Text(
                 body!,
                 textAlign: TextAlign.center,
@@ -57,7 +61,7 @@ class EmptyState extends StatelessWidget {
                 ),
               ),
             ],
-            if (action != null) ...[const SizedBox(height: 16), action!],
+            if (action != null) ...[const SizedBox(height: AppSpacing.s16), action!],
           ],
         ),
       ),

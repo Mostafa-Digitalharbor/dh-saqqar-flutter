@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
+import 'tappable_surface.dart';
 
 /// Visual tone of a [GhostButton]. `neutral` keeps the standard hairline +
 /// text color; `danger` swaps in the red border + red text used for delete /
@@ -56,60 +58,58 @@ class GhostButton extends StatelessWidget {
       label: label,
       child: Opacity(
         opacity: disabled ? 0.5 : 1,
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: AppRadius.buttonR,
-          child: InkWell(
-            onTap: disabled ? null : onPressed,
-            borderRadius: AppRadius.buttonR,
-            highlightColor: accent.withValues(alpha: 0.06),
-            splashColor: accent.withValues(alpha: 0.10),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: minHeight),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: fillColor,
-                  borderRadius: AppRadius.buttonR,
-                  border: Border.all(color: borderColor),
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final labelWidget = Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: (context.text.labelLarge ?? const TextStyle())
-                          .copyWith(color: fg, fontWeight: FontWeight.w600),
-                    );
+        child: TappableSurface(
+          onTap: disabled ? null : onPressed,
+          splashColor: accent.withValues(alpha: 0.10),
+          highlightColor: accent.withValues(alpha: 0.06),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s16,
+                vertical: AppSpacing.s8,
+              ),
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: AppRadius.buttonR,
+                border: Border.all(color: borderColor),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final labelWidget = Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: (context.text.labelLarge ?? const TextStyle())
+                        .copyWith(color: fg, fontWeight: FontWeight.w600),
+                  );
 
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-                      children: [
-                        if (loading) ...[
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(fg),
-                            ),
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+                    children: [
+                      if (loading) ...[
+                        SizedBox(
+                          width: AppControlSizes.spinnerInline,
+                          height: AppControlSizes.spinnerInline,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(fg),
                           ),
-                          const SizedBox(width: 10),
-                        ] else if (icon != null) ...[
-                          Icon(icon, size: 18, color: fg),
-                          const SizedBox(width: 10),
-                        ],
-                        if (constraints.hasBoundedWidth)
-                          Flexible(child: labelWidget)
-                        else
-                          labelWidget,
+                        ),
+                        const SizedBox(width: AppSpacing.s10),
+                      ] else if (icon != null) ...[
+                        Icon(icon, size: AppIconSizes.regular, color: fg),
+                        const SizedBox(width: AppSpacing.s10),
                       ],
-                    );
-                  },
-                ),
+                      if (constraints.hasBoundedWidth)
+                        Flexible(child: labelWidget)
+                      else
+                        labelWidget,
+                    ],
+                  );
+                },
               ),
             ),
           ),

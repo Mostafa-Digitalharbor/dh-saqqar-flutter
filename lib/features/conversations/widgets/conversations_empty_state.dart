@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/animations/floating_bob.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -23,7 +24,7 @@ class ConversationsEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 28),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.s28),
       child: Column(
         children: [
           FloatingBob(
@@ -36,10 +37,10 @@ class ConversationsEmptyState extends StatelessWidget {
                 gradient: AppGradients.vivid,
                 border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
               ),
-              child: const Icon(AppIcons.chats, color: Colors.white, size: 32),
+              child: const Icon(AppIcons.chats, color: Colors.white, size: AppIconSizes.emptyState),
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: AppSpacing.s22),
           Text(
             context.tr.askSaqqarAnything,
             textAlign: TextAlign.center,
@@ -48,9 +49,9 @@ class ConversationsEmptyState extends StatelessWidget {
               letterSpacing: -0.4,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
             child: Text(
               context.tr.workspaceSummaryBody,
               textAlign: TextAlign.center,
@@ -60,7 +61,7 @@ class ConversationsEmptyState extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: AppSpacing.s22),
           SizedBox(
             width: 220,
             // Breathing cyan glow under the CTA — pulls the user's eye

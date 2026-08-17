@@ -4,12 +4,14 @@ import 'package:flutter/services.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../demo/saqqar_demo_data.dart';
 import 'attachment_chip.dart';
 import 'chat_send_button.dart';
 import 'voice_input_button.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Brief §4.5 composer — two-row layout inside a single rounded pill:
 ///
@@ -172,7 +174,12 @@ class ChatComposer extends StatelessWidget {
         ),
         child: ResponsiveContent(
           maxWidth: 980,
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s12,
+            AppSpacing.s10,
+            AppSpacing.s12,
+            AppSpacing.s10,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -185,7 +192,7 @@ class ChatComposer extends StatelessWidget {
               // growth.
               if (attachments.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s10),
                   child: SizedBox(
                     // 72 chip + 10 top inset for the `×` that hangs off the
                     // corner + 6 slack, so nothing clips against the viewport.
@@ -195,11 +202,11 @@ class ChatComposer extends StatelessWidget {
                       // End inset gives the last chip's `×` room to render
                       // inside the viewport; directional so RTL flips it.
                       padding: const EdgeInsetsDirectional.only(
-                        top: 10,
-                        end: 10,
+                        top: AppSpacing.s10,
+                        end: AppSpacing.s10,
                       ),
                       itemCount: attachments.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.s8),
                       itemBuilder: (context, i) => _StagedAttachment(
                         attachment: attachments[i],
                         tooltip: context.tr.removeAttachment,
@@ -214,11 +221,11 @@ class ChatComposer extends StatelessWidget {
               // off the staged file names so it appears the moment they attach.
               if (attachments.any((a) => _isAddonArchive(a.name)))
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s10),
                   child: Row(
                     children: [
-                      Icon(AppIcons.archive, size: 15, color: s.brandCyan),
-                      const SizedBox(width: 8),
+                      Icon(AppIcons.archive, size: AppIconSizes.inline, color: s.brandCyan),
+                      const SizedBox(width: AppSpacing.s8),
                       Expanded(
                         child: Text(
                           context.tr.addonHint,
@@ -258,7 +265,12 @@ class ChatComposer extends StatelessWidget {
                   children: [
                     // ── Top row: textarea ──────────────────────────────
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.s14,
+                        AppSpacing.s10,
+                        AppSpacing.s14,
+                        0,
+                      ),
                       child: TextField(
                         controller: controller,
                         focusNode: focusNode,
@@ -266,7 +278,7 @@ class ChatComposer extends StatelessWidget {
                         maxLines: 6,
                         textInputAction: TextInputAction.newline,
                         style: context.text.bodyMedium?.copyWith(
-                          fontSize: 15,
+                          fontSize: AppFontSizes.reading,
                           height: 1.4,
                         ),
                         decoration: InputDecoration(
@@ -275,7 +287,7 @@ class ChatComposer extends StatelessWidget {
                               : context.tr.composerHint,
                           hintStyle: context.text.bodyMedium?.copyWith(
                             color: s.muted,
-                            fontSize: 15,
+                            fontSize: AppFontSizes.reading,
                             fontStyle: onStop != null
                                 ? FontStyle.italic
                                 : FontStyle.normal,
@@ -294,7 +306,7 @@ class ChatComposer extends StatelessWidget {
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
                           contentPadding:
-                              const EdgeInsets.symmetric(vertical: 6),
+                              const EdgeInsets.symmetric(vertical: AppSpacing.s6),
                         ),
                       ),
                     ),
@@ -310,7 +322,12 @@ class ChatComposer extends StatelessWidget {
                     // impossible to forget about (testers asked for an
                     // animated indicator next to Send on 2026-05-23).
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.s6,
+                        AppSpacing.s4,
+                        AppSpacing.s6,
+                        0,
+                      ),
                       child: Row(
                         children: [
                           // `＋` — Saqqar tools. Left-most control, matching
@@ -322,7 +339,7 @@ class ChatComposer extends StatelessWidget {
                             IconButton(
                               onPressed: onTools,
                               icon: Icon(AppIcons.plus,
-                                  color: s.muted, size: 20),
+                                  color: s.muted, size: AppIconSizes.action),
                               tooltip: context.tr.toolsTitle,
                               visualDensity: VisualDensity.compact,
                             ),
@@ -351,7 +368,7 @@ class ChatComposer extends StatelessWidget {
                               color: s.brandPurple,
                               tooltip: context.tr.taskPrepOn,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: AppSpacing.s6),
                           ],
                           if (autoApprove) ...[
                             _ActiveModeBadge(
@@ -359,7 +376,7 @@ class ChatComposer extends StatelessWidget {
                               color: s.brandCyan,
                               tooltip: context.tr.autoApproveOn,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: AppSpacing.s6),
                           ],
                           // Send stays disabled until there's something to
                           // send — typed text or a staged attachment — so an
@@ -392,10 +409,15 @@ class ChatComposer extends StatelessWidget {
                     // are always readable, no ellipsis. Wrap so a very
                     // narrow screen can flow the second toggle down.
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.s8,
+                        AppSpacing.s2,
+                        AppSpacing.s8,
+                        AppSpacing.s8,
+                      ),
                       child: Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
+                        spacing: AppSpacing.s4,
+                        runSpacing: AppSpacing.s4,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           if (taskPrepAvailable)
@@ -481,7 +503,7 @@ class _StagedAttachment extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: s.border),
                   ),
-                  child: Icon(AppIcons.close, size: 12, color: s.muted),
+                  child: Icon(AppIcons.close, size: AppIconSizes.meta, color: s.muted),
                 ),
               ),
             ),
@@ -592,7 +614,7 @@ class _ActiveModeBadgeState extends State<_ActiveModeBadge>
                 ),
               ],
             ),
-            child: Icon(widget.icon, size: 14, color: widget.color),
+            child: Icon(widget.icon, size: AppIconSizes.compact, color: widget.color),
           );
         },
       ),
@@ -645,70 +667,22 @@ class _ComposerToggle extends StatelessWidget {
   Widget _buildBody(BuildContext context) {
     final s = context.saqqar;
     if (hasTrack) {
-      return Material(
-        color: Colors.transparent,
-        borderRadius: AppRadius.pillR,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onChanged(!value);
-          },
-          borderRadius: AppRadius.pillR,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Flexible so the label ellipsifies when the parent
-                // pillarow is too narrow for both toggles + send.
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                    style: context.text.labelMedium?.copyWith(
-                      color: value ? activeColor : s.muted,
-                      fontSize: 12,
-                      fontWeight:
-                          value ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                _MiniSwitch(value: value, activeColor: activeColor),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.pillR,
-      child: InkWell(
-        onTap: () => onChanged(!value),
-        borderRadius: AppRadius.pillR,
-        child: AnimatedContainer(
-          duration: AppDurations.fast,
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: value
-                ? activeColor.withValues(alpha: 0.14)
-                : Colors.transparent,
-            borderRadius: AppRadius.pillR,
-            border: Border.all(
-              color: value
-                  ? activeColor.withValues(alpha: 0.40)
-                  : Colors.transparent,
-            ),
+      return TappableSurface(
+        radius: AppRadius.pillR,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onChanged(!value);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s8,
+            vertical: AppSpacing.s7,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: value ? activeColor : s.muted),
-              const SizedBox(width: 5),
+              // Flexible so the label ellipsifies when the parent
+              // pillarow is too narrow for both toggles + send.
               Flexible(
                 child: Text(
                   label,
@@ -717,13 +691,59 @@ class _ComposerToggle extends StatelessWidget {
                   softWrap: false,
                   style: context.text.labelMedium?.copyWith(
                     color: value ? activeColor : s.muted,
-                    fontSize: 12,
-                    fontWeight: value ? FontWeight.w800 : FontWeight.w600,
+                    fontSize: AppFontSizes.footnote,
+                    fontWeight:
+                        value ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ),
+              const SizedBox(width: AppSpacing.s6),
+              _MiniSwitch(value: value, activeColor: activeColor),
             ],
           ),
+        ),
+      );
+    }
+    return TappableSurface(
+      radius: AppRadius.pillR,
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: AppDurations.fast,
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s10,
+          vertical: AppSpacing.s7,
+        ),
+        decoration: BoxDecoration(
+          color: value
+              ? activeColor.withValues(alpha: 0.14)
+              : Colors.transparent,
+          borderRadius: AppRadius.pillR,
+          border: Border.all(
+            color: value
+                ? activeColor.withValues(alpha: 0.40)
+                : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: AppIconSizes.compact, color: value ? activeColor : s.muted),
+            const SizedBox(width: AppSpacing.s5),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: context.text.labelMedium?.copyWith(
+                  color: value ? activeColor : s.muted,
+                  fontSize: AppFontSizes.footnote,
+                  fontWeight: value ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

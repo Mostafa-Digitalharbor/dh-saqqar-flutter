@@ -29,7 +29,6 @@ export 'chat_send_button.dart';
 export 'chat_sheet.dart';
 export 'chat_suggestion_strip.dart';
 export 'chat_typing_row.dart';
-export 'delete_approval_confirm_dialog.dart';
 export 'email_approval_preview.dart';
 export 'empty_chat_suggestions.dart';
 export 'live_env_warning_dialog.dart';

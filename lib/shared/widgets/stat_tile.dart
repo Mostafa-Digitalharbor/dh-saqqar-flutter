@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// One "big number over a small label" column — the account stats line and the
 /// billing balance header.
@@ -57,7 +58,7 @@ class StatTile extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: AppSpacing.s2),
         Text(
           label,
           textAlign: TextAlign.center,

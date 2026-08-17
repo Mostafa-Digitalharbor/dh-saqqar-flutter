@@ -8,6 +8,7 @@ import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/interactive_cards.dart';
 import 'interactive_card_shell.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// §4c — the cleaner-prompt card
 /// (`tool_payload.kind == prompt_suggestion`).
@@ -66,7 +67,7 @@ class _PromptSuggestionCardState extends State<PromptSuggestionCard> {
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.s10),
         ],
         AppTextField(
           controller: _controller,
@@ -76,7 +77,7 @@ class _PromptSuggestionCardState extends State<PromptSuggestionCard> {
           // the field — sending an empty message would just waste a turn.
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         Row(
           children: [
             Expanded(
@@ -86,7 +87,7 @@ class _PromptSuggestionCardState extends State<PromptSuggestionCard> {
                 onPressed: () => setState(() => _dismissed = true),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.s10),
             Expanded(
               child: PrimaryButton(
                 label: tr.suggestionApprove,

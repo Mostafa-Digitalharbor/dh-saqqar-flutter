@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/marquee_text.dart';
 import '../../../shared/widgets/text_scale_lock.dart';
@@ -71,7 +72,7 @@ class ChatAppBarTitle extends StatelessWidget {
       onTap: onCredentialTap,
       borderRadius: AppRadius.buttonR,
       child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(4, 4, 4, 4),
+        padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s4, AppSpacing.s4, AppSpacing.s4, AppSpacing.s4),
         child: Row(
           children: [
             // The gradient sparkles avatar was retired on 2026-05-17 —
@@ -100,36 +101,36 @@ class ChatAppBarTitle extends StatelessWidget {
                         ),
                       ),
                       if (onRenameTap != null) ...[
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.s4),
                         InkResponse(
                           onTap: onRenameTap,
                           radius: 18,
                           customBorder: const CircleBorder(),
                           child: Padding(
-                            padding: const EdgeInsets.all(4),
+                            padding: const EdgeInsets.all(AppSpacing.s4),
                             child: Icon(
                               AppIcons.edit,
-                              size: 13,
+                              size: AppIconSizes.dense,
                               color: s.muted,
                             ),
                           ),
                         ),
                       ],
                       if (agentBusy) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.s8),
                         const _AgentWorkingPill(),
                       ],
                     ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.s2),
                   // Subtitle uses Wrap so the env-flag badges (LIVE /
                   // READ-ONLY / AUTO) flow to a second row on narrow
                   // phones instead of fighting the env name for the
                   // last few pixels. `crossAxisAlignment.center` keeps
                   // the dot + badges visually aligned with the text.
                   Wrap(
-                    spacing: 6,
-                    runSpacing: 3,
+                    spacing: AppSpacing.s6,
+                    runSpacing: AppSpacing.s3,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Row(
@@ -143,7 +144,7 @@ class ChatAppBarTitle extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: AppSpacing.s6),
                           // `Flexible` is what actually prevents the
                           // overflow: the enclosing Wrap lays this Row out
                           // against the real title-slot width, so Flexible
@@ -171,7 +172,7 @@ class ChatAppBarTitle extends StatelessWidget {
                                 style: context.text.labelSmall?.copyWith(
                                   color: s.muted,
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 11,
+                                  fontSize: AppFontSizes.caption,
                                 ),
                               ),
                             ),
@@ -253,7 +254,10 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
       label: context.tr.agentWorking,
       child: TextScaleLock(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s8,
+            vertical: AppSpacing.s3,
+          ),
           decoration: BoxDecoration(
             color: s.brandCyan.withValues(alpha: 0.14),
             borderRadius: AppRadius.pillR,
@@ -278,12 +282,12 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
                   );
                 },
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.s6),
               Text(
                 context.tr.agentWorking.toUpperCase(),
                 style: context.text.labelSmall?.copyWith(
                   color: s.brandCyan,
-                  fontSize: 9,
+                  fontSize: AppFontSizes.microCaps,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
                 ),
@@ -325,7 +329,10 @@ class _EnvFlagBadge extends StatelessWidget {
     };
     return TextScaleLock(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s6,
+          vertical: AppSpacing.s1,
+        ),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.16),
           borderRadius: AppRadius.pillR,
@@ -335,7 +342,7 @@ class _EnvFlagBadge extends StatelessWidget {
           label.toUpperCase(),
           style: context.text.labelSmall?.copyWith(
             color: color,
-            fontSize: 9,
+            fontSize: AppFontSizes.microCaps,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.8,
           ),
@@ -354,7 +361,10 @@ class _AutoApprovePill extends StatelessWidget {
     final s = context.saqqar;
     return TextScaleLock(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s6,
+          vertical: AppSpacing.s1,
+        ),
         decoration: BoxDecoration(
           color: s.warning.withValues(alpha: 0.16),
           borderRadius: AppRadius.pillR,
@@ -364,7 +374,7 @@ class _AutoApprovePill extends StatelessWidget {
           context.tr.auto.toUpperCase(),
           style: context.text.labelSmall?.copyWith(
             color: s.warning,
-            fontSize: 9,
+            fontSize: AppFontSizes.microCaps,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.8,
           ),

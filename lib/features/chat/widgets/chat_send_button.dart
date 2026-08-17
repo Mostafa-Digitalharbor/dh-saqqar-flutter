@@ -5,7 +5,9 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Circular gradient send button used inside the composer pill.
 ///
@@ -23,7 +25,7 @@ class ChatSendButton extends StatelessWidget {
     required this.onPressed,
     this.onStop,
     this.stopping = false,
-    this.size = 42,
+    this.size = AppControlSizes.sendButton,
   });
 
   final VoidCallback? onPressed;
@@ -54,35 +56,31 @@ class ChatSendButton extends StatelessWidget {
         message: stopping
             ? context.tr.stopping
             : context.tr.stopGeneration,
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: AppRadius.pillR,
-          child: InkWell(
-            onTap: stopping
-                ? null
-                : () {
-                    HapticFeedback.lightImpact();
-                    onStop!();
-                  },
-            borderRadius: AppRadius.pillR,
-            child: Ink(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: s.surface3,
-                border: Border.all(color: s.cardBorder, width: 1.4),
-                shape: BoxShape.circle,
-              ),
-              child: stopping
-                  ? Padding(
-                      padding: EdgeInsets.all(size * 0.28),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.8,
-                        valueColor: AlwaysStoppedAnimation(s.muted),
-                      ),
-                    )
-                  : Icon(AppIcons.stop, color: s.text, size: size * 0.38),
+        child: TappableSurface(
+          radius: AppRadius.pillR,
+          onTap: stopping
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  onStop!();
+                },
+          child: Ink(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: s.surface3,
+              border: Border.all(color: s.cardBorder, width: 1.4),
+              shape: BoxShape.circle,
             ),
+            child: stopping
+                ? Padding(
+                    padding: EdgeInsets.all(size * 0.28),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.8,
+                      valueColor: AlwaysStoppedAnimation(s.muted),
+                    ),
+                  )
+                : Icon(AppIcons.stop, color: s.text, size: size * 0.38),
           ),
         ),
       );
@@ -90,30 +88,26 @@ class ChatSendButton extends StatelessWidget {
 
     return Tooltip(
       message: context.tr.send,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppRadius.pillR,
-        child: InkWell(
-          onTap: disabled
-              ? null
-              : () {
-                  HapticFeedback.lightImpact();
-                  onPressed!();
-                },
-          borderRadius: AppRadius.pillR,
-          child: Ink(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              gradient: disabled ? null : AppGradients.primaryCta,
-              color: disabled ? s.surface3 : null,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              AppIcons.send,
-              color: disabled ? s.muted : Colors.white,
-              size: size * 0.43,
-            ),
+      child: TappableSurface(
+        radius: AppRadius.pillR,
+        onTap: disabled
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onPressed!();
+              },
+        child: Ink(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            gradient: disabled ? null : AppGradients.primaryCta,
+            color: disabled ? s.surface3 : null,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            AppIcons.send,
+            color: disabled ? s.muted : Colors.white,
+            size: size * 0.43,
           ),
         ),
       ),

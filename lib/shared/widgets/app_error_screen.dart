@@ -8,6 +8,7 @@ import '../../core/constants/ui_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// Friendly fallback for uncaught widget build errors.
 ///
@@ -87,7 +88,7 @@ class AppErrorScreen extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(AppSpacing.s32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -105,35 +106,35 @@ class AppErrorScreen extends StatelessWidget {
                       child: const Icon(
                         AppIcons.warning,
                         color: danger,
-                        size: 30,
+                        size: AppIconSizes.crash,
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: AppSpacing.s18),
                     Text(
                       title,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: AppFontSizes.crashTitle,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.s8),
                     Text(
                       body,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: muted,
                         height: 1.45,
-                        fontSize: 14,
+                        fontSize: AppFontSizes.body,
                       ),
                     ),
                     if (kDebugMode) ...[
-                      const SizedBox(height: 18),
+                      const SizedBox(height: AppSpacing.s18),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(AppSpacing.s12),
                         decoration: BoxDecoration(
                           color: card,
                           borderRadius: AppRadius.smallR,
@@ -146,7 +147,7 @@ class AppErrorScreen extends StatelessWidget {
                           style: const TextStyle(
                             color: muted,
                             fontFamily: UiStrings.monospaceFontFamily,
-                            fontSize: 12,
+                            fontSize: AppFontSizes.footnote,
                             height: 1.4,
                           ),
                         ),

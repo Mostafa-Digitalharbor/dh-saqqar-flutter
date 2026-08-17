@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_gradients.dart';
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 import '../animations/typing_dots.dart';
 import '../extensions/context_extensions.dart';
+import 'tappable_surface.dart';
 
 /// Spec §5.2 primary button — navy→cyan gradient, white text.
 class PrimaryButton extends StatelessWidget {
@@ -30,7 +32,10 @@ class PrimaryButton extends StatelessWidget {
     final child = ConstrainedBox(
       constraints: BoxConstraints(minHeight: minHeight),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s18,
+          vertical: AppSpacing.s10,
+        ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final labelWidget = Text(
@@ -58,8 +63,8 @@ class PrimaryButton extends StatelessWidget {
                     child: Center(child: TypingDots(color: Colors.white)),
                   )
                 else if (icon != null)
-                  Icon(icon, color: Colors.white, size: 18),
-                if (loading || icon != null) const SizedBox(width: 10),
+                  Icon(icon, color: Colors.white, size: AppIconSizes.regular),
+                if (loading || icon != null) const SizedBox(width: AppSpacing.s10),
                 if (constraints.hasBoundedWidth)
                   Flexible(child: labelWidget)
                 else
@@ -77,19 +82,14 @@ class PrimaryButton extends StatelessWidget {
       label: label,
       child: Opacity(
         opacity: disabled ? 0.5 : 1,
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: AppRadius.buttonR,
-          child: InkWell(
-            onTap: disabled ? null : onPressed,
-            borderRadius: AppRadius.buttonR,
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                gradient: AppGradients.primaryCta,
-                borderRadius: AppRadius.buttonR,
-              ),
-              child: ExcludeSemantics(child: child),
+        child: TappableSurface(
+          onTap: disabled ? null : onPressed,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: AppGradients.primaryCta,
+              borderRadius: AppRadius.buttonR,
             ),
+            child: ExcludeSemantics(child: child),
           ),
         ),
       ),

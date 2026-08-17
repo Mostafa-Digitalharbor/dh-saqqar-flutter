@@ -6,6 +6,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/animations/typing_dots.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
@@ -154,10 +155,12 @@ class ConversationCard extends StatelessWidget {
                   ),
                 Padding(
                   padding: EdgeInsetsDirectional.fromSTEB(
-                    needsAttention ? 19 : 16,
-                    16,
-                    8,
-                    16,
+                    // Nudged in by the 3 px attention rail so the content
+                    // keeps its optical inset when the rail is drawn.
+                    needsAttention ? AppSpacing.s19 : AppSpacing.s16,
+                    AppSpacing.s16,
+                    AppSpacing.s8,
+                    AppSpacing.s16,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +172,7 @@ class ConversationCard extends StatelessWidget {
                         seedText: title.isEmpty ? projectLabel : title,
                         status: status,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.s12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,10 +186,10 @@ class ConversationCard extends StatelessWidget {
                                 if (isPinned) ...[
                                   Icon(
                                     AppIcons.pin,
-                                    size: 13,
+                                    size: AppIconSizes.dense,
                                     color: s.brandCyan,
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: AppSpacing.s6),
                                 ],
                               ],
                               title: Text(
@@ -213,20 +216,20 @@ class ConversationCard extends StatelessWidget {
                             // the normal last-message preview the moment the
                             // reply lands (isThinking tracks RunningAgentsCubit).
                             if (isThinking) ...[
-                              const SizedBox(height: 4),
+                              const SizedBox(height: AppSpacing.s4),
                               Row(
                                 children: [
                                   TypingDots(
                                     color: s.brandCyan,
-                                    dotSize: 5,
+                                    dotSize: AppControlSizes.dotSmall,
                                     bounce: true,
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: AppSpacing.s8),
                                   // Brand wordmark stands in for the word
                                   // "Saqqar" so the indicator reads
                                   // "[SAQQÂR] is working now".
                                   const SaqqarLogo(height: 15),
-                                  const SizedBox(width: 3),
+                                  const SizedBox(width: AppSpacing.s3),
                                   Flexible(
                                     child: Text(
                                       context.tr.saqqarWorkingNow,
@@ -241,7 +244,7 @@ class ConversationCard extends StatelessWidget {
                                 ],
                               ),
                             ] else if (preview.isNotEmpty) ...[
-                              const SizedBox(height: 3),
+                              const SizedBox(height: AppSpacing.s3),
                               Text(
                                 preview,
                                 maxLines: 1,
@@ -251,7 +254,7 @@ class ConversationCard extends StatelessWidget {
                                 ),
                               ),
                             ],
-                            const SizedBox(height: 10),
+                            const SizedBox(height: AppSpacing.s10),
                             // Meta is a vertical stack of up to three dedicated
                             // lines (design request 2026-07-06) so a card that
                             // needs approval reads cleanly top-to-bottom instead
@@ -273,7 +276,7 @@ class ConversationCard extends StatelessWidget {
                             if (envLabel != null)
                               Padding(
                                 padding: EdgeInsets.only(
-                                  top: pendingApprovals > 0 ? 6 : 0,
+                                  top: pendingApprovals > 0 ? AppSpacing.s6 : 0,
                                 ),
                                 child: _MetaInline(
                                   icon: AppIcons.github,
@@ -286,7 +289,7 @@ class ConversationCard extends StatelessWidget {
                             Padding(
                               padding: EdgeInsets.only(
                                 top: (pendingApprovals > 0 || envLabel != null)
-                                    ? 6
+                                    ? AppSpacing.s6
                                     : 0,
                               ),
                               // `Wrap`, not `Row`: a Row hands these unbounded
@@ -300,8 +303,8 @@ class ConversationCard extends StatelessWidget {
                               // line, which is the same stacked-lines
                               // treatment lines 1 and 2 already use.
                               child: Wrap(
-                                spacing: 14,
-                                runSpacing: 4,
+                                spacing: AppSpacing.s14,
+                                runSpacing: AppSpacing.s4,
                                 children: [
                                   // Message count (real).
                                   _MetaInline(
@@ -320,7 +323,7 @@ class ConversationCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.s4),
                       // Overflow menu — trailing, top-aligned, mirroring the
                       // design's ConversationRow `onOverflow` affordance.
                       ConversationRowMenu(
@@ -420,7 +423,7 @@ class _ConversationAvatar extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Container(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(AppSpacing.s2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: ring, width: 2),
@@ -442,7 +445,7 @@ class _ConversationAvatar extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
-                fontSize: 18,
+                fontSize: AppFontSizes.avatarInitial,
                 height: 1.1,
               ),
             ),
@@ -477,7 +480,10 @@ class _WarnPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s9,
+        vertical: AppSpacing.s3,
+      ),
       decoration: BoxDecoration(
         color: s.warning.withValues(alpha: 0.14),
         borderRadius: AppRadius.pillR,
@@ -486,8 +492,8 @@ class _WarnPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(AppIcons.shieldAlert, size: 12, color: s.warning),
-          const SizedBox(width: 5),
+          Icon(AppIcons.shieldAlert, size: AppIconSizes.meta, color: s.warning),
+          const SizedBox(width: AppSpacing.s5),
           // `Flexible` + ellipsis, matching [_MetaInline]. `mainAxisSize.min`
           // does NOT stop a child exceeding the incoming constraint — it only
           // stops the Row from expanding — so an unbounded `Text` here
@@ -502,7 +508,7 @@ class _WarnPill extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               softWrap: false,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: AppFontSizes.chipLabel,
                 height: 1.2,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.6,
@@ -546,8 +552,8 @@ class _MetaInline extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: s.muted),
-        const SizedBox(width: 5),
+        Icon(icon, size: AppIconSizes.dense, color: s.muted),
+        const SizedBox(width: AppSpacing.s5),
         // Flexible lets a long label shrink/ellipsize within the Wrap line's
         // available width; short labels (counts) keep their natural size.
         if (flexible) Flexible(child: text) else text,

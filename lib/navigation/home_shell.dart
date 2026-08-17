@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../core/i18n/app_localizations.dart';
 import '../core/routing/route_names.dart';
 import '../core/theme/app_icons.dart';
+import '../core/theme/app_sizes.dart';
 import '../shared/extensions/context_extensions.dart';
 import '../shared/widgets/confirm_dialog.dart';
 import '../core/theme/app_radius.dart';
+import '../shared/widgets/tappable_surface.dart';
 
 /// 3-tab bottom shell — Chats / Vault / Account. Inbox + Files were folded
 /// into the chat's own ⋯ menu (approvals and artifacts now live per-chat).
@@ -88,7 +90,12 @@ class HomeShell extends StatelessWidget {
         bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s10,
+            AppSpacing.s6,
+            AppSpacing.s10,
+            AppSpacing.s10,
+          ),
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: s.surface.withValues(alpha: context.isDark ? 0.94 : 0.98),
@@ -105,7 +112,10 @@ class HomeShell extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s4,
+                vertical: AppSpacing.s6,
+              ),
               child: Row(
                 children: [
                   for (var i = 0; i < tabs.length; i++)
@@ -175,65 +185,64 @@ class _NavTab extends StatelessWidget {
       button: true,
       selected: selected,
       container: true,
-      child: Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.bubbleR,
-      child: InkWell(
+      child: TappableSurface(
+        radius: AppRadius.bubbleR,
         onTap: onTap,
-        borderRadius: AppRadius.bubbleR,
         child: AnimatedContainer(
-          duration: AppDurations.fast,
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? s.brandCyan.withValues(alpha: context.isDark ? 0.14 : 0.10)
-                : Colors.transparent,
-            borderRadius: AppRadius.bubbleR,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 24,
-                child: Icon(spec.icon, size: 22, color: color),
-              ),
-              // Material 3 pattern: only the active tab shows its label.
-              // Cuts visual noise on a 5-tab bar without losing the icon
-              // legend on the tab the user is currently on.
-              AnimatedSize(
-                duration: AppDurations.fast,
-                curve: Curves.easeOutCubic,
-                child: selected
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        // The name is on the Semantics container above, which
-                        // covers selected and unselected alike. Without this
-                        // the visible copy is merged in as well and the node
-                        // announces the tab twice.
-                        child: ExcludeSemantics(
-                          child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: (context.text.labelSmall ?? const TextStyle())
-                              .copyWith(
-                            color: color,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ),
-        ),
+      duration: AppDurations.fast,
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s6,
+        vertical: AppSpacing.s8,
       ),
+      decoration: BoxDecoration(
+        color: selected
+            ? s.brandCyan.withValues(alpha: context.isDark ? 0.14 : 0.10)
+            : Colors.transparent,
+        borderRadius: AppRadius.bubbleR,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 24,
+            child: Icon(spec.icon, size: AppIconSizes.navBar, color: color),
+          ),
+          // Material 3 pattern: only the active tab shows its label.
+          // Cuts visual noise on a 5-tab bar without losing the icon
+          // legend on the tab the user is currently on.
+          AnimatedSize(
+            duration: AppDurations.fast,
+            curve: Curves.easeOutCubic,
+            child: selected
+                ? Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.s4),
+                    // The name is on the Semantics container above, which
+                    // covers selected and unselected alike. Without this
+                    // the visible copy is merged in as well and the node
+                    // announces the tab twice.
+                    child: ExcludeSemantics(
+                      child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: (context.text.labelSmall ?? const TextStyle())
+                          .copyWith(
+                        color: color,
+                        fontSize: AppFontSizes.caption,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    ),
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/network/view_model/connectivity_cubit.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 
 /// Top-of-screen sticky banner that animates in when the device is offline.
@@ -110,7 +111,12 @@ class _BackOnlineRow extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s14,
+          AppSpacing.s10,
+          AppSpacing.s14,
+          AppSpacing.s10,
+        ),
         decoration: BoxDecoration(
           color: s.success.withValues(alpha: context.isDark ? 0.18 : 0.10),
           border: Border(
@@ -122,8 +128,8 @@ class _BackOnlineRow extends StatelessWidget {
           bottom: false,
           child: Row(
             children: [
-              Icon(AppIcons.success, color: s.success, size: 18),
-              const SizedBox(width: 10),
+              Icon(AppIcons.success, color: s.success, size: AppIconSizes.regular),
+              const SizedBox(width: AppSpacing.s10),
               Expanded(
                 child: Text(
                   context.tr.backOnline,
@@ -153,7 +159,12 @@ class _OfflineRow extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s14,
+          AppSpacing.s10,
+          AppSpacing.s14,
+          AppSpacing.s10,
+        ),
         decoration: BoxDecoration(
           color: s.danger.withValues(alpha: context.isDark ? 0.18 : 0.10),
           border: Border(
@@ -165,8 +176,8 @@ class _OfflineRow extends StatelessWidget {
           bottom: false,
           child: Row(
             children: [
-              Icon(AppIcons.cloudOff, color: s.danger, size: 18),
-              const SizedBox(width: 10),
+              Icon(AppIcons.cloudOff, color: s.danger, size: AppIconSizes.regular),
+              const SizedBox(width: AppSpacing.s10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +195,7 @@ class _OfflineRow extends StatelessWidget {
                       style: context.text.labelSmall?.copyWith(
                         color: s.danger,
                         fontWeight: FontWeight.w500,
-                        fontSize: 11,
+                        fontSize: AppFontSizes.caption,
                       ),
                     ),
                   ],

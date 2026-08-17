@@ -7,6 +7,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/routing/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_sizes.dart';
 import '../../features/app_update/view/update_nudge_banner.dart';
 import '../../features/chat/view_model/running_agents_cubit.dart';
 import '../../features/notifications/data/notifications_store.dart';
@@ -41,7 +42,12 @@ class PageScaffold extends StatefulWidget {
     this.actions,
     this.controller,
     this.floatingActionButton,
-    this.padding = const EdgeInsets.fromLTRB(16, 14, 16, 28),
+    this.padding = const EdgeInsets.fromLTRB(
+      AppSpacing.s16,
+      AppSpacing.s14,
+      AppSpacing.s16,
+      AppSpacing.s28,
+    ),
     this.onRefresh,
   });
 
@@ -162,7 +168,12 @@ class _SaqqarBrandHeader extends StatelessWidget {
           child: SizedBox(
             height: 62,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 12, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                0,
+                AppSpacing.s12,
+                0,
+              ),
               child: Row(
                 children: [
                   // Start side: the brand logo (white on the dark surface via
@@ -174,8 +185,8 @@ class _SaqqarBrandHeader extends StatelessWidget {
                     borderRadius: AppRadius.smallR,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
+                        horizontal: AppSpacing.s12,
+                        vertical: AppSpacing.s7,
                       ),
                       decoration: BoxDecoration(
                         color: s.cardBg,
@@ -200,7 +211,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
                     child: agentRunning
                         ? const Padding(
                             key: ValueKey('agent-pulse'),
-                            padding: EdgeInsetsDirectional.only(start: 8),
+                            padding: EdgeInsetsDirectional.only(start: AppSpacing.s8),
                             child: _AgentPulseDot(),
                           )
                         : const SizedBox.shrink(key: ValueKey('idle')),
@@ -213,7 +224,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
                   // the two side elements.
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s8),
                       child: Directionality(
                         textDirection: appDir,
                         child: Text(
@@ -276,7 +287,7 @@ class _NotificationsBell extends StatelessWidget {
                   color: s.cardBg,
                   border: Border.all(color: s.cardBorder),
                 ),
-                child: Icon(AppIcons.bell, size: 19, color: s.text),
+                child: Icon(AppIcons.bell, size: AppIconSizes.bell, color: s.text),
               ),
               // Unread COUNT badge (caps at "9+"). Hidden at zero.
               if (unread > 0)
@@ -288,7 +299,7 @@ class _NotificationsBell extends StatelessWidget {
                       minWidth: 16,
                       minHeight: 16,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: s.danger,
@@ -299,7 +310,7 @@ class _NotificationsBell extends StatelessWidget {
                       unread > 9 ? '9+' : '$unread',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 10,
+                        fontSize: AppFontSizes.chipLabel,
                         fontWeight: FontWeight.w800,
                         height: 1.1,
                       ),

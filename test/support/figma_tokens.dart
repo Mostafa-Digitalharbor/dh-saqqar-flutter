@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:saqqar_app/core/theme/app_colors.dart';
 import 'package:saqqar_app/core/theme/app_gradients.dart';
 import 'package:saqqar_app/core/theme/app_radius.dart';
+import 'package:saqqar_app/core/theme/app_sizes.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/core/theme/app_typography.dart';
 import 'package:saqqar_app/core/theme/saqqar_theme_extension.dart';

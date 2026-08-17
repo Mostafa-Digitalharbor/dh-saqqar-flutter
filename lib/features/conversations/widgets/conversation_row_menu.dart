@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import 'conversation_action.dart';
 
@@ -27,7 +28,7 @@ class ConversationRowMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<ConversationAction>(
       tooltip: context.tr.conversationActions,
-      icon: Icon(AppIcons.more, color: context.saqqar.muted, size: 20),
+      icon: Icon(AppIcons.more, color: context.saqqar.muted, size: AppIconSizes.action),
       onSelected: onAction,
       itemBuilder: (context) => [
         PopupMenuItem(
@@ -92,8 +93,8 @@ class _MenuRow extends StatelessWidget {
     final color = danger ? context.saqqar.danger : context.saqqar.text;
     return Row(
       children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(width: 10),
+        Icon(icon, size: AppIconSizes.regular, color: color),
+        const SizedBox(width: AppSpacing.s10),
         Text(label, style: TextStyle(color: color)),
       ],
     );

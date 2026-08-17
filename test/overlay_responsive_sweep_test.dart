@@ -21,7 +21,6 @@ import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/billing/data/plan_models.dart';
 import 'package:saqqar_app/features/chat/data/chat_features.dart';
 import 'package:saqqar_app/features/chat/widgets/attachment_source_sheet.dart';
-import 'package:saqqar_app/features/chat/widgets/delete_approval_confirm_dialog.dart';
 import 'package:saqqar_app/features/chat/widgets/saqqar_tools_sheet.dart';
 import 'package:saqqar_app/features/chat/widgets/live_env_warning_dialog.dart';
 import 'package:saqqar_app/features/chat/widgets/message_bubble_skeleton.dart';
@@ -214,14 +213,6 @@ void main() {
           confirmLabel: 'Delete',
           destructive: true,
         ),
-        asDialog: true,
-      );
-    });
-
-    testWidgets('DeleteApprovalConfirmDialog', (tester) async {
-      await _sweep(
-        tester,
-        () => const DeleteApprovalConfirmDialog(recordCount: 1284),
         asDialog: true,
       );
     });

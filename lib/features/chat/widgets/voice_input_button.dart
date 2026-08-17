@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Mic-tap → start recording. Reduced to a pure stateless button after
 /// the Whisper integration (2026-05-23): the State that used to live
@@ -34,25 +36,20 @@ class VoiceInputButton extends StatelessWidget {
     final s = context.saqqar;
     return Tooltip(
       message: context.tr.recordVoice,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppRadius.buttonR,
-        child: InkWell(
-          onTap: enabled
-              ? () {
-                  HapticFeedback.selectionClick();
-                  onStart();
-                }
-              : null,
-          borderRadius: AppRadius.buttonR,
-          child: SizedBox(
-            width: 38,
-            height: 38,
-            child: Icon(
-              AppIcons.mic,
-              size: 20,
-              color: enabled ? s.muted : s.muted.withValues(alpha: 0.4),
-            ),
+      child: TappableSurface(
+        onTap: enabled
+            ? () {
+                HapticFeedback.selectionClick();
+                onStart();
+              }
+            : null,
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(
+            AppIcons.mic,
+            size: AppIconSizes.action,
+            color: enabled ? s.muted : s.muted.withValues(alpha: 0.4),
           ),
         ),
       ),
@@ -126,7 +123,10 @@ class _RecordingOverlayState extends State<RecordingOverlay>
     final s = context.saqqar;
     final tr = context.tr;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8,
+        vertical: AppSpacing.s8,
+      ),
       child: Row(
         children: [
           // Discard — drops the recording without uploading. Disabled
@@ -136,11 +136,11 @@ class _RecordingOverlayState extends State<RecordingOverlay>
             tooltip: tr.discardRecording,
             onPressed: widget.transcribing ? null : widget.onDiscard,
             icon: Icon(AppIcons.trash,
-                size: 22,
+                size: AppIconSizes.navBar,
                 color: widget.transcribing ? s.muted : s.danger),
             visualDensity: VisualDensity.compact,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.s4),
           if (widget.transcribing) ...[
             // Mid-upload: timer + waveform stand down; show a quiet
             // "Transcribing…" line + spinner instead. Same row height
@@ -155,14 +155,14 @@ class _RecordingOverlayState extends State<RecordingOverlay>
               ),
             ),
             SizedBox(
-              width: 22,
-              height: 22,
+              width: AppControlSizes.spinnerMedium,
+              height: AppControlSizes.spinnerMedium,
               child: CircularProgressIndicator(
                 strokeWidth: 2.2,
                 color: s.brandCyan,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.s8),
           ] else ...[
             // Pulsing red dot — signals "we're capturing audio right now".
             AnimatedBuilder(
@@ -185,11 +185,11 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                 );
               },
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.s10),
             Expanded(
               child: _FauxWaveform(animation: _pulse, color: s.brandCyan),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.s10),
             Text(
               _fmt(widget.elapsed),
               style: context.text.labelMedium?.copyWith(
@@ -198,7 +198,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.s8),
             IconButton(
               tooltip: tr.stopRecording,
               onPressed: widget.onStop,
@@ -211,7 +211,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(AppIcons.stop,
-                    color: Colors.white, size: 18),
+                    color: Colors.white, size: AppIconSizes.regular),
               ),
               visualDensity: VisualDensity.compact,
             ),
@@ -254,7 +254,7 @@ class _FauxWaveform extends StatelessWidget {
                                       (1 - (i - 4).abs() / 5))),
                   color: color,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.s4),
               ],
             ],
           );

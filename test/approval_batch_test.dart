@@ -17,7 +17,6 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:saqqar_app/features/chat/data/delete_confirmation.dart';
 import 'package:saqqar_app/features/inbox/data/approval_models.dart';
 import 'package:saqqar_app/features/inbox/data/approvals_api.dart';
 
@@ -169,9 +168,9 @@ void main() {
     });
 
     test('a blank or wrong-typed phrase reads as absent', () {
-      // Not a detail: an empty required phrase would gate the delete forever,
-      // because no input can equal "". Absent means the dialog falls back to
-      // the locale-built phrases, which always work.
+      // Not a detail: a blank phrase must not be echoed back as the
+      // confirmation — `decide` omits the key entirely when it is null, which
+      // is what a server predating the field expects.
       for (final value in ['', '   ', 42, null, <String>[]]) {
         final approval = Approval.fromJson(_json({
           'confirm_phrase': value,
@@ -189,52 +188,6 @@ void main() {
         }));
 
       expect(approval.confirmPhrase, isNot(contains('res.partner')));
-    });
-  });
-
-  group('§10 — what the gate accepts', () {
-    // The server takes `delete N`, `حذف N` and `احذف N` interchangeably, and
-    // folds Arabic-Indic digits. The client must not be stricter than that.
-    const accepted = ['Delete 3', 'حذف 3', 'delete 3'];
-
-    test('either locale confirms, whatever the UI language', () {
-      expect(confirmsDelete('delete 3', accepted), isTrue);
-      expect(confirmsDelete('حذف 3', accepted), isTrue);
-    });
-
-    test('Arabic-Indic digits confirm', () {
-      // The failure this exists to prevent: an Arabic keyboard produces ٣,
-      // and a gate that only accepts 3 is a delete the user cannot approve.
-      expect(confirmsDelete('حذف ٣', accepted), isTrue);
-      expect(confirmsDelete('delete ٣', accepted), isTrue);
-    });
-
-    test('Persian digits confirm too', () {
-      expect(confirmsDelete('حذف ۳', accepted), isTrue);
-    });
-
-    test('case and stray whitespace do not matter', () {
-      expect(confirmsDelete('  DELETE   3 ', accepted), isTrue);
-    });
-
-    test('a server phrase widens the accepted set, never narrows it', () {
-      // What the dialog builds: both locale phrases plus whatever the server
-      // named. A server that changes its wording must not lock out the
-      // phrase the UI is literally telling the user to type.
-      const withServer = ['Delete 3', 'حذف 3', 'remove 3 rows'];
-
-      expect(confirmsDelete('remove 3 rows', withServer), isTrue);
-      expect(confirmsDelete('Delete 3', withServer), isTrue);
-      expect(confirmsDelete('حذف ٣', withServer), isTrue);
-    });
-
-    test('the wrong count does NOT confirm', () {
-      expect(confirmsDelete('delete 4', accepted), isFalse);
-    });
-
-    test('empty input never confirms', () {
-      expect(confirmsDelete('', accepted), isFalse);
-      expect(confirmsDelete('   ', accepted), isFalse);
     });
   });
 }

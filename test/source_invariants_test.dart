@@ -68,6 +68,87 @@ List<_Line> _scanLib({List<String> exclude = const []}) {
   return out;
 }
 
+/// Every `.dart` file under `lib/` as whole text, with comment lines blanked
+/// out but line numbering preserved.
+///
+/// The line-at-a-time [_scanLib] cannot see a construct that wraps, and after
+/// the spacing migration most `EdgeInsets` calls DO wrap:
+///
+/// ```dart
+/// padding: const EdgeInsets.fromLTRB(
+///   AppSpacing.s16,
+///   AppSpacing.s48,
+/// ),
+/// ```
+///
+/// A line-based rule looking for a bare number here would be reading
+/// `AppSpacing.s16,` on its own line, with no way to tell that a `16,` there
+/// is an inset rather than any other numeric argument in the app. So the
+/// spacing rule needs the whole file and real paren balancing.
+List<({String path, String text})> _scanFiles() {
+  final out = <({String path, String text})>[];
+  final files = Directory('lib')
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'))
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+
+  for (final file in files) {
+    var inBlock = false;
+    final kept = <String>[];
+    for (final raw in file.readAsLinesSync()) {
+      final trimmed = raw.trim();
+      if (inBlock) {
+        if (trimmed.contains('*/')) inBlock = false;
+        kept.add('');
+        continue;
+      }
+      if (trimmed.startsWith('/*')) {
+        if (!trimmed.contains('*/')) inBlock = true;
+        kept.add('');
+        continue;
+      }
+      // Blank rather than drop, so a reported line number still points at the
+      // right line in the editor.
+      kept.add(trimmed.startsWith('//') ? '' : raw);
+    }
+    out.add((
+      path: file.path.replaceAll(r'\', '/'),
+      text: kept.join('\n'),
+    ));
+  }
+  return out;
+}
+
+/// Index of the `)` matching the `(` at [open], skipping string literals so a
+/// paren inside `'…)…'` cannot throw off the balance.
+int _matchParen(String s, int open) {
+  var depth = 0;
+  for (var i = open; i < s.length; i++) {
+    final c = s[i];
+    if (c == "'" || c == '"') {
+      final quote = c;
+      i++;
+      while (i < s.length) {
+        if (s[i] == r'\') {
+          i += 2;
+          continue;
+        }
+        if (s[i] == quote) break;
+        i++;
+      }
+      continue;
+    }
+    if (c == '(' || c == '[' || c == '{') depth++;
+    if (c == ')' || c == ']' || c == '}') {
+      depth--;
+      if (depth == 0) return i;
+    }
+  }
+  return -1;
+}
+
 String _report(String rule, List<_Line> hits, String fix) {
   final where =
       hits.map((h) => '  ${h.path}:${h.number}\n      ${h.text.trim()}');
@@ -321,6 +402,238 @@ void main() {
               'shapes — not after its size.',
         ),
       );
+    });
+  });
+
+  group('Type and icon sizes are named, not typed', () {
+    test('no `fontSize:` takes a numeric literal', () {
+      // The same drift as the radius and duration rules, in the one place a
+      // user reads rather than glances at. An audit on 2026-08-17 found 77
+      // raw `fontSize:` literals across 36 files, and below `labelSmall` (11)
+      // they had spread into SIX sizes — 9, 10, 10.5, 11, 11.5 and 12.5 —
+      // with nothing recording which badge was supposed to match which.
+      //
+      // That is not a tidiness problem. `attachment_chip` stamped its file
+      // type at 9 while `artifact_pill` stamped its kind at 10, and the two
+      // render on the same message. A number cannot say whether it is the
+      // same decision as its neighbour; `AppFontSizes.microCaps` can.
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(r'fontSize\s*[:=]\s*[0-9]').hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Type size literals must come from `AppFontSizes`:',
+          hits,
+          'use the matching `AppFontSizes.<role>` constant, or add one to '
+              'lib/core/theme/app_sizes.dart named after what the text IS — '
+              'not after how big it is. Most call sites should reach for a '
+              '`context.text.<style>` and not name a size at all.',
+        ),
+      );
+    });
+
+    test('no icon `size:` takes a numeric literal', () {
+      // 139 raw icon sizes across 61 files, and the ramp they formed had
+      // filled in nearly every integer from 9 to 22 — which is what a scale
+      // looks like when nobody is choosing from one.
+      //
+      // Deliberately narrow on the two shapes that are always a design
+      // decision: a `size:` NAMED ARGUMENT (`Icon(…, size: 18)`) and a
+      // `this.size = 18` constructor default. A bare `size = 0` assignment is
+      // excluded because `size` is also the name of a file's byte count —
+      // `chat_screen.dart` computes one per attachment — and flagging that
+      // would push the rule toward an allowlist of things that are not sizes
+      // at all.
+      final named = RegExp(r'(^|[^A-Za-z_.])(size|iconSize|dotSize)\s*:\s*[0-9]');
+      final fieldDefault =
+          RegExp(r'this\.(size|iconSize|dotSize)\s*=\s*[0-9]');
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) =>
+              named.hasMatch(l.text) || fieldDefault.hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Icon/control size literals must come from `AppSizes`:',
+          hits,
+          'use `AppIconSizes.<role>` for a glyph, `AppControlSizes.<role>` '
+              'for a tap target, or `AppAvatarSizes.<role>` for an avatar — '
+              'or add one to lib/core/theme/app_sizes.dart named after what '
+              'the glyph is doing, not how big it is.',
+        ),
+      );
+    });
+  });
+
+  group('Spacing is named, not typed', () {
+    // The last untokenized design axis, and by far the largest: a census on
+    // 2026-08-17 counted 1,127 spacing literals across 118 files — more than
+    // the colour, radius, duration, type and icon literals of every previous
+    // sweep put together.
+    //
+    // It also turned up the thing none of those sweeps could: `AppSpacing`
+    // already existed, was exported to Figma as the published `space/*` scale,
+    // and was referenced by **zero** widgets. The design system was shipping a
+    // 4 px grid (4/8/12/16/20/24/32) while the app laid out on a 2 px one —
+    // its three most-used gaps (14, 10, 6) had no name on the published scale
+    // at all. Nothing could have noticed, because there was no rule requiring
+    // spacing to come from anywhere.
+
+    /// The `AppSpacing` scale, read from the source so the rule can never
+    /// disagree with the class about which values have names.
+    final scale = () {
+      final src = File('lib/core/theme/app_sizes.dart').readAsStringSync();
+      final body = src.substring(src.indexOf('class AppSpacing'));
+      return RegExp(r'static const double s(\d+) = ')
+          .allMatches(body)
+          .map((m) => m.group(1)!)
+          .toSet();
+    }();
+
+    test('the scale is actually read from the class', () {
+      // If the parse above ever silently returns nothing, every rule below
+      // passes vacuously.
+      expect(scale, isNotEmpty);
+      expect(scale, contains('14'));
+    });
+
+    test('no EdgeInsets argument is a bare number', () {
+      // Balanced rather than line-based: most of these calls wrap across four
+      // lines, and `16,` alone on a line is indistinguishable from any other
+      // numeric argument in the app.
+      //
+      // `0` is deliberately allowed. It is the ABSENCE of spacing — the third
+      // slot of `fromLTRB(16, 4, 0, 8)` says "nothing on the end edge", which
+      // is not a value anyone would re-tune and not a step on any grid.
+      // `fromSTEB` is in this list because leaving it out is exactly how nine
+      // sites survived the first sweep. It is `EdgeInsetsDirectional`'s own
+      // spelling of `fromLTRB` — start/top/end/bottom — so it is the one an
+      // RTL-correct codebase reaches for most, and a rule that knows only the
+      // LTR spelling is blind in the direction this app actually ships.
+      final ctor = RegExp(
+        r'EdgeInsets(?:Directional)?'
+        r'\.(?:all|symmetric|only|fromLTRB|fromSTEB)\(',
+      );
+      final bare = RegExp(r'(?<![\w.$])(\d+)(?![\d.\w])');
+      final hits = <_Line>[];
+
+      for (final file in _scanFiles()) {
+        if (file.path.endsWith('core/theme/app_sizes.dart')) continue;
+        var from = 0;
+        while (true) {
+          final m = ctor.firstMatch(file.text.substring(from));
+          if (m == null) break;
+          final open = from + m.end - 1;
+          final close = _matchParen(file.text, open);
+          if (close == -1) {
+            from = open + 1;
+            continue;
+          }
+          final region = file.text.substring(open + 1, close);
+          for (final n in bare.allMatches(region)) {
+            if (n.group(1) == '0') continue;
+            final at = open + 1 + n.start;
+            hits.add((
+              path: file.path,
+              number: '\n'.allMatches(file.text.substring(0, at)).length + 1,
+              text: '${m.group(0)}… ${n.group(1)} …',
+            ));
+          }
+          from = close;
+        }
+      }
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number inside an EdgeInsets:',
+          hits,
+          'use the matching `AppSpacing.s<N>` constant from '
+              'lib/core/theme/app_sizes.dart. If the value has no step yet, '
+              'add one — and if it is odd, prefer the neighbouring even step: '
+              'the off-grid section of that class is an inventory of drift, '
+              'not a menu.',
+        ),
+      );
+    });
+
+    test('no single-argument SizedBox gap is a bare number', () {
+      // `SizedBox(height: 12)` is a GAP. The two-argument form
+      // (`SizedBox(width: 20, height: 20)`) is a sized BOX — a control
+      // dimension that belongs to `AppControlSizes`, not to the spacing grid —
+      // so it is deliberately outside this rule.
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(r'SizedBox\(\s*(?:height|width):\s*[0-9]')
+              .hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in a SizedBox gap:',
+          hits,
+          'use `AppSpacing.s<N>`. A gap is spacing; if this is really a fixed '
+              'control size, give it both dimensions and name it in '
+              '`AppControlSizes`.',
+        ),
+      );
+    });
+
+    test('no `spacing:` / `runSpacing:` gutter is a bare number', () {
+      // The gutters on `Wrap`, `Row` and `Column`. Same grid as every other
+      // gap, and easy to miss because they are named differently.
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) =>
+              RegExp(r'(?<![\w.])(?:spacing|runSpacing):\s*[0-9]')
+                  .hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in a layout gutter:',
+          hits,
+          'use `AppSpacing.s<N>`.',
+        ),
+      );
+    });
+
+    test('the published design scale stays wired to the step scale', () {
+      // `space/xs` … `space/xxxl` are exported to Figma. They used to be their
+      // own literals, which meant the export could drift from the app without
+      // anything failing — the export WAS the only reader, so nothing else
+      // could notice. They are aliases now, and this keeps them that way.
+      final src = File('lib/core/theme/app_sizes.dart').readAsStringSync();
+      const aliases = {
+        'xs': 's4',
+        'sm': 's8',
+        'md': 's12',
+        'lg': 's16',
+        'xl': 's20',
+        'xxl': 's24',
+        'xxxl': 's32',
+      };
+      aliases.forEach((name, step) {
+        expect(
+          RegExp('static const double $name = $step;').hasMatch(src),
+          isTrue,
+          reason: '`AppSpacing.$name` is no longer an alias for `$step`. It is '
+              'exported to Figma as `space/$name`, so a literal here lets the '
+              'published design scale drift from the one the app lays out on.',
+        );
+      });
     });
   });
 

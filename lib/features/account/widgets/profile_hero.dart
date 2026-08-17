@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/mini_chip.dart';
@@ -64,7 +65,12 @@ class ProfileHero extends StatelessWidget {
       // — the Account tab stacked ~6, the single biggest GPU cost on low-end
       // phones — with pixel-identical output.
       blur: false,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s18,
+        AppSpacing.s18,
+        AppSpacing.s18,
+        AppSpacing.s14,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -73,7 +79,7 @@ class ProfileHero extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _Avatar(initial: initial),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.s14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +114,7 @@ class ProfileHero extends StatelessWidget {
                           ),
                         ),
                         if (planBadgeName != null) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.s8),
                           PlanBadge(name: planBadgeName, dense: true),
                         ],
                       ],
@@ -116,7 +122,7 @@ class ProfileHero extends StatelessWidget {
                     if (user != null &&
                         user.email.isNotEmpty &&
                         user.email != displayName) ...[
-                      const SizedBox(height: 3),
+                      const SizedBox(height: AppSpacing.s3),
                       Text(
                         user.email,
                         maxLines: 1,
@@ -124,7 +130,7 @@ class ProfileHero extends StatelessWidget {
                         style: context.text.bodySmall?.copyWith(color: s.muted),
                       ),
                     ],
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.s8),
                     MiniChip(roleLabel),
                   ],
                 ),
@@ -136,9 +142,9 @@ class ProfileHero extends StatelessWidget {
           // A rule above the counts is what turns this from six stacked
           // grey lines into two labelled regions: who you are, then what
           // you have.
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s16),
           _Hairline(),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s14),
           StatsLine(
             conversations: counts.conversations,
             credentials: counts.credentials,
@@ -153,9 +159,9 @@ class ProfileHero extends StatelessWidget {
           // rule, where a timestamp belongs.
           if (user != null &&
               (user.dateJoined != null || user.lastLogin != null)) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _Hairline(),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
             _AccountMetaLine(user: user),
           ],
         ],
@@ -225,7 +231,7 @@ class _Avatar extends StatelessWidget {
           initial,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 24,
+            fontSize: AppFontSizes.avatarInitialLarge,
             fontWeight: FontWeight.w900,
             letterSpacing: 0.5,
           ),
@@ -275,21 +281,21 @@ class _AccountMetaLine extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 1),
+          padding: const EdgeInsets.only(top: AppSpacing.s1),
           child: Icon(
             AppIcons.clock,
-            size: 13,
+            size: AppIconSizes.dense,
             color: s.muted.withValues(alpha: 0.8),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: AppSpacing.s6),
         // Wrap so the "Last login" segment flows to a second line on narrow
         // phones instead of clipping; Expanded so the Wrap gets a bounded
         // width to lay out against.
         Expanded(
           child: Wrap(
-            spacing: 8,
-            runSpacing: 2,
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s2,
             children: [
               for (var i = 0; i < parts.length; i++) ...[
                 if (i > 0)

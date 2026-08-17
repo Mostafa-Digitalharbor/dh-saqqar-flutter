@@ -15,6 +15,7 @@ import '../../../shared/widgets/page_scaffold.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/voice_support_api.dart';
 import '../data/voice_support_models.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// §8 — the support workspace, mirroring the web's `/voice-support/` page.
 ///
@@ -180,13 +181,13 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
           tr.voiceSupportIntro,
           style: context.text.bodyMedium?.copyWith(color: s.muted, height: 1.5),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         AppTextField(
           controller: _controller,
           hint: tr.voiceSupportHint,
           maxLines: 5,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.s12),
         PrimaryButton(
           label: tr.voiceSupportSubmit,
           icon: AppIcons.shieldAlert,
@@ -196,9 +197,9 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
           loading: _drafting,
         ),
         if (draft != null && draft.hasContent) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.s20),
           _DraftCard(draft: draft),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
           GhostButton(
             label: tr.voiceSupportFileTicket,
             icon: AppIcons.check,
@@ -225,7 +226,7 @@ class _DraftCard extends StatelessWidget {
     final tr = context.tr;
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.9),
         borderRadius: AppRadius.cardR,
@@ -245,10 +246,10 @@ class _DraftCard extends StatelessWidget {
           if (draft.module.isNotEmpty ||
               draft.category.isNotEmpty ||
               draft.priority.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             Wrap(
-              spacing: 6,
-              runSpacing: 6,
+              spacing: AppSpacing.s6,
+              runSpacing: AppSpacing.s6,
               children: [
                 // Server labels verbatim — these are Odoo's own module and
                 // category names, so translating them client-side would show
@@ -267,26 +268,26 @@ class _DraftCard extends StatelessWidget {
           // reply. Sent since §8 shipped; nothing rendered it because the
           // model never read the field.
           if (draft.summary.isNotEmpty) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _Section(title: tr.voiceSupportSummary, body: draft.summary),
           ],
           // Optional on the wire, and the second field this card was dropping
           // on the floor — the server's read of the cause is the part that
           // tells the user whether the diagnosis is worth acting on.
           if (draft.diagnosis.isNotEmpty) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _Section(title: tr.voiceSupportDiagnosis, body: draft.diagnosis),
           ],
           if (draft.reply.isNotEmpty) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _Section(title: tr.voiceSupportReply, body: draft.reply),
           ],
           if (draft.steps.isNotEmpty) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _List(title: tr.voiceSupportSteps, items: draft.steps),
           ],
           if (draft.questions.isNotEmpty) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _List(title: tr.voiceSupportQuestions, items: draft.questions),
           ],
         ],
@@ -314,7 +315,7 @@ class _Section extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
         Text(
           body,
           style: context.text.bodyMedium?.copyWith(color: s.text, height: 1.6),
@@ -343,17 +344,20 @@ class _List extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
         for (final item in items)
           Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.only(bottom: AppSpacing.s4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // A directional bullet: a hardcoded "- " leads the line in
                 // LTR even when the text runs right-to-left.
                 Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 8, top: 6),
+                  padding: const EdgeInsetsDirectional.only(
+                    end: AppSpacing.s8,
+                    top: AppSpacing.s6,
+                  ),
                   child: Container(
                     width: 4,
                     height: 4,

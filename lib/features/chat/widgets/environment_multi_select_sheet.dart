@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -10,6 +11,7 @@ import '../../vault/data/project_models.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import 'chat_sheet.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Multi-select environment picker — mirrors the web header's environment
 /// dropdown that carries checkboxes so a single conversation can bind to
@@ -87,7 +89,11 @@ class _EnvironmentMultiSelectSheetState
       title: context.tr.envMultiTitle,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12, left: 4, right: 4),
+          padding: const EdgeInsets.only(
+            bottom: AppSpacing.s12,
+            left: AppSpacing.s4,
+            right: AppSpacing.s4,
+          ),
           child: Text(
             context.tr.envMultiSubtitle,
             style: context.text.bodySmall?.copyWith(color: s.muted, height: 1.4),
@@ -95,14 +101,19 @@ class _EnvironmentMultiSelectSheetState
         ),
         if (project != null && envs.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s4,
+              AppSpacing.s4,
+              AppSpacing.s4,
+              AppSpacing.s8,
+            ),
             child: Text(
               project.name.toUpperCase(),
               style: context.text.labelSmall?.copyWith(
                 color: s.muted,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.0,
-                fontSize: 10,
+                fontSize: AppFontSizes.chipLabel,
               ),
             ),
           ),
@@ -112,7 +123,7 @@ class _EnvironmentMultiSelectSheetState
             checked: _selected.contains(env.id),
             onTap: () => _toggle(env.id),
           ),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.s18),
         // Apply commits the whole set at once (a single PATCH), matching the
         // web's "select many then it saves" affordance rather than firing a
         // request per toggle.
@@ -124,7 +135,7 @@ class _EnvironmentMultiSelectSheetState
           expand: true,
           onPressed: () => Navigator.of(context).pop(_selected.toList()),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
       ],
     );
   }
@@ -149,66 +160,64 @@ class _EnvCheckRow extends StatelessWidget {
     final s = context.saqqar;
     final accent = env.isLive ? s.danger : s.brandCyan;
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-          child: Row(
-            children: [
-              // Checkbox-styled leading box (filled + check when selected).
-              Container(
-                width: 24,
-                height: 24,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: checked ? accent : Colors.transparent,
-                  borderRadius: AppRadius.checkboxR,
-                  border: Border.all(
-                    color: checked ? accent : s.border,
-                    width: 1.5,
+    return TappableSurface(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s4,
+          vertical: AppSpacing.s10,
+        ),
+        child: Row(
+          children: [
+            // Checkbox-styled leading box (filled + check when selected).
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: checked ? accent : Colors.transparent,
+                borderRadius: AppRadius.checkboxR,
+                border: Border.all(
+                  color: checked ? accent : s.border,
+                  width: 1.5,
+                ),
+              ),
+              child: checked
+                  ? const Icon(AppIcons.check, size: AppIconSizes.inline, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: AppSpacing.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(env.name, style: context.text.titleSmall),
+                  const SizedBox(height: AppSpacing.s2),
+                  Wrap(
+                    spacing: AppSpacing.s4,
+                    runSpacing: AppSpacing.s4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (env.isLive)
+                        MiniChip(context.tr.liveBadge, color: s.danger),
+                      if (env.readOnly)
+                        MiniChip(context.tr.readOnlyBadge, color: s.muted),
+                      if (env.autoApprove)
+                        MiniChip(context.tr.autoApproveBadge,
+                            color: s.warning),
+                      if (env.slug.isNotEmpty)
+                        Text(
+                          env.slug,
+                          textDirection: TextDirection.ltr,
+                          style: context.text.bodySmall
+                              ?.copyWith(color: s.muted),
+                        ),
+                    ],
                   ),
-                ),
-                child: checked
-                    ? const Icon(AppIcons.check, size: 15, color: Colors.white)
-                    : null,
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(env.name, style: context.text.titleSmall),
-                    const SizedBox(height: 2),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (env.isLive)
-                          MiniChip(context.tr.liveBadge, color: s.danger),
-                        if (env.readOnly)
-                          MiniChip(context.tr.readOnlyBadge, color: s.muted),
-                        if (env.autoApprove)
-                          MiniChip(context.tr.autoApproveBadge,
-                              color: s.warning),
-                        if (env.slug.isNotEmpty)
-                          Text(
-                            env.slug,
-                            textDirection: TextDirection.ltr,
-                            style: context.text.bodySmall
-                                ?.copyWith(color: s.muted),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

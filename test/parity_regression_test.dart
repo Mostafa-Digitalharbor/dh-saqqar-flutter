@@ -21,7 +21,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:saqqar_app/features/chat/data/delete_confirmation.dart';
 import 'package:saqqar_app/features/chat/widgets/email_approval_preview.dart';
 import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
 import 'package:saqqar_app/features/inbox/data/approval_models.dart';
@@ -226,9 +225,9 @@ void main() {
 
   group('confirm_phrase cannot lock a user out', () {
     test('an empty server phrase falls back rather than gating forever', () {
-      // A required phrase of "" can never be typed, so a blank
-      // `confirm_phrase` that reached the dialog would make the delete
-      // permanently un-approvable.
+      // A blank phrase must read as ABSENT so `decide` omits the key. Were
+      // it kept as "", the POST would carry an empty confirmation the server
+      // rejects — the delete would be permanently un-approvable.
       expect(_approval({'confirm_phrase': ''}).confirmPhrase, isNull);
       expect(_approval({'confirm_phrase': '   '}).confirmPhrase, isNull);
     });
@@ -236,21 +235,6 @@ void main() {
     test('a phrase is trimmed, so trailing whitespace still matches', () {
       expect(_approval({'confirm_phrase': ' delete 3 '}).confirmPhrase,
           'delete 3');
-    });
-
-    test('the accepted set is a union — the server never narrows it', () {
-      // What the dialog builds: both locale phrases plus the server's.
-      const accepted = ['Delete 3', 'حذف 3', 'remove 3 rows'];
-
-      expect(confirmsDelete('remove 3 rows', accepted), isTrue);
-      expect(confirmsDelete('Delete 3', accepted), isTrue);
-      expect(confirmsDelete('حذف ٣', accepted), isTrue,
-          reason: 'Arabic-Indic digits, on an Arabic keyboard');
-      expect(confirmsDelete('حذف ۳', accepted), isTrue, reason: 'Persian');
-    });
-
-    test('the wrong count still fails', () {
-      expect(confirmsDelete('delete 4', const ['Delete 3', 'حذف 3']), isFalse);
     });
   });
 

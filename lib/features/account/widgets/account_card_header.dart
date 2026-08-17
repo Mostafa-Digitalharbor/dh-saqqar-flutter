@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
 /// Shared heading for the cards on the Account tab.
@@ -53,9 +54,9 @@ class AccountCardHeader extends StatelessWidget {
             color: color.withValues(alpha: 0.12),
             borderRadius: AppRadius.buttonR,
           ),
-          child: Icon(icon, size: 18, color: color),
+          child: Icon(icon, size: AppIconSizes.regular, color: color),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.s12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +70,7 @@ class AccountCardHeader extends StatelessWidget {
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 3),
+                const SizedBox(height: AppSpacing.s3),
                 Text(
                   subtitle!,
                   style: context.text.bodySmall
@@ -79,7 +80,7 @@ class AccountCardHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+        if (trailing != null) ...[const SizedBox(width: AppSpacing.s8), trailing!],
       ],
     );
   }

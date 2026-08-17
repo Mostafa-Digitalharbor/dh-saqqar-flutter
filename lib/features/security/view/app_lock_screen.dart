@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/ghost_button.dart';
@@ -57,14 +58,14 @@ class _AppLockScreenState extends State<AppLockScreen> {
           // three lines and overflows portrait too.
           child: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s28),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SaqqarLogo(height: 34),
-                    const SizedBox(height: 36),
+                    const SizedBox(height: AppSpacing.s36),
                     Container(
                       width: 76,
                       height: 76,
@@ -76,22 +77,22 @@ class _AppLockScreenState extends State<AppLockScreen> {
                           color: s.brandCyan.withValues(alpha: 0.30),
                         ),
                       ),
-                      child: Icon(AppIcons.lock, size: 32, color: s.brandCyan),
+                      child: Icon(AppIcons.lock, size: AppIconSizes.emptyState, color: s.brandCyan),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.s24),
                     Text(
                       tr.appLockTitle,
                       style: context.text.titleLarge
                           ?.copyWith(fontWeight: FontWeight.w800),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.s8),
                     Text(
                       tr.appLockSubtitle,
                       style: context.text.bodyMedium?.copyWith(color: s.muted),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.s32),
                     BlocBuilder<AppLockCubit, AppLockState>(
                       buildWhen: (a, b) => a.authenticating != b.authenticating,
                       builder: (context, state) => PrimaryButton(
@@ -102,7 +103,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
                         onPressed: state.authenticating ? null : _unlock,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.s10),
                     // Escape hatch — never strand a user who can't
                     // authenticate.
                     GhostButton(

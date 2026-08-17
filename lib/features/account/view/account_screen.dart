@@ -9,6 +9,7 @@ import '../../../core/i18n/view_model/locale_cubit.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/view_model/theme_cubit.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
@@ -118,13 +119,13 @@ class _AccountScreenState extends State<AccountScreen>
               ProfileHero(
                 onLongPress: () => context.pushNamed(RouteNames.storybook),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               // Plan & usage — split into two entry points (moved off the
               // profile so Account stays scannable): "See plans" → the
               // pricing catalogue, "Usage" → the per-window usage bars on
               // their own screen.
               Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.only(bottom: AppSpacing.s14),
                 child: Row(
                   children: [
                     // "See plans" leads to the pricing catalogue — hidden
@@ -140,7 +141,7 @@ class _AccountScreenState extends State<AccountScreen>
                               context.pushNamed(RouteNames.pricing),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: AppSpacing.s10),
                     ],
                     Expanded(
                       child: GhostButton(
@@ -157,12 +158,12 @@ class _AccountScreenState extends State<AccountScreen>
               // stays read-only. Only shown once the user is hydrated.
               if (user != null) ...[
                 const PersonalInfoCard(),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.s14),
               ],
               PreferencesCard(mode: mode, locale: locale),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               const ChangePasswordCard(),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               // Destinations, grouped.
               //
               // These were seven identical full-width pills stacked down the
@@ -190,7 +191,7 @@ class _AccountScreenState extends State<AccountScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               // Meeting transcription (§4.1) is deliberately NOT listed here.
               //
               // Withdrawn at the product owner's request (2026-07-28): the
@@ -235,7 +236,7 @@ class _AccountScreenState extends State<AccountScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               // Billing — the plan catalogue (§L) and payment history (§3).
               //
               // "Buy tokens" used to sit here and open the in-app Paymob
@@ -282,7 +283,7 @@ class _AccountScreenState extends State<AccountScreen>
                       ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.s14),
               ],
               GhostButton(
                 label: context.tr.signOut,
@@ -301,11 +302,11 @@ class _AccountScreenState extends State<AccountScreen>
               // sign-out: a plain text-weight danger action, not a filled
               // button, so it doesn't compete with the primary affordances.
               if (user != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s8),
                 TextButton.icon(
                   onPressed: () => showDeleteAccountFlow(context),
                   icon: Icon(AppIcons.trash,
-                      size: 16, color: context.saqqar.danger),
+                      size: AppIconSizes.small, color: context.saqqar.danger),
                   label: Text(
                     context.tr.deleteAccount,
                     style: TextStyle(color: context.saqqar.danger),
@@ -316,7 +317,7 @@ class _AccountScreenState extends State<AccountScreen>
               // 2026-07-25, where it was a seventh line of muted text
               // competing with the user's own details. A footer belongs at
               // the foot of the screen.
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.s18),
               Center(
                 child: Text(
                   context.tr.poweredByDigitalHarbor,
@@ -326,7 +327,7 @@ class _AccountScreenState extends State<AccountScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s8),
             ],
     );
   }
@@ -343,11 +344,11 @@ class _AccountScreenState extends State<AccountScreen>
 List<Widget> _accountSkeletonChildren() {
   return const [
     _SkeletonCard(height: 140),
-    SizedBox(height: 14),
+    SizedBox(height: AppSpacing.s14),
     _SkeletonCard(height: 160),
-    SizedBox(height: 14),
+    SizedBox(height: AppSpacing.s14),
     _SkeletonCard(height: 220),
-    SizedBox(height: 14),
+    SizedBox(height: AppSpacing.s14),
     _SkeletonCard(height: 48),
   ];
 }
@@ -370,7 +371,7 @@ class _SkeletonCard extends StatelessWidget {
     final isCompact = height < 80;
     return Container(
       height: height,
-      padding: EdgeInsets.all(isCompact ? 10 : 16),
+      padding: EdgeInsets.all(isCompact ? AppSpacing.s10 : AppSpacing.s16),
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.45 : 0.85),
         borderRadius: AppRadius.cardR,

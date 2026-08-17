@@ -17,6 +17,7 @@ import '../../billing/data/plan_models.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import 'plan_badge.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Account "Plan & usage" card (Gap A) — mirrors the web `/usage/` view:
 /// the plan name as a badge plus three usage bars (day / week / month)
@@ -76,13 +77,13 @@ class PlanUsageCard extends StatelessWidget {
           // `expires_at`. Presenting it as a deadline would be a lie the user
           // acts on.
           if (_subscriptionLine(context, plan) case final line?) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.s6),
             Text(
               line,
               style: context.text.bodySmall?.copyWith(color: s.muted),
             ),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s16),
           if (plan.exempt)
             Text(
               context.tr.planExemptLabel,
@@ -90,15 +91,15 @@ class PlanUsageCard extends StatelessWidget {
             )
           else ...[
             _UsageRow(label: context.tr.planWindowDay, window: plan.day),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _UsageRow(label: context.tr.planWindowWeek, window: plan.week),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             _UsageRow(label: context.tr.planWindowMonth, window: plan.month),
           ],
           // Upgrade CTA → pricing catalogue. Hidden while sales are web-only;
           // the usage bars above stay (informational).
           if (showPaidUpsell) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: GhostButton(
@@ -197,7 +198,7 @@ class _UsageRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
         ClipRRect(
           borderRadius: AppRadius.pillR,
           child: LinearProgressIndicator(
@@ -207,7 +208,7 @@ class _UsageRow extends StatelessWidget {
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.s4),
         Text(
           context.tr.planPctUsed(window.pct),
           style: context.text.labelSmall?.copyWith(color: s.muted),

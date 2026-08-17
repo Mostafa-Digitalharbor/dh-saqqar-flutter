@@ -7,6 +7,7 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_text_field.dart';
@@ -109,7 +110,12 @@ class _AuthFlowView extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s24,
+                          AppSpacing.s8,
+                          AppSpacing.s24,
+                          AppSpacing.s24,
+                        ),
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 440),
                           child: Column(
@@ -121,7 +127,7 @@ class _AuthFlowView extends StatelessWidget {
                               // the splash). SaqqarLogo tints itself (white on
                               // the dark auth backdrop, navy on light).
                               const Padding(
-                                padding: EdgeInsets.only(bottom: 28),
+                                padding: EdgeInsets.only(bottom: AppSpacing.s28),
                                 child: Center(child: _AuthLogoCard()),
                               ),
                               // Key by step so each step's StatefulWidget body
@@ -182,7 +188,10 @@ class _AuthLogoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 24),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s30,
+        vertical: AppSpacing.s24,
+      ),
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.isDark ? 0.45 : 0.55),
         borderRadius: AppRadius.heroPlateR,
@@ -216,9 +225,9 @@ class _Header extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
         Text(subtitle, style: context.text.bodyMedium?.copyWith(color: s.muted)),
-        const SizedBox(height: 26),
+        const SizedBox(height: AppSpacing.s26),
       ],
     );
   }
@@ -241,9 +250,9 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 22),
+        const SizedBox(height: AppSpacing.s22),
         LabeledDivider(label: label),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.s18),
         GhostButton(label: actionLabel, expand: true, onPressed: onAction),
       ],
     );
@@ -260,7 +269,7 @@ class _EmailChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 8, 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s12, AppSpacing.s10, AppSpacing.s8, AppSpacing.s10),
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
         borderRadius: AppRadius.buttonR,
@@ -268,8 +277,8 @@ class _EmailChip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(AppIcons.mail, size: 16, color: s.brandCyan),
-          const SizedBox(width: 10),
+          Icon(AppIcons.mail, size: AppIconSizes.small, color: s.brandCyan),
+          const SizedBox(width: AppSpacing.s10),
           Expanded(
             child: Text(
               email,
@@ -351,7 +360,7 @@ class _ResendRowState extends State<_ResendRow> {
             style: context.text.labelMedium?.copyWith(color: s.muted),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: AppSpacing.s6),
         if (ready)
           Flexible(
             child: TextButton(
@@ -446,7 +455,7 @@ class _SignUpEmailBodyState extends State<_SignUpEmailBody> {
           autofillHints: const [AutofillHints.email],
           onSubmitted: (_) => _submit(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authContinueWithEmail,
           icon: AppIcons.arrowRight,
@@ -527,7 +536,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           initialValue: cubit.state.email,
           enabled: false,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -539,7 +548,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                 textInputAction: TextInputAction.next,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.s12),
             Expanded(
               child: AppTextField(
                 label: tr.authLastName,
@@ -549,14 +558,14 @@ class _ProfileBodyState extends State<_ProfileBody> {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         AppPasswordField(
           label: tr.password,
           hint: tr.authPasswordPlaceholder,
           controller: _password,
           errorText: _passwordError,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         AppPasswordField(
           label: tr.confirmPassword,
           hint: tr.authConfirmPlaceholder,
@@ -564,7 +573,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           errorText: _confirmError,
           onSubmitted: (_) => _submit(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authCreateAccountBtn,
           icon: AppIcons.arrowRight,
@@ -653,7 +662,7 @@ class _SignInEmailBodyState extends State<_SignInEmailBody> {
           autofillHints: const [AutofillHints.email],
           onSubmitted: (_) => _continueWithEmail(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authContinueWithEmail,
           icon: AppIcons.arrowRight,
@@ -661,7 +670,7 @@ class _SignInEmailBodyState extends State<_SignInEmailBody> {
           expand: true,
           onPressed: loading ? null : _continueWithEmail,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
         TextButton(
           onPressed: loading ? null : _continueWithPassword,
           child: Text(tr.authContinueWithPassword),
@@ -741,7 +750,7 @@ class _PasswordBodyState extends State<_PasswordBody> {
           textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.email],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -780,7 +789,7 @@ class _PasswordBodyState extends State<_PasswordBody> {
           errorText: _passwordError,
           onSubmitted: (_) => _submit(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authLoginBtn,
           icon: AppIcons.arrowRight,
@@ -788,7 +797,7 @@ class _PasswordBodyState extends State<_PasswordBody> {
           expand: true,
           onPressed: loading ? null : _submit,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
         TextButton(
           onPressed: () {
             context.read<AuthFlowCubit>().rememberEmail(_email.text.trim());
@@ -862,7 +871,7 @@ class _ResetEmailBodyState extends State<_ResetEmailBody> {
           textInputAction: TextInputAction.go,
           onSubmitted: (_) => _submit(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authSendResetCode,
           icon: AppIcons.arrowRight,
@@ -929,14 +938,14 @@ class _ResetPasswordBodyState extends State<_ResetPasswordBody> {
           initialValue: cubit.state.email,
           enabled: false,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         AppPasswordField(
           label: tr.authNewPasswordLabel,
           hint: tr.authPasswordPlaceholder,
           controller: _password,
           errorText: _passwordError,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         AppPasswordField(
           label: tr.authConfirmNewPasswordLabel,
           hint: tr.authConfirmNewPlaceholder,
@@ -944,7 +953,7 @@ class _ResetPasswordBodyState extends State<_ResetPasswordBody> {
           errorText: _confirmError,
           onSubmitted: (_) => _submit(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authSetNewPasswordBtn,
           icon: AppIcons.arrowRight,
@@ -1056,7 +1065,7 @@ class _OtpBodyState extends State<_OtpBody> {
       children: [
         _Header(title: tr.authCheckEmailTitle, subtitle: tr.authCheckEmailSubtitle),
         _EmailChip(email: email, onUseDifferent: _useDifferentEmail),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.s18),
         AppTextField(
           label: tr.authOtpLabel,
           controller: _code,
@@ -1067,12 +1076,12 @@ class _OtpBodyState extends State<_OtpBody> {
           autofillHints: const [AutofillHints.oneTimeCode],
           onSubmitted: (_) => _verify(),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
         Text(
           tr.authOtpHint,
           style: context.text.labelSmall?.copyWith(color: s.muted),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: _verifyLabel,
           icon: AppIcons.arrowRight,
@@ -1080,11 +1089,11 @@ class _OtpBodyState extends State<_OtpBody> {
           expand: true,
           onPressed: loading ? null : _verify,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.s12),
         _ResendRow(onResend: () => context.read<AuthFlowCubit>().resend()),
         // Sign-in OTP also offers a password fallback.
         if (widget.kind == _OtpKind.signin) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.s4),
           TextButton(
             onPressed: () =>
                 context.read<AuthFlowCubit>().goTo(AuthFlowStep.signInPassword),

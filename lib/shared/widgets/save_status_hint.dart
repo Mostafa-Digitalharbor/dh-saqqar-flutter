@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 
 /// Tiny inline status chip shown beside a save/commit button so a disabled
@@ -32,8 +33,8 @@ class SaveStatusHint extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (saved) ...[
-          Icon(AppIcons.success, size: 13, color: color),
-          const SizedBox(width: 4),
+          Icon(AppIcons.success, size: AppIconSizes.dense, color: color),
+          const SizedBox(width: AppSpacing.s4),
         ],
         Text(
           label,

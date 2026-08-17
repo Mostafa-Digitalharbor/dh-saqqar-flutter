@@ -3,10 +3,11 @@ import 'package:flutter/services.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../data/chat_features.dart';
 import 'chat_sheet.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// What the user picked out of the Saqqar tools sheet. Toggles are NOT in
 /// here — they flip in place and report through the sheet's callbacks, so
@@ -207,12 +208,12 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
         ..._section(context, tr.toolsModesSection, modes),
         ..._section(context, tr.toolsOdooSection, odooTools),
         ..._section(context, tr.toolsConnectSection, connections),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(AppIcons.shield, size: 14, color: context.saqqar.muted),
-            const SizedBox(width: 8),
+            Icon(AppIcons.shield, size: AppIconSizes.compact, color: context.saqqar.muted),
+            const SizedBox(width: AppSpacing.s8),
             Expanded(
               child: Text(
                 tr.toolsReadonlyNote,
@@ -233,7 +234,12 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
     if (rows.isEmpty) return const [];
     return [
       Padding(
-        padding: const EdgeInsets.fromLTRB(6, 14, 6, 4),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s6,
+          AppSpacing.s14,
+          AppSpacing.s6,
+          AppSpacing.s4,
+        ),
         child: Text(
           title,
           style: context.text.labelSmall?.copyWith(
@@ -262,34 +268,32 @@ class _ToolRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-          child: Row(
-            children: [
-              _ToolGlyph(icon: icon),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: s.text,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return TappableSurface(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s6,
+          vertical: AppSpacing.s12,
+        ),
+        child: Row(
+          children: [
+            _ToolGlyph(icon: icon),
+            const SizedBox(width: AppSpacing.s14),
+            Expanded(
+              child: Text(
+                label,
+                style: context.text.bodyMedium?.copyWith(
+                  color: s.text,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              Icon(
-                context.isRtl ? AppIcons.chevronLeft : AppIcons.chevronRight,
-                size: 16,
-                color: s.muted,
-              ),
-            ],
-          ),
+            ),
+            Icon(
+              context.isRtl ? AppIcons.chevronLeft : AppIcons.chevronRight,
+              size: AppIconSizes.small,
+              color: s.muted,
+            ),
+          ],
         ),
       ),
     );
@@ -317,49 +321,47 @@ class _ToggleRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final sub = subtitle;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onChanged(!value);
-        },
-        borderRadius: AppRadius.buttonR,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          child: Row(
-            children: [
-              _ToolGlyph(icon: icon, active: value),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+    return TappableSurface(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onChanged(!value);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s6,
+          vertical: AppSpacing.s8,
+        ),
+        child: Row(
+          children: [
+            _ToolGlyph(icon: icon, active: value),
+            const SizedBox(width: AppSpacing.s14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: context.text.bodyMedium?.copyWith(
+                      color: s.text,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (sub != null) ...[
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
-                      label,
-                      style: context.text.bodyMedium?.copyWith(
-                        color: s.text,
-                        fontWeight: FontWeight.w600,
+                      sub,
+                      style: context.text.bodySmall?.copyWith(
+                        color: s.muted,
+                        height: 1.3,
                       ),
                     ),
-                    if (sub != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        sub,
-                        style: context.text.bodySmall?.copyWith(
-                          color: s.muted,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Switch.adaptive(value: value, onChanged: onChanged),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.s10),
+            Switch.adaptive(value: value, onChanged: onChanged),
+          ],
         ),
       ),
     );
@@ -384,7 +386,7 @@ class _ToolGlyph extends StatelessWidget {
         shape: BoxShape.circle,
         color: accent.withValues(alpha: 0.10),
       ),
-      child: Icon(icon, size: 18, color: accent),
+      child: Icon(icon, size: AppIconSizes.regular, color: accent),
     );
   }
 }

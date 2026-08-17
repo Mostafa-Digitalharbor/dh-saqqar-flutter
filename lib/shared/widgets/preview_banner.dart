@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import '../../core/theme/app_icons.dart';
 
@@ -24,7 +25,7 @@ class PreviewBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(AppSpacing.s10),
       decoration: BoxDecoration(
         color: s.warning.withValues(alpha: 0.10),
         borderRadius: AppRadius.rowR,
@@ -33,8 +34,8 @@ class PreviewBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 15, color: s.warning),
-          const SizedBox(width: 8),
+          Icon(icon, size: AppIconSizes.inline, color: s.warning),
+          const SizedBox(width: AppSpacing.s8),
           Expanded(
             child: Text(
               text,

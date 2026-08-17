@@ -16,6 +16,7 @@ import 'package:record/record.dart';
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/format/byte_size.dart';
 import '../../../core/format/file_kind.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
@@ -2255,7 +2256,7 @@ class _ChatScreenState extends State<ChatScreen>
           for (final p in prompts)
             ListTile(
               leading: Icon(AppIcons.sparkles,
-                  size: 18, color: context.saqqar.brandCyan),
+                  size: AppIconSizes.regular, color: context.saqqar.brandCyan),
               title: Text(p, style: context.text.bodyMedium),
               onTap: () => Navigator.of(sheetContext).pop(p),
             ),
@@ -2287,7 +2288,12 @@ class _ChatScreenState extends State<ChatScreen>
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s12,
+              AppSpacing.s8,
+              AppSpacing.s12,
+              AppSpacing.s12,
+            ),
             child: Container(
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
@@ -2301,14 +2307,19 @@ class _ChatScreenState extends State<ChatScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.s16,
+                      AppSpacing.s12,
+                      AppSpacing.s16,
+                      AppSpacing.s12,
+                    ),
                     decoration: BoxDecoration(
                       border: Border(bottom: BorderSide(color: s.border)),
                     ),
                     child: Text(
                       tr.commandsHeader,
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: AppFontSizes.metaLine,
                         height: 1.2,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
@@ -2323,7 +2334,7 @@ class _ChatScreenState extends State<ChatScreen>
                         onTap: () => Navigator.of(sheetContext).pop(c.$2),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 11),
+                              horizontal: AppSpacing.s14, vertical: AppSpacing.s11),
                           child: Row(
                             children: [
                               Container(
@@ -2335,9 +2346,9 @@ class _ChatScreenState extends State<ChatScreen>
                                   borderRadius: AppRadius.buttonR,
                                 ),
                                 child: Icon(c.$1,
-                                    size: 15, color: s.brandCyan),
+                                    size: AppIconSizes.inline, color: s.brandCyan),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: AppSpacing.s12),
                               Text(
                                 c.$2,
                                 style: context.text.titleSmall?.copyWith(
@@ -2347,7 +2358,7 @@ class _ChatScreenState extends State<ChatScreen>
                                 ),
                                 textDirection: TextDirection.ltr,
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: AppSpacing.s12),
                               Expanded(
                                 child: Text(
                                   c.$3,
@@ -2814,11 +2825,19 @@ class _ChatScreenState extends State<ChatScreen>
     // the quota banner + a disabled composer until the window resets.
     final quotaWindow = chatSnapshot?.quotaExceeded;
     // Server value first, device preference second — the same precedence
-    // auto-approve uses one line down. `taskPrep` is null on every server
-    // that does not own the flag, which is all of them today, so this reads
-    // as the local preference exactly like before. See
-    // `Conversation.taskPrep` for why it is written this way now rather than
-    // when the field lands.
+    // auto-approve uses one line down.
+    //
+    // This was written ahead of the field existing, and its comment used to
+    // say `taskPrep` was "null on every server today". That stopped being
+    // true on 2026-08-12 when the backend shipped the column, and stopped
+    // being true in PRACTICE on 2026-08-15, when the web began PATCHing it on
+    // every flip (`docs/updates/WEB_TASK_PREP_NOT_SYNCING_RESPONSE.md`). So
+    // the server branch is now the live one for any conversation a web user
+    // has touched, and `null` means only "nobody has flipped this chat yet".
+    //
+    // `watch`, not `read`: this is what makes a flip made on the web arrive
+    // here. The snapshot poll emits a new state, `build` re-runs, and the
+    // toggle follows the server without the user reopening the chat.
     final taskPrep =
         snapshotConv?.taskPrep ?? context.watch<TaskPrepCubit>().state;
     final autoApprove = snapshotConv?.autoApprove ?? _autoApprove;
@@ -2952,7 +2971,7 @@ class _ChatScreenState extends State<ChatScreen>
               _sidebarOpen = false;
             }),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.s8),
         ],
       ),
       body: Stack(
@@ -3205,6 +3224,11 @@ class _ChatScreenState extends State<ChatScreen>
             id: approval.id,
             approved: approved,
             batchScope: batchScope,
+            // The backend refuses a bare approve on a destructive delete with
+            // a 400, so this key is what makes the delete resolvable at all.
+            // Only on an approve: a reject needs no phrase, and sending one
+            // there would be a key the server does not expect on that path.
+            confirmPhrase: approved ? approval.confirmPhrase : null,
           );
       if (!mounted) return;
       await context.read<ChatCubit>().refresh();
@@ -3256,6 +3280,7 @@ class _ChatScreenState extends State<ChatScreen>
       },
       recordCount: a.recordCount,
       confirmPhrase: a.confirmPhrase,
+      deleteRecords: a.deleteRecords,
       batchScoped: a.batchScoped,
     );
   }
@@ -3300,14 +3325,19 @@ class _ChatScreenState extends State<ChatScreen>
         for (final row in layout)
           ResponsiveContent(
             maxWidth: 760,
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s14,
+              AppSpacing.s14,
+              AppSpacing.s14,
+              0,
+            ),
             child: MessageBubbleSkeleton(
               isUser: row.isUser,
               bubbleWidth: row.width,
               linesCount: row.lines,
             ),
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
       ],
     );
   }
@@ -3355,7 +3385,7 @@ class _ChatScreenState extends State<ChatScreen>
                           .toList();
                   return Column(
                     children: [
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.s8),
                       Container(
                         width: 40,
                         height: 4,
@@ -3365,11 +3395,16 @@ class _ChatScreenState extends State<ChatScreen>
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s16,
+                          AppSpacing.s14,
+                          AppSpacing.s16,
+                          AppSpacing.s10,
+                        ),
                         child: Row(
                           children: [
-                            Icon(AppIcons.search, size: 18, color: s.muted),
-                            const SizedBox(width: 10),
+                            Icon(AppIcons.search, size: AppIconSizes.regular, color: s.muted),
+                            const SizedBox(width: AppSpacing.s10),
                             Expanded(
                               child: TextField(
                                 controller: controller,
@@ -3415,7 +3450,7 @@ class _ChatScreenState extends State<ChatScreen>
                                 : ListView.separated(
                                     controller: scrollController,
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 8),
+                                        vertical: AppSpacing.s8),
                                     itemCount: hits.length,
                                     separatorBuilder: (_, __) => Divider(
                                       color: s.border,
@@ -3427,7 +3462,7 @@ class _ChatScreenState extends State<ChatScreen>
                                       final m = hits[i];
                                       return ListTile(
                                         leading: Icon(AppIcons.message,
-                                            size: 18, color: s.brandCyan),
+                                            size: AppIconSizes.regular, color: s.brandCyan),
                                         title: Text(
                                           m.content.trim(),
                                           maxLines: 2,
@@ -3619,13 +3654,18 @@ class _ChatScreenState extends State<ChatScreen>
         if (headerCount == 1 && index == 0) {
           return ResponsiveContent(
             maxWidth: 760,
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s14,
+              AppSpacing.s12,
+              AppSpacing.s14,
+              AppSpacing.s4,
+            ),
             child: _LoadEarlierHeader(onRetry: _loadEarlier),
           );
         }
 
         // Trailing spacer.
-        if (index == totalCount - 1) return const SizedBox(height: 16);
+        if (index == totalCount - 1) return const SizedBox(height: AppSpacing.s16);
 
         // Inline approval cards (immediately after thinking row /
         // after the last real message).
@@ -3635,7 +3675,12 @@ class _ChatScreenState extends State<ChatScreen>
           final approval = pendingApprovals[approvalIdx];
           return ResponsiveContent(
             maxWidth: 760,
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s14,
+              AppSpacing.s8,
+              AppSpacing.s14,
+              AppSpacing.s4,
+            ),
             // ValueKey on approval.id binds the FadeSlideIn state to a
             // specific approval — when 3+ approvals arrive on the same
             // poll tick, Flutter no longer reuses one cached FadeSlideIn
@@ -3668,7 +3713,12 @@ class _ChatScreenState extends State<ChatScreen>
               previousMessage.role != DemoMessageRole.assistant;
           return ResponsiveContent(
             maxWidth: 760,
-            padding: EdgeInsets.fromLTRB(14, firstOfGroup ? 14 : 2, 14, 0),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.s14,
+              firstOfGroup ? AppSpacing.s14 : AppSpacing.s2,
+              AppSpacing.s14,
+              0,
+            ),
             child: ChatTypingRow(
               firstOfGroup: firstOfGroup,
               statusLabel: _contextualActivityLabel(previousMessage),
@@ -3743,10 +3793,10 @@ class _ChatScreenState extends State<ChatScreen>
       return ResponsiveContent(
         maxWidth: 760,
         padding: EdgeInsets.fromLTRB(
-          14,
-          isFirstOfGroup && !showDateSeparator ? 14 : 2,
-          14,
-          6,
+          AppSpacing.s14,
+          isFirstOfGroup && !showDateSeparator ? AppSpacing.s14 : AppSpacing.s2,
+          AppSpacing.s14,
+          AppSpacing.s6,
         ),
         child: MessageRow(
           key: message.id.isEmpty ? null : ValueKey('msg-${message.id}'),
@@ -3769,7 +3819,7 @@ class _ChatScreenState extends State<ChatScreen>
           steps: turn.thinkingSteps,
           totalDuration: turn.duration,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.s6),
         MessageRow(
           key: finalReply.id.isEmpty
               ? null
@@ -3788,7 +3838,12 @@ class _ChatScreenState extends State<ChatScreen>
     );
     return ResponsiveContent(
       maxWidth: 760,
-      padding: EdgeInsets.fromLTRB(14, showDateSeparator ? 2 : 14, 14, 6),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.s14,
+        showDateSeparator ? AppSpacing.s2 : AppSpacing.s14,
+        AppSpacing.s14,
+        AppSpacing.s6,
+      ),
       child: pillThenReply,
     );
   }
@@ -3991,7 +4046,7 @@ class _InboxBellTrigger extends StatelessWidget {
       side: BorderSide(color: s.border, width: 1),
     );
     return Padding(
-      padding: const EdgeInsetsDirectional.only(end: 4),
+      padding: const EdgeInsetsDirectional.only(end: AppSpacing.s4),
       child: Material(
         color: Colors.transparent,
         shape: shape,
@@ -4010,7 +4065,7 @@ class _InboxBellTrigger extends StatelessWidget {
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                Icon(AppIcons.bell, color: s.text, size: 20),
+                Icon(AppIcons.bell, color: s.text, size: AppIconSizes.action),
                 if (badgeCount > 0)
                   PositionedDirectional(
                     top: 4,
@@ -4018,7 +4073,7 @@ class _InboxBellTrigger extends StatelessWidget {
                     child: Container(
                       constraints:
                           const BoxConstraints(minWidth: 16, minHeight: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: s.warning,
@@ -4029,7 +4084,7 @@ class _InboxBellTrigger extends StatelessWidget {
                         badgeCount > 99 ? '99+' : '$badgeCount',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 9,
+                          fontSize: AppFontSizes.microCaps,
                           fontWeight: FontWeight.w900,
                           height: 1.0,
                         ),
@@ -4087,7 +4142,10 @@ class _LoadEarlierHeader extends StatelessWidget {
           borderRadius: AppRadius.pillR,
           onTap: onRetry,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s16,
+              vertical: AppSpacing.s9,
+            ),
             decoration: BoxDecoration(
               color: s.cardBg,
               borderRadius: AppRadius.pillR,
@@ -4097,8 +4155,8 @@ class _LoadEarlierHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.refresh, size: 18, color: s.brandCyan),
-                const SizedBox(width: 8),
+                Icon(AppIcons.refresh, size: AppIconSizes.regular, color: s.brandCyan),
+                const SizedBox(width: AppSpacing.s8),
                 Flexible(
                   child: Text(
                     tr.chatLoadEarlier,

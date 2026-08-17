@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
 import '../extensions/context_extensions.dart';
+import 'tappable_surface.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// A selectable filter chip — cyan-tinted when active, calm surface when not.
 ///
@@ -41,37 +43,36 @@ class FilterPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.pillR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.pillR,
-        child: AnimatedContainer(
-          duration: AppDurations.control,
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? s.brandCyan.withValues(alpha: context.isDark ? 0.16 : 0.12)
-                : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
-            borderRadius: AppRadius.pillR,
-            border: Border.all(
-              color:
-                  selected ? s.brandCyan.withValues(alpha: 0.4) : s.cardBorder,
-            ),
+    return TappableSurface(
+      radius: AppRadius.pillR,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: AppDurations.control,
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s14,
+          vertical: AppSpacing.s8,
+        ),
+        decoration: BoxDecoration(
+          color: selected
+              ? s.brandCyan.withValues(alpha: context.isDark ? 0.16 : 0.12)
+              : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
+          borderRadius: AppRadius.pillR,
+          border: Border.all(
+            color:
+                selected ? s.brandCyan.withValues(alpha: 0.4) : s.cardBorder,
           ),
-          // Single line + ellipsis: these sit in a horizontally scrolling
-          // strip, but a long Arabic filter name at a large text scale can
-          // still exceed the viewport on the narrow tier.
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.text.labelMedium?.copyWith(
-              color: selected ? s.brandCyan : s.text,
-              fontWeight: FontWeight.w700,
-            ),
+        ),
+        // Single line + ellipsis: these sit in a horizontally scrolling
+        // strip, but a long Arabic filter name at a large text scale can
+        // still exceed the viewport on the narrow tier.
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.labelMedium?.copyWith(
+            color: selected ? s.brandCyan : s.text,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 
 enum ToastVariant { success, error, info }
@@ -64,7 +65,11 @@ class AppToast {
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        margin: const EdgeInsets.only(bottom: 24, left: 16, right: 16),
+        margin: const EdgeInsets.only(
+          bottom: AppSpacing.s24,
+          left: AppSpacing.s16,
+          right: AppSpacing.s16,
+        ),
         padding: EdgeInsets.zero,
         duration: duration ??
             (variant == ToastVariant.error
@@ -119,7 +124,10 @@ class _ToastContent extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s14,
+            vertical: AppSpacing.s12,
+          ),
           decoration: BoxDecoration(
             color: s.surface,
             borderRadius: AppRadius.toastR,
@@ -140,10 +148,10 @@ class _ToastContent extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Icon(_icon, size: 18, color: c),
+                padding: const EdgeInsets.only(top: AppSpacing.s2),
+                child: Icon(_icon, size: AppIconSizes.regular, color: c),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.s10),
               Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +167,7 @@ class _ToastContent extends StatelessWidget {
                           height: 1.25,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.s2),
                       Text(
                         message,
                         style: (context.text.bodySmall ?? const TextStyle())
@@ -175,7 +183,7 @@ class _ToastContent extends StatelessWidget {
                 ),
               ),
               if (action != null) ...[
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.s10),
                 _ToastActionButton(action: action!, color: c),
               ],
             ],
@@ -198,7 +206,10 @@ class _ToastActionButton extends StatelessWidget {
       onPressed: action.onPressed,
       style: TextButton.styleFrom(
         foregroundColor: color,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s10,
+          vertical: AppSpacing.s6,
+        ),
         minimumSize: const Size(0, 32),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         textStyle: const TextStyle(fontWeight: FontWeight.w800),

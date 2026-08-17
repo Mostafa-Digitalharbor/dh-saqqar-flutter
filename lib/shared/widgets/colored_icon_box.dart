@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// A small square chip with a tinted background, optional hairline border,
 /// and a centered icon — the recurring "icon tile" leading the action /
@@ -18,9 +19,9 @@ class ColoredIconBox extends StatelessWidget {
     super.key,
     required this.icon,
     required this.color,
-    this.size = 38,
+    this.size = AppControlSizes.iconBox,
     this.radius = AppRadius.iconBox,
-    this.iconSize = 18,
+    this.iconSize = AppIconSizes.regular,
     this.backgroundAlpha = 0.14,
     this.borderAlpha = 0.30,
   });

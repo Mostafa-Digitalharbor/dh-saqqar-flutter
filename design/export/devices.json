@@ -164,13 +164,13 @@
       "name": "RichText",
       "x": 79.0,
       "y": 132.0,
-      "w": 100.58,
+      "w": 100.72,
       "h": 16.0,
       "type": "text",
-      "text": "Last active 5 d ago",
+      "text": "Last active 6 d ago",
       "lines": [
         {
-          "text": "Last active 5 d ago",
+          "text": "Last active 6 d ago",
           "x": 0.0,
           "top": 0.05
         }
@@ -360,13 +360,13 @@
       "name": "RichText",
       "x": 79.0,
       "y": 229.0,
-      "w": 100.58,
+      "w": 100.72,
       "h": 16.0,
       "type": "text",
-      "text": "Last active 5 d ago",
+      "text": "Last active 6 d ago",
       "lines": [
         {
-          "text": "Last active 5 d ago",
+          "text": "Last active 6 d ago",
           "x": 0.0,
           "top": 0.05
         }

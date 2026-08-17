@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// A floating card dialog sized against the viewport rather than its content.
 ///
@@ -52,7 +53,7 @@ class AppCardDialog extends StatelessWidget {
   static const double maxContentWidth = 520;
 
   static const EdgeInsets _inset =
-      EdgeInsets.symmetric(horizontal: 20, vertical: 24);
+      EdgeInsets.symmetric(horizontal: AppSpacing.s20, vertical: AppSpacing.s24);
 
   @override
   Widget build(BuildContext context) {

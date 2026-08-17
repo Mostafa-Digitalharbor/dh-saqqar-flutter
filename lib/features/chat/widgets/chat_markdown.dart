@@ -4,7 +4,9 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/ui_strings.dart';
+import '../../../core/network/api_endpoints.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../core/theme/app_radius.dart';
@@ -75,7 +77,7 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
     final base = context.text.bodyMedium?.copyWith(
       color: s.text,
       height: 1.5,
-      fontSize: 15,
+      fontSize: AppFontSizes.reading,
     );
 
     final codeBg = isUser
@@ -87,9 +89,9 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
 
     final styleSheet = MarkdownStyleSheet(
       p: base,
-      h1: base?.copyWith(fontSize: 19, fontWeight: FontWeight.w800),
-      h2: base?.copyWith(fontSize: 17, fontWeight: FontWeight.w800),
-      h3: base?.copyWith(fontSize: 16, fontWeight: FontWeight.w700),
+      h1: base?.copyWith(fontSize: AppFontSizes.markdownH1, fontWeight: FontWeight.w800),
+      h2: base?.copyWith(fontSize: AppFontSizes.markdownH2, fontWeight: FontWeight.w800),
+      h3: base?.copyWith(fontSize: AppFontSizes.markdownH3, fontWeight: FontWeight.w700),
       em: base?.copyWith(fontStyle: FontStyle.italic),
       strong: base?.copyWith(fontWeight: FontWeight.w800),
       blockquote: base?.copyWith(
@@ -102,7 +104,12 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
           start: BorderSide(color: s.brandCyan, width: 3),
         ),
       ),
-      blockquotePadding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+      blockquotePadding: const EdgeInsets.fromLTRB(
+        AppSpacing.s12,
+        AppSpacing.s6,
+        AppSpacing.s8,
+        AppSpacing.s6,
+      ),
       a: base?.copyWith(
         color: s.brandCyan,
         decoration: TextDecoration.underline,
@@ -111,11 +118,11 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
       // Inline code — small monospace plate that flows with the line.
       code: TextStyle(
         fontFamily: UiStrings.monospaceFontFamily,
-        fontSize: 13,
+        fontSize: AppFontSizes.dense,
         color: isUser ? Colors.white : s.brandCyan,
         backgroundColor: codeBg,
       ),
-      codeblockPadding: const EdgeInsets.all(12),
+      codeblockPadding: const EdgeInsets.all(AppSpacing.s12),
       codeblockDecoration: BoxDecoration(
         color: codeBg,
         borderRadius: AppRadius.smallR,
@@ -134,8 +141,8 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
       // horizontally by default in the package.
       tableColumnWidth: const IntrinsicColumnWidth(),
       tableCellsPadding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 6,
+        horizontal: AppSpacing.s10,
+        vertical: AppSpacing.s6,
       ),
       horizontalRuleDecoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: s.border)),
@@ -164,7 +171,7 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
   /// URL to the clipboard so the user still gets it.
   Future<void> _openLink(BuildContext context, String? href) async {
     if (href == null || href.isEmpty) return;
-    final uri = Uri.tryParse(href);
+    final uri = resolveMarkdownLink(href);
     if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
       try {
         final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -187,4 +194,37 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
       variant: ToastVariant.success,
     );
   }
+}
+
+/// Resolves a markdown link href to something launchable.
+///
+/// The server bakes its **المصادر / Sources** list and its 📎 download footer
+/// into the message markdown as ordinary `[title](url)` links, and those hrefs
+/// are frequently **relative** — `/media/exports/report.xlsx`,
+/// `/artifacts/…`. There is no structured citations object to read instead;
+/// this markdown IS the contract.
+///
+/// A relative href parses to a `Uri` with an empty scheme, so a launcher that
+/// only accepts `http`/`https` silently refused every one of them and fell
+/// through to "copied to clipboard" — handing the user a path fragment that
+/// resolves nowhere instead of opening their file. Reported by the web team as
+/// §B.7 of `WEB_TO_MOBILE_PARITY_AND_DELETE_FIX.md`.
+///
+/// Absolute `http(s)` links pass through untouched. Anything else — `mailto:`,
+/// `javascript:`, a custom scheme — is returned as-is and rejected by the
+/// caller, matching the web, which allows `http(s)` plus relative and blocks
+/// the rest.
+@visibleForTesting
+Uri? resolveMarkdownLink(String href) {
+  final uri = Uri.tryParse(href);
+  if (uri == null) return null;
+  // Already absolute, or a scheme we deliberately do not launch.
+  if (uri.hasScheme) return uri;
+  // Root-relative only. A bare `report.xlsx` has no base to resolve against —
+  // the message it came from does not carry one — and guessing would produce
+  // a plausible URL pointing at the wrong place.
+  if (!href.startsWith('/')) return uri;
+  final base = Uri.tryParse(ApiEndpoints.baseUrl);
+  if (base == null || !base.hasScheme) return uri;
+  return base.resolve(href);
 }

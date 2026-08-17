@@ -5,10 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/labeled_divider.dart';
 import '../view_model/auth_flow_cubit.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// "or continue with" divider + Google (all platforms) and Apple (iOS only)
 /// sign-in buttons. Shown under the email field on the sign-in / sign-up entry
@@ -28,9 +30,9 @@ class SocialAuthButtons extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 22),
+        const SizedBox(height: AppSpacing.s22),
         LabeledDivider(label: tr.authOrContinueWith),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.s18),
         _SocialButton(
           label: tr.authContinueWithGoogle,
           logo: const _GoogleGlyph(),
@@ -39,10 +41,10 @@ class SocialAuthButtons extends StatelessWidget {
         // App Store 4.8: offering Google on iOS requires offering Apple too.
         // Apple sign-in is iOS-native, so the button is iOS-only.
         if (Platform.isIOS) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
           _SocialButton(
             label: tr.authContinueWithApple,
-            logo: Icon(AppIcons.apple, size: 21, color: s.text),
+            logo: Icon(AppIcons.apple, size: AppIconSizes.socialLogo, color: s.text),
             onPressed: loading ? null : cubit.continueWithApple,
           ),
         ],
@@ -77,43 +79,41 @@ class _SocialButton extends StatelessWidget {
       label: label,
       child: Opacity(
         opacity: disabled ? 0.5 : 1,
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: AppRadius.buttonR,
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: AppRadius.buttonR,
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 48),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: fillColor,
-                borderRadius: AppRadius.buttonR,
-                border: Border.all(color: s.cardBorder),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: Center(child: logo),
-                  ),
-                  Expanded(
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.labelLarge?.copyWith(
-                        color: s.text,
-                        fontWeight: FontWeight.w600,
-                      ),
+        child: TappableSurface(
+          onTap: onPressed,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s16,
+              vertical: AppSpacing.s8,
+            ),
+            decoration: BoxDecoration(
+              color: fillColor,
+              borderRadius: AppRadius.buttonR,
+              border: Border.all(color: s.cardBorder),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: Center(child: logo),
+                ),
+                Expanded(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelLarge?.copyWith(
+                      color: s.text,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  // Balances the leading logo so the label stays centered.
-                  const SizedBox(width: 22),
-                ],
-              ),
+                ),
+                // Balances the leading logo so the label stays centered.
+                const SizedBox(width: AppSpacing.s22),
+              ],
             ),
           ),
         ),

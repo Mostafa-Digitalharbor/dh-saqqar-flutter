@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../demo/saqqar_demo_data.dart';
 import 'chat_markdown.dart';
@@ -68,8 +69,8 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
             borderRadius: AppRadius.pillR,
             child: Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 7,
+                horizontal: AppSpacing.s12,
+                vertical: AppSpacing.s7,
               ),
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: context.isDark ? 0.10 : 0.08),
@@ -91,7 +92,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   // Both copy-bearing labels are `Flexible` + ellipsis: the
                   // row is `mainAxisSize.min`, which only means "don't
                   // expand" — it does NOT stop the children overflowing the
@@ -109,7 +110,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                       style: context.text.labelMedium?.copyWith(
                         color: accent,
                         fontWeight: FontWeight.w800,
-                        fontSize: 12.5,
+                        fontSize: AppFontSizes.pillTitle,
                       ),
                     ),
                   ),
@@ -117,7 +118,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                     ' · ',
                     style: TextStyle(
                       color: accent.withValues(alpha: 0.6),
-                      fontSize: 12.5,
+                      fontSize: AppFontSizes.pillTitle,
                     ),
                   ),
                   Flexible(
@@ -128,7 +129,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                       style: context.text.labelSmall?.copyWith(
                         color: accent.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w600,
-                        fontSize: 11.5,
+                        fontSize: AppFontSizes.pillLabel,
                       ),
                     ),
                   ),
@@ -137,7 +138,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                       ' · ',
                       style: TextStyle(
                         color: accent.withValues(alpha: 0.6),
-                        fontSize: 12.5,
+                        fontSize: AppFontSizes.pillTitle,
                       ),
                     ),
                     Text(
@@ -145,17 +146,17 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                       style: context.text.labelSmall?.copyWith(
                         color: accent.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w600,
-                        fontSize: 11.5,
+                        fontSize: AppFontSizes.pillLabel,
                       ),
                     ),
                   ],
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.s6),
                   AnimatedRotation(
                     duration: AppDurations.fast,
                     turns: _expanded ? 0.5 : 0,
                     child: Icon(
                       AppIcons.chevronDown,
-                      size: 16,
+                      size: AppIconSizes.small,
                       color: accent.withValues(alpha: 0.85),
                     ),
                   ),
@@ -175,12 +176,12 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
             firstChild: const SizedBox(width: double.infinity, height: 0),
             secondChild: Padding(
               padding: const EdgeInsetsDirectional.only(
-                start: 6,
-                top: 10,
-                bottom: 6,
+                start: AppSpacing.s6,
+                top: AppSpacing.s10,
+                bottom: AppSpacing.s6,
               ),
               child: Container(
-                padding: const EdgeInsetsDirectional.only(start: 10),
+                padding: const EdgeInsetsDirectional.only(start: AppSpacing.s10),
                 decoration: BoxDecoration(
                   border: BorderDirectional(
                     start: BorderSide(
@@ -194,7 +195,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     for (var i = 0; i < widget.steps.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 10),
+                      if (i > 0) const SizedBox(height: AppSpacing.s10),
                       _StepBullet(
                         step: widget.steps[i],
                         accent: accent,
@@ -227,7 +228,7 @@ class _StepBullet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 6),
+          padding: const EdgeInsets.only(top: AppSpacing.s6),
           child: Container(
             width: 5,
             height: 5,
@@ -237,13 +238,13 @@ class _StepBullet extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.s8),
         Expanded(
           child: DefaultTextStyle.merge(
             style: context.text.bodySmall?.copyWith(
               color: s.muted,
               height: 1.5,
-              fontSize: 12.5,
+              fontSize: AppFontSizes.pillTitle,
             ),
             child: ChatMarkdown(data: step.content, isUser: false),
           ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
 /// One of two long-running report phases reported by the backend in
@@ -77,7 +78,10 @@ class ChatRunProgressCard extends StatelessWidget {
     final pctChip = progress.isDeterminate
         ? Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s6,
+                  vertical: AppSpacing.s1,
+                ),
             decoration: BoxDecoration(
               color: s.brandCyan.withValues(alpha: 0.18),
               borderRadius: AppRadius.pillR,
@@ -87,7 +91,7 @@ class ChatRunProgressCard extends StatelessWidget {
               '${((progress.fraction ?? 0) * 100).round()}%',
               style: context.text.labelSmall?.copyWith(
                 color: s.brandCyan,
-                fontSize: 10,
+                fontSize: AppFontSizes.chipLabel,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -95,8 +99,16 @@ class ChatRunProgressCard extends StatelessWidget {
         : null;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s14,
+        vertical: AppSpacing.s6,
+      ),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s14,
+        AppSpacing.s12,
+        AppSpacing.s14,
+        AppSpacing.s12,
+      ),
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
         borderRadius: AppRadius.cardR,
@@ -108,8 +120,8 @@ class ChatRunProgressCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIcons.fileText, size: 16, color: s.brandCyan),
-              const SizedBox(width: 8),
+              Icon(AppIcons.fileText, size: AppIconSizes.small, color: s.brandCyan),
+              const SizedBox(width: AppSpacing.s8),
               Expanded(
                 child: Text(
                   label,
@@ -122,7 +134,7 @@ class ChatRunProgressCard extends StatelessWidget {
                 ),
               ),
               if (progress.fileName != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.s8),
                 Flexible(
                   child: Text(
                     progress.fileName!,
@@ -136,12 +148,12 @@ class ChatRunProgressCard extends StatelessWidget {
                 ),
               ],
               if (pctChip != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.s8),
                 pctChip,
               ],
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.s10),
           ClipRRect(
             borderRadius: AppRadius.pillR,
             child: LinearProgressIndicator(

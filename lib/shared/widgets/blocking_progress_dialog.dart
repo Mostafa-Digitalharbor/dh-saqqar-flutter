@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// Compact, undismissable "work in progress" pill — a thin indeterminate
 /// bar in a small centred card.
@@ -29,7 +30,10 @@ class BlockingProgressDialog extends StatelessWidget {
       child: Center(
         child: Container(
           width: dialogW,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s14,
+            vertical: AppSpacing.s14,
+          ),
           decoration: BoxDecoration(
             color: s.surface,
             borderRadius: AppRadius.inputR,

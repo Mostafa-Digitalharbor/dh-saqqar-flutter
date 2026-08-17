@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -13,6 +14,7 @@ import '../../../shared/widgets/inline_add_form.dart';
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
 import 'project_detail_sheet.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Web-parity "Projects" popup. Replaces the old single-purpose new-project
 /// form with the same shape the desktop site uses:
@@ -112,7 +114,12 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
       minHeight: 380,
       maxHeight: 560,
       child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s18,
+            AppSpacing.s18,
+            AppSpacing.s18,
+            AppSpacing.s18,
+          ),
           child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -132,10 +139,10 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                             color: s.brandCyan,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.4,
-                            fontSize: 10,
+                            fontSize: AppFontSizes.chipLabel,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpacing.s2),
                         Text(
                           context.tr.projectsTitle,
                           style: context.text.titleLarge?.copyWith(
@@ -152,9 +159,9 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               Divider(color: s.cardBorder, height: 1),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.s18),
               // ── Quick "Add project" inline form ─────────────────────
               // Disabled until a name is typed (and no write in flight) —
               // the empty-tap no-op used to look like a broken button.
@@ -165,7 +172,7 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                 enabled: !state.actionInFlight,
                 onSubmit: _addProject,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.s18),
               // ── Project list ─────────────────────────────────────────
               Flexible(
                 child: projects.isEmpty
@@ -179,7 +186,7 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                     // content in a bounded box, which is the one shape that
                     // cannot absorb a squeeze.
                     ? SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
                         child: EmptyState(
                           icon: AppIcons.projects,
                           title: context.tr.noStoredCredentialsTitle,
@@ -200,7 +207,7 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                         cacheExtent: 1500,
                         itemCount: projects.length,
                         separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                            const SizedBox(height: AppSpacing.s10),
                         itemBuilder: (_, index) {
                           final project = projects[index];
                           final envCount = project.environments.length;
@@ -239,53 +246,54 @@ class _ProjectRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.cardR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.cardR,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
-            borderRadius: AppRadius.cardR,
-            border: Border.all(color: s.cardBorder),
-          ),
-          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      project.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+    return TappableSurface(
+      radius: AppRadius.cardR,
+      onTap: onTap,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+          borderRadius: AppRadius.cardR,
+          border: Border.all(color: s.cardBorder),
+        ),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s14,
+          AppSpacing.s12,
+          AppSpacing.s12,
+          AppSpacing.s12,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    project.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      context.tr.environmentCount(envCount),
-                      style: context.text.bodySmall?.copyWith(
-                        color: s.muted,
-                      ),
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(
+                    context.tr.environmentCount(envCount),
+                    style: context.text.bodySmall?.copyWith(
+                      color: s.muted,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              GhostButton(
-                label: context.tr.delete,
-                minHeight: 36,
-                tone: GhostButtonTone.danger,
-                onPressed: onDelete,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.s10),
+            GhostButton(
+              label: context.tr.delete,
+              minHeight: 36,
+              tone: GhostButtonTone.danger,
+              onPressed: onDelete,
+            ),
+          ],
         ),
       ),
     );

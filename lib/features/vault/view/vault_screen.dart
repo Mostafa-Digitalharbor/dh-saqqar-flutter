@@ -20,6 +20,7 @@ import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
 import '../view_model/vault_state.dart';
 import '../widgets/widgets.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Vault tab — Projects → Environments → Credentials hierarchy.
 ///
@@ -171,7 +172,7 @@ class _VaultScreenState extends State<VaultScreen> {
               bordered: false,
               onPressed: () => context.read<VaultCubit>().refresh(),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.s6),
           ],
           children: [
             DataStateView<VaultData>(
@@ -187,11 +188,11 @@ class _VaultScreenState extends State<VaultScreen> {
                 key: ValueKey('vault-skeleton'),
                 children: [
                   ProjectCardSkeleton(),
-                  SizedBox(height: 12),
+                  SizedBox(height: AppSpacing.s12),
                   ProjectCardSkeleton(envRows: 1),
-                  SizedBox(height: 12),
+                  SizedBox(height: AppSpacing.s12),
                   ProjectCardSkeleton(),
-                  SizedBox(height: 12),
+                  SizedBox(height: AppSpacing.s12),
                   ProjectCardSkeleton(envRows: 2),
                 ],
               ),
@@ -377,7 +378,7 @@ class _ProjectsBody extends StatelessWidget {
             query: query,
             onQueryChanged: onSearchChanged,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
         ],
         if (visible.isEmpty)
           EmptyState(
@@ -401,7 +402,7 @@ class _ProjectsBody extends StatelessWidget {
                 onEnvTap: onOpenEnv,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.s12),
           ],
       ],
     );

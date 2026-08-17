@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// A hairline rule with a centered label — "or continue with", "Already have
 /// an account?".
@@ -61,7 +62,7 @@ class LabeledDivider extends StatelessWidget {
             ConstrainedBox(
               constraints: BoxConstraints(maxWidth: cap),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
                 child: Text(
                   label,
                   textAlign: TextAlign.center,

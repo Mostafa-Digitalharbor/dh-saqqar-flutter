@@ -7,6 +7,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/chip_strip.dart';
@@ -118,7 +119,10 @@ class _FilterRow extends StatelessWidget {
     // Sizes to the chips rather than pinning `height: 52`, which clipped
     // Arabic descenders at large text scales with no overflow warning.
     return ChipStrip(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s14,
+        vertical: AppSpacing.s10,
+      ),
       children: [
         for (final (value, label) in entries)
           FilterPill(
@@ -164,7 +168,12 @@ class _GroupedList extends StatelessWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s14,
+        AppSpacing.s4,
+        AppSpacing.s14,
+        AppSpacing.s24,
+      ),
       children: rows,
     );
   }
@@ -179,7 +188,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(4, 14, 4, 6),
+      padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s4, AppSpacing.s14, AppSpacing.s4, AppSpacing.s6),
       child: Text(
         label,
         style: context.text.labelMedium?.copyWith(
@@ -200,7 +209,7 @@ class _DismissibleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s8),
       child: Dismissible(
         key: ValueKey('notif-${item.id}'),
         direction: DismissDirection.horizontal,
@@ -217,12 +226,12 @@ class _DismissibleTile extends StatelessWidget {
     final s = context.saqqar;
     return Container(
       alignment: align,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s20),
       decoration: BoxDecoration(
         color: s.danger.withValues(alpha: 0.14),
         borderRadius: AppRadius.cardR,
       ),
-      child: Icon(AppIcons.trash, color: s.danger, size: 20),
+      child: Icon(AppIcons.trash, color: s.danger, size: AppIconSizes.action),
     );
   }
 }
@@ -255,7 +264,7 @@ class _NotificationTile extends StatelessWidget {
             ? null
             : () => context.go(RouteNames.chatPath(convId)),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.s14),
           decoration: BoxDecoration(
             color: item.read
                 ? s.cardBg
@@ -272,7 +281,7 @@ class _NotificationTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ColoredIconBox(icon: accent.icon, color: accent.color),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +300,7 @@ class _NotificationTile extends StatelessWidget {
                           context.text.labelSmall?.copyWith(color: s.muted),
                     ),
                     if (item.body.isNotEmpty) ...[
-                      const SizedBox(height: 3),
+                      const SizedBox(height: AppSpacing.s3),
                       Text(
                         item.body,
                         maxLines: 3,

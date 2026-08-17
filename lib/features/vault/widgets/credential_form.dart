@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
@@ -316,7 +317,7 @@ class _CredentialFormState extends State<CredentialForm> {
 
     if (schema == null || data == null) {
       return Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.s16),
         child: Text(
           context.tr.noFieldsForKind,
           style: context.text.bodySmall?.copyWith(color: s.muted),
@@ -346,11 +347,11 @@ class _CredentialFormState extends State<CredentialForm> {
     final loading = !credsLoaded || _detailLoading;
     if (loading) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 56),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s56),
         child: Center(
           child: SizedBox(
-            width: 22,
-            height: 22,
+            width: AppControlSizes.spinnerMedium,
+            height: AppControlSizes.spinnerMedium,
             child: CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
           ),
         ),
@@ -370,7 +371,10 @@ class _CredentialFormState extends State<CredentialForm> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.s12,
+        horizontal: AppSpacing.s4,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -379,7 +383,7 @@ class _CredentialFormState extends State<CredentialForm> {
             controller: _label,
             hint: schema.label,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
           for (final field in schema.fields) ...[
             _SchemaField(
               field: field,
@@ -400,22 +404,22 @@ class _CredentialFormState extends State<CredentialForm> {
               detectDatabasesError:
                   identical(field, _databaseField(schema)) ? _detectError : null,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
           ],
           if (schema.fields.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
               child: Text(
                 context.tr.noFieldsForKind,
                 style: context.text.bodySmall?.copyWith(color: s.muted),
               ),
             ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.s6),
           Text(
             hint,
             style: context.text.labelSmall?.copyWith(color: s.muted),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
           // Test connection — opens a real connection to the target
           // service via POST /api/v1/credentials/test/. Lives ABOVE
           // Save so the user can sanity-check before committing.
@@ -435,7 +439,7 @@ class _CredentialFormState extends State<CredentialForm> {
               );
             },
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s14),
           Row(
             children: [
               Expanded(
@@ -465,7 +469,7 @@ class _CredentialFormState extends State<CredentialForm> {
                 ),
               ),
               if (hasCredential) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.s8),
                 GhostButton(
                   label: context.tr.deleteCredentialButton,
                   icon: AppIcons.trash,
@@ -626,9 +630,9 @@ class _SchemaField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         input,
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.s4),
         Padding(
-          padding: const EdgeInsetsDirectional.only(start: 4),
+          padding: const EdgeInsetsDirectional.only(start: AppSpacing.s4),
           child: Text(
             help,
             style: context.text.labelSmall?.copyWith(
@@ -696,7 +700,7 @@ class _SchemaField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         field,
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.s8),
         GhostButton(
           label: detectingDatabases
               ? tr.detectingDatabases
@@ -705,7 +709,7 @@ class _SchemaField extends StatelessWidget {
           onPressed: detectingDatabases ? null : () => onDetectDatabases?.call(),
         ),
         if (status != null) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.s6),
           Text(
             status,
             style: context.text.labelSmall?.copyWith(
@@ -815,7 +819,7 @@ class _TestConnectionRow extends StatelessWidget {
           onPressed: onPressed,
         ),
         if (status != _TestStatus.idle) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s8),
           _TestBadge(
             status: status,
             // For `failed`, render "Connection failed: <reason>". The
@@ -856,7 +860,10 @@ class _TestBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s10,
+        vertical: AppSpacing.s8,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: AppRadius.tightR,
@@ -866,8 +873,8 @@ class _TestBadge extends StatelessWidget {
         children: [
           if (status == _TestStatus.running)
             SizedBox(
-              width: 14,
-              height: 14,
+              width: AppControlSizes.spinnerDense,
+              height: AppControlSizes.spinnerDense,
               child: CircularProgressIndicator(strokeWidth: 2, color: color),
             )
           else
@@ -876,16 +883,16 @@ class _TestBadge extends StatelessWidget {
                   ? AppIcons.success
                   : AppIcons.error,
               color: color,
-              size: 16,
+              size: AppIconSizes.small,
             ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.s8),
           Expanded(
             child: Text(
               text,
               style: context.text.labelSmall?.copyWith(
                 color: color,
                 fontWeight: FontWeight.w700,
-                fontSize: 12,
+                fontSize: AppFontSizes.footnote,
                 height: 1.35,
               ),
             ),

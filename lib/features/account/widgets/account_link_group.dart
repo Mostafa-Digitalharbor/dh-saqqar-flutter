@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/glass_card.dart';
 import 'account_card_header.dart';
@@ -77,7 +78,12 @@ class AccountLinkGroup extends StatelessWidget {
       // Flat opaque Account backdrop → the backdrop blur has no visible
       // subject; dropping it removes a saveLayer with pixel-identical output.
       blur: false,
-      padding: EdgeInsets.fromLTRB(16, title == null ? 4 : 16, 8, 6),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        title == null ? AppSpacing.s4 : AppSpacing.s16,
+        AppSpacing.s8,
+        AppSpacing.s6,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -85,7 +91,7 @@ class AccountLinkGroup extends StatelessWidget {
             Padding(
               // Balances the card's asymmetric padding, which is tight on the
               // end side so the row chevrons sit near the edge.
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: AppSpacing.s8),
               child: AccountCardHeader(
                 icon: icon ?? AppIcons.grid,
                 title: title!,
@@ -93,7 +99,7 @@ class AccountLinkGroup extends StatelessWidget {
                 tint: tint,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.s6),
           ],
           for (var i = 0; i < links.length; i++) ...[
             if (i > 0)
@@ -120,7 +126,10 @@ class _LinkRow extends StatelessWidget {
       onTap: link.onTap,
       borderRadius: AppRadius.buttonR,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 2),
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.s13,
+          horizontal: AppSpacing.s2,
+        ),
         child: Row(
           children: [
             // Same 30px tinted tile the card headers use, one step smaller —
@@ -134,9 +143,9 @@ class _LinkRow extends StatelessWidget {
                 color: color.withValues(alpha: 0.12),
                 borderRadius: AppRadius.buttonR,
               ),
-              child: Icon(link.icon, size: 16, color: color),
+              child: Icon(link.icon, size: AppIconSizes.small, color: color),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +158,7 @@ class _LinkRow extends StatelessWidget {
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.s2),
                   Text(
                     link.subtitle,
                     // Two lines, not one: Arabic runs longer than English for
@@ -164,9 +173,9 @@ class _LinkRow extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.s8),
             // Mirrors automatically in RTL.
-            Icon(AppIcons.chevronRight, size: 18, color: s.muted),
+            Icon(AppIcons.chevronRight, size: AppIconSizes.regular, color: s.muted),
           ],
         ),
       ),

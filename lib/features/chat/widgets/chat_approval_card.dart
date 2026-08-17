@@ -6,15 +6,15 @@ import 'package:flutter/services.dart' show HapticFeedback;
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../demo/saqqar_demo_data.dart';
 import '../../../core/theme/app_radius.dart';
-import '../data/delete_confirmation.dart';
+import '../../inbox/data/approval_models.dart' show kDeleteOperation;
 import 'accent_card_chrome.dart';
-import 'delete_approval_confirm_dialog.dart';
 import 'email_approval_preview.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 
@@ -56,28 +56,26 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
   bool get _isDestructiveDelete =>
       widget.approval.payload['operation'] == kDeleteOperation;
 
-  /// Approve, gated by the type-to-confirm dialog for deletes (web parity).
+  /// Approve.
   ///
-  /// Lives on the card rather than at each call site so BOTH surfaces that
-  /// render approvals — inline in the chat stream and the rail drawer — get
-  /// the gate. A second copy is how one of them ends up without it.
-  Future<void> _approve() async {
-    // Fire-and-forget: awaiting the haptic would gate a user-visible dialog
-    // on a platform channel that never answers in a widget test (and can be
-    // slow on a real device).
+  /// A destructive delete used to open a type-to-confirm dialog here, and the
+  /// user had to reproduce "delete 12" before it would fire. That was removed
+  /// on 2026-08-17 (product decision, matching the web's live design) for two
+  /// reasons, in order of how much they cost:
+  ///
+  ///   * It did not work. The phrase was matched and then dropped —
+  ///     `ApprovalsApi.decide` had no `confirm_phrase` parameter — so the POST
+  ///     went out bare and the backend answered 400. Every delete in the app
+  ///     was unresolvable, and the dialog only made that failure slower.
+  ///   * It was too hard for real users, which is what caused the reported
+  ///     outage: a user typed the correct phrase into the *composer* many
+  ///     times, where it could never reach the decision endpoint.
+  ///
+  /// The consent now lives where the user is already looking — the record list
+  /// above and the count inside the button's own label — and the phrase the
+  /// server asked for is echoed back for them at the call site.
+  void _approve() {
     unawaited(HapticFeedback.mediumImpact());
-    if (_isDestructiveDelete) {
-      final confirmed = await DeleteApprovalConfirmDialog.show(
-        context,
-        // Falls back to 1: the phrase must always name a real number,
-        // because it's what the user has to type.
-        recordCount: widget.approval.recordCount ?? 1,
-        // The server's own canonical phrase when it sent one; the locale
-        // phrases stay accepted alongside it.
-        serverPhrase: widget.approval.confirmPhrase,
-      );
-      if (!confirmed || !mounted) return;
-    }
     widget.onApprove();
   }
 
@@ -96,11 +94,11 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
               ColoredIconBox(
                 icon: AppIcons.shieldAlert,
                 color: s.warning,
-                size: 34,
+                size: AppIconSizes.cardHeader,
                 radius: AppRadius.small,
-                iconSize: 17,
+                iconSize: AppIconSizes.boxGlyphCard,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.s12),
               Expanded(
                 child: Text(
                   approval.title,
@@ -115,12 +113,12 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                 MiniChip(
                     '${UiStrings.timesSign}${approval.groupedCount ?? 1}',
                     color: s.warning),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.s6),
               ],
               MiniChip(approval.risk, color: s.warning),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.s10),
           Text(
             approval.prompt,
             style: context.text.bodyMedium?.copyWith(
@@ -137,7 +135,7 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
           // "Show details" disclosure; the friendly title above is
           // enough for non-technical users.
           if (approval.payload.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => setState(() => _showDetails = !_showDetails),
@@ -148,10 +146,10 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                     _showDetails
                         ? AppIcons.chevronUp
                         : AppIcons.chevronDown,
-                    size: 15,
+                    size: AppIconSizes.inline,
                     color: s.muted,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: AppSpacing.s4),
                   Text(
                     _showDetails
                         ? context.tr.hideDetails
@@ -165,10 +163,10 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
               ),
             ),
             if (_showDetails) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.s10),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: AppSpacing.s8,
+                runSpacing: AppSpacing.s8,
                 children: [
                   for (final entry in approval.payload.entries)
                     MiniChip(context.tr.keyValue(entry.key, entry.value)),
@@ -176,7 +174,18 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
               ),
             ],
           ],
-          const SizedBox(height: 14),
+          // ── The records a delete would destroy ──────────────────────
+          //
+          // Shown unconditionally for a destructive delete, ABOVE the
+          // buttons and outside the "Show details" toggle, because this is
+          // the review the red button's single tap is consenting to. Putting
+          // it behind a disclosure would mean the common path is one tap on
+          // an irreversible action with nothing on screen but a count.
+          if (_isDestructiveDelete && approval.deleteRecords.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s12),
+            _DeleteRecordList(records: approval.deleteRecords),
+          ],
+          const SizedBox(height: AppSpacing.s14),
           Row(
             children: [
               Expanded(
@@ -189,18 +198,31 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                   },
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.s10),
               Expanded(
-                // Always the singular "Approve". The card cannot label
-                // a count: the backend has no `grouped_count` field, and
-                // the number of siblings a batch clears is only known
-                // from the decision RESPONSE. "Approve all 6" here would
-                // be a number the client invented.
-                child: PrimaryButton(
-                  label: context.tr.approve,
-                  icon: AppIcons.check,
-                  onPressed: _approve,
-                ),
+                // A destructive delete gets a red button that names the
+                // count — "Delete 12". The count is the informed consent
+                // that used to live in the phrase the user had to type, and
+                // it is the SERVER's `record_count`, never a client guess.
+                //
+                // Everything else keeps the singular "Approve". That card
+                // cannot label a count: the backend has no `grouped_count`
+                // field, and the number of siblings a batch clears is only
+                // known from the decision RESPONSE, so "Approve all 6" here
+                // would be a number the client invented.
+                child: _isDestructiveDelete
+                    ? GhostButton(
+                        label: context.tr
+                            .deleteApprovalAction(approval.recordCount ?? 1),
+                        icon: AppIcons.trash,
+                        tone: GhostButtonTone.danger,
+                        onPressed: _approve,
+                      )
+                    : PrimaryButton(
+                        label: context.tr.approve,
+                        icon: AppIcons.check,
+                        onPressed: _approve,
+                      ),
               ),
             ],
           ),
@@ -211,7 +233,7 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
           // server 400s) and for approvals already covered by a scope.
           if (widget.onApproveAllSimilar != null &&
               approval.canBatchApprove) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             SizedBox(
               width: double.infinity,
               child: GhostButton(
@@ -223,7 +245,7 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                 },
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             Text(
               context.tr.preApprovalTip,
               style: context.text.labelSmall?.copyWith(
@@ -233,6 +255,69 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The rows a destructive delete would destroy, listed for review.
+///
+/// Capped in height rather than in item count: a delete of 200 rows must not
+/// push the buttons off the screen, and it must not silently show only the
+/// first few either — "…and 188 more" hides exactly the records a user would
+/// want to check. Scrolling keeps every row reachable while the decision
+/// stays in view.
+class _DeleteRecordList extends StatelessWidget {
+  const _DeleteRecordList({required this.records});
+
+  final List<String> records;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s12,
+        vertical: AppSpacing.s10,
+      ),
+      decoration: BoxDecoration(
+        color: s.danger.withValues(alpha: 0.06),
+        borderRadius: AppRadius.smallR,
+        border: Border.all(color: s.danger.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            context.tr.deleteApprovalRecordsHeader(records.length),
+            style: context.text.labelSmall?.copyWith(
+              color: s.danger,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 132),
+            child: Scrollbar(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: records.length,
+                itemBuilder: (context, i) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+                  child: Text(
+                    records[i],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodySmall?.copyWith(color: s.text),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

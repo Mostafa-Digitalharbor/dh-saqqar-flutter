@@ -4,10 +4,12 @@ import 'package:flutter/services.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/title_trailing_row.dart';
 import '../data/project_models.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// One [Project] rendered to the Saqqar Design System's Projects language:
 /// a glass **header card** (database glyph + name + a stats line of
@@ -61,82 +63,78 @@ class ProjectCard extends StatelessWidget {
             border: Border.all(color: s.cardBorder),
             boxShadow: s.glassShadow,
           ),
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: AppRadius.cardR,
-            child: InkWell(
-              onTap: onTap,
-              onLongPress: onLongPress == null
-                  ? null
-                  : () {
-                      HapticFeedback.mediumImpact();
-                      onLongPress!();
-                    },
-              borderRadius: AppRadius.cardR,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 8, 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: s.brandCyan.withValues(alpha: 0.12),
-                        borderRadius: AppRadius.buttonR,
-                        border: Border.all(
-                          color: s.brandCyan.withValues(alpha: 0.28),
+          child: TappableSurface(
+            radius: AppRadius.cardR,
+            onTap: onTap,
+            onLongPress: onLongPress == null
+                ? null
+                : () {
+                    HapticFeedback.mediumImpact();
+                    onLongPress!();
+                  },
+            child: Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s16, AppSpacing.s16, AppSpacing.s8, AppSpacing.s16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: s.brandCyan.withValues(alpha: 0.12),
+                      borderRadius: AppRadius.buttonR,
+                      border: Border.all(
+                        color: s.brandCyan.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    child:
+                        Icon(AppIcons.database, color: s.brandCyan, size: AppIconSizes.back),
+                  ),
+                  const SizedBox(width: AppSpacing.s14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          project.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      child:
-                          Icon(AppIcons.database, color: s.brandCyan, size: 24),
+                        const SizedBox(height: AppSpacing.s2),
+                        Text(
+                          stats,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.bodySmall
+                              ?.copyWith(color: s.muted),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            project.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            stats,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.bodySmall
-                                ?.copyWith(color: s.muted),
-                          ),
-                        ],
-                      ),
+                  ),
+                  if (onEdit != null || onTap != null)
+                    IconButton(
+                      icon: Icon(AppIcons.edit, size: AppIconSizes.action, color: s.muted),
+                      tooltip: context.tr.edit,
+                      onPressed: onEdit ?? onTap,
+                      visualDensity: VisualDensity.compact,
                     ),
-                    if (onEdit != null || onTap != null)
-                      IconButton(
-                        icon: Icon(AppIcons.edit, size: 20, color: s.muted),
-                        tooltip: context.tr.edit,
-                        onPressed: onEdit ?? onTap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    if (onDelete != null)
-                      IconButton(
-                        icon: Icon(AppIcons.trash, size: 20, color: s.muted),
-                        tooltip: context.tr.delete,
-                        onPressed: onDelete,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                  ],
-                ),
+                  if (onDelete != null)
+                    IconButton(
+                      icon: Icon(AppIcons.trash, size: AppIconSizes.action, color: s.muted),
+                      tooltip: context.tr.delete,
+                      onPressed: onDelete,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
               ),
             ),
           ),
         ),
         if (environments.isNotEmpty) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s14),
           // ── Flat environment list card ─────────────────────────────
           Container(
             clipBehavior: Clip.antiAlias,
@@ -198,12 +196,12 @@ class _EnvironmentRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 15, 12, 15),
+          padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s16, AppSpacing.s15, AppSpacing.s12, AppSpacing.s15),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _StatusServerGlyph(env: env, tint: tint),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.s14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +231,7 @@ class _EnvironmentRow extends StatelessWidget {
                     // Real env slug (the server's stable identifier) shown in
                     // monospace, when present. No fabricated host/sync.
                     if (env.slug.isNotEmpty) ...[
-                      const SizedBox(height: 3),
+                      const SizedBox(height: AppSpacing.s3),
                       Text(
                         env.slug,
                         maxLines: 1,
@@ -242,11 +240,11 @@ class _EnvironmentRow extends StatelessWidget {
                         style: context.text.bodySmall?.copyWith(
                           color: s.muted,
                           fontFamily: AppTypography.fontMono,
-                          fontSize: 12,
+                          fontSize: AppFontSizes.footnote,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 7),
+                    const SizedBox(height: AppSpacing.s7),
                     // Deliberately not wrapped in a `Row`: it held a single
                     // child, so it contributed nothing but an unbounded
                     // main-axis constraint — which is exactly what let the
@@ -269,10 +267,10 @@ class _EnvironmentRow extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.only(top: AppSpacing.s4),
                 child: Icon(
                   ar ? AppIcons.chevronLeft : AppIcons.chevronRight,
-                  size: 20,
+                  size: AppIconSizes.action,
                   color: s.muted,
                 ),
               ),
@@ -316,7 +314,7 @@ class _StatusServerGlyph extends StatelessWidget {
                 color: Color.alphaBlend(tint.withValues(alpha: 0.26), s.border),
               ),
             ),
-            child: Icon(AppIcons.server, color: tint, size: 19),
+            child: Icon(AppIcons.server, color: tint, size: AppIconSizes.bell),
           ),
           if (env.isLive)
             PositionedDirectional(
@@ -345,7 +343,7 @@ class _StatusServerGlyph extends StatelessWidget {
                   color: s.surface,
                   border: Border.all(color: s.border),
                 ),
-                child: Icon(AppIcons.lock, size: 9, color: s.muted),
+                child: Icon(AppIcons.lock, size: AppIconSizes.overlay, color: s.muted),
               ),
             ),
         ],
@@ -365,7 +363,10 @@ class _SoftPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8,
+        vertical: AppSpacing.s2,
+      ),
       decoration: BoxDecoration(
         color: tone.withValues(alpha: 0.14),
         borderRadius: AppRadius.pillR,
@@ -380,7 +381,7 @@ class _SoftPill extends StatelessWidget {
               height: 6,
               decoration: BoxDecoration(shape: BoxShape.circle, color: tone),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.s6),
           ],
           // `Flexible` + ellipsis so the pill can shrink into the width cap
           // `TitleTrailingRow` hands it. `mainAxisSize.min` only stops this
@@ -396,7 +397,7 @@ class _SoftPill extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               softWrap: false,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: AppFontSizes.chipLabel,
                 height: 1.2,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
@@ -429,7 +430,7 @@ class _TypeGlyph extends StatelessWidget {
         borderRadius: AppRadius.microR,
         border: Border.all(color: s.border),
       ),
-      child: Icon(icon, size: 12, color: s.brandCyan),
+      child: Icon(icon, size: AppIconSizes.meta, color: s.brandCyan),
     );
   }
 }

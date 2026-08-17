@@ -305,13 +305,44 @@ jobs:
   # on manual runs and only automatic on a real tag.
   ios:
     name: iOS → TestFlight
-    runs-on: macos-14
+    # macos-15, not macos-14. `Runner.xcodeproj` contains
+    # `PBXFileSystemSynchronizedRootGroup` entries — Xcode 16's synchronized
+    # folder groups — and macos-14 defaults to Xcode 15.4, which cannot parse
+    # them. It does not fail gracefully either: `xcodebuild -list` trips a
+    # DVTAssertions failure ("IDEFileSystemSynchronizedGroupsAreEnabled()")
+    # and aborts with signal 6, so `flutter build ios` dies before compiling
+    # a single line and the error says nothing about Xcode versions.
+    runs-on: macos-15
     needs: [verify, version]
     if: >-
       ${{ needs.version.outputs.has_ios == 'true'
           && (github.event_name == 'push' || inputs.platforms != 'android') }}
     steps:
       - uses: actions/checkout@v4
+
+      # Pin Xcode explicitly rather than trusting the image default: GitHub
+      # rolls the default forward (and back) between image releases, and the
+      # failure mode when it lands on a version too old for this project is
+      # an assertion crash inside `xcodebuild -list`, nowhere near anything
+      # that mentions Xcode. Picking the newest 16+ present keeps working as
+      # the image ages; the `-version` echo makes the choice visible in the
+      # log the next time this breaks.
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          echo "Available:"; ls -d /Applications/Xcode*.app
+          # Newest by version sort, then validated — NOT matched by a version
+          # glob. Apple went 16.x → 26.x, so a pattern like `Xcode_1[6-9]*`
+          # silently skips every current release and falls back to whatever
+          # the image default is.
+          latest="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$latest"
+          xcodebuild -version
+          major="$(xcodebuild -version | head -1 | sed -E 's/^Xcode ([0-9]+).*/\1/')"
+          if [[ "$major" -lt 16 ]]; then
+            echo "::error::Xcode $major is too old — Runner.xcodeproj uses synchronized folder groups, which only Xcode 16+ can parse" >&2
+            exit 1
+          fi
 
       - uses: subosito/flutter-action@v2
         with:

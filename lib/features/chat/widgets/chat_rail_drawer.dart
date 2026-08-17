@@ -11,6 +11,7 @@ import '../../../core/i18n/view_model/locale_cubit.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/view_model/theme_cubit.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -86,12 +87,20 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
   /// endpoint, then refreshes the snapshot so the approval drops out
   /// of the pending list on screen.
   Future<void> _decideApproval({
-    required String id,
+    required inbox_api.Approval approval,
     required bool approved,
   }) async {
     final tr = context.tr;
     try {
-      await context.read<ApprovalsApi>().decide(id: id, approved: approved);
+      await context.read<ApprovalsApi>().decide(
+            id: approval.id,
+            approved: approved,
+            // Without this the backend 400s every destructive delete. The
+            // rail drawer is the second surface that resolves approvals, and
+            // a fix applied only to the chat stream would leave this one
+            // broken in exactly the way the outage described.
+            confirmPhrase: approved ? approval.confirmPhrase : null,
+          );
       if (!mounted) return;
       // Snapshot polling will eventually pick this up too, but firing a
       // refresh now means the card disappears the same frame as the
@@ -180,23 +189,33 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
           children: [
             // ── Top utility row: theme + language toggles + close ────
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s12,
+                AppSpacing.s12,
+                AppSpacing.s12,
+                AppSpacing.s8,
+              ),
               child: Row(
                 children: [
                   _ThemeToggleButton(),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   _LanguageToggleButton(),
                   const Spacer(),
                   IconButton(
                     tooltip: context.tr.close,
-                    icon: Icon(AppIcons.close, color: s.muted, size: 20),
+                    icon: Icon(AppIcons.close, color: s.muted, size: AppIconSizes.action),
                     onPressed: widget.onClose,
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s4,
+                AppSpacing.s16,
+                AppSpacing.s8,
+              ),
               child: Text(
                 context.tr.inboxTitle,
                 style: context.text.titleMedium?.copyWith(
@@ -250,10 +269,10 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
                 children: [
                   _ApprovalsTab(
                     approvals: pending,
-                    onApprove: (id) =>
-                        _decideApproval(id: id, approved: true),
-                    onReject: (id) =>
-                        _decideApproval(id: id, approved: false),
+                    onApprove: (a) =>
+                        _decideApproval(approval: a, approved: true),
+                    onReject: (a) =>
+                        _decideApproval(approval: a, approved: false),
                   ),
                   _ArtifactsTab(
                     artifacts: artifacts,
@@ -313,6 +332,7 @@ DemoApproval _adaptApiApproval(inbox_api.Approval a, AppStrings tr) {
     // that render approvals need the server's phrase — dropping it here
     // would leave the drawer accepting only the client-built strings.
     confirmPhrase: a.confirmPhrase,
+    deleteRecords: a.deleteRecords,
     batchScoped: a.batchScoped,
   );
 }
@@ -442,8 +462,11 @@ class _ApprovalsTab extends StatelessWidget {
   });
 
   final List<inbox_api.Approval> approvals;
-  final ValueChanged<String> onApprove;
-  final ValueChanged<String> onReject;
+
+  /// Take the whole approval, not just its id: a destructive delete has to
+  /// carry its confirm phrase into the decision POST, and an id cannot.
+  final ValueChanged<inbox_api.Approval> onApprove;
+  final ValueChanged<inbox_api.Approval> onReject;
 
   @override
   Widget build(BuildContext context) {
@@ -455,14 +478,19 @@ class _ApprovalsTab extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s14,
+        AppSpacing.s14,
+        AppSpacing.s14,
+        AppSpacing.s16,
+      ),
       cacheExtent: 1500,
       itemCount: approvals.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s10),
       itemBuilder: (_, i) => ChatApprovalCard(
         approval: _adaptApiApproval(approvals[i], context.tr),
-        onApprove: () => onApprove(approvals[i].id),
-        onReject: () => onReject(approvals[i].id),
+        onApprove: () => onApprove(approvals[i]),
+        onReject: () => onReject(approvals[i]),
       ),
     );
   }
@@ -489,10 +517,15 @@ class _ArtifactsTab extends StatelessWidget {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s14,
+        AppSpacing.s14,
+        AppSpacing.s14,
+        AppSpacing.s16,
+      ),
       cacheExtent: 1500,
       itemCount: artifacts.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s10),
       itemBuilder: (context, i) => ChatArtifactTile(
         artifact: _adaptApiArtifact(context, artifacts[i], context.tr),
         onOpen: () => onOpen(artifacts[i]),
@@ -518,38 +551,52 @@ class _EmptyTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
-                borderRadius: AppRadius.buttonR,
-                border: Border.all(color: s.cardBorder),
+    // Scroll-only-when-it-has-to, the same treatment `UpdateRequiredScreen`
+    // and the lock screen needed. The 56 px glyph, its two labels and 48 px
+    // of padding come to ~210 px, and the rail's tab body on a 568×320
+    // landscape phone is well under that — it overflowed by 71 px. The
+    // `minHeight` keeps the content centred whenever there IS room, so
+    // nothing changes in portrait.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.s24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: AppControlSizes.emptyGlyphBox,
+                    height: AppControlSizes.emptyGlyphBox,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: s.surface2
+                          .withValues(alpha: context.isDark ? 0.5 : 0.85),
+                      borderRadius: AppRadius.buttonR,
+                      border: Border.all(color: s.cardBorder),
+                    ),
+                    child: Icon(icon, color: s.muted, size: AppIconSizes.back),
+                  ),
+                  const SizedBox(height: AppSpacing.s14),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: context.text.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s6),
+                  Text(
+                    body,
+                    textAlign: TextAlign.center,
+                    style: context.text.bodySmall?.copyWith(color: s.muted),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: s.muted, size: 24),
             ),
-            const SizedBox(height: 14),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: context.text.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: context.text.bodySmall?.copyWith(color: s.muted),
-            ),
-          ],
+          ),
         ),
       ),
     );

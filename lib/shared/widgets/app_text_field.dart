@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import 'eyebrow_label.dart';
 
@@ -63,7 +64,7 @@ class AppTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (label != null) ...[EyebrowLabel(label!), const SizedBox(height: 6)],
+        if (label != null) ...[EyebrowLabel(label!), const SizedBox(height: AppSpacing.s6)],
         TextFormField(
           controller: controller,
           focusNode: focusNode,
@@ -86,7 +87,7 @@ class AppTextField extends StatelessWidget {
             helperText: helper,
             prefixIcon: prefixIcon == null
                 ? null
-                : Icon(prefixIcon, size: 18, color: s.muted),
+                : Icon(prefixIcon, size: AppIconSizes.regular, color: s.muted),
             suffixIcon: suffixIcon,
           ),
         ),
@@ -148,7 +149,7 @@ class _AppPasswordFieldState extends State<AppPasswordField> {
       suffixIcon: IconButton(
         icon: Icon(
           _hidden ? AppIcons.eye : AppIcons.eyeOff,
-          size: 18,
+          size: AppIconSizes.regular,
           color: s.muted,
         ),
         onPressed: () => setState(() => _hidden = !_hidden),

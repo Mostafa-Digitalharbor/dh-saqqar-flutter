@@ -7,6 +7,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
@@ -104,7 +105,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 return ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
-                    const SizedBox(height: 80),
+                    const SizedBox(height: AppSpacing.s80),
                     AppErrorState(
                       message: ApiErrorMapper.message(context, snap.error),
                       onRetry: _reload,
@@ -117,7 +118,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 return ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
-                    const SizedBox(height: 80),
+                    const SizedBox(height: AppSpacing.s80),
                     Center(
                       child: EmptyState(
                         icon: AppIcons.bell,
@@ -129,10 +130,15 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 );
               }
               return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s14,
+                  AppSpacing.s14,
+                  AppSpacing.s14,
+                  AppSpacing.s24,
+                ),
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: devices.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s8),
                 itemBuilder: (context, i) => _DeviceRowTile(
                   device: devices[i],
                   revoking: _revoking.contains(devices[i].id),
@@ -164,7 +170,7 @@ class _DeviceRowTile extends StatelessWidget {
     final isIos = device.platform == DevicePlatform.ios;
     final lastSeen = device.lastSeenAt;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
         color: s.cardBg,
         borderRadius: AppRadius.cardR,
@@ -175,9 +181,9 @@ class _DeviceRowTile extends StatelessWidget {
           ColoredIconBox(
             icon: isIos ? AppIcons.deviceIos : AppIcons.deviceAndroid,
             color: s.brandCyan,
-            iconSize: 19,
+            iconSize: AppIconSizes.boxGlyphDevice,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,7 +199,7 @@ class _DeviceRowTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.s2),
                 Text(
                   device.tokenPreview,
                   maxLines: 1,
@@ -201,7 +207,7 @@ class _DeviceRowTile extends StatelessWidget {
                   style: context.text.bodySmall?.copyWith(color: s.muted),
                 ),
                 if (lastSeen != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.s2),
                   Text(
                     context.tr
                         .deviceLastSeen(AppDateFormat.relative(context, lastSeen)),
@@ -211,17 +217,17 @@ class _DeviceRowTile extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.s8),
           if (revoking)
             SizedBox(
-              width: 20,
-              height: 20,
+              width: AppControlSizes.spinnerRow,
+              height: AppControlSizes.spinnerRow,
               child: CircularProgressIndicator(strokeWidth: 2, color: s.muted),
             )
           else
             IconButton(
               tooltip: context.tr.deviceRevoke,
-              icon: Icon(AppIcons.trash, color: s.danger, size: 20),
+              icon: Icon(AppIcons.trash, color: s.danger, size: AppIconSizes.action),
               onPressed: onRevoke,
             ),
         ],

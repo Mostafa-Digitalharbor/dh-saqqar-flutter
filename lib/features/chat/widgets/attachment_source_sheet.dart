@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import 'chat_sheet.dart';
-import '../../../core/theme/app_radius.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Where the composer should pull the next attachment from.
 enum AttachmentPickerSource { photos, camera, files }
@@ -84,48 +85,46 @@ class _SourceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: s.brandCyan.withValues(alpha: 0.10),
-                ),
-                child: Icon(icon, size: 18, color: s.brandCyan),
+    return TappableSurface(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s6,
+          vertical: AppSpacing.s12,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: s.brandCyan.withValues(alpha: 0.10),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: context.text.bodyMedium?.copyWith(
-                        color: s.text,
-                        fontWeight: FontWeight.w600,
-                      ),
+              child: Icon(icon, size: AppIconSizes.regular, color: s.brandCyan),
+            ),
+            const SizedBox(width: AppSpacing.s14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: context.text.bodyMedium?.copyWith(
+                      color: s.text,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: context.text.bodySmall?.copyWith(color: s.muted),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(
+                    subtitle,
+                    style: context.text.bodySmall?.copyWith(color: s.muted),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

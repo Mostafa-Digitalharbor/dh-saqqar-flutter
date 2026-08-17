@@ -9,6 +9,7 @@ import '../../../core/network/api_error_mapper.dart';
 import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
@@ -101,7 +102,7 @@ class _TrialScreenState extends State<TrialScreen> {
     if (info == null) {
       if (state.status is DataFailure<TrialInfo>) {
         return ListView(
-          padding: const EdgeInsets.only(top: 64),
+          padding: const EdgeInsets.only(top: AppSpacing.s64),
           children: [
             AppErrorState(
               message: ApiErrorMapper.message(
@@ -119,7 +120,12 @@ class _TrialScreenState extends State<TrialScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s16,
+        AppSpacing.s16,
+        AppSpacing.s28,
+      ),
       children: [
         switch (info.state) {
           TrialState.ready => _ReadyCard(info: info),
@@ -171,7 +177,7 @@ class _RequestForm extends StatelessWidget {
       children: [
         Text(context.tr.trialIntro,
             style: context.text.bodyMedium?.copyWith(color: s.muted)),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.s18),
         AppTextField(
           label: context.tr.trialCompanyName,
           controller: company,
@@ -179,14 +185,14 @@ class _RequestForm extends StatelessWidget {
           textInputAction: TextInputAction.next,
           autofocus: true,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         AppTextField(
           label: context.tr.trialWorkEmail,
           controller: email,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         AppTextField(
           label: context.tr.trialPhone,
           controller: phone,
@@ -194,7 +200,7 @@ class _RequestForm extends StatelessWidget {
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => onSubmit(),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.s20),
         GhostButton(
           label: context.tr.trialRequestButton,
           icon: AppIcons.rocket,
@@ -219,7 +225,7 @@ class _ProvisioningCard extends StatelessWidget {
         ? context.tr.trialPendingTitle
         : context.tr.trialProvisioningTitle;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.s20),
       decoration: BoxDecoration(
         color: s.cardBg,
         borderRadius: AppRadius.cardR,
@@ -228,16 +234,16 @@ class _ProvisioningCard extends StatelessWidget {
       child: Column(
         children: [
           SizedBox(
-            width: 34,
-            height: 34,
+            width: AppControlSizes.spinnerHero,
+            height: AppControlSizes.spinnerHero,
             child: CircularProgressIndicator(strokeWidth: 2.6, color: s.brandCyan),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s16),
           Text(title,
               textAlign: TextAlign.center,
               style: context.text.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.s6),
           Text(
             context.tr.trialProvisioningBody,
             textAlign: TextAlign.center,
@@ -299,8 +305,8 @@ class _ReadyCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(AppIcons.success, color: s.success, size: 22),
-            const SizedBox(width: 8),
+            Icon(AppIcons.success, color: s.success, size: AppIconSizes.navBar),
+            const SizedBox(width: AppSpacing.s8),
             Expanded(
               child: Text(
                 context.tr.trialReadyTitle,
@@ -310,9 +316,9 @@ class _ReadyCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         Container(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(AppSpacing.s4),
           decoration: BoxDecoration(
             color: s.cardBg,
             borderRadius: AppRadius.cardR,
@@ -335,13 +341,13 @@ class _ReadyCard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         // Security note — these are LIVE admin credentials.
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(AppIcons.warning, size: 15, color: s.warning),
-            const SizedBox(width: 8),
+            Icon(AppIcons.warning, size: AppIconSizes.inline, color: s.warning),
+            const SizedBox(width: AppSpacing.s8),
             Expanded(
               child: Text(
                 context.tr.trialCredentialsWarning,
@@ -351,7 +357,7 @@ class _ReadyCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.s16),
         GhostButton(
           label: context.tr.trialOpen,
           icon: AppIcons.open,
@@ -398,7 +404,10 @@ class _CredentialRowState extends State<_CredentialRow> {
     final s = context.saqqar;
     final shown = _hidden ? UiStrings.secretMask : widget.value;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s12,
+        vertical: AppSpacing.s10,
+      ),
       child: Row(
         children: [
           SizedBox(
@@ -423,13 +432,13 @@ class _CredentialRowState extends State<_CredentialRow> {
             IconButton(
               visualDensity: VisualDensity.compact,
               icon: Icon(_hidden ? AppIcons.eye : AppIcons.eyeOff,
-                  size: 17, color: s.muted),
+                  size: AppIconSizes.listMark, color: s.muted),
               tooltip: _hidden ? context.tr.showPassword : context.tr.hidePassword,
               onPressed: () => setState(() => _hidden = !_hidden),
             ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            icon: Icon(AppIcons.copy, size: 16, color: s.muted),
+            icon: Icon(AppIcons.copy, size: AppIconSizes.small, color: s.muted),
             tooltip: context.tr.copy,
             onPressed: () => _copy(context),
           ),

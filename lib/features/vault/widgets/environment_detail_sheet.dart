@@ -5,6 +5,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
@@ -133,13 +134,18 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(18, 4, 18, 22 + viewInsets),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.s18,
+              AppSpacing.s4,
+              AppSpacing.s18,
+              AppSpacing.s22 + viewInsets,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SheetDragHandle(),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.s14),
                 // Header — breadcrumb ("Project › Env") on the start side,
                 // explicit X close on the end side. Matches the web layout
                 // exactly. The bold env title sits below the breadcrumb.
@@ -154,8 +160,8 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                           Row(
                             children: [
                               Icon(AppIcons.server,
-                                  size: 13, color: s.muted),
-                              const SizedBox(width: 6),
+                                  size: AppIconSizes.dense, color: s.muted),
+                              const SizedBox(width: AppSpacing.s6),
                               Flexible(
                                 child: Text(
                                   '$projectName › ${env.name}',
@@ -171,7 +177,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.s4),
                           Text(
                             env.name,
                             maxLines: 1,
@@ -191,7 +197,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.s12),
                 // Rename field — the env name displayed above is the
                 // last-saved value; this lets the user update it without
                 // backing out to the project popup. Submitting commits the
@@ -203,7 +209,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                   textInputAction: TextInputAction.done,
                   onSubmitted: _commitRename,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.s14),
                 // Audience toggle (web parity): "I'm a user" shows only the
                 // Odoo connection; "I'm a developer" reveals every kind.
                 _AudienceToggle(
@@ -213,7 +219,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                     setState(() => _developerMode = dev);
                   },
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.s14),
                 // Per-kind credential tabs — XML-RPC / PostgreSQL /
                 // Server shell / GitHub. Each tab's form is schema-driven
                 // from the loaded credential schemas.
@@ -298,7 +304,7 @@ class _AudienceToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(AppSpacing.s3),
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
         borderRadius: AppRadius.pillR,
@@ -327,7 +333,7 @@ class _AudienceToggle extends StatelessWidget {
         child: AnimatedContainer(
           duration: AppDurations.control,
           curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(vertical: 9),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s9),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             gradient: selected ? AppGradients.primaryCta : null,

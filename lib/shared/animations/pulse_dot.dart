@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// Spec §12 — 6×6 round dot, 2s opacity pulse.
 ///
 /// Respects MediaQuery's `disableAnimations` (driven by OS Reduce Motion).
 class PulseDot extends StatefulWidget {
-  const PulseDot({super.key, required this.color, this.size = 6});
+  const PulseDot({super.key, required this.color, this.size = AppControlSizes.dot});
 
   final Color color;
   final double size;

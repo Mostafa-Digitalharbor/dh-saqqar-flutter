@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/stat_tile.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Workspace stats for the Account identity card — four counts rendered as a
 /// row of tiles rather than a sentence.
@@ -76,7 +77,7 @@ class StatsLine extends StatelessWidget {
         return Column(
           children: [
             for (var row = 0; row < 2; row++) ...[
-              if (row > 0) const SizedBox(height: 12),
+              if (row > 0) const SizedBox(height: AppSpacing.s12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -117,7 +118,7 @@ class _Divider extends StatelessWidget {
     return Container(
       width: 1,
       height: 22,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
       color: context.saqqar.cardBorder,
     );
   }

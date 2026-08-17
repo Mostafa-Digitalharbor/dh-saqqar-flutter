@@ -5,6 +5,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
@@ -12,6 +13,7 @@ import '../../conversations/data/conversation_models.dart';
 import '../../conversations/view_model/conversations_cubit.dart';
 import '../../conversations/view_model/conversations_state.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Result returned by [ShareDestinationSheet.show]. Drives the bootstrap's
 /// post-pick navigation:
@@ -126,10 +128,15 @@ class _ShareDestinationOverlayContentState
         child: SafeArea(
           top: false,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s4,
+              AppSpacing.s16,
+              AppSpacing.s24,
+            ),
             children: [
               Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.only(bottom: AppSpacing.s6),
                 child: Text(
                   tr.shareSheetSubtitle,
                   style: context.text.bodyMedium?.copyWith(
@@ -139,7 +146,7 @@ class _ShareDestinationOverlayContentState
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: AppSpacing.s16),
                 child: Text(
                   subtitle,
                   style: context.text.labelSmall?.copyWith(
@@ -154,14 +161,19 @@ class _ShareDestinationOverlayContentState
                     widget.onPick(const ShareDestination.newChat()),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s4,
+                  AppSpacing.s18,
+                  AppSpacing.s4,
+                  AppSpacing.s8,
+                ),
                 child: Text(
                   tr.shareExistingChats.toUpperCase(),
                   style: context.text.labelSmall?.copyWith(
                     color: s.muted,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.0,
-                    fontSize: 10,
+                    fontSize: AppFontSizes.chipLabel,
                   ),
                 ),
               ),
@@ -171,11 +183,11 @@ class _ShareDestinationOverlayContentState
                   if (data == null) {
                     if (state.data.isLoading) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
                         child: Center(
                           child: SizedBox(
-                            width: 22,
-                            height: 22,
+                            width: AppControlSizes.spinnerMedium,
+                            height: AppControlSizes.spinnerMedium,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.4,
                               color: s.brandCyan,
@@ -191,7 +203,7 @@ class _ShareDestinationOverlayContentState
                     final failure = state.data;
                     if (failure is DataFailure<ConversationsData>) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
                         child: AppErrorState(
                           message: ApiErrorMapper.message(
                             context,
@@ -216,7 +228,7 @@ class _ShareDestinationOverlayContentState
                     children: [
                       for (final conv in active)
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.only(bottom: AppSpacing.s8),
                           child: _ConversationRow(
                             conversation: conv,
                             onTap: () => widget.onPick(
@@ -244,43 +256,44 @@ class _NewChatRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.inputR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.inputR,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.inputR,
-            border: Border.all(color: s.brandCyan.withValues(alpha: 0.45)),
-            color: s.brandCyan.withValues(alpha: 0.08),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: s.brandCyan.withValues(alpha: 0.18),
-                ),
-                child: Icon(AppIcons.plus, color: s.brandCyan, size: 18),
+    return TappableSurface(
+      radius: AppRadius.inputR,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s12,
+          AppSpacing.s12,
+          AppSpacing.s12,
+          AppSpacing.s12,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.inputR,
+          border: Border.all(color: s.brandCyan.withValues(alpha: 0.45)),
+          color: s.brandCyan.withValues(alpha: 0.08),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: s.brandCyan.withValues(alpha: 0.18),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  context.tr.shareNewChat,
-                  style: context.text.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              child: Icon(AppIcons.plus, color: s.brandCyan, size: AppIconSizes.regular),
+            ),
+            const SizedBox(width: AppSpacing.s12),
+            Expanded(
+              child: Text(
+                context.tr.shareNewChat,
+                style: context.text.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              Icon(AppIcons.chevronRight, color: s.muted, size: 18),
-            ],
-          ),
+            ),
+            Icon(AppIcons.chevronRight, color: s.muted, size: AppIconSizes.regular),
+          ],
         ),
       ),
     );
@@ -297,63 +310,63 @@ class _ConversationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final preview = conversation.lastMessagePreview;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: s.surface2,
-                  border: Border.all(color: s.border),
-                ),
-                child: Icon(AppIcons.chats, size: 14, color: s.muted),
+    return TappableSurface(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s12,
+          AppSpacing.s10,
+          AppSpacing.s12,
+          AppSpacing.s10,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: s.surface2,
+                border: Border.all(color: s.border),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              child: Icon(AppIcons.chats, size: AppIconSizes.compact, color: s.muted),
+            ),
+            const SizedBox(width: AppSpacing.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    conversation.title.isEmpty
+                        ? context.tr.startConversation
+                        : conversation.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (preview.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
-                      conversation.title.isEmpty
-                          ? context.tr.startConversation
-                          : conversation.title,
+                      preview,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: context.text.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      style: context.text.bodySmall?.copyWith(
+                        color: s.muted,
+                        fontSize: AppFontSizes.footnote,
                       ),
                     ),
-                    if (preview.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        preview,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.bodySmall?.copyWith(
-                          color: s.muted,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Icon(AppIcons.chevronRight, color: s.muted, size: 16),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.s8),
+            Icon(AppIcons.chevronRight, color: s.muted, size: AppIconSizes.small),
+          ],
         ),
       ),
     );
@@ -369,7 +382,10 @@ class _EmptyHint extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 4),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.s18,
+        horizontal: AppSpacing.s4,
+      ),
       child: Text(
         text,
         textAlign: TextAlign.center,

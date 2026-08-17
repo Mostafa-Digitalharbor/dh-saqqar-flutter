@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_date_format.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../core/theme/app_radius.dart';
 
@@ -26,10 +27,13 @@ class ChatDateSeparator extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.s14),
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s12,
+            vertical: AppSpacing.s5,
+          ),
           decoration: BoxDecoration(
             color: s.surface2.withValues(alpha: context.isDark ? 0.65 : 0.92),
             borderRadius: AppRadius.pillR,
@@ -40,7 +44,7 @@ class ChatDateSeparator extends StatelessWidget {
             style: context.text.labelSmall?.copyWith(
               color: s.muted,
               fontWeight: FontWeight.w700,
-              fontSize: 10,
+              fontSize: AppFontSizes.chipLabel,
               letterSpacing: 1.0,
             ),
           ),

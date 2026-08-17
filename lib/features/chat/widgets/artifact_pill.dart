@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../demo/saqqar_demo_data.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Spec / web parity widget for agent-generated outputs that appear inline
 /// in an assistant bubble. The web's `renderMessageAttachments()` shows the
@@ -38,78 +40,79 @@ class ArtifactPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.cardR,
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: AppRadius.cardR,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
-          decoration: BoxDecoration(
-            color: s.brandCyan.withValues(alpha: context.isDark ? 0.10 : 0.06),
-            borderRadius: AppRadius.cardR,
-            border: Border.all(color: s.brandCyan.withValues(alpha: 0.32)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(AppIcons.sparkles, size: 12, color: s.brandCyan),
-                  const SizedBox(width: 6),
-                  Text(
-                    context.tr.artifactReady.toUpperCase(),
-                    style: context.text.labelSmall?.copyWith(
-                      color: s.brandCyan,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 10,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  ColoredIconBox(
-                    icon: _icon,
+    return TappableSurface(
+      radius: AppRadius.cardR,
+      onTap: onOpen,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s12,
+          AppSpacing.s10,
+          AppSpacing.s10,
+          AppSpacing.s10,
+        ),
+        decoration: BoxDecoration(
+          color: s.brandCyan.withValues(alpha: context.isDark ? 0.10 : 0.06),
+          borderRadius: AppRadius.cardR,
+          border: Border.all(color: s.brandCyan.withValues(alpha: 0.32)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(AppIcons.sparkles, size: AppIconSizes.meta, color: s.brandCyan),
+                const SizedBox(width: AppSpacing.s6),
+                Text(
+                  context.tr.artifactReady.toUpperCase(),
+                  style: context.text.labelSmall?.copyWith(
                     color: s.brandCyan,
-                    radius: 10,
-                    borderAlpha: 0.28,
+                    fontWeight: FontWeight.w800,
+                    fontSize: AppFontSizes.chipLabel,
+                    letterSpacing: 1.0,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          attachment.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.titleSmall?.copyWith(
-                            color: s.text,
-                            fontWeight: FontWeight.w700,
-                          ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.s8),
+            Row(
+              children: [
+                ColoredIconBox(
+                  icon: _icon,
+                  color: s.brandCyan,
+                  radius: 10,
+                  borderAlpha: 0.28,
+                ),
+                const SizedBox(width: AppSpacing.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        attachment.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.titleSmall?.copyWith(
+                          color: s.text,
+                          fontWeight: FontWeight.w700,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${attachment.kind} · ${attachment.size}',
-                          style: context.text.bodySmall?.copyWith(
-                            color: s.muted,
-                          ),
+                      ),
+                      const SizedBox(height: AppSpacing.s2),
+                      Text(
+                        '${attachment.kind} · ${attachment.size}',
+                        style: context.text.bodySmall?.copyWith(
+                          color: s.muted,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Icon(AppIcons.download, size: 18, color: s.brandCyan),
-                ],
-              ),
-            ],
-          ),
+                ),
+                const SizedBox(width: AppSpacing.s4),
+                Icon(AppIcons.download, size: AppIconSizes.regular, color: s.brandCyan),
+              ],
+            ),
+          ],
         ),
       ),
     );

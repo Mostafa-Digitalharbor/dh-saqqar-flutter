@@ -6,6 +6,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
 import '../../../shared/widgets/title_trailing_row.dart';
@@ -14,6 +15,7 @@ import '../../conversations/view_model/conversations_cubit.dart';
 import '../../conversations/view_model/conversations_state.dart';
 import '../../conversations/widgets/conversation_action_handler.dart';
 import '../../conversations/widgets/conversation_actions_sheet.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Brief §4.2 — sidebar drawer mounted on `Scaffold.drawer` of the chat
 /// screen. Opens from the start side via the AppBar hamburger.
@@ -126,7 +128,12 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
           children: [
             // ── Logo row ──────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 12, 10),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s18,
+                AppSpacing.s14,
+                AppSpacing.s12,
+                AppSpacing.s10,
+              ),
               child: Row(
                 children: [
                   // Tapping the wordmark goes home (/chats). Wrapped in a
@@ -136,14 +143,17 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                     onTap: widget.onGoHome,
                     borderRadius: AppRadius.buttonR,
                     child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s4,
+                        vertical: AppSpacing.s4,
+                      ),
                       child: SaqqarLogo(height: 24),
                     ),
                   ),
                   const Spacer(),
                   IconButton(
                     tooltip: context.tr.close,
-                    icon: Icon(AppIcons.close, color: s.muted, size: 20),
+                    icon: Icon(AppIcons.close, color: s.muted, size: AppIconSizes.action),
                     onPressed: widget.onClose,
                   ),
                 ],
@@ -151,18 +161,28 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
             ),
             // ── New conversation CTA ──────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s4,
+                AppSpacing.s16,
+                AppSpacing.s8,
+              ),
               child: _NewConversationButton(onTap: widget.onNewConversation),
             ),
             // ── Search ────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s6,
+                AppSpacing.s16,
+                AppSpacing.s10,
+              ),
               child: _DrawerSearchField(
                 controller: _search,
                 onChanged: (_) => setState(() {}),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.s4),
             // ── Conversation list (scrollable) ────────────────────────
             // Subscribe to ConversationsCubit so the drawer reflects
             // live server state — new/renamed/deleted chats appear
@@ -186,7 +206,12 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
               color: s.cardBorder,
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s10,
+                AppSpacing.s16,
+                AppSpacing.s14,
+              ),
               child: _VaultFooterButton(onTap: widget.onOpenVault),
             ),
           ],
@@ -202,34 +227,40 @@ class _NewConversationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Ink(
-          decoration: const BoxDecoration(
-            gradient: AppGradients.primaryCta,
-            borderRadius: AppRadius.buttonR,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(AppIcons.plus, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Text(
+    return TappableSurface(
+      onTap: onTap,
+      child: Ink(
+        decoration: const BoxDecoration(
+          gradient: AppGradients.primaryCta,
+          borderRadius: AppRadius.buttonR,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s14,
+          vertical: AppSpacing.s12,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(AppIcons.plus, color: Colors.white, size: AppIconSizes.regular),
+            const SizedBox(width: AppSpacing.s8),
+            // Flexible: the drawer is `min(screenW * 0.86, 320)` wide, so on
+            // a 320 px phone this button gets ~240 px and a bare `Text` here
+            // is laid out unbounded — it overflowed by 38 px in English at
+            // 1.0x, before Arabic or a larger text scale even came into it.
+            Flexible(
+              child: Text(
                 context.tr.newConversation,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 14,
+                  fontSize: AppFontSizes.body,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.2,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -257,11 +288,11 @@ class _DrawerSearchField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: context.tr.searchConversations,
           hintStyle: context.text.bodySmall?.copyWith(color: s.muted),
-          prefixIcon: Icon(AppIcons.search, size: 16, color: s.muted),
+          prefixIcon: Icon(AppIcons.search, size: AppIconSizes.small, color: s.muted),
           prefixIconConstraints:
               const BoxConstraints(minWidth: 36, minHeight: 36),
           isCollapsed: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
           filled: false,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
@@ -290,7 +321,7 @@ class _ConversationGroupedList extends StatelessWidget {
     if (conversations.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.s24),
           child: Text(
             context.tr.noMatches,
             style: context.text.bodySmall?.copyWith(color: context.saqqar.muted),
@@ -314,7 +345,12 @@ class _ConversationGroupedList extends StatelessWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s8,
+        0,
+        AppSpacing.s8,
+        AppSpacing.s16,
+      ),
       cacheExtent: 1500,
       children: [
         if (today.isNotEmpty) ...[
@@ -350,13 +386,18 @@ class _GroupLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 12, 10, 6),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s10,
+        AppSpacing.s12,
+        AppSpacing.s10,
+        AppSpacing.s6,
+      ),
       child: Text(
         text.toUpperCase(),
         style: context.text.labelSmall?.copyWith(
           color: s.muted,
           fontWeight: FontWeight.w900,
-          fontSize: 10,
+          fontSize: AppFontSizes.chipLabel,
           letterSpacing: 1.2,
         ),
       ),
@@ -380,65 +421,65 @@ class _DrawerConversationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: AppRadius.buttonR,
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-          decoration: BoxDecoration(
+    return TappableSurface(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s10,
+          AppSpacing.s9,
+          AppSpacing.s10,
+          AppSpacing.s9,
+        ),
+        decoration: BoxDecoration(
+          color: isActive
+              ? s.brandCyan.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: AppRadius.buttonR,
+          border: Border.all(
             color: isActive
-                ? s.brandCyan.withValues(alpha: 0.12)
+                ? s.brandCyan.withValues(alpha: 0.40)
                 : Colors.transparent,
-            borderRadius: AppRadius.buttonR,
-            border: Border.all(
-              color: isActive
-                  ? s.brandCyan.withValues(alpha: 0.40)
-                  : Colors.transparent,
-            ),
           ),
-          child: TitleTrailingRow.stamp(
-            gap: 6,
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  conversation.title.trim().isEmpty
-                      ? context.tr.untitledConversation
-                      : conversation.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: s.text,
-                    fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                  ),
+        ),
+        child: TitleTrailingRow.stamp(
+          gap: 6,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                conversation.title.trim().isEmpty
+                    ? context.tr.untitledConversation
+                    : conversation.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.bodyMedium?.copyWith(
+                  color: s.text,
+                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  conversation.lastMessagePreview,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.labelSmall?.copyWith(
-                    color: s.muted,
-                    fontSize: 11,
-                  ),
+              ),
+              const SizedBox(height: AppSpacing.s2),
+              Text(
+                conversation.lastMessagePreview,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.labelSmall?.copyWith(
+                  color: s.muted,
+                  fontSize: AppFontSizes.caption,
                 ),
-              ],
-            ),
-            // Locale-aware relative timestamp ("5 m ago" / "Yesterday" /
-            // "May 8"), driven off the server's real `updatedAt` instead of
-            // the demo's pre-baked string label.
-            stamp: AppDateFormat.relative(context, conversation.updatedAt),
-            stampStyle: context.text.labelSmall?.copyWith(
-              color: s.muted,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
+              ),
+            ],
+          ),
+          // Locale-aware relative timestamp ("5 m ago" / "Yesterday" /
+          // "May 8"), driven off the server's real `updatedAt` instead of
+          // the demo's pre-baked string label.
+          stamp: AppDateFormat.relative(context, conversation.updatedAt),
+          stampStyle: context.text.labelSmall?.copyWith(
+            color: s.muted,
+            fontSize: AppFontSizes.chipLabel,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -453,34 +494,40 @@ class _VaultFooterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
-            borderRadius: AppRadius.buttonR,
-            border: Border.all(color: s.cardBorder),
-          ),
-          child: Row(
-            children: [
-              Icon(AppIcons.shield, color: s.brandCyan, size: 18),
-              const SizedBox(width: 10),
-              Text(
+    return TappableSurface(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s14,
+          vertical: AppSpacing.s12,
+        ),
+        decoration: BoxDecoration(
+          color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+          borderRadius: AppRadius.buttonR,
+          border: Border.all(color: s.cardBorder),
+        ),
+        child: Row(
+          children: [
+            Icon(AppIcons.shield, color: s.brandCyan, size: AppIconSizes.regular),
+            const SizedBox(width: AppSpacing.s10),
+            // `Expanded` in place of `Text` + `Spacer`. The Spacer already
+            // pushed the chevron to the end, but it could only claim space the
+            // bare `Text` had not already taken — and at 1.4× text the label
+            // takes more than the 275 px drawer has, overflowing by 9 px.
+            // Expanding the label does the same job and lets it ellipsize.
+            Expanded(
+              child: Text(
                 context.tr.credentialVault,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: context.text.bodyMedium?.copyWith(
                   color: s.text,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const Spacer(),
-              Icon(AppIcons.chevronRight, color: s.muted, size: 18),
-            ],
-          ),
+            ),
+            Icon(AppIcons.chevronRight, color: s.muted, size: AppIconSizes.regular),
+          ],
         ),
       ),
     );

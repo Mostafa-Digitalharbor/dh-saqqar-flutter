@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../core/theme/app_radius.dart';
 
@@ -39,7 +40,7 @@ class SwipeArchiveBackground extends StatelessWidget {
     final base = archived ? s.brandCyan : s.warning;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 0),
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: AppSpacing.s20),
       decoration: BoxDecoration(
         color: base.withValues(alpha: 0.18),
         borderRadius: AppRadius.modalR,
@@ -53,9 +54,9 @@ class SwipeArchiveBackground extends StatelessWidget {
             Icon(
               archived ? AppIcons.unarchive : AppIcons.archive,
               color: base,
-              size: 20,
+              size: AppIconSizes.action,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.s8),
             Text(
               archived ? context.tr.swipeUnarchive : context.tr.swipeArchive,
               style: context.text.labelMedium?.copyWith(
@@ -87,7 +88,7 @@ class SwipeDeleteBackground extends StatelessWidget {
     final s = context.saqqar;
     final base = s.danger;
     return Container(
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: AppSpacing.s20),
       decoration: BoxDecoration(
         color: base.withValues(alpha: 0.18),
         borderRadius: AppRadius.modalR,
@@ -98,8 +99,8 @@ class SwipeDeleteBackground extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(AppIcons.trash, color: base, size: 20),
-            const SizedBox(width: 8),
+            Icon(AppIcons.trash, color: base, size: AppIconSizes.action),
+            const SizedBox(width: AppSpacing.s8),
             Text(
               context.tr.swipeDelete,
               style: context.text.labelMedium?.copyWith(

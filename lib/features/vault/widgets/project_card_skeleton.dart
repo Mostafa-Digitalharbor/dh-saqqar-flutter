@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/skeleton_block.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Placeholder shimmer matching the [ProjectCard] silhouette — header row
 /// (icon + name + env count) plus two stub env rows underneath. Replaces
@@ -28,23 +29,28 @@ class ProjectCardSkeleton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Padding(
-            padding: EdgeInsets.fromLTRB(16, 14, 16, 10),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s14,
+              AppSpacing.s16,
+              AppSpacing.s10,
+            ),
             child: Row(
               children: [
                 SkeletonBlock(width: 34, height: 34, radius: 10),
-                SizedBox(width: 12),
+                SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SkeletonBlock(width: 140, height: 14),
-                      SizedBox(height: 6),
+                      SizedBox(height: AppSpacing.s6),
                       SkeletonBlock(width: 90, height: 11),
                     ],
                   ),
                 ),
                 SkeletonBlock(width: 18, height: 18, radius: 6),
-                SizedBox(width: 8),
+                SizedBox(width: AppSpacing.s8),
                 SkeletonBlock(width: 18, height: 18, radius: 6),
               ],
             ),
@@ -52,17 +58,22 @@ class ProjectCardSkeleton extends StatelessWidget {
           for (var i = 0; i < envRows; i++) ...[
             Divider(color: s.border, height: 1),
             const Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 12, 12),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s12,
+                AppSpacing.s12,
+                AppSpacing.s12,
+              ),
               child: Row(
                 children: [
                   SkeletonBlock(width: 30, height: 30, radius: 8),
-                  SizedBox(width: 12),
+                  SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SkeletonBlock(width: 110, height: 13),
-                        SizedBox(height: 6),
+                        SizedBox(height: AppSpacing.s6),
                         SkeletonBlock(width: 70, height: 10),
                       ],
                     ),

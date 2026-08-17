@@ -4,6 +4,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_typography.dart';
 import '../extensions/context_extensions.dart';
 import '../animations/pulse_dot.dart';
+import '../../core/theme/app_sizes.dart';
 
 enum StatusPillVariant { success, warning, info, danger }
 
@@ -34,7 +35,10 @@ class StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _color(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s10,
+        vertical: AppSpacing.s4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: AppRadius.pillR,
@@ -43,7 +47,7 @@ class StatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (pulsing) ...[PulseDot(color: color), const SizedBox(width: 6)],
+          if (pulsing) ...[PulseDot(color: color), const SizedBox(width: AppSpacing.s6)],
           // Flexible + single-line ellipsis so an unexpectedly long label
           // (or a future caller's longer status) can't overflow the fixed
           // padding when the pill sits in a bounded Row.

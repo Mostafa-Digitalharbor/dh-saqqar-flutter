@@ -9,6 +9,7 @@ import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -110,7 +111,12 @@ class _AppsScreenState extends State<AppsScreen> {
                     if (apps.isEmpty) {
                       // Scrollable so pull-to-refresh still works on empty.
                       return ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 48, 16, 28),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s16,
+                          AppSpacing.s48,
+                          AppSpacing.s16,
+                          AppSpacing.s28,
+                        ),
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           EmptyState(
@@ -164,7 +170,7 @@ class _AppsScreenState extends State<AppsScreen> {
                           strokeWidth: 2.6,
                           color: s.brandCyan,
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.s14),
                         Text(
                           context.tr.appsOpening,
                           style: context.text.bodyMedium
@@ -226,7 +232,12 @@ class _AppsGrid extends StatelessWidget {
         final textScale =
             MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6);
         final grid = GridView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            AppSpacing.s16,
+            AppSpacing.s16,
+            AppSpacing.s28,
+          ),
           physics: const AlwaysScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
@@ -251,7 +262,12 @@ class _AppsGrid extends StatelessWidget {
               height: 52,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s16,
+                  AppSpacing.s10,
+                  AppSpacing.s16,
+                  AppSpacing.s6,
+                ),
                 children: [
                   FilterPill(
                     label: context.tr.appGroupAll,
@@ -259,7 +275,7 @@ class _AppsGrid extends StatelessWidget {
                     onTap: () => onGroupChanged(null),
                   ),
                   for (final g in groups) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.s8),
                     FilterPill(
                       // Translated by value — the taxonomy is a closed set,
                       // so the pills follow the UI language even though the
@@ -297,7 +313,7 @@ class _AppTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.s14),
           decoration: BoxDecoration(
             borderRadius: AppRadius.cardR,
             border: Border.all(color: s.cardBorder),
@@ -311,11 +327,11 @@ class _AppTile extends StatelessWidget {
               ColoredIconBox(
                 icon: _iconForGroup(app.group),
                 color: accent,
-                size: 44,
+                size: AppIconSizes.feature,
                 radius: AppRadius.button,
-                iconSize: 22,
+                iconSize: AppIconSizes.boxGlyphLarge,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.s12),
               // Localized through the app's slug, falling back to the
               // server's English. `/api/v1/apps/` serves one language, so
               // without this the whole grid stays English on an Arabic phone.
@@ -326,7 +342,7 @@ class _AppTile extends StatelessWidget {
                 style: context.text.titleSmall
                     ?.copyWith(fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.s4),
               Expanded(
                 child: Text(
                   app.displayTagline(context.tr),
@@ -335,7 +351,7 @@ class _AppTile extends StatelessWidget {
                   style: context.text.bodySmall?.copyWith(color: s.muted),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s8),
               Row(
                 children: [
                   // The GROUP, matching the web card's chip (FINANCE /
@@ -359,7 +375,7 @@ class _AppTile extends StatelessWidget {
                   if (app.envRequired)
                     Tooltip(
                       message: context.tr.appsNeedsEnv,
-                      child: Icon(AppIcons.server, size: 15, color: s.muted),
+                      child: Icon(AppIcons.server, size: AppIconSizes.inline, color: s.muted),
                     ),
                 ],
               ),

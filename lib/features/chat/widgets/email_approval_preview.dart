@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
 /// §9 — preview of an email an approval is about to send.
@@ -89,8 +90,8 @@ class EmailApprovalPreview extends StatelessWidget {
     final tr = context.tr;
     final s = context.saqqar;
     return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(top: AppSpacing.s10),
+      padding: const EdgeInsets.all(AppSpacing.s12),
       decoration: BoxDecoration(
         color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.9),
         borderRadius: AppRadius.buttonR,
@@ -101,8 +102,8 @@ class EmailApprovalPreview extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIcons.mail, size: 14, color: s.brandCyan),
-              const SizedBox(width: 8),
+              Icon(AppIcons.mail, size: AppIconSizes.compact, color: s.brandCyan),
+              const SizedBox(width: AppSpacing.s8),
               Expanded(
                 child: Text(
                   subject,
@@ -115,11 +116,11 @@ class EmailApprovalPreview extends StatelessWidget {
                 ),
               ),
               if (isReply) ...[
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.s6),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: AppSpacing.s6,
+                    vertical: AppSpacing.s2,
                   ),
                   decoration: BoxDecoration(
                     color: s.surface3,
@@ -133,12 +134,12 @@ class EmailApprovalPreview extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s8),
           _Line(label: tr.emailPreviewTo, value: to),
           if (cc.isNotEmpty) _Line(label: tr.emailPreviewCc, value: cc),
           if (bcc.isNotEmpty) _Line(label: tr.emailPreviewBcc, value: bcc),
           if (body.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             Text(
               body,
               // Long enough to judge the message, short enough that the card
@@ -168,7 +169,7 @@ class _Line extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -179,7 +180,7 @@ class _Line extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: AppSpacing.s6),
           Expanded(
             child: Text(
               value,

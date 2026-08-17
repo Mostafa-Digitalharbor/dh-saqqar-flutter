@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/i18n/app_localizations.dart';
 import '../../core/i18n/view_model/locale_cubit.dart';
+import '../../core/theme/app_sizes.dart';
 import '../../core/theme/view_model/theme_cubit.dart';
 import '../../shared/extensions/context_extensions.dart';
 import '../../shared/widgets/ambient_background.dart';
@@ -54,14 +55,14 @@ class StorybookScreen extends StatelessWidget {
           ],
         ),
         body: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.s16),
           children: [
             _section(context, context.tr.storybookEyebrowMiniChip, [
               EyebrowLabel(context.tr.storybookEyebrowLabel),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s8),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: AppSpacing.s8,
+                runSpacing: AppSpacing.s8,
                 children: [
                   MiniChip(context.tr.agentRequests),
                   MiniChip(context.tr.review),
@@ -72,8 +73,8 @@ class StorybookScreen extends StatelessWidget {
 
             _section(context, context.tr.storybookStatusPills, [
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: AppSpacing.s8,
+                runSpacing: AppSpacing.s8,
                 children: [
                   StatusPill(
                     label: context.tr.live,
@@ -108,7 +109,7 @@ class StorybookScreen extends StatelessWidget {
                   variant: ToastVariant.success,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s8),
               GhostButton(
                 label: context.tr.cancel,
                 expand: true,
@@ -118,7 +119,7 @@ class StorybookScreen extends StatelessWidget {
                   variant: ToastVariant.info,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.s8),
               GhostButton(
                 label: context.tr.delete,
                 icon: AppIcons.trash,
@@ -130,7 +131,7 @@ class StorybookScreen extends StatelessWidget {
                   variant: ToastVariant.error,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.s12),
               Row(
                 children: [
                   AppIconButton(
@@ -138,19 +139,19 @@ class StorybookScreen extends StatelessWidget {
                     onPressed: () {},
                     tooltip: context.tr.refresh,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   AppIconButton(
                     icon: AppIcons.plus,
                     onPressed: () {},
                     tooltip: context.tr.add,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   AppIconButton(
                     icon: AppIcons.attach,
                     onPressed: () {},
                     tooltip: context.tr.attach,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   AppIconButton(
                     icon: AppIcons.search,
                     onPressed: () {},
@@ -167,12 +168,12 @@ class StorybookScreen extends StatelessWidget {
                 prefixIcon: AppIcons.user,
                 helper: context.tr.fieldRulesHint,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.s12),
               AppPasswordField(
                 label: context.tr.password,
                 hint: context.tr.samplePasswordHint,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.s12),
               AppTextField(
                 label: context.tr.withError,
                 hint: context.tr.tryAgain,
@@ -185,7 +186,7 @@ class StorybookScreen extends StatelessWidget {
               Row(
                 children: [
                   Switch(value: true, onChanged: (_) {}),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.s12),
                   Text(context.tr.autoApprove, style: context.text.bodyMedium),
                 ],
               ),
@@ -194,11 +195,20 @@ class StorybookScreen extends StatelessWidget {
             _section(context, context.tr.storybookAvatars, [
               Row(
                 children: [
-                  UserAvatar(username: context.tr.sampleUsername, size: 32),
-                  const SizedBox(width: 12),
-                  UserAvatar(username: context.tr.sampleUserSarah, size: 48),
-                  const SizedBox(width: 12),
-                  UserAvatar(username: context.tr.sampleUserArabic, size: 64),
+                  UserAvatar(
+                    username: context.tr.sampleUsername,
+                    size: AppAvatarSizes.small,
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  UserAvatar(
+                    username: context.tr.sampleUserSarah,
+                    size: AppAvatarSizes.medium,
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  UserAvatar(
+                    username: context.tr.sampleUserArabic,
+                    size: AppAvatarSizes.large,
+                  ),
                 ],
               ),
             ]),
@@ -209,12 +219,12 @@ class StorybookScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     EyebrowLabel(context.tr.appName),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.s8),
                     Text(
                       context.tr.conversationTitle,
                       style: context.text.headlineMedium,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.s6),
                     Text(
                       context.tr.liveAccessNote,
                       style: (context.text.bodySmall ?? const TextStyle())
@@ -238,7 +248,7 @@ class StorybookScreen extends StatelessWidget {
               ),
             ]),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.s24),
           ],
         ),
       ),
@@ -248,13 +258,16 @@ class StorybookScreen extends StatelessWidget {
   Widget _section(BuildContext context, String title, List<Widget> children) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s4,
+              vertical: AppSpacing.s4,
+            ),
+            margin: const EdgeInsets.only(bottom: AppSpacing.s12),
             child: Text(
               title,
               style: (context.text.titleSmall ?? const TextStyle()).copyWith(

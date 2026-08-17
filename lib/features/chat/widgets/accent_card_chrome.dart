@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
 /// The card body every accented in-chat card wears: a translucent surface, a
@@ -40,7 +41,7 @@ class AccentCardChrome extends StatelessWidget {
   /// Inset for the card body. Larger on the start edge because the accent rail
   /// occupies the first 4 px and the text would otherwise crowd it.
   static const EdgeInsetsDirectional contentPadding =
-      EdgeInsetsDirectional.fromSTEB(18, 14, 14, 14);
+      EdgeInsetsDirectional.fromSTEB(AppSpacing.s18, AppSpacing.s14, AppSpacing.s14, AppSpacing.s14);
 
   /// Width of the accent rail.
   static const double railWidth = 4;

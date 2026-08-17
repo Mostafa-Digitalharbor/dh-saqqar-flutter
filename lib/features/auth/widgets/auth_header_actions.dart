@@ -6,6 +6,7 @@ import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/view_model/locale_cubit.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/view_model/theme_cubit.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
@@ -41,7 +42,12 @@ class AuthHeaderActions extends StatelessWidget {
                     UiStrings.localeArabicCode);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s8,
+        AppSpacing.s8,
+        AppSpacing.s8,
+        0,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -59,7 +65,7 @@ class AuthHeaderActions extends StatelessWidget {
               context.read<LocaleCubit>().toggleEnglishArabic();
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.s8),
           _HeaderIconButton(
             icon: isDark ? AppIcons.sun : AppIcons.moon,
             tooltip: isDark
@@ -114,15 +120,15 @@ class _HeaderIconButton extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: label == null ? 10 : 12,
-              vertical: 8,
+              horizontal: label == null ? AppSpacing.s10 : AppSpacing.s12,
+              vertical: AppSpacing.s8,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 18, color: color),
+                Icon(icon, size: AppIconSizes.regular, color: color),
                 if (label != null) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.s6),
                   Text(
                     label!,
                     style: context.text.labelSmall?.copyWith(

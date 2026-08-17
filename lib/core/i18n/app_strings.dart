@@ -482,19 +482,20 @@ class AppStrings {
   String get emailPreviewBcc => _t('email_preview_bcc');
   String get emailPreviewReply => _t('email_preview_reply');
   // Destructive-delete type-to-confirm (web parity — `renderDeleteApproval`).
-  // The phrase itself is the localized Delete verb + the record count, e.g.
-  // "Delete 6" / "حذف 6"; `delete_confirmation.dart` folds Arabic-Indic
-  // digits so ٦ matches 6 when the user types on an Arabic keyboard.
-  String get deleteConfirmTitle => _t('delete_confirm_title');
-  String deleteConfirmBody(int count, String phrase) =>
-      _f('delete_confirm_body', {'count': count, 'phrase': phrase});
-  String deleteConfirmHint(String phrase) =>
-      _f('delete_confirm_hint', {'phrase': phrase});
-  String deleteConfirmMismatch(String phrase) =>
-      _f('delete_confirm_mismatch', {'phrase': phrase});
+  /// The red button on a destructive-delete approval card — "Delete 12" /
+  /// "حذف ١٢".
+  ///
+  /// The count is the informed consent. It used to live in a phrase the user
+  /// had to type back; that gate was removed on 2026-08-17 because it was too
+  /// hard for real users (it caused an outage) and because the value it
+  /// collected was being dropped before the request anyway. Naming the number
+  /// on the button keeps the user seeing how many rows die before they tap.
+  String deleteApprovalAction(int count) =>
+      _f('delete_approval_action', {'count': count});
 
-  /// The exact phrase the user must type to confirm deleting [count] records.
-  String deleteConfirmPhrase(int count) => '${_t('approval_op_delete')} $count';
+  /// Header above the list of rows a delete would destroy.
+  String deleteApprovalRecordsHeader(int count) =>
+      _f('delete_approval_records_header', {'count': count});
 
   // Task prep — global composer toggle. Web parity for `#taskPrepToggle`;
   // replaced Deep think, which the web removed (the backend escalates hard
@@ -1907,12 +1908,8 @@ const Map<String, String> _en = {
   'email_preview_cc': 'Cc:',
   'email_preview_bcc': 'Bcc:',
   'email_preview_reply': 'Reply',
-  'delete_confirm_title': 'Confirm deletion',
-  'delete_confirm_body':
-      'This permanently deletes {count} record(s) in Odoo. Type {phrase} to '
-          'confirm.',
-  'delete_confirm_hint': 'Type {phrase}',
-  'delete_confirm_mismatch': 'That doesn\'t match. Type {phrase} exactly.',
+  'delete_approval_action': 'Delete {count}',
+  'delete_approval_records_header': 'These {count} records will be deleted',
   'task_prep': 'Task prep',
   'task_prep_title':
       'Saqqar asks quick questions to refine a vague task before building',
@@ -3212,11 +3209,8 @@ const Map<String, String> _ar = {
   'email_preview_cc': 'نسخة إلى:',
   'email_preview_bcc': 'نسخة مخفية إلى:',
   'email_preview_reply': 'رد',
-  'delete_confirm_title': 'تأكيد الحذف',
-  'delete_confirm_body':
-      'سيحذف هذا {count} سجلاً من Odoo نهائياً. اكتب {phrase} للتأكيد.',
-  'delete_confirm_hint': 'اكتب {phrase}',
-  'delete_confirm_mismatch': 'النص غير مطابق. اكتب {phrase} كما هو.',
+  'delete_approval_action': 'حذف {count}',
+  'delete_approval_records_header': 'سيتم حذف هذه السجلات ({count})',
   'task_prep': 'تجهيز المهمة',
   'task_prep_title':
       'صقّار يطرح أسئلة توضيحية مختصرة قبل تنفيذ أي مهمة غير واضحة',

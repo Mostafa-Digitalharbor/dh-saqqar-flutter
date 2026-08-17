@@ -6,6 +6,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import 'account_card_header.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
@@ -175,7 +176,12 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
       blur: false,
       // Tighter padding so the collapsed header reads as a single row, not
       // a card with a lot of empty space underneath.
-      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s4,
+        AppSpacing.s8,
+        AppSpacing.s4,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -185,18 +191,21 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
             onTap: _toggle,
             borderRadius: AppRadius.buttonR,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+              padding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.s14,
+                horizontal: AppSpacing.s4,
+              ),
               child: AccountCardHeader(
                 icon: AppIcons.lock,
                 title: context.tr.changePassword,
                 trailing: Padding(
-                  padding: const EdgeInsets.only(top: 6),
+                  padding: const EdgeInsets.only(top: AppSpacing.s6),
                   child: AnimatedRotation(
                     duration: AppDurations.fast,
                     turns: _expanded ? 0.5 : 0,
                     child: Icon(
                       AppIcons.chevronDown,
-                      size: 20,
+                      size: AppIconSizes.action,
                       color: s.muted,
                     ),
                   ),
@@ -212,7 +221,12 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
               duration: AppDurations.fast,
               firstChild: const SizedBox(width: double.infinity, height: 0),
               secondChild: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 4, 8, 14),
+                padding: const EdgeInsets.fromLTRB(
+                  0,
+                  AppSpacing.s4,
+                  AppSpacing.s8,
+                  AppSpacing.s14,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -221,7 +235,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                       style: context.text.bodySmall
                           ?.copyWith(color: s.muted, height: 1.4),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: AppSpacing.s14),
                     AutofillGroup(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -233,7 +247,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                             autofillHints: const [AutofillHints.password],
                             errorText: _currentError,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.s12),
                           AppPasswordField(
                             label: context.tr.newPassword,
                             controller: _next,
@@ -241,7 +255,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                             autofillHints: const [AutofillHints.newPassword],
                             errorText: _nextError,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.s12),
                           AppPasswordField(
                             label: context.tr.confirmPassword,
                             controller: _confirm,
@@ -253,7 +267,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.s16),
                     PrimaryButton(
                       label: context.tr.updatePassword,
                       icon: AppIcons.lock,

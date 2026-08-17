@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/ui_strings.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import '../../core/theme/app_radius.dart';
 
@@ -36,12 +37,12 @@ class CodePlate extends StatelessWidget {
         fontFamily: UiStrings.monospaceFontFamily,
         color: accent,
         height: 1.5,
-        fontSize: 12,
+        fontSize: AppFontSizes.footnote,
       ),
     );
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(AppSpacing.s10),
       decoration: BoxDecoration(
         color: s.codePlate,
         borderRadius: AppRadius.tightR,

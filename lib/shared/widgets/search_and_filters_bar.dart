@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import 'chip_strip.dart';
 import 'filter_pill.dart';
@@ -56,13 +57,13 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
               hintStyle: context.text.bodyMedium?.copyWith(color: s.muted),
               filled: false,
               isCollapsed: false,
-              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              prefixIcon: Icon(AppIcons.search, size: 18, color: s.muted),
+              contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
+              prefixIcon: Icon(AppIcons.search, size: AppIconSizes.regular, color: s.muted),
               suffixIcon: query.isEmpty
                   ? null
                   : IconButton(
                       tooltip: context.tr.clearSearch,
-                      icon: Icon(AppIcons.close, size: 18, color: s.muted),
+                      icon: Icon(AppIcons.close, size: AppIconSizes.regular, color: s.muted),
                       onPressed: () {
                         controller.clear();
                         onQueryChanged('');
@@ -75,7 +76,7 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
           ),
         ),
         if (filters.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.s10),
           // Sizes to the chips rather than pinning `height: 38`, which
           // clipped Arabic descenders at large text scales with no overflow
           // warning.

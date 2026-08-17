@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -46,14 +47,14 @@ class UpdateRequiredScreen extends StatelessWidget {
           // 1.4× text scale, and nothing pins the app to portrait.
           child: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s28),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SaqqarLogo(height: 34),
-                    const SizedBox(height: 36),
+                    const SizedBox(height: AppSpacing.s36),
                     Container(
                       width: 76,
                       height: 76,
@@ -67,32 +68,32 @@ class UpdateRequiredScreen extends StatelessWidget {
                       ),
                       child: Icon(
                         AppIcons.download,
-                        size: 32,
+                        size: AppIconSizes.emptyState,
                         color: s.brandCyan,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.s24),
                     Text(
                       tr.updateRequiredTitle,
                       style: context.text.titleLarge
                           ?.copyWith(fontWeight: FontWeight.w800),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.s8),
                     Text(
                       tr.updateRequiredBody,
                       style: context.text.bodyMedium?.copyWith(color: s.muted),
                       textAlign: TextAlign.center,
                     ),
                     if (latestVersion.isNotEmpty) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: AppSpacing.s6),
                       Text(
                         tr.updateNewVersion(latestVersion),
                         style: context.text.labelSmall?.copyWith(color: s.muted),
                         textAlign: TextAlign.center,
                       ),
                     ],
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.s32),
                     PrimaryButton(
                       label: tr.updateAction,
                       icon: AppIcons.download,

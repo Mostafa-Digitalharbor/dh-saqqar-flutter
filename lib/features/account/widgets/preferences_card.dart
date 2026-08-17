@@ -13,6 +13,7 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../notifications/view_model/notifications_settings_cubit.dart';
 import '../../push/data/push_notifications_service.dart';
 import '../../security/view_model/app_lock_cubit.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Theme + language preferences card. Reads/writes the two top-level
 /// Cubits ([ThemeCubit], [LocaleCubit]).
@@ -41,12 +42,12 @@ class PreferencesCard extends StatelessWidget {
             icon: AppIcons.settings,
             title: context.tr.preferences,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s16),
           Text(
             context.tr.theme,
             style: context.text.labelLarge?.copyWith(color: s.muted),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s8),
           SegmentedButton<AppThemeMode>(
             showSelectedIcon: false,
             segments: [
@@ -70,12 +71,12 @@ class PreferencesCard extends StatelessWidget {
             onSelectionChanged: (selection) =>
                 context.read<ThemeCubit>().setMode(selection.first),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.s18),
           Text(
             context.tr.language,
             style: context.text.labelLarge?.copyWith(color: s.muted),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s8),
           SegmentedButton<String>(
             showSelectedIcon: false,
             segments: [
@@ -100,7 +101,7 @@ class PreferencesCard extends StatelessWidget {
                   );
             },
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: AppSpacing.s18),
           Text(
             context.tr.security,
             style: context.text.labelLarge?.copyWith(color: s.muted),

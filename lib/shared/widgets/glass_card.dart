@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
 import '../extensions/context_extensions.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// Spec §5.1 glass panel — translucent fill + 1px border, with an optional
 /// 14px backdrop blur.
@@ -27,7 +28,7 @@ import '../extensions/context_extensions.dart';
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(AppSpacing.s16),
     this.borderRadius = AppRadius.cardR,
     this.blur = false,
     this.color,

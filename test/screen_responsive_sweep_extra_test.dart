@@ -9,6 +9,12 @@
 //   AppsScreen · BillingHistoryScreen · DataExplorerScreen · MeetingsScreen ·
 //   TrialScreen · SharedTranscriptScreen · AppErrorScreen
 //
+// A second coverage audit on 2026-08-17 diffed every `*Screen` class in `lib`
+// against all three sweeps and found two more with no device-matrix coverage
+// anywhere — `UpdateRequiredScreen` and `AttachmentViewerScreen`. They are
+// swept at the bottom of this file; `StorybookScreen` is deliberately still
+// absent, being a developer-only surface that never ships to a user.
+//
 // Same matrix and same provider chrome as part one, both imported from
 // `support/responsive_harness` so a viewport added there applies to all
 // sixteen screens at once.
@@ -19,12 +25,16 @@
 // exist once there is data, so a fake that returns `[]` produces a sweep that
 // passes without testing anything.
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:saqqar_app/core/constants/ui_strings.dart';
+import 'package:saqqar_app/features/app_update/view/update_required_screen.dart';
+import 'package:saqqar_app/features/chat/view/attachment_viewer_screen.dart';
 import 'package:saqqar_app/features/apps/data/app_package_models.dart';
 import 'package:saqqar_app/features/apps/data/apps_api.dart';
 import 'package:saqqar_app/features/apps/view/apps_screen.dart';
@@ -376,6 +386,62 @@ void main() {
         wrap: _withSharedTranscript);
   });
 
+  // ── The two screens no sweep reached ───────────────────────────────────
+  //
+  // Found by a coverage audit on 2026-08-17: every other class in `lib` that
+  // extends a screen appears in one of the three sweeps, and these two did
+  // not appear in any of them.
+  //
+  // Both are worse places to overflow than average. `UpdateRequiredScreen` is
+  // a WALL — it has no back button and no sign-out, by design, so a user who
+  // meets a broken layout there has no route past it but the store button
+  // that the broken layout may itself be hiding. `AttachmentViewerScreen`
+  // renders a filename the app does not control, which is the classic
+  // unbounded-width input.
+
+  testWidgets('UpdateRequiredScreen survives the matrix', (tester) async {
+    // A store URL and a version string, because the empty-version branch is
+    // the one that renders FEWER lines — sweeping it would test the layout
+    // that cannot overflow.
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => const UpdateRequiredScreen(
+        storeUrl: 'https://play.google.com/store/apps/details?id=com.saqqar',
+        latestVersion: '1.2.7 (build 108)',
+      ),
+    );
+  });
+
+  testWidgets('AttachmentViewerScreen survives the matrix', (tester) async {
+    // A text attachment on purpose: the image and PDF branches decode through
+    // platform channels no widget test has, while the text branch renders the
+    // same app bar, subtitle row and action buttons — which is where the
+    // horizontal competition for 320 px actually happens.
+    final file = File('${Directory.systemTemp.path}/sweep_attachment.txt')
+      ..writeAsStringSync(
+        List.filled(40, 'the quick brown fox jumps over the lazy dog').join(
+          '\n',
+        ),
+      );
+    addTearDown(() {
+      if (file.existsSync()) file.deleteSync();
+    });
+
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => AttachmentViewerScreen(
+        // A long, unbroken name is what a real Odoo export looks like, and
+        // it is the input the app bar cannot clamp by choosing nicer copy.
+        name: 'ALZOMMAN-trading-and-contracting-Q4-reconciliation-export.txt',
+        file: file,
+        kindLabel: 'TEXT',
+        sizeLabel: '1.7 MB',
+      ),
+    );
+  });
+
   // ── Anti-false-green guard ─────────────────────────────────────────────
   //
   // Mirrors part one: a fake that quietly stops answering would leave each
@@ -427,6 +493,47 @@ void main() {
       // proves the sweep's `afterPump` above lands on the populated screen
       // rather than leaving the intro form up.
       expect(find.textContaining('أرقام المبيعات'), findsWidgets);
+    });
+
+    testWidgets('UpdateRequiredScreen shows the version it is blocking on',
+        (tester) async {
+      // The screen omits the version line entirely when the backend sends no
+      // version. That branch renders one fewer row, so a sweep that landed on
+      // it would be testing a shorter column than any real user meets.
+      await pumpOnce(
+        tester,
+        const UpdateRequiredScreen(
+          storeUrl: 'https://play.google.com/store/apps/details?id=com.saqqar',
+          latestVersion: '1.2.7 (build 108)',
+        ),
+        prefs: prefs,
+      );
+      expect(find.textContaining('1.2.7'), findsWidgets);
+    });
+
+    testWidgets('AttachmentViewerScreen renders the file, not a failure',
+        (tester) async {
+      // The viewer falls back to an "unsupported" card — two centred labels,
+      // the one layout that cannot overflow — whenever it cannot read the
+      // file. Asserting on the file's own CONTENT is what separates "the text
+      // branch rendered" from "the fallback rendered and the sweep passed".
+      final file = File('${Directory.systemTemp.path}/sweep_attachment_probe.txt')
+        ..writeAsStringSync('reconciliation totals for Q4');
+      addTearDown(() {
+        if (file.existsSync()) file.deleteSync();
+      });
+
+      await pumpOnce(
+        tester,
+        AttachmentViewerScreen(
+          name: 'ALZOMMAN-trading-Q4-reconciliation-export.txt',
+          file: file,
+          kindLabel: 'TEXT',
+          sizeLabel: '1.7 MB',
+        ),
+        prefs: prefs,
+      );
+      expect(find.textContaining('reconciliation totals'), findsWidgets);
     });
   });
 }

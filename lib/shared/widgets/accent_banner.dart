@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import '../../core/theme/app_radius.dart';
 
@@ -33,8 +34,13 @@ class AccentBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.s12,
+        AppSpacing.s8,
+        AppSpacing.s12,
+        0,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.s12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: AppRadius.buttonR,
@@ -46,8 +52,8 @@ class AccentBanner extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(width: 10),
+              Icon(icon, color: color, size: AppIconSizes.regular),
+              const SizedBox(width: AppSpacing.s10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,7 +65,7 @@ class AccentBanner extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.s2),
                     Text(
                       body,
                       style: context.text.bodySmall?.copyWith(color: s.text),
@@ -70,7 +76,7 @@ class AccentBanner extends StatelessWidget {
             ],
           ),
           if (action != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: action!,

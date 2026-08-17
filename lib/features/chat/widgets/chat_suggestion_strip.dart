@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/chip_strip.dart';
 import '../../../shared/widgets/responsive_content.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Horizontal strip of quick-action suggestion chips shown directly above
 /// the composer — mirrors the Saqqar Design System's ChatScreen
@@ -47,7 +49,12 @@ class ChatSuggestionStrip extends StatelessWidget {
       ),
       child: ResponsiveContent(
         maxWidth: 980,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s12,
+          AppSpacing.s8,
+          AppSpacing.s12,
+          AppSpacing.s8,
+        ),
         // Sizes to the chips rather than pinning `height: 34`, which clipped
         // Arabic descenders at large text scales with no overflow warning.
         child: ChipStrip(
@@ -77,33 +84,32 @@ class _SuggestionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.pillR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.pillR,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: s.cardBg,
-            borderRadius: AppRadius.pillR,
-            border: Border.all(color: s.cardBorder),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(AppIcons.sparkles, size: 13, color: s.brandCyan),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: context.text.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12.5,
-                ),
+    return TappableSurface(
+      radius: AppRadius.pillR,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s12,
+          vertical: AppSpacing.s7,
+        ),
+        decoration: BoxDecoration(
+          color: s.cardBg,
+          borderRadius: AppRadius.pillR,
+          border: Border.all(color: s.cardBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.sparkles, size: AppIconSizes.dense, color: s.brandCyan),
+            const SizedBox(width: AppSpacing.s6),
+            Text(
+              label,
+              style: context.text.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: AppFontSizes.pillTitle,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

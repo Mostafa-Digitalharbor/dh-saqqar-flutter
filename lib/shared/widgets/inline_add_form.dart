@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../extensions/responsive_breakpoints.dart';
 import 'app_text_field.dart';
 import 'primary_button.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// A one-field "add another" form: a text field and the button that submits
 /// it, laid out side by side — and stacked when they no longer fit.
@@ -86,7 +87,7 @@ class InlineAddForm extends StatelessWidget {
           return Row(
             children: [
               Expanded(child: field),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.s10),
               button(expand: false),
             ],
           );
@@ -95,7 +96,7 @@ class InlineAddForm extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             field,
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
             // Full-width when stacked: a button sized to its label, alone
             // on a row, reads as floating rather than as this field's
             // action.

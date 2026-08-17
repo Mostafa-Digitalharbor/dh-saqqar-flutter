@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Bottom-sheet shell shared by every chat sub-flow (credential picker, more
 /// menu, action center, approvals, artifacts). Caps height at 85% of the
@@ -22,13 +23,18 @@ class ChatSheet extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(18, 4, 18, 22 + viewInsets),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.s18,
+            AppSpacing.s4,
+            AppSpacing.s18,
+            AppSpacing.s22 + viewInsets,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SheetDragHandle(),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.s18),
               Text(
                 title,
                 style: context.text.titleLarge?.copyWith(
@@ -36,7 +42,7 @@ class ChatSheet extends StatelessWidget {
                   letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSpacing.s14),
               Flexible(
                 child: SingleChildScrollView(
                   child: Column(

@@ -51,6 +51,7 @@ export 'search_and_filters_bar.dart';
 export 'sheet_drag_handle.dart';
 export 'skeleton_block.dart';
 export 'status_pill.dart';
+export 'tappable_surface.dart';
 export 'text_scale_lock.dart';
 export 'title_trailing_row.dart';
 export 'user_avatar.dart';

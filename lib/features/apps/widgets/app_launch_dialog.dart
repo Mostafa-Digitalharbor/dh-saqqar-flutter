@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_dialog_shell.dart';
 import '../../../shared/widgets/dialog_actions.dart';
@@ -96,7 +97,12 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
     return AppDialogShell(
       elevated: true,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s20,
+          AppSpacing.s20,
+          AppSpacing.s20,
+          AppSpacing.s16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
@@ -107,7 +113,7 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.s6),
             Text(
               // The app itself names the stakes: `env_required` is the
               // server's own word on whether this package needs a database.
@@ -119,7 +125,7 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
 
             if (projects.isEmpty)
               _Note(text: tr.appLaunchNoProjects)
@@ -133,7 +139,7 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
                     selected: p.id == project?.id,
                     onTap: () => _pickProject(p.id),
                   ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.s12),
               ],
               _SectionLabel(tr.appLaunchEnvironment),
               if (project == null)
@@ -160,7 +166,7 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
                   ),
             ],
 
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.s20),
             DialogActions(
               // "Decide later" is a real, supported outcome — the launch API
               // takes no environment and the agent asks in-chat — so it is a
@@ -199,7 +205,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s6),
       child: Text(
         text,
         style: context.text.labelSmall?.copyWith(
@@ -220,7 +226,7 @@ class _Note extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s4),
       child: Text(
         text,
         style: context.text.bodySmall?.copyWith(
@@ -249,14 +255,17 @@ class _PickRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s6),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppRadius.buttonR,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s12,
+              vertical: AppSpacing.s11,
+            ),
             decoration: BoxDecoration(
               color: selected
                   ? s.brandCyan.withValues(alpha: 0.12)
@@ -270,10 +279,10 @@ class _PickRow extends StatelessWidget {
               children: [
                 Icon(
                   selected ? AppIcons.check : AppIcons.database,
-                  size: 16,
+                  size: AppIconSizes.small,
                   color: selected ? s.brandCyan : s.muted,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.s10),
                 Expanded(
                   child: Text(
                     label,
@@ -286,7 +295,7 @@ class _PickRow extends StatelessWidget {
                   ),
                 ),
                 if (trailing != null) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.s8),
                   trailing!,
                 ],
               ],

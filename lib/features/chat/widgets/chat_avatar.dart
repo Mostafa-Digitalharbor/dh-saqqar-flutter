@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
 
@@ -12,7 +13,7 @@ import '../../../shared/widgets/saqqar_logo.dart';
 /// themes automatically, so the brand stays legible against whichever
 /// surface the chat is sitting on.
 class ChatAvatar extends StatelessWidget {
-  const ChatAvatar({super.key, required this.isUser, this.size = 32});
+  const ChatAvatar({super.key, required this.isUser, this.size = AppAvatarSizes.small});
 
   final bool isUser;
   final double size;

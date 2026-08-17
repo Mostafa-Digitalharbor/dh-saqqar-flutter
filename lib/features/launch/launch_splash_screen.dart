@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
+import '../../core/theme/app_sizes.dart';
 import '../../shared/widgets/saqqar_logo.dart';
 import '../../core/theme/app_radius.dart';
 
@@ -225,7 +226,10 @@ class _SplashLogoCard extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxW.clamp(0, 420)),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 30),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s34,
+          vertical: AppSpacing.s30,
+        ),
         decoration: BoxDecoration(
           // Barely-there fill so the card lifts off the plain backdrop
           // without looking like a solid panel.
@@ -273,12 +277,12 @@ class _Wordmark extends StatelessWidget {
           height: logoHeight,
           forceVariant: isLight ? Brightness.light : Brightness.dark,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.s10),
         Text(
           context.tr.appTagline,
           style: TextStyle(
             color: isLight ? AppColors.lightMuted : AppColors.darkMuted,
-            fontSize: 13,
+            fontSize: AppFontSizes.dense,
             fontWeight: FontWeight.w500,
             letterSpacing: 0.4,
           ),

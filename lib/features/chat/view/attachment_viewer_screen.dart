@@ -10,6 +10,7 @@ import '../../../core/format/file_kind.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -177,7 +178,7 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: context.text.labelSmall?.copyWith(
                   color: isImage ? Colors.white70 : s.muted,
-                  fontSize: 11,
+                  fontSize: AppFontSizes.caption,
                 ),
               ),
           ],
@@ -185,7 +186,7 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
         actions: [
           IconButton(
             onPressed: _openExternally,
-            icon: const Icon(AppIcons.open, size: 20),
+            icon: const Icon(AppIcons.open, size: AppIconSizes.action),
             tooltip: tr.viewerOpenExternally,
           ),
         ],
@@ -321,7 +322,10 @@ class _TextBodyState extends State<_TextBody> {
         if (_truncated)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s16,
+              vertical: AppSpacing.s8,
+            ),
             color: s.warning.withValues(alpha: 0.12),
             child: Text(
               context.tr.viewerTruncated,
@@ -330,14 +334,14 @@ class _TextBodyState extends State<_TextBody> {
           ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.s16),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SelectableText(
                 text,
                 style: const TextStyle(
                   fontFamily: AppTypography.fontMono,
-                  fontSize: 12,
+                  fontSize: AppFontSizes.footnote,
                   height: 1.5,
                 ),
               ),
@@ -364,7 +368,7 @@ class _UnsupportedBody extends StatelessWidget {
     final tr = context.tr;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.s32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -376,9 +380,9 @@ class _UnsupportedBody extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: s.brandCyan.withValues(alpha: 0.10),
               ),
-              child: Icon(AppIcons.fileText, size: 26, color: s.brandCyan),
+              child: Icon(AppIcons.fileText, size: AppIconSizes.tile, color: s.brandCyan),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s16),
             Text(
               message ?? tr.viewerUnsupportedTitle,
               textAlign: TextAlign.center,
@@ -386,16 +390,16 @@ class _UnsupportedBody extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             Text(
               tr.viewerUnsupportedBody,
               textAlign: TextAlign.center,
               style: context.text.bodySmall?.copyWith(color: s.muted),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.s20),
             FilledButton.icon(
               onPressed: onOpenExternally,
-              icon: const Icon(AppIcons.open, size: 16),
+              icon: const Icon(AppIcons.open, size: AppIconSizes.small),
               label: Text(tr.viewerOpenExternally),
               style: FilledButton.styleFrom(
                 backgroundColor: s.brandCyan,
@@ -404,8 +408,8 @@ class _UnsupportedBody extends StatelessWidget {
                   borderRadius: AppRadius.buttonR,
                 ),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
+                  horizontal: AppSpacing.s18,
+                  vertical: AppSpacing.s12,
                 ),
               ),
             ),

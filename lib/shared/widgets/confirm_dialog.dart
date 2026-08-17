@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/i18n/app_localizations.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import 'app_dialog_shell.dart';
 import 'colored_icon_box.dart';
@@ -75,7 +76,12 @@ class ConfirmDialog extends StatelessWidget {
       // the gradient hairline pinned while only this scrolls; on a normal
       // device everything fits and no scrollbar shows.
       child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.s22,
+                      AppSpacing.s22,
+                      AppSpacing.s22,
+                      AppSpacing.s18,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
@@ -97,14 +103,14 @@ class ConfirmDialog extends StatelessWidget {
                             child: ColoredIconBox(
                               icon: iconData,
                               color: destructive ? s.danger : s.brandCyan,
-                              size: 46,
+                              size: AppIconSizes.dialogHero,
                               radius: 14,
-                              iconSize: 22,
+                              iconSize: AppIconSizes.boxGlyphLarge,
                               backgroundAlpha: 0.14,
                               borderAlpha: 0.28,
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppSpacing.s14),
                         ],
                         Text(
                           title,
@@ -113,7 +119,7 @@ class ConfirmDialog extends StatelessWidget {
                             letterSpacing: -0.2,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         Text(
                           body,
                           style: context.text.bodyMedium?.copyWith(
@@ -121,7 +127,7 @@ class ConfirmDialog extends StatelessWidget {
                             height: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: AppSpacing.s20),
                         DialogActions(
                           cancel: GhostButton(
                             label: cancelLabel ?? context.tr.cancel,

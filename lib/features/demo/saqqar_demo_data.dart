@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/format/file_kind.dart';
-import '../chat/data/delete_confirmation.dart';
+import '../inbox/data/approval_models.dart' show kDeleteOperation;
 
 /// Shared chat/vault view-model TYPES (the `Demo*` names are legacy — they
 /// pre-date the API layer and are now populated exclusively from real API
@@ -295,6 +295,7 @@ class DemoApproval {
     this.individualRecords = const [],
     this.recordCount,
     this.confirmPhrase,
+    this.deleteRecords = const [],
     this.batchScoped = false,
   });
 
@@ -334,12 +335,21 @@ class DemoApproval {
   final List<DemoApprovalIndividual> individualRecords;
 
   /// Records this write touches, straight from the server (`record_count`).
-  /// Drives the delete type-to-confirm phrase ("Delete 6" / "حذف 6"), which
-  /// is why it is the SERVER's count and never a client-side guess.
+  /// Drives the count in the red "Delete N" button, which is why it is the
+  /// SERVER's count and never a client-side guess — it is the informed
+  /// consent a user gives before an irreversible act.
   final int? recordCount;
 
-  /// `Approval.confirmPhrase` — the server's canonical delete phrase.
+  /// `Approval.confirmPhrase` — the exact string the server will accept to
+  /// confirm this delete. The card never asks the user to reproduce it; the
+  /// red button echoes it back verbatim on tap.
   final String? confirmPhrase;
+
+  /// `Approval.deleteRecords` — display labels for the rows a delete would
+  /// destroy, so the user can review *which* records die and not only how
+  /// many. Empty on every non-delete, and on deletes the server did not
+  /// enumerate.
+  final List<String> deleteRecords;
 
   /// `payload.batch_scope` — already auto-approved by a scope the user
   /// granted earlier, so offering to batch it again is offering a no-op.

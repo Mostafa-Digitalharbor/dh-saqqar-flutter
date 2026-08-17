@@ -9,6 +9,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/interactive_cards.dart';
 import 'interactive_card_shell.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Loads one page of `GET /api/v1/report-entities/` for [entity], optionally
 /// narrowed by [query]. Injected so the card is drivable in a widget test
@@ -229,7 +230,7 @@ class _ReportBuilderCardState extends State<ReportBuilderCard> {
               }
             }),
           ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         PrimaryButton(
           label: tr.reportBuild,
           icon: AppIcons.send,
@@ -261,14 +262,14 @@ class _ChipGroup<T extends Object> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CardFieldLabel(label),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
             children: [
               for (final option in options)
                 CardChoiceChip(
@@ -329,21 +330,21 @@ class _EntityPicker extends StatelessWidget {
           textInputAction: TextInputAction.search,
           onSubmitted: onSearch,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.s8),
         if (loading)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.s12),
             child: Center(
               child: SizedBox(
-                width: 18,
-                height: 18,
+                width: AppControlSizes.spinnerSmall,
+                height: AppControlSizes.spinnerSmall,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
           )
         else if (page != null && items.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
             child: Text(
               tr.reportNoRecords,
               style: context.text.bodySmall?.copyWith(color: s.muted),
@@ -380,7 +381,7 @@ class _EntityPicker extends StatelessWidget {
         // set and quietly build a report over the wrong records.
         if (page?.truncated ?? false)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: AppSpacing.s4),
             child: Text(
               tr.reportRecordsTruncated(items.length),
               style: context.text.labelSmall?.copyWith(
@@ -389,7 +390,7 @@ class _EntityPicker extends StatelessWidget {
               ),
             ),
           ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.s4),
       ],
     );
   }

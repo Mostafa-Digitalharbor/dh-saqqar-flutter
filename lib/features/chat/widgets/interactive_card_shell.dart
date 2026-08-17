@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import 'accent_card_chrome.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Shared chrome for the three in-chat interactive cards (clarify, report
 /// builder, prompt suggestion) so they read as one family rather than three
@@ -38,11 +40,11 @@ class InteractiveCardShell extends StatelessWidget {
               ColoredIconBox(
                 icon: icon,
                 color: s.brandCyan,
-                size: 34,
+                size: AppIconSizes.cardHeader,
                 radius: AppRadius.small,
-                iconSize: 17,
+                iconSize: AppIconSizes.boxGlyphCard,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.s12),
               Expanded(
                 child: Text(
                   title,
@@ -55,7 +57,7 @@ class InteractiveCardShell extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
           ...children,
         ],
       ),
@@ -84,36 +86,35 @@ class CardChoiceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.pillR,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        borderRadius: AppRadius.pillR,
-        child: AnimatedContainer(
-          duration: AppDurations.control,
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
+    return TappableSurface(
+      radius: AppRadius.pillR,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: AppDurations.control,
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s12,
+          vertical: AppSpacing.s8,
+        ),
+        decoration: BoxDecoration(
+          color: selected
+              ? s.brandCyan.withValues(alpha: 0.16)
+              : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.9),
+          borderRadius: AppRadius.pillR,
+          border: Border.all(
             color: selected
-                ? s.brandCyan.withValues(alpha: 0.16)
-                : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.9),
-            borderRadius: AppRadius.pillR,
-            border: Border.all(
-              color: selected
-                  ? s.brandCyan.withValues(alpha: 0.55)
-                  : s.cardBorder,
-            ),
+                ? s.brandCyan.withValues(alpha: 0.55)
+                : s.cardBorder,
           ),
-          child: Text(
-            label,
-            style: context.text.labelMedium?.copyWith(
-              color: selected ? s.brandCyan : s.text,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-            ),
+        ),
+        child: Text(
+          label,
+          style: context.text.labelMedium?.copyWith(
+            color: selected ? s.brandCyan : s.text,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
       ),
@@ -130,7 +131,7 @@ class CardFieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s6),
       child: Text(
         text,
         style: context.text.labelMedium?.copyWith(

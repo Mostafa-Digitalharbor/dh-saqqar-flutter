@@ -5,6 +5,7 @@ import '../../../shared/animations/typing_dots.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import 'chat_avatar.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// The "Saqqar is typing…" row — assistant avatar (only on the first row of
 /// a group) + a neutral bubble containing three pulsing [TypingDots]. When
@@ -36,13 +37,18 @@ class ChatTypingRow extends StatelessWidget {
             )
           : const SizedBox.shrink(),
     );
-    const gap = SizedBox(width: 8);
+    const gap = SizedBox(width: AppSpacing.s8);
 
     final bubble = ScanlineOverlay(
       color: s.brandCyan,
       borderRadius: AppRadius.modalR,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 18, 12),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s14,
+          AppSpacing.s12,
+          AppSpacing.s18,
+          AppSpacing.s12,
+        ),
         decoration: BoxDecoration(
           color: s.surface2,
           borderRadius: AppRadius.modalR,
@@ -51,9 +57,9 @@ class ChatTypingRow extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TypingDots(color: s.muted, dotSize: 7),
+            TypingDots(color: s.muted, dotSize: AppControlSizes.dotLarge),
             if (statusLabel != null) ...[
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.s10),
               Flexible(
                 // Crossfade between status labels so the user perceives
                 // the agent moving from one tool to the next rather than

@@ -9,6 +9,7 @@ import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/interactive_cards.dart';
 import 'interactive_card_shell.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// §4a — the clarifying-questions card (`tool_payload.kind == prompt_clarify`).
 ///
@@ -130,15 +131,15 @@ class _PromptClarifyCardState extends State<PromptClarifyCard> {
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
         ],
         for (var i = 0; i < questions.length; i++) ...[
-          if (i > 0) const SizedBox(height: 14),
+          if (i > 0) const SizedBox(height: AppSpacing.s14),
           CardFieldLabel(questions[i].question),
           if (questions[i].options.isNotEmpty)
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.s8,
+              runSpacing: AppSpacing.s8,
               children: [
                 for (var o = 0; o < questions[i].options.length; o++)
                   CardChoiceChip(
@@ -154,7 +155,7 @@ class _PromptClarifyCardState extends State<PromptClarifyCard> {
                   ),
               ],
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s8),
           AppTextField(
             controller: _typed[i],
             hint: tr.clarifySomethingElse,
@@ -163,7 +164,7 @@ class _PromptClarifyCardState extends State<PromptClarifyCard> {
             }),
           ),
         ],
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.s14),
         Row(
           children: [
             Expanded(
@@ -173,7 +174,7 @@ class _PromptClarifyCardState extends State<PromptClarifyCard> {
                 onPressed: () => _submit(context, send: false),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.s10),
             Expanded(
               child: PrimaryButton(
                 label: tr.clarifyBuildSend,

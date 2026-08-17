@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/dialog_actions.dart';
@@ -65,7 +66,12 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
     return AppDialogShell(
       accent: AppDialogShell.dangerAccent(context),
       child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.s22,
+                      AppSpacing.s22,
+                      AppSpacing.s22,
+                      AppSpacing.s18,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
@@ -80,14 +86,14 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                           child: ColoredIconBox(
                             icon: AppIcons.warning,
                             color: s.danger,
-                            size: 46,
+                            size: AppIconSizes.dialogHero,
                             radius: 14,
-                            iconSize: 22,
+                            iconSize: AppIconSizes.boxGlyphLarge,
                             backgroundAlpha: 0.14,
                             borderAlpha: 0.28,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.s14),
                         Text(
                           context.tr.liveWarningTitle(widget.environmentName),
                           style: context.text.titleLarge?.copyWith(
@@ -95,7 +101,7 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                             letterSpacing: -0.2,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s8),
                         Text(
                           context.tr.liveWarningBody(
                             widget.environmentName,
@@ -106,13 +112,13 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                             height: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.s14),
                         InkWell(
                           borderRadius: AppRadius.buttonR,
                           onTap: () =>
                               setState(() => _dontAskAgain = !_dontAskAgain),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
                             child: Row(
                               children: [
                                 Checkbox(
@@ -122,7 +128,7 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                                   ),
                                   activeColor: s.brandCyan,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: AppSpacing.s4),
                                 Expanded(
                                   child: Text(
                                     context.tr.dontAskAgain,
@@ -135,7 +141,7 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.s14),
                         DialogActions(
                           cancel: GhostButton(
                             label: context.tr.cancel,

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
@@ -177,7 +178,12 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
       minHeight: 420,
       maxHeight: 640,
       child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s18,
+            AppSpacing.s18,
+            AppSpacing.s18,
+            AppSpacing.s18,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -197,10 +203,10 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                               color: s.brandCyan,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.4,
-                              fontSize: 10,
+                              fontSize: AppFontSizes.chipLabel,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: AppSpacing.s2),
                           Text(
                             projectName,
                             maxLines: 1,
@@ -219,12 +225,12 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.s14),
                 Divider(color: s.cardBorder, height: 1),
-                const SizedBox(height: 14),
+                const SizedBox(height: AppSpacing.s14),
                 // ── "← All projects" back link (full-width pill) ────────
                 _BackToProjectsPill(onTap: _backToProjectsList),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.s16),
                 // ── Body: project name + env list + add-env row ────────
                 Flexible(
                   child: SingleChildScrollView(
@@ -237,10 +243,10 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                             color: s.muted,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.2,
-                            fontSize: 10,
+                            fontSize: AppFontSizes.chipLabel,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: AppSpacing.s6),
                         AppTextField(
                           controller: _name,
                           focusNode: _nameFocus,
@@ -255,14 +261,14 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                         // grows past the visual-scan threshold. Keeps
                         // small projects (1–5 envs) quiet.
                         if (envs.length >= _envSearchThreshold) ...[
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppSpacing.s14),
                           _EnvSearchField(
                             controller: _envSearch,
                             onChanged: (_) => setState(() {}),
                           ),
                         ],
                         if (envs.isNotEmpty) ...[
-                          const SizedBox(height: 14),
+                          const SizedBox(height: AppSpacing.s14),
                           _EnvList(
                             envs: _filterEnvs(envs),
                             onOpen: (env) {
@@ -275,7 +281,7 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                             onDelete: _deleteEnv,
                           ),
                         ],
-                        const SizedBox(height: 14),
+                        const SizedBox(height: AppSpacing.s14),
                         // ── Add-environment inline form (always visible,
                         // even when no envs yet — matches screenshot 1)
                         // Disabled until an env name is typed (and no
@@ -333,10 +339,10 @@ class _BackToProjectsPill extends StatelessWidget {
             children: [
               Icon(
                 context.isRtl ? AppIcons.chevronRight : AppIcons.chevronLeft,
-                size: 16,
+                size: AppIconSizes.small,
                 color: s.text,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.s6),
               Flexible(
                 child: Text(
                   context.tr.backToProjects,
@@ -505,9 +511,14 @@ class _EnvRowState extends State<_EnvRow> {
     );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s10),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 14, 12),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s12,
+          AppSpacing.s10,
+          AppSpacing.s14,
+          AppSpacing.s12,
+        ),
         decoration: BoxDecoration(
           color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
           borderRadius: AppRadius.cardR,
@@ -544,7 +555,7 @@ class _EnvRowState extends State<_EnvRow> {
                 _focusNode.unfocus();
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.s8),
             // ── Line 2: the two env flags, flowing ──────────────────
             //
             // `Wrap` rather than `Row` for the same reason as the action band
@@ -553,8 +564,8 @@ class _EnvRowState extends State<_EnvRow> {
             // one that moves down a line.
             Wrap(
               crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 10,
-              runSpacing: 4,
+              spacing: AppSpacing.s10,
+              runSpacing: AppSpacing.s4,
               children: [
                 _FlagCheckbox(
                   label: context.tr.flagLive,
@@ -573,26 +584,26 @@ class _EnvRowState extends State<_EnvRow> {
             ),
             // ── Credential count chip — only when count > 0 ────────
             if (credCount > 0) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.s6),
               Padding(
-                padding: const EdgeInsetsDirectional.only(start: 4),
+                padding: const EdgeInsetsDirectional.only(start: AppSpacing.s4),
                 child: Row(
                   children: [
-                    Icon(AppIcons.key, size: 11, color: s.muted),
-                    const SizedBox(width: 4),
+                    Icon(AppIcons.key, size: AppIconSizes.metaTight, color: s.muted),
+                    const SizedBox(width: AppSpacing.s4),
                     Text(
                       context.tr.credentialCount(credCount),
                       style: context.text.labelSmall?.copyWith(
                         color: s.muted,
                         fontWeight: FontWeight.w600,
-                        fontSize: 11,
+                        fontSize: AppFontSizes.caption,
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
             // ── Row 2: Auto-approve + Open + Delete ─────────────────
             // Wrap (not Row) so on narrow phones the action buttons
             // can flow to a second line instead of overflowing. The
@@ -602,8 +613,8 @@ class _EnvRowState extends State<_EnvRow> {
             Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.s8,
+              runSpacing: AppSpacing.s8,
               children: [
                 _FlagCheckbox(
                   label: context.tr.flagAutoApprove,
@@ -622,8 +633,8 @@ class _EnvRowState extends State<_EnvRow> {
                 // everywhere else.
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: AppSpacing.s8,
+                  runSpacing: AppSpacing.s8,
                   children: [
                     PrimaryButton(
                       label: context.tr.openEnvironment,
@@ -676,13 +687,13 @@ class _EnvSearchField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: context.tr.envSearchHint,
           hintStyle: context.text.bodySmall?.copyWith(color: s.muted),
-          prefixIcon: Icon(AppIcons.search, size: 16, color: s.muted),
+          prefixIcon: Icon(AppIcons.search, size: AppIconSizes.small, color: s.muted),
           prefixIconConstraints:
               const BoxConstraints(minWidth: 36, minHeight: 36),
           suffixIcon: controller.text.isEmpty
               ? null
               : IconButton(
-                  icon: Icon(AppIcons.close, size: 14, color: s.muted),
+                  icon: Icon(AppIcons.close, size: AppIconSizes.compact, color: s.muted),
                   onPressed: () {
                     controller.clear();
                     onChanged('');
@@ -691,7 +702,7 @@ class _EnvSearchField extends StatelessWidget {
                   tooltip: context.tr.clearSearch,
                 ),
           isCollapsed: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
           filled: false,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
@@ -733,7 +744,7 @@ class _InlineNameField extends StatelessWidget {
       decoration: InputDecoration(
         isCollapsed: true,
         filled: false,
-        contentPadding: const EdgeInsets.symmetric(vertical: 6),
+        contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
         border: const UnderlineInputBorder(
           borderSide: BorderSide(color: Colors.transparent),
         ),
@@ -772,7 +783,10 @@ class _FlagCheckbox extends StatelessWidget {
       onTap: () => onChanged(!value),
       borderRadius: AppRadius.microR,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s2,
+          vertical: AppSpacing.s4,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -788,7 +802,7 @@ class _FlagCheckbox extends StatelessWidget {
                 side: BorderSide(color: s.cardBorder, width: 1.4),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.s6),
             // `Flexible`, because a `Row` hands a non-flex child unbounded
             // main-axis width — so this label neither wrapped nor ellipsized
             // however narrow the phone, and a single checkbox overflowed by
@@ -805,7 +819,7 @@ class _FlagCheckbox extends StatelessWidget {
                 style: context.text.labelMedium?.copyWith(
                   color: value ? activeColor : s.text,
                   fontWeight: value ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 12,
+                  fontSize: AppFontSizes.footnote,
                 ),
               ),
             ),

@@ -16,6 +16,7 @@ import '../../billing/data/plans_api.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../../billing/widgets/plan_feature_line.dart';
 import 'plan_badge.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Account "Plan" card shown when live usage isn't available yet (Gap A).
 ///
@@ -115,12 +116,12 @@ class _PlanCardError extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(context.tr.planUsageTitle, style: context.text.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.s8),
           Text(
             message,
             style: context.text.bodySmall?.copyWith(color: s.muted),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s12),
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: GhostButton(
@@ -174,7 +175,7 @@ class _PlanCardBody extends StatelessWidget {
             ],
           ),
           if (tagline.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.s4),
             Text(
               tagline,
               style: context.text.bodySmall
@@ -182,14 +183,14 @@ class _PlanCardBody extends StatelessWidget {
             ),
           ],
           if (tier.featuresText.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.s10),
             for (final bullet in tier.featuresText)
               PlanFeatureLine(label: PlanCopy.translate(tr, bullet)),
           ],
           // Upgrade CTA → pricing catalogue. Hidden while sales are web-only;
           // the current plan and what it includes stay (informational).
           if (showPaidUpsell) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: GhostButton(

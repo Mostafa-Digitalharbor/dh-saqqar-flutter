@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
@@ -20,6 +21,7 @@ import 'artifact_pill.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Spec §8 — two distinct render paths for one message:
 ///
@@ -68,7 +70,10 @@ class _UserBubble extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onLongPress: () => _showMessageActions(context, message),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s14,
+              vertical: AppSpacing.s11,
+            ),
             decoration: BoxDecoration(
               // Cyan-soft fill matches `--brand-cyan-soft` in the
               // mockup; opacity stepped per theme so the bubble
@@ -87,23 +92,23 @@ class _UserBubble extends StatelessWidget {
                 ChatMarkdown(data: message.content, isUser: true),
                 _MessageAttachments(
                   attachments: message.attachments,
-                  spacing: 8,
+                  spacing: AppSpacing.s8,
                 ),
               ],
             ),
           ),
         ),
         if (showTime) ...[
-          const SizedBox(height: 5),
+          const SizedBox(height: AppSpacing.s5),
           Padding(
-            padding: const EdgeInsetsDirectional.only(end: 6),
+            padding: const EdgeInsetsDirectional.only(end: AppSpacing.s6),
             child: MessageMeta(
               leading: TextSpan(text: context.tr.youLabel),
               time: message.time,
               align: TextAlign.end,
               style: context.text.labelSmall?.copyWith(
                 color: s.muted,
-                fontSize: 10.5,
+                fontSize: AppFontSizes.metaLine,
                 fontWeight: FontWeight.w500,
               ),
               dotColor: s.muted.withValues(alpha: 0.7),
@@ -141,20 +146,20 @@ class _AgentMessage extends StatelessWidget {
             time: showTime ? message.time : null,
             style: context.text.labelSmall?.copyWith(
               color: s.muted,
-              fontSize: 11.5,
+              fontSize: AppFontSizes.pillLabel,
               fontWeight: FontWeight.w500,
             ),
             dotColor: s.muted.withValues(alpha: 0.7),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.s6),
           // Optional tool name (sits above the body so the user knows
           // which tool produced this message). Bubble-less style.
           if (message.toolName != null) ...[
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.bolt, size: 11, color: s.muted),
-                const SizedBox(width: 4),
+                Icon(AppIcons.bolt, size: AppIconSizes.metaTight, color: s.muted),
+                const SizedBox(width: AppSpacing.s4),
                 // Flexible + ellipsis so an unusually long tool name can't
                 // push this meta row past the screen edge.
                 Flexible(
@@ -165,20 +170,20 @@ class _AgentMessage extends StatelessWidget {
                     style: context.text.labelSmall?.copyWith(
                       color: s.muted,
                       fontWeight: FontWeight.w600,
-                      fontSize: 10,
+                      fontSize: AppFontSizes.chipLabel,
                       letterSpacing: 0.2,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.s6),
           ],
           // Body — bubble-less, just raw markdown.
           ChatMarkdown(data: message.content, isUser: false),
           _MessageAttachments(
             attachments: message.attachments,
-            spacing: 10,
+            spacing: AppSpacing.s10,
           ),
         ],
       ),
@@ -319,13 +324,18 @@ class _MessageActionsSheet extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 4, 18, 22),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s18,
+          AppSpacing.s4,
+          AppSpacing.s18,
+          AppSpacing.s22,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SheetDragHandle(),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.s18),
             _SheetRow(
               icon: AppIcons.copy,
               label: tr.copyAction,
@@ -338,17 +348,20 @@ class _MessageActionsSheet extends StatelessWidget {
               onTap: () =>
                   Navigator.of(context).pop(_MessageAction.share),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.s4),
             // Subtle hint so the user knows the source — keeps the sheet
             // self-explanatory even when triggered accidentally.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s4,
+                vertical: AppSpacing.s6,
+              ),
               child: Text(
                 tr.shareMessageSubject,
                 textAlign: TextAlign.center,
                 style: context.text.labelSmall?.copyWith(
                   color: s.muted,
-                  fontSize: 11,
+                  fontSize: AppFontSizes.caption,
                 ),
               ),
             ),
@@ -373,37 +386,35 @@ class _SheetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.buttonR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.buttonR,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: s.muted.withValues(alpha: 0.10),
-                ),
-                child: Icon(icon, size: 18, color: s.text),
+    return TappableSurface(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s6,
+          vertical: AppSpacing.s12,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: s.muted.withValues(alpha: 0.10),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: context.text.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              child: Icon(icon, size: AppIconSizes.regular, color: s.text),
+            ),
+            const SizedBox(width: AppSpacing.s14),
+            Expanded(
+              child: Text(
+                label,
+                style: context.text.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -487,7 +498,7 @@ class _AttachmentStrip extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.zero,
         itemCount: attachments.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.s8),
         itemBuilder: (context, i) {
           final a = attachments[i];
           return AttachmentChip(

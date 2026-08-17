@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 
 /// Branded loading indicator with an optional label.
@@ -20,12 +21,12 @@ class AppLoadingState extends StatelessWidget {
   const AppLoadingState({
     super.key,
     this.label,
-    this.size = 32,
+    this.size = AppControlSizes.spinner,
   }) : _inline = false;
 
   /// Compact in-line spinner — same color, scaled for use inside buttons
   /// or list rows.
-  const AppLoadingState.inline({super.key, this.size = 16})
+  const AppLoadingState.inline({super.key, this.size = AppControlSizes.spinnerInline})
       : label = null,
         _inline = true;
 
@@ -53,7 +54,7 @@ class AppLoadingState extends StatelessWidget {
         children: [
           spinner,
           if (label != null) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.s14),
             Text(
               label!,
               style: context.text.bodySmall?.copyWith(color: s.muted),

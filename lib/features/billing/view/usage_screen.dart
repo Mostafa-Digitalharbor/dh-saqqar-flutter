@@ -12,6 +12,7 @@ import '../data/plan_models.dart';
 import '../data/usage_api.dart';
 import '../view_model/plan_cubit.dart';
 import '../view_model/saqqar_features_cubit.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Standalone token-usage page, reached from the Account "Usage" button.
 ///
@@ -80,7 +81,12 @@ class _UsageScreenState extends State<UsageScreen> {
           backgroundColor: s.surface,
           onRefresh: _fetchUsage,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s16,
+              AppSpacing.s16,
+              AppSpacing.s16,
+              AppSpacing.s28,
+            ),
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               BlocBuilder<PlanCubit, PlanSnapshot?>(
@@ -93,7 +99,7 @@ class _UsageScreenState extends State<UsageScreen> {
                   // affordance — nothing on a blank page invites a pull.
                   if (_failure != null) {
                     return Padding(
-                      padding: const EdgeInsets.only(top: 64),
+                      padding: const EdgeInsets.only(top: AppSpacing.s64),
                       child: AppErrorState(
                         message: ApiErrorMapper.message(context, _failure),
                         onRetry: _fetchUsage,
@@ -102,7 +108,7 @@ class _UsageScreenState extends State<UsageScreen> {
                   }
                   if (_loading) {
                     return Padding(
-                      padding: const EdgeInsets.only(top: 64),
+                      padding: const EdgeInsets.only(top: AppSpacing.s64),
                       child: Center(
                         child: CircularProgressIndicator(
                           strokeWidth: 2.4,

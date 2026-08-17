@@ -4,8 +4,10 @@ import 'package:flutter/services.dart' show HapticFeedback;
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
+import '../../../shared/widgets/tappable_surface.dart';
 
 /// Empty-chat surface — replaces the bare "Start a conversation" headline
 /// on 2026-05-17. Hero icon + welcome copy + a 2×2 grid of 4 starter
@@ -62,7 +64,10 @@ class EmptyChatSuggestions extends StatelessWidget {
         final width =
             constraints.maxWidth > maxWidth ? maxWidth : constraints.maxWidth;
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s20,
+            vertical: AppSpacing.s24,
+          ),
           child: Center(
             child: SizedBox(
               width: width,
@@ -70,7 +75,7 @@ class EmptyChatSuggestions extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _HeroIcon(accent: s.brandCyan),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: AppSpacing.s18),
                   Text(
                     context.tr.emptyChatTitle,
                     textAlign: TextAlign.center,
@@ -80,7 +85,7 @@ class EmptyChatSuggestions extends StatelessWidget {
                       letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.s6),
                   Text(
                     context.tr.emptyChatBody,
                     textAlign: TextAlign.center,
@@ -89,7 +94,7 @@ class EmptyChatSuggestions extends StatelessWidget {
                       height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: AppSpacing.s22),
                   // 2×2 grid built from two IntrinsicHeight rows instead
                   // of GridView. GridView's fixed childAspectRatio was
                   // squeezing text on small phones; IntrinsicHeight lets
@@ -147,7 +152,7 @@ class _HeroIcon extends StatelessWidget {
       child: Icon(
         AppIcons.message,
         color: accent,
-        size: 26,
+        size: AppIconSizes.tile,
       ),
     );
   }
@@ -170,7 +175,7 @@ class _SuggestionGrid extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (var rowStart = 0; rowStart < tiles.length; rowStart += 2) ...[
-          if (rowStart > 0) const SizedBox(height: 10),
+          if (rowStart > 0) const SizedBox(height: AppSpacing.s10),
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,7 +187,7 @@ class _SuggestionGrid extends StatelessWidget {
                   ),
                 ),
                 if (rowStart + 1 < tiles.length) ...[
-                  const SizedBox(width: 10),
+                  const SizedBox(width: AppSpacing.s10),
                   Expanded(
                     child: _SuggestionCard(
                       data: tiles[rowStart + 1],
@@ -208,56 +213,57 @@ class _SuggestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: AppRadius.cardR,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.cardR,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
-          decoration: BoxDecoration(
-            color: s.cardBg,
-            borderRadius: AppRadius.cardR,
-            border: Border.all(color: s.cardBorder),
-          ),
-          // mainAxisSize.min so the card hugs its content. The outer
-          // IntrinsicHeight + Expanded in the row gives it equal width
-          // and matched height with its sibling — the card itself only
-          // commits to height = sum of its children.
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ColoredIconBox(
-                icon: data.icon,
-                color: data.accent,
-                size: 28,
-                radius: AppRadius.tight,
-                iconSize: 16,
-                borderAlpha: 0.28,
+    return TappableSurface(
+      radius: AppRadius.cardR,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s12,
+          AppSpacing.s11,
+          AppSpacing.s12,
+          AppSpacing.s11,
+        ),
+        decoration: BoxDecoration(
+          color: s.cardBg,
+          borderRadius: AppRadius.cardR,
+          border: Border.all(color: s.cardBorder),
+        ),
+        // mainAxisSize.min so the card hugs its content. The outer
+        // IntrinsicHeight + Expanded in the row gives it equal width
+        // and matched height with its sibling — the card itself only
+        // commits to height = sum of its children.
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ColoredIconBox(
+              icon: data.icon,
+              color: data.accent,
+              size: AppIconSizes.tileLarge,
+              radius: AppRadius.tight,
+              iconSize: AppIconSizes.boxGlyphCompact,
+              borderAlpha: 0.28,
+            ),
+            const SizedBox(height: AppSpacing.s8),
+            Text(
+              data.title,
+              style: context.text.bodyMedium?.copyWith(
+                color: s.text,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+                fontSize: AppFontSizes.cardTitle,
               ),
-              const SizedBox(height: 8),
-              Text(
-                data.title,
-                style: context.text.bodyMedium?.copyWith(
-                  color: s.text,
-                  fontWeight: FontWeight.w800,
-                  height: 1.25,
-                  fontSize: 13.5,
-                ),
+            ),
+            const SizedBox(height: AppSpacing.s4),
+            Text(
+              data.subtitle,
+              style: context.text.labelSmall?.copyWith(
+                color: s.muted,
+                fontSize: AppFontSizes.pillLabel,
+                height: 1.35,
               ),
-              const SizedBox(height: 4),
-              Text(
-                data.subtitle,
-                style: context.text.labelSmall?.copyWith(
-                  color: s.muted,
-                  fontSize: 11.5,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

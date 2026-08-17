@@ -5,6 +5,7 @@ import '../../core/theme/app_icons.dart';
 import '../extensions/context_extensions.dart';
 import '../extensions/responsive_breakpoints.dart';
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 
 class PaginationBar extends StatelessWidget {
   const PaginationBar({
@@ -40,7 +41,10 @@ class PaginationBar extends StatelessWidget {
     if (totalCount == 0) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s10,
+        vertical: AppSpacing.s8,
+      ),
       decoration: BoxDecoration(
         color: s.surface2,
         borderRadius: AppRadius.inputR,
@@ -70,7 +74,7 @@ class PaginationBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 summary,
-                const SizedBox(height: 6),
+                const SizedBox(height: AppSpacing.s6),
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
                   child: controls,
@@ -82,7 +86,7 @@ class PaginationBar extends StatelessWidget {
           return Row(
             children: [
               Expanded(child: summary),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.s8),
               // Capped rather than made flexible so the summary keeps its
               // greedy `Expanded` share whenever the controls are narrow —
               // two flex children would split the row evenly and truncate

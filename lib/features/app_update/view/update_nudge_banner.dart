@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../view_model/app_update_cubit.dart';
 import 'update_action.dart';
@@ -62,7 +63,12 @@ class _NudgeRow extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s14,
+          AppSpacing.s10,
+          AppSpacing.s14,
+          AppSpacing.s10,
+        ),
         decoration: BoxDecoration(
           color: s.brandCyan.withValues(alpha: context.isDark ? 0.16 : 0.09),
           border: Border(
@@ -74,8 +80,8 @@ class _NudgeRow extends StatelessWidget {
           bottom: false,
           child: Row(
             children: [
-              Icon(AppIcons.download, color: s.brandCyan, size: 18),
-              const SizedBox(width: 10),
+              Icon(AppIcons.download, color: s.brandCyan, size: AppIconSizes.regular),
+              const SizedBox(width: AppSpacing.s10),
               // Expanded, not a bare Column: a Row gives its children
               // unbounded width, so the two text lines below would lay out at
               // their intrinsic width and overflow the moment the copy is
@@ -101,13 +107,13 @@ class _NudgeRow extends StatelessWidget {
                       style: context.text.labelSmall?.copyWith(
                         color: s.muted,
                         fontWeight: FontWeight.w500,
-                        fontSize: 11,
+                        fontSize: AppFontSizes.caption,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.s8),
               // Fixed chrome, so it must not be Expanded — both buttons size
               // to their own text and the flexible column above absorbs
               // whatever is left.
@@ -115,7 +121,7 @@ class _NudgeRow extends StatelessWidget {
                 onPressed: onUpdate,
                 style: TextButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s10),
                 ),
                 child: Text(
                   tr.updateAction,
@@ -130,7 +136,7 @@ class _NudgeRow extends StatelessWidget {
               IconButton(
                 onPressed: () => context.read<AppUpdateCubit>().dismiss(),
                 visualDensity: VisualDensity.compact,
-                iconSize: 16,
+                iconSize: AppIconSizes.boxGlyphCompact,
                 color: s.muted,
                 tooltip: tr.updateLater,
                 icon: const Icon(AppIcons.close),

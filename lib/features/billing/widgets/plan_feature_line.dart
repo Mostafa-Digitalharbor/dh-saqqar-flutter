@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 
 /// One bullet from a tier's feature list, as saqqaar.com/pricing draws them.
@@ -21,17 +22,17 @@ class PlanFeatureLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.s4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             // Nudged to sit on the first line's cap height rather than
             // centring against a bullet that may wrap to three lines.
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(AppIcons.check, size: 16, color: s.brandCyan),
+            padding: const EdgeInsets.only(top: AppSpacing.s2),
+            child: Icon(AppIcons.check, size: AppIconSizes.small, color: s.brandCyan),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.s8),
           // Expanded + wrap so a long Arabic bullet (at up to 1.4x text scale
           // on a narrow phone) wraps instead of overflowing the row — a Row
           // hands its non-flex children unbounded width, so a bare Text here

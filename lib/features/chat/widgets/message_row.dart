@@ -8,6 +8,7 @@ import 'prompt_clarify_card.dart';
 import 'prompt_suggestion_card.dart';
 import 'report_builder_card.dart';
 import 'tool_activity_card.dart';
+import '../../../core/theme/app_sizes.dart';
 
 /// Orchestrates layout for one message in the chat list.
 ///
@@ -62,14 +63,18 @@ class MessageRow extends StatelessWidget {
     final card = _buildInteractiveCard(context);
     if (card != null) {
       return Padding(
-        padding: const EdgeInsetsDirectional.only(start: 8, top: 4, bottom: 4),
+        padding: const EdgeInsetsDirectional.only(
+          start: AppSpacing.s8,
+          top: AppSpacing.s4,
+          bottom: AppSpacing.s4,
+        ),
         child: card,
       );
     }
 
     if (_isTool) {
       return Padding(
-        padding: const EdgeInsetsDirectional.only(start: 42),
+        padding: const EdgeInsetsDirectional.only(start: AppSpacing.s42),
         child: ToolActivityCard(message: message),
       );
     }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'app_icons.dart';
 import 'app_radius.dart';
+import 'app_sizes.dart';
 import 'app_typography.dart';
 import 'saqqar_theme_extension.dart';
 
@@ -78,7 +79,7 @@ class AppTheme {
       scaffoldBackgroundColor: ext.bg,
       canvasColor: ext.bg,
       textTheme: textTheme,
-      iconTheme: IconThemeData(color: ext.text, size: 20),
+      iconTheme: IconThemeData(color: ext.text, size: AppIconSizes.action),
       dividerTheme: DividerThemeData(color: ext.border, thickness: 1, space: 1),
       splashFactory: InkSparkle.splashFactory,
       visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -89,7 +90,7 @@ class AppTheme {
       // chevron; the builder pins one look everywhere.
       actionIconTheme: ActionIconThemeData(
         backButtonIconBuilder: (context) =>
-            const Icon(AppIcons.backIos, size: 24),
+            const Icon(AppIcons.backIos, size: AppIconSizes.back),
       ),
 
       appBarTheme: AppBarTheme(
@@ -105,7 +106,7 @@ class AppTheme {
           letterSpacing: -0.2,
           color: ext.text,
         ),
-        iconTheme: IconThemeData(color: ext.text, size: 22),
+        iconTheme: IconThemeData(color: ext.text, size: AppIconSizes.navBar),
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
@@ -129,7 +130,7 @@ class AppTheme {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
             color: selected ? AppColors.brandCyan : ext.muted,
-            size: 22,
+            size: AppIconSizes.navBar,
           );
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
@@ -160,7 +161,10 @@ class AppTheme {
         disabledColor: ext.surface2.withValues(alpha: 0.55),
         checkmarkColor: AppColors.brandCyan,
         showCheckmark: false,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s10,
+          vertical: AppSpacing.s8,
+        ),
         labelStyle: (textTheme.labelMedium ?? const TextStyle()).copyWith(
           color: ext.text,
         ),
@@ -221,7 +225,10 @@ class AppTheme {
             );
           }),
           padding: WidgetStateProperty.all(
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s12,
+              vertical: AppSpacing.s10,
+            ),
           ),
           textStyle: WidgetStateProperty.all(textTheme.labelMedium),
           shape: WidgetStateProperty.all(
@@ -234,15 +241,18 @@ class AppTheme {
         iconColor: ext.muted,
         titleTextStyle: textTheme.titleSmall,
         subtitleTextStyle: textTheme.bodySmall?.copyWith(color: ext.muted),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s12,
+          vertical: AppSpacing.s4,
+        ),
       ),
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: ext.surface2,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
+          horizontal: AppSpacing.s14,
+          vertical: AppSpacing.s14,
         ),
         hintStyle: (textTheme.bodyMedium ?? const TextStyle()).copyWith(
           color: ext.muted,
