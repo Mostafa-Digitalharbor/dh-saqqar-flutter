@@ -1,6 +1,18 @@
-# Pins fastlane for the iOS release lane (see fastlane/Fastfile). Kept in
-# `ios/` rather than the repo root so `bundler-cache: true` in the release
-# workflow caches against this lockfile and nothing else.
+# Pins the toolchain the iOS release lane runs on (see fastlane/Fastfile).
+# Kept in `ios/` so it sits next to the Fastfile it serves.
 source "https://rubygems.org"
 
 gem "fastlane", "~> 2.222"
+
+# CocoaPods belongs HERE, in the same Ruby as fastlane — not left to the one
+# preinstalled on the runner.
+#
+# `flutter build ios` shells out to a bare `pod install` of its own. The macOS
+# image ships CocoaPods installed against the SYSTEM Ruby, so the moment
+# `ruby/setup-ruby` puts a different Ruby on PATH that `pod` can no longer see
+# its gems and Flutter reports
+#     Warning: CocoaPods is installed but broken. Skipping pod install.
+#     CocoaPods not installed or not in valid state.
+# then fails the build. Installing it through this Gemfile puts `pod` on PATH
+# under the same Ruby fastlane uses, so the two cannot drift apart.
+gem "cocoapods"

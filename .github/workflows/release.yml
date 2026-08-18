@@ -371,9 +371,21 @@ jobs:
           ruby-version: '3.2'
           working-directory: ios
 
-      - name: Install fastlane
+      - name: Install fastlane + CocoaPods
         working-directory: ios
         run: bundle install --jobs 4
+
+      # Proves `pod` resolves under the Ruby just put on PATH, before the
+      # 20-minute build depends on it. `flutter build ios` runs its own bare
+      # `pod install` and, when the two Rubies disagree, only warns —
+      #   "CocoaPods is installed but broken. Skipping pod install."
+      # — and then fails much later with nothing pointing at Ruby. Failing
+      # here costs seconds and names the real problem.
+      - name: Verify CocoaPods
+        run: |
+          set -euo pipefail
+          which pod
+          pod --version
 
       - run: flutter pub get
 
