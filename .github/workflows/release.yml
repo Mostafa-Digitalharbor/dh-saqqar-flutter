@@ -337,8 +337,18 @@ jobs:
           # the image default is.
           latest="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
           sudo xcode-select -s "$latest"
-          xcodebuild -version
-          major="$(xcodebuild -version | head -1 | sed -E 's/^Xcode ([0-9]+).*/\1/')"
+          # Captured whole, NOT piped through `head`. xcodebuild under Xcode 26
+          # aborts on EPIPE: `head -1` closes the pipe after the first line and
+          # it dies with an uncaught NSFileHandleOperationException ("Broken
+          # pipe") inside -[XcodebuildPreIDEHandler handleVersionWithArguments:],
+          # exit 134 — which `pipefail` then turns into a failed step. It had
+          # already printed the right version a line earlier, so the failure
+          # looked like the selection itself was broken. Parsing a string
+          # already in memory cannot close anything early.
+          version="$(xcodebuild -version)"
+          echo "$version"
+          major="${version#Xcode }"
+          major="${major%%.*}"
           if [[ "$major" -lt 16 ]]; then
             echo "::error::Xcode $major is too old — Runner.xcodeproj uses synchronized folder groups, which only Xcode 16+ can parse" >&2
             exit 1
