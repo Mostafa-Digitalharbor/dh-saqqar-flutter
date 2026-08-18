@@ -33,7 +33,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  FLUTTER_VERSION: '3.35.3'
+  FLUTTER_VERSION: '3.38.10'
 
   # `versionCode` must strictly increase on every Play upload, forever.
   # Deriving it from `github.run_number` makes that mechanical instead of
