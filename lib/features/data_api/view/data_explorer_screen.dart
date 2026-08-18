@@ -78,7 +78,7 @@ class _DataExplorerScreenState extends State<DataExplorerScreen> {
             if (state.loadingEnvs) {
               return Center(
                 child:
-                    CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
+                    CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
               );
             }
             if (state.envError != null) {

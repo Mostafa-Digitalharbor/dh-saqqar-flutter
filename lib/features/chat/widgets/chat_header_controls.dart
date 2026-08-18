@@ -85,11 +85,11 @@ class ChatHeaderControls extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.95),
+        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelHeader)),
         border: Border(bottom: BorderSide(color: s.border)),
       ),
       child: ResponsiveContent(
-        maxWidth: 980,
+        maxWidth: AppLayoutWidths.chatShell,
         // Compact strip — eyebrow labels moved inline with the dropdown
         // (left-side mini caption inside the pill) so the strip height
         // drops to ~46 px total and the dropdowns stay side-by-side at
@@ -242,17 +242,17 @@ class _ChatToggleIcon extends StatelessWidget {
           onChanged(!value);
         },
         child: Container(
-          width: 36,
-          height: 36,
+          width: AppBoxSizes.headerControl,
+          height: AppBoxSizes.headerControl,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: value
-                ? accent.withValues(alpha: 0.14)
+                ? accent.withValues(alpha: AppAlphas.a14)
                 : Colors.transparent,
             borderRadius: AppRadius.buttonR,
             border: Border.all(
               color: value
-                  ? accent.withValues(alpha: 0.40)
+                  ? accent.withValues(alpha: AppAlphas.a40)
                   : Colors.transparent,
             ),
           ),
@@ -294,16 +294,16 @@ class _CreateCtaPill extends StatelessWidget {
     return TappableSurface(
       onTap: onTap,
       child: Container(
-        height: 40,
+        height: AppControlSizes.headerControlHeight,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s10),
         decoration: BoxDecoration(
           // Brand-cyan tinted fill so the "this is the next thing to
           // do" CTA visually pops vs. the muted disabled dropdown
           // state it replaces.
-          color: s.brandCyan.withValues(alpha: 0.12),
+          color: s.brandCyan.withValues(alpha: AppAlphas.a12),
           borderRadius: AppRadius.buttonR,
           border: Border.all(
-            color: s.brandCyan.withValues(alpha: 0.40),
+            color: s.brandCyan.withValues(alpha: AppAlphas.a40),
           ),
         ),
         child: Row(
@@ -360,14 +360,14 @@ class _MultiEnvPill extends StatelessWidget {
     return TappableSurface(
       onTap: enabled ? onTap : null,
       child: Container(
-        height: 40,
+        height: AppControlSizes.headerControlHeight,
         padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s10, 0, AppSpacing.s10, 0),
         decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
+          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSheet)),
           borderRadius: AppRadius.buttonR,
           border: Border.all(
             color:
-                enabled ? s.cardBorder : s.cardBorder.withValues(alpha: 0.4),
+                enabled ? s.cardBorder : s.cardBorder.withValues(alpha: AppAlphas.a40),
           ),
         ),
         child: Row(
@@ -418,7 +418,7 @@ class _MultiEnvPill extends StatelessWidget {
                       vertical: AppSpacing.s2,
                     ),
                 decoration: BoxDecoration(
-                  color: s.brandCyan.withValues(alpha: 0.14),
+                  color: s.brandCyan.withValues(alpha: AppAlphas.a14),
                   borderRadius: AppRadius.pillR,
                 ),
                 child: Text(
@@ -476,13 +476,13 @@ class _DropdownPill extends StatelessWidget {
     // DropdownButton throws. Pass null when missing so the hint shows.
     final hasValue = value != null && items.any((i) => i.value == value);
     return Container(
-      height: 40,
+      height: AppControlSizes.headerControlHeight,
       padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s10, 0, AppSpacing.s10, 0),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSheet)),
         borderRadius: AppRadius.buttonR,
         border: Border.all(
-          color: enabled ? s.cardBorder : s.cardBorder.withValues(alpha: 0.4),
+          color: enabled ? s.cardBorder : s.cardBorder.withValues(alpha: AppAlphas.a40),
         ),
       ),
       child: Row(

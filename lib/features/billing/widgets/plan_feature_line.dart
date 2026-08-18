@@ -40,7 +40,7 @@ class PlanFeatureLine extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: context.text.bodyMedium?.copyWith(height: 1.35),
+              style: context.text.bodyMedium?.copyWith(height: AppLineHeights.label),
             ),
           ),
         ],

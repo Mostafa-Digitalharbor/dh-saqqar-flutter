@@ -269,7 +269,13 @@ class PushNotificationsService {
   /// the first null (the token typically lands within a second or two on a
   /// real device, and never on the simulator).
   Future<String?> _awaitApnsToken(FirebaseMessaging messaging) async {
-    for (var attempt = 0; attempt < 20; attempt++) {
+    // APNs hands the token back asynchronously after registration, so on a
+    // cold start it is routinely still null for the first second or two.
+    // Poll rather than fail: without a token the device never registers for
+    // push at all, and the user sees no notifications with no error anywhere.
+    const attempts = 20;
+    const gap = Duration(milliseconds: 500);
+    for (var attempt = 0; attempt < attempts; attempt++) {
       try {
         final apns = await messaging.getAPNSToken();
         if (apns != null && apns.isNotEmpty) return apns;
@@ -277,7 +283,7 @@ class PushNotificationsService {
         AppLogger.warn(_tag, 'getAPNSToken attempt $attempt failed',
             error: e, stackTrace: st);
       }
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(gap);
     }
     return null;
   }

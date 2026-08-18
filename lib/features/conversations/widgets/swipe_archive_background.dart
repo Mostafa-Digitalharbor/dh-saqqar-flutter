@@ -42,9 +42,9 @@ class SwipeArchiveBackground extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 0),
       padding: const EdgeInsetsDirectional.symmetric(horizontal: AppSpacing.s20),
       decoration: BoxDecoration(
-        color: base.withValues(alpha: 0.18),
+        color: base.withValues(alpha: AppAlphas.a18),
         borderRadius: AppRadius.modalR,
-        border: Border.all(color: base.withValues(alpha: 0.40)),
+        border: Border.all(color: base.withValues(alpha: AppAlphas.a40)),
       ),
       child: Align(
         alignment: alignment,
@@ -62,7 +62,7 @@ class SwipeArchiveBackground extends StatelessWidget {
               style: context.text.labelMedium?.copyWith(
                 color: base,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
+                letterSpacing: AppLetterSpacing.snug,
               ),
             ),
           ],
@@ -90,9 +90,9 @@ class SwipeDeleteBackground extends StatelessWidget {
     return Container(
       padding: const EdgeInsetsDirectional.symmetric(horizontal: AppSpacing.s20),
       decoration: BoxDecoration(
-        color: base.withValues(alpha: 0.18),
+        color: base.withValues(alpha: AppAlphas.a18),
         borderRadius: AppRadius.modalR,
-        border: Border.all(color: base.withValues(alpha: 0.40)),
+        border: Border.all(color: base.withValues(alpha: AppAlphas.a40)),
       ),
       child: Align(
         alignment: alignment,
@@ -106,7 +106,7 @@ class SwipeDeleteBackground extends StatelessWidget {
               style: context.text.labelMedium?.copyWith(
                 color: base,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.3,
+                letterSpacing: AppLetterSpacing.snug,
               ),
             ),
           ],

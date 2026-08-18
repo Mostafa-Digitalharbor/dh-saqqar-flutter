@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_sizes.dart';
+
 /// A flexible title paired with a trailing accessory that must never push
 /// the title off the row — the header line shared by the conversations
 /// list, the chat sidebar, the notifications inbox and the vault's
@@ -53,8 +55,8 @@ class TitleTrailingRow extends StatelessWidget {
     required this.title,
     required this.trailing,
     this.leading = const [],
-    this.gap = 8,
-    this.trailingMaxFraction = 0.45,
+    this.gap = AppSpacing.s8,
+    this.trailingMaxFraction = AppFractions.trailingHalf,
     this.crossAxisAlignment = CrossAxisAlignment.center,
   });
 
@@ -67,8 +69,8 @@ class TitleTrailingRow extends StatelessWidget {
     required String stamp,
     TextStyle? stampStyle,
     this.leading = const [],
-    this.gap = 8,
-    this.trailingMaxFraction = 0.45,
+    this.gap = AppSpacing.s8,
+    this.trailingMaxFraction = AppFractions.trailingHalf,
     this.crossAxisAlignment = CrossAxisAlignment.center,
   }) : trailing = Text(
           stamp,

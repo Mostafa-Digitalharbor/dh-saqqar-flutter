@@ -111,7 +111,7 @@ class _UsageScreenState extends State<UsageScreen> {
                       padding: const EdgeInsets.only(top: AppSpacing.s64),
                       child: Center(
                         child: CircularProgressIndicator(
-                          strokeWidth: 2.4,
+                          strokeWidth: AppStrokeWidths.spinnerRegular,
                           color: s.muted,
                         ),
                       ),

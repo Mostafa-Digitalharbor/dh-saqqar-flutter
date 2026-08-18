@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import 'colored_icon_box.dart';
@@ -80,7 +81,7 @@ class AppErrorState extends StatelessWidget {
               size: AppIconSizes.errorHero,
               // A square with a half-side radius IS a circle — same pixels
               // as the `BoxShape.circle` this replaced.
-              radius: 28,
+              radius: AppRadius.splashPlate,
               iconSize: AppIconSizes.boxGlyphHero,
               backgroundAlpha: 0.12,
               borderAlpha: 0.32,
@@ -91,7 +92,7 @@ class AppErrorState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: context.text.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.2,
+                letterSpacing: AppLetterSpacing.heading,
               ),
             ),
             if (showBody) ...[
@@ -101,7 +102,7 @@ class AppErrorState extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: context.text.bodyMedium?.copyWith(
                   color: s.muted,
-                  height: 1.45,
+                  height: AppLineHeights.reading,
                 ),
               ),
             ],

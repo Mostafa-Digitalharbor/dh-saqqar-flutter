@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -96,7 +97,7 @@ class _EnvironmentMultiSelectSheetState
           ),
           child: Text(
             context.tr.envMultiSubtitle,
-            style: context.text.bodySmall?.copyWith(color: s.muted, height: 1.4),
+            style: context.text.bodySmall?.copyWith(color: s.muted, height: AppLineHeights.compact),
           ),
         ),
         if (project != null && envs.isNotEmpty)
@@ -112,7 +113,7 @@ class _EnvironmentMultiSelectSheetState
               style: context.text.labelSmall?.copyWith(
                 color: s.muted,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 1.0,
+                letterSpacing: AppLetterSpacing.microCaps,
                 fontSize: AppFontSizes.chipLabel,
               ),
             ),
@@ -171,19 +172,19 @@ class _EnvCheckRow extends StatelessWidget {
           children: [
             // Checkbox-styled leading box (filled + check when selected).
             Container(
-              width: 24,
-              height: 24,
+              width: AppBoxSizes.selector,
+              height: AppBoxSizes.selector,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: checked ? accent : Colors.transparent,
                 borderRadius: AppRadius.checkboxR,
                 border: Border.all(
                   color: checked ? accent : s.border,
-                  width: 1.5,
+                  width: AppBorderWidths.thick,
                 ),
               ),
               child: checked
-                  ? const Icon(AppIcons.check, size: AppIconSizes.inline, color: Colors.white)
+                  ? const Icon(AppIcons.check, size: AppIconSizes.inline, color: AppColors.onBrand)
                   : null,
             ),
             const SizedBox(width: AppSpacing.s12),

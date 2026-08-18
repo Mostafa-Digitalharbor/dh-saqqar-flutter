@@ -44,11 +44,11 @@ class ChatSuggestionStrip extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: context.saqqar.surface
-            .withValues(alpha: context.isDark ? 0.55 : 0.85),
+            .withValues(alpha: context.alpha(AppAlphaPairs.panelPlain)),
         border: Border(top: BorderSide(color: context.saqqar.border)),
       ),
       child: ResponsiveContent(
-        maxWidth: 980,
+        maxWidth: AppLayoutWidths.chatShell,
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.s12,
           AppSpacing.s8,

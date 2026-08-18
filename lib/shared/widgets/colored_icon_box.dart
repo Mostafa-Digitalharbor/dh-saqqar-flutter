@@ -22,8 +22,8 @@ class ColoredIconBox extends StatelessWidget {
     this.size = AppControlSizes.iconBox,
     this.radius = AppRadius.iconBox,
     this.iconSize = AppIconSizes.regular,
-    this.backgroundAlpha = 0.14,
-    this.borderAlpha = 0.30,
+    this.backgroundAlpha = AppAlphas.a14,
+    this.borderAlpha = AppAlphas.a30,
   });
 
   final IconData icon;

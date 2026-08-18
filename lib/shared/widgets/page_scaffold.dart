@@ -150,7 +150,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
         border: Border(bottom: BorderSide(color: s.border)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: shadowAlpha),
+            color: AppColors.scrimBase.withValues(alpha: shadowAlpha),
             blurRadius: blur,
             offset: Offset(0, offsetY),
           ),
@@ -166,7 +166,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
         child: Directionality(
           textDirection: TextDirection.ltr,
           child: SizedBox(
-            height: 62,
+            height: AppControlSizes.appBarHeight,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.s16,
@@ -193,7 +193,7 @@ class _SaqqarBrandHeader extends StatelessWidget {
                         borderRadius: AppRadius.smallR,
                         border: Border.all(color: s.cardBorder),
                       ),
-                      child: const SaqqarLogo(height: 27),
+                      child: const SaqqarLogo(height: AppLogoSizes.appBar),
                     ),
                   ),
                   // Cross-tab "agent is working" pulse — slides in next to the
@@ -279,8 +279,8 @@ class _NotificationsBell extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: AppBoxSizes.railButton,
+                height: AppBoxSizes.railButton,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   borderRadius: AppRadius.smallR,
@@ -296,23 +296,23 @@ class _NotificationsBell extends StatelessWidget {
                   end: -2,
                   child: Container(
                     constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
+                      minWidth: AppControlSizes.badgeMin,
+                      minHeight: AppControlSizes.badgeMin,
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: s.danger,
                       borderRadius: AppRadius.pillR,
-                      border: Border.all(color: s.surface, width: 1.5),
+                      border: Border.all(color: s.surface, width: AppBorderWidths.thick),
                     ),
                     child: Text(
                       unread > 9 ? '9+' : '$unread',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.onBrand,
                         fontSize: AppFontSizes.chipLabel,
                         fontWeight: FontWeight.w800,
-                        height: 1.1,
+                        height: AppLineHeights.displayTight,
                       ),
                     ),
                   ),
@@ -379,16 +379,16 @@ class _AgentPulseDotState extends State<_AgentPulseDot>
                 ? 1.0
                 : Curves.easeInOut.transform(_ctrl.value);
             return Container(
-              width: 8,
-              height: 8,
+              width: AppBoxSizes.dot,
+              height: AppBoxSizes.dot,
               decoration: BoxDecoration(
-                color: AppColors.brandCyan.withValues(alpha: 0.55 + 0.45 * t),
+                color: AppColors.brandCyan.withValues(alpha: AppAlphas.a55 + 0.45 * t),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.brandCyan.withValues(alpha: 0.35 * t),
-                    blurRadius: 8,
-                    spreadRadius: 1,
+                    color: AppColors.brandCyan.withValues(alpha: AppAlphas.a35 * t),
+                    blurRadius: AppShadowSizes.blurSubtle,
+                    spreadRadius: AppShadowSizes.spreadThin,
                   ),
                 ],
               ),

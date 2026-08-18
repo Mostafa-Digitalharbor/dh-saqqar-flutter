@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_gradients.dart';
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// The standard 64×3 gradient grab handle shown at the top of every bottom
 /// sheet. Centralized here so the four sheets that used to hand-roll the
@@ -16,8 +17,8 @@ class SheetDragHandle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 64,
-        height: 3,
+        width: AppControlSizes.dragHandleWidth,
+        height: AppControlSizes.dragHandleHeight,
         decoration: const BoxDecoration(
           gradient: AppGradients.primaryCta,
           borderRadius: AppRadius.pillR,

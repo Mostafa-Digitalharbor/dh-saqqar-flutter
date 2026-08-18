@@ -100,10 +100,15 @@ class _ShareIntentBootstrapState extends State<ShareIntentBootstrap> {
 
     _isPollingNativeShare = true;
     try {
-      for (var attempt = 0; attempt < 20; attempt += 1) {
+      // The iOS Share Extension writes into the shared App Group container
+      // and the host app may be resumed before that write lands. Poll for a
+      // few seconds rather than reading once and reporting nothing shared.
+      const attempts = 20;
+      const gap = Duration(milliseconds: 250);
+      for (var attempt = 0; attempt < attempts; attempt += 1) {
         final consumed = await _consumeNativeIosAppGroupMedia();
         if (consumed) return;
-        await Future<void>.delayed(const Duration(milliseconds: 250));
+        await Future<void>.delayed(gap);
         if (!mounted) return;
       }
     } finally {

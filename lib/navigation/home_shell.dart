@@ -98,15 +98,15 @@ class HomeShell extends StatelessWidget {
           ),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: s.surface.withValues(alpha: context.isDark ? 0.94 : 0.98),
+              color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.chrome)),
               borderRadius: AppRadius.navBarR,
               border: Border.all(color: s.cardBorder),
               boxShadow: [
                 BoxShadow(
                   color: const Color(
                     0xFF020617,
-                  ).withValues(alpha: context.isDark ? 0.32 : 0.06),
-                  blurRadius: 24,
+                  ).withValues(alpha: context.alpha(AppAlphaPairs.glowNav)),
+                  blurRadius: AppShadowSizes.blurCard,
                   offset: const Offset(0, 10),
                 ),
               ],
@@ -197,7 +197,7 @@ class _NavTab extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: selected
-            ? s.brandCyan.withValues(alpha: context.isDark ? 0.14 : 0.10)
+            ? s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintNav))
             : Colors.transparent,
         borderRadius: AppRadius.bubbleR,
       ),
@@ -206,7 +206,7 @@ class _NavTab extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            height: 24,
+            height: AppControlSizes.navIconSlot,
             child: Icon(spec.icon, size: AppIconSizes.navBar, color: color),
           ),
           // Material 3 pattern: only the active tab shows its label.
@@ -233,7 +233,7 @@ class _NavTab extends StatelessWidget {
                         color: color,
                         fontSize: AppFontSizes.caption,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
+                        letterSpacing: AppLetterSpacing.tight,
                       ),
                       ),
                     ),

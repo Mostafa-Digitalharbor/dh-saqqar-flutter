@@ -99,8 +99,8 @@ class _CompactAttachment extends StatelessWidget {
     return ClipRRect(
       borderRadius: AppRadius.smallR,
       child: Container(
-        width: 72,
-        height: 72,
+        width: AppBoxSizes.thumbnail,
+        height: AppBoxSizes.thumbnail,
         decoration: BoxDecoration(
           color: s.surface,
           border: Border.all(color: s.border),
@@ -120,8 +120,8 @@ class _CompactAttachment extends StatelessWidget {
     if (path == null) return null;
     return PdfThumbnail(
       path: path,
-      width: 72,
-      height: 72,
+      width: AppBoxSizes.thumbnail,
+      height: AppBoxSizes.thumbnail,
       placeholder: _fileGlyph(s),
     );
   }
@@ -130,8 +130,8 @@ class _CompactAttachment extends StatelessWidget {
     return Image.file(
       File(path),
       fit: BoxFit.cover,
-      width: 72,
-      height: 72,
+      width: AppBoxSizes.thumbnail,
+      height: AppBoxSizes.thumbnail,
       // Decode to the thumbnail's pixel size (72 logical × ~3 DPR), NOT the
       // camera's full bitmap: a 4000×3000 photo is ~48 MB of RGBA in memory
       // when painted into a 72 px box. Without this cap, scrolling a chat with
@@ -166,7 +166,7 @@ class _CompactAttachment extends StatelessWidget {
             ),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: s.brandCyan.withValues(alpha: 0.16),
+              color: s.brandCyan.withValues(alpha: AppAlphas.a16),
               borderRadius: AppRadius.badgeR,
             ),
             child: Text(
@@ -178,7 +178,7 @@ class _CompactAttachment extends StatelessWidget {
                 color: s.brandCyan,
                 fontWeight: FontWeight.w800,
                 fontSize: AppFontSizes.microCaps,
-                letterSpacing: 0.4,
+                letterSpacing: AppLetterSpacing.label,
               ),
             ),
           ),
@@ -340,7 +340,7 @@ class _ImageAttachment extends StatelessWidget {
     return ClipRRect(
       borderRadius: AppRadius.buttonR,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 360),
+        constraints: const BoxConstraints(maxWidth: AppLayoutWidths.chipCap),
         decoration: BoxDecoration(
           color: s.surface,
           border: Border.all(color: s.border),
@@ -351,17 +351,17 @@ class _ImageAttachment extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 240),
+              constraints: const BoxConstraints(maxHeight: AppSheetHeights.attachmentPreviewMax),
               child: Image.network(
                 attachment.imageUrl!,
                 fit: BoxFit.cover,
                 // Decode at the display width (× device DPR), capped by the
                 // 360 px bubble max — not the source's full resolution.
                 cacheWidth:
-                    (360 * MediaQuery.devicePixelRatioOf(context)).round(),
+                    (AppLayoutWidths.chipCap * MediaQuery.devicePixelRatioOf(context)).round(),
                 errorBuilder: (context, error, stack) {
                   return Container(
-                    height: 120,
+                    height: AppControlSizes.attachmentPreviewHeight,
                     color: s.surface2,
                     alignment: Alignment.center,
                     child: Icon(
@@ -374,14 +374,14 @@ class _ImageAttachment extends StatelessWidget {
                 loadingBuilder: (context, child, progress) {
                   if (progress == null) return child;
                   return Container(
-                    height: 120,
+                    height: AppControlSizes.attachmentPreviewHeight,
                     color: s.surface2,
                     alignment: Alignment.center,
                     child: SizedBox(
                       width: AppControlSizes.spinnerMedium,
                       height: AppControlSizes.spinnerMedium,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: AppStrokeWidths.spinnerThin,
                         color: s.brandCyan,
                       ),
                     ),
@@ -422,10 +422,10 @@ class _ImageAttachment extends StatelessWidget {
                           vertical: AppSpacing.s3,
                         ),
                         decoration: BoxDecoration(
-                          color: s.brandCyan.withValues(alpha: 0.12),
+                          color: s.brandCyan.withValues(alpha: AppAlphas.a12),
                           borderRadius: AppRadius.pillR,
                           border: Border.all(
-                            color: s.brandCyan.withValues(alpha: 0.26),
+                            color: s.brandCyan.withValues(alpha: AppAlphas.a26),
                           ),
                         ),
                         child: Text(
@@ -433,7 +433,7 @@ class _ImageAttachment extends StatelessWidget {
                           style: context.text.labelSmall?.copyWith(
                             color: s.brandCyan,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 0.4,
+                            letterSpacing: AppLetterSpacing.label,
                             fontSize: AppFontSizes.chipLabel,
                           ),
                         ),
@@ -485,7 +485,7 @@ class _FileAttachment extends StatelessWidget {
             icon: AppIcons.attach,
             color: s.brandCyan,
             size: AppIconSizes.tileLarge,
-            radius: 7,
+            radius: AppRadius.checkbox,
             iconSize: AppIconSizes.boxGlyphSmall,
             borderAlpha: null,
           ),

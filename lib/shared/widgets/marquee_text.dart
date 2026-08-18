@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_sizes.dart';
+
 /// Horizontally scrolling text — falls back to static [Text] when the
 /// string fits inside the parent's width, and turns into a seamless
 /// loop when it doesn't.
@@ -18,7 +20,7 @@ class MarqueeText extends StatefulWidget {
     required this.text,
     this.style,
     this.textAlign = TextAlign.start,
-    this.gap = 32,
+    this.gap = AppSpacing.s32,
     this.pixelsPerSecond = 36,
     this.startDelay = const Duration(milliseconds: 800),
     this.alwaysScroll = false,

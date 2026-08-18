@@ -29,9 +29,9 @@ class PlanBadge extends StatelessWidget {
             vertical: AppSpacing.s4,
           ),
       decoration: BoxDecoration(
-        color: s.brandCyan.withValues(alpha: 0.12),
+        color: s.brandCyan.withValues(alpha: AppAlphas.a12),
         borderRadius: AppRadius.pillR,
-        border: Border.all(color: s.brandCyan.withValues(alpha: 0.35)),
+        border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a35)),
       ),
       child: Text(
         name,

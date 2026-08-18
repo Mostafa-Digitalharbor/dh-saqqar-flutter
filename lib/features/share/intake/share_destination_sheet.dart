@@ -111,7 +111,7 @@ class _ShareDestinationOverlayContentState
       backgroundColor: s.bg,
       appBar: AppBar(
         backgroundColor: s.bg,
-        elevation: 0,
+        elevation: AppElevations.none,
         leading: IconButton(
           icon: Icon(AppIcons.close, color: s.text),
           tooltip: tr.cancel,
@@ -141,7 +141,7 @@ class _ShareDestinationOverlayContentState
                   tr.shareSheetSubtitle,
                   style: context.text.bodyMedium?.copyWith(
                     color: s.muted,
-                    height: 1.45,
+                    height: AppLineHeights.reading,
                   ),
                 ),
               ),
@@ -152,7 +152,7 @@ class _ShareDestinationOverlayContentState
                   style: context.text.labelSmall?.copyWith(
                     color: s.brandCyan,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
+                    letterSpacing: AppLetterSpacing.snug,
                   ),
                 ),
               ),
@@ -172,7 +172,7 @@ class _ShareDestinationOverlayContentState
                   style: context.text.labelSmall?.copyWith(
                     color: s.muted,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.0,
+                    letterSpacing: AppLetterSpacing.microCaps,
                     fontSize: AppFontSizes.chipLabel,
                   ),
                 ),
@@ -189,7 +189,7 @@ class _ShareDestinationOverlayContentState
                             width: AppControlSizes.spinnerMedium,
                             height: AppControlSizes.spinnerMedium,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2.4,
+                              strokeWidth: AppStrokeWidths.spinnerRegular,
                               color: s.brandCyan,
                             ),
                           ),
@@ -268,18 +268,18 @@ class _NewChatRow extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           borderRadius: AppRadius.inputR,
-          border: Border.all(color: s.brandCyan.withValues(alpha: 0.45)),
-          color: s.brandCyan.withValues(alpha: 0.08),
+          border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a45)),
+          color: s.brandCyan.withValues(alpha: AppAlphas.a08),
         ),
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: AppBoxSizes.headerControl,
+              height: AppBoxSizes.headerControl,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: s.brandCyan.withValues(alpha: 0.18),
+                color: s.brandCyan.withValues(alpha: AppAlphas.a18),
               ),
               child: Icon(AppIcons.plus, color: s.brandCyan, size: AppIconSizes.regular),
             ),
@@ -323,8 +323,8 @@ class _ConversationRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: AppBoxSizes.destinationMark,
+              height: AppBoxSizes.destinationMark,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -389,7 +389,7 @@ class _EmptyHint extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: context.text.bodySmall?.copyWith(color: s.muted, height: 1.4),
+        style: context.text.bodySmall?.copyWith(color: s.muted, height: AppLineHeights.compact),
       ),
     );
   }

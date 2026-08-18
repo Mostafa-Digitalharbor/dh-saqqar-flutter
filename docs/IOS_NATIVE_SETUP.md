@@ -22,7 +22,7 @@
 | Thing | Value |
 |---|---|
 | Host app bundle id | `sa.com.digitalharbor.saqqar` |
-| iOS deployment target | `13.0` (already set in the Xcode project) |
+| iOS deployment target | `15.0` (set in the Xcode project, Podfile and AppFrameworkInfo.plist) |
 | Firebase project id | `saqqar-ai` |
 | Firebase iOS app id | `1:55105284059:ios:8518bc677c9023356ca9fe` |
 | FCM sender id | `55105284059` |
@@ -149,7 +149,7 @@ automatic signing usually does this; verify it.)
 ### 2.6 Notes
 - Firebase iOS SDK (firebase_messaging 15.x) requires **iOS 13+** — already
   the deployment target. The generated Podfile should keep
-  `platform :ios, '13.0'` (or higher).
+  `platform :ios, '15.0'` — Apple's own floor from Spring 2027 (ITMS-90068).
 - **Real device only.** The iOS Simulator cannot receive remote push
   (Simulator push only works via a local `.apns` file drag, not the live
   pipeline). Test approval/run/artifact pushes on a physical iPhone.

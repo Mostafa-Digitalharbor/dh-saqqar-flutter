@@ -51,13 +51,13 @@ class AppTheme {
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: AppColors.brandCyan,
-      onPrimary: Colors.white,
+      onPrimary: AppColors.onBrand,
       secondary: AppColors.brandPurple,
-      onSecondary: Colors.white,
+      onSecondary: AppColors.onBrand,
       tertiary: AppColors.brandNavy,
-      onTertiary: Colors.white,
+      onTertiary: AppColors.onBrand,
       error: AppColors.danger,
-      onError: Colors.white,
+      onError: AppColors.onBrand,
       surface: ext.surface,
       onSurface: ext.text,
       surfaceContainer: ext.surface2,
@@ -80,7 +80,7 @@ class AppTheme {
       canvasColor: ext.bg,
       textTheme: textTheme,
       iconTheme: IconThemeData(color: ext.text, size: AppIconSizes.action),
-      dividerTheme: DividerThemeData(color: ext.border, thickness: 1, space: 1),
+      dividerTheme: DividerThemeData(color: ext.border, thickness: AppBorderWidths.hairline, space: 1),
       splashFactory: InkSparkle.splashFactory,
       visualDensity: VisualDensity.adaptivePlatformDensity,
 
@@ -94,23 +94,23 @@ class AppTheme {
       ),
 
       appBarTheme: AppBarTheme(
-        backgroundColor: ext.surface.withValues(alpha: isDark ? 0.88 : 0.96),
+        backgroundColor: ext.surface.withValues(alpha: AppAlphaPairs.appBar.resolve(isDark: isDark)),
         foregroundColor: ext.text,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: AppElevations.none,
         scrolledUnderElevation: 0,
         toolbarHeight: 60,
         centerTitle: false,
         titleTextStyle: (textTheme.titleLarge ?? const TextStyle()).copyWith(
           fontWeight: FontWeight.w800,
-          letterSpacing: -0.2,
+          letterSpacing: AppLetterSpacing.heading,
           color: ext.text,
         ),
         iconTheme: IconThemeData(color: ext.text, size: AppIconSizes.navBar),
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
-        shape: Border(bottom: BorderSide(color: ext.border, width: 1)),
+        shape: Border(bottom: BorderSide(color: ext.border, width: AppBorderWidths.hairline)),
       ),
 
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -120,12 +120,12 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         showSelectedLabels: true,
         showUnselectedLabels: true,
-        elevation: 0,
+        elevation: AppElevations.none,
       ),
 
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.transparent,
-        indicatorColor: AppColors.brandCyan.withValues(alpha: 0.16),
+        indicatorColor: AppColors.brandCyan.withValues(alpha: AppAlphas.a16),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
@@ -137,7 +137,7 @@ class AppTheme {
           final selected = states.contains(WidgetState.selected);
           return (textTheme.labelSmall ?? const TextStyle()).copyWith(
             color: selected ? AppColors.brandCyan : ext.muted,
-            letterSpacing: 0,
+            letterSpacing: AppLetterSpacing.none,
           );
         }),
         height: 68,
@@ -145,7 +145,7 @@ class AppTheme {
 
       cardTheme: CardThemeData(
         color: ext.surface,
-        elevation: 0,
+        elevation: AppElevations.none,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.cardR,
           side: BorderSide(color: ext.cardBorder),
@@ -156,9 +156,9 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: ext.surface2,
         selectedColor: AppColors.brandCyan.withValues(
-          alpha: isDark ? 0.20 : 0.14,
+          alpha: AppAlphaPairs.field.resolve(isDark: isDark),
         ),
-        disabledColor: ext.surface2.withValues(alpha: 0.55),
+        disabledColor: ext.surface2.withValues(alpha: AppAlphas.a55),
         checkmarkColor: AppColors.brandCyan,
         showCheckmark: false,
         padding: const EdgeInsets.symmetric(
@@ -176,23 +176,23 @@ class AppTheme {
 
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.brandNavy,
-        foregroundColor: Colors.white,
-        elevation: 6,
+        foregroundColor: AppColors.onBrand,
+        elevation: AppElevations.menu,
         focusElevation: 6,
         hoverElevation: 8,
         highlightElevation: 6,
         shape: const StadiumBorder(),
         extendedTextStyle: (textTheme.labelLarge ?? const TextStyle()).copyWith(
-          color: Colors.white,
+          color: AppColors.onBrand,
           fontWeight: FontWeight.w800,
-          letterSpacing: 0.2,
+          letterSpacing: AppLetterSpacing.tight,
         ),
       ),
 
       popupMenuTheme: PopupMenuThemeData(
         color: ext.surface,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: AppElevations.none,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.inputR,
           side: BorderSide(color: ext.border),
@@ -205,7 +205,7 @@ class AppTheme {
           backgroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return AppColors.brandCyan.withValues(
-                alpha: isDark ? 0.22 : 0.16,
+                alpha: AppAlphaPairs.fieldFocused.resolve(isDark: isDark),
               );
             }
             return ext.surface2;
@@ -220,7 +220,7 @@ class AppTheme {
             final selected = states.contains(WidgetState.selected);
             return BorderSide(
               color: selected
-                  ? AppColors.brandCyan.withValues(alpha: 0.45)
+                  ? AppColors.brandCyan.withValues(alpha: AppAlphas.a45)
                   : ext.border,
             );
           }),
@@ -276,7 +276,7 @@ class AppTheme {
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
-          borderSide: BorderSide(color: AppColors.brandCyan, width: 1.5),
+          borderSide: BorderSide(color: AppColors.brandCyan, width: AppBorderWidths.thick),
         ),
         errorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
@@ -284,13 +284,13 @@ class AppTheme {
         ),
         focusedErrorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
-          borderSide: BorderSide(color: AppColors.danger, width: 1.5),
+          borderSide: BorderSide(color: AppColors.danger, width: AppBorderWidths.thick),
         ),
       ),
 
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return Colors.white;
+          if (states.contains(WidgetState.selected)) return AppColors.onBrand;
           return ext.muted;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -303,7 +303,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: ext.surface,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: AppElevations.none,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.modalR),
         titleTextStyle: textTheme.headlineSmall,
         contentTextStyle: textTheme.bodyMedium,
@@ -312,7 +312,7 @@ class AppTheme {
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: ext.surface,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: AppElevations.none,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheetTopR),
         showDragHandle: true,
         dragHandleColor: ext.muted,
@@ -324,7 +324,7 @@ class AppTheme {
         contentTextStyle: textTheme.bodyMedium,
         behavior: SnackBarBehavior.floating,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.toastR),
-        elevation: 0,
+        elevation: AppElevations.none,
       ),
 
       tooltipTheme: TooltipThemeData(

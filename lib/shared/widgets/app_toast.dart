@@ -64,7 +64,7 @@ class AppToast {
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.transparent,
-        elevation: 0,
+        elevation: AppElevations.none,
         margin: const EdgeInsets.only(
           bottom: AppSpacing.s24,
           left: AppSpacing.s16,
@@ -122,7 +122,7 @@ class _ToastContent extends StatelessWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
+        constraints: const BoxConstraints(maxWidth: AppLayoutWidths.toast),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.s14,
@@ -131,14 +131,14 @@ class _ToastContent extends StatelessWidget {
           decoration: BoxDecoration(
             color: s.surface,
             borderRadius: AppRadius.toastR,
-            border: Border.all(color: c.withValues(alpha: 0.45)),
+            border: Border.all(color: c.withValues(alpha: AppAlphas.a45)),
             // Its own shape (tighter than `modalShadow`) because a toast sits
             // close to the surface it annotates, not above a dimmed page —
             // only the hue is shared.
             boxShadow: [
               BoxShadow(
-                color: s.shadowBase.withValues(alpha: 0.35),
-                blurRadius: 24,
+                color: s.shadowBase.withValues(alpha: AppAlphas.a35),
+                blurRadius: AppShadowSizes.blurCard,
                 offset: const Offset(0, 8),
               ),
             ],
@@ -164,14 +164,14 @@ class _ToastContent extends StatelessWidget {
                             .copyWith(
                           color: c,
                           fontWeight: FontWeight.w800,
-                          height: 1.25,
+                          height: AppLineHeights.headingLoose,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.s2),
                       Text(
                         message,
                         style: (context.text.bodySmall ?? const TextStyle())
-                            .copyWith(color: s.muted, height: 1.35),
+                            .copyWith(color: s.muted, height: AppLineHeights.label),
                       ),
                     ] else
                       Text(

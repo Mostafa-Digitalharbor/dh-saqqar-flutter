@@ -206,7 +206,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.s64),
             child: Center(
-              child: CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
+              child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
             ),
           ),
         ],
@@ -240,7 +240,11 @@ class _BalanceHeader extends StatelessWidget {
               valueColor: s.brandCyan,
             ),
           ),
-          Container(width: 1, height: 34, color: s.border),
+          Container(
+            width: AppBorderWidths.hairline,
+            height: AppControlSizes.verticalRule,
+            color: s.border,
+          ),
           Expanded(
             child: StatTile(
               label: context.tr.billingTotalPurchased,
@@ -336,7 +340,7 @@ class _PaymentRowCard extends StatelessWidget {
             Text(
               context.tr.billingPendingNote(row.ref),
               style: context.text.bodySmall
-                  ?.copyWith(color: s.muted, height: 1.35),
+                  ?.copyWith(color: s.muted, height: AppLineHeights.label),
             ),
           ],
           if (row.hasReceipt) ...[
@@ -350,7 +354,7 @@ class _PaymentRowCard extends StatelessWidget {
                         width: AppControlSizes.spinnerTiny,
                         height: AppControlSizes.spinnerTiny,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                          strokeWidth: AppStrokeWidths.spinnerThin,
                           color: s.brandCyan,
                         ),
                       )

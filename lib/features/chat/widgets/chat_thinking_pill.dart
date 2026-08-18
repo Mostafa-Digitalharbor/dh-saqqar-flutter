@@ -73,10 +73,10 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                 vertical: AppSpacing.s7,
               ),
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: context.isDark ? 0.10 : 0.08),
+                color: accent.withValues(alpha: context.alpha(AppAlphaPairs.tintFaint)),
                 borderRadius: AppRadius.pillR,
                 border: Border.all(
-                  color: accent.withValues(alpha: 0.34),
+                  color: accent.withValues(alpha: AppAlphas.a34),
                 ),
               ),
               child: Row(
@@ -85,8 +85,8 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                   // Soft pulsing dot — same accent as the agent's
                   // "working" pill so the visual language stays unified.
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: AppBoxSizes.dot,
+                    height: AppBoxSizes.dot,
                     decoration: BoxDecoration(
                       color: accent,
                       shape: BoxShape.circle,
@@ -117,7 +117,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                   Text(
                     ' · ',
                     style: TextStyle(
-                      color: accent.withValues(alpha: 0.6),
+                      color: accent.withValues(alpha: AppAlphas.a60),
                       fontSize: AppFontSizes.pillTitle,
                     ),
                   ),
@@ -127,7 +127,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.text.labelSmall?.copyWith(
-                        color: accent.withValues(alpha: 0.85),
+                        color: accent.withValues(alpha: AppAlphas.a85),
                         fontWeight: FontWeight.w600,
                         fontSize: AppFontSizes.pillLabel,
                       ),
@@ -137,14 +137,14 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                     Text(
                       ' · ',
                       style: TextStyle(
-                        color: accent.withValues(alpha: 0.6),
+                        color: accent.withValues(alpha: AppAlphas.a60),
                         fontSize: AppFontSizes.pillTitle,
                       ),
                     ),
                     Text(
                       _durationLabel(widget.totalDuration!),
                       style: context.text.labelSmall?.copyWith(
-                        color: accent.withValues(alpha: 0.85),
+                        color: accent.withValues(alpha: AppAlphas.a85),
                         fontWeight: FontWeight.w600,
                         fontSize: AppFontSizes.pillLabel,
                       ),
@@ -157,7 +157,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                     child: Icon(
                       AppIcons.chevronDown,
                       size: AppIconSizes.small,
-                      color: accent.withValues(alpha: 0.85),
+                      color: accent.withValues(alpha: AppAlphas.a85),
                     ),
                   ),
                 ],
@@ -185,8 +185,8 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                 decoration: BoxDecoration(
                   border: BorderDirectional(
                     start: BorderSide(
-                      color: accent.withValues(alpha: 0.35),
-                      width: 2,
+                      color: accent.withValues(alpha: AppAlphas.a35),
+                      width: AppBorderWidths.ring,
                     ),
                   ),
                 ),
@@ -230,10 +230,10 @@ class _StepBullet extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: AppSpacing.s6),
           child: Container(
-            width: 5,
-            height: 5,
+            width: AppControlSizes.dotSmall,
+            height: AppControlSizes.dotSmall,
             decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.7),
+              color: accent.withValues(alpha: AppAlphas.a70),
               shape: BoxShape.circle,
             ),
           ),
@@ -243,7 +243,7 @@ class _StepBullet extends StatelessWidget {
           child: DefaultTextStyle.merge(
             style: context.text.bodySmall?.copyWith(
               color: s.muted,
-              height: 1.5,
+              height: AppLineHeights.body,
               fontSize: AppFontSizes.pillTitle,
             ),
             child: ChatMarkdown(data: step.content, isUser: false),

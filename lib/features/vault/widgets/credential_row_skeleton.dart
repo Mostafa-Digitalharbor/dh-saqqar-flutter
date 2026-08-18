@@ -16,28 +16,28 @@ class CredentialRowSkeleton extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.88),
+        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelSkeleton)),
         borderRadius: AppRadius.bubbleR,
         border: Border.all(color: s.cardBorder),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SkeletonBlock(width: 44, height: 44, radius: 12),
+          SkeletonBlock.circle(size: AppSkeletonSizes.avatar),
           SizedBox(width: AppSpacing.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SkeletonBlock(width: 160, height: 14),
+                SkeletonBlock(width: AppSkeletonSizes.titleLong, height: AppSkeletonSizes.titleLine),
                 SizedBox(height: AppSpacing.s8),
-                SkeletonBlock(width: 220, height: 11),
+                SkeletonBlock(width: AppSkeletonSizes.previewLong, height: AppSkeletonSizes.subtitleLine),
                 SizedBox(height: AppSpacing.s12),
                 Row(
                   children: [
-                    SkeletonBlock(width: 70, height: 16, radius: 999),
+                    SkeletonBlock(width: AppSkeletonSizes.chip, height: AppSkeletonSizes.tagLine, radius: AppRadius.pill),
                     SizedBox(width: AppSpacing.s8),
-                    SkeletonBlock(width: 110, height: 16, radius: 999),
+                    SkeletonBlock(width: AppSkeletonSizes.subtitle, height: AppSkeletonSizes.tagLine, radius: AppRadius.pill),
                   ],
                 ),
               ],

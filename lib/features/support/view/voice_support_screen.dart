@@ -179,7 +179,7 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
       children: [
         Text(
           tr.voiceSupportIntro,
-          style: context.text.bodyMedium?.copyWith(color: s.muted, height: 1.5),
+          style: context.text.bodyMedium?.copyWith(color: s.muted, height: AppLineHeights.body),
         ),
         const SizedBox(height: AppSpacing.s14),
         AppTextField(
@@ -228,7 +228,7 @@ class _DraftCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.9),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelCard)),
         borderRadius: AppRadius.cardR,
         border: Border.all(color: s.border),
       ),
@@ -318,7 +318,7 @@ class _Section extends StatelessWidget {
         const SizedBox(height: AppSpacing.s6),
         Text(
           body,
-          style: context.text.bodyMedium?.copyWith(color: s.text, height: 1.6),
+          style: context.text.bodyMedium?.copyWith(color: s.text, height: AppLineHeights.loose),
         ),
       ],
     );
@@ -359,8 +359,8 @@ class _List extends StatelessWidget {
                     top: AppSpacing.s6,
                   ),
                   child: Container(
-                    width: 4,
-                    height: 4,
+                    width: AppControlSizes.dotTiny,
+                    height: AppControlSizes.dotTiny,
                     decoration: BoxDecoration(
                       color: s.muted,
                       shape: BoxShape.circle,
@@ -371,7 +371,7 @@ class _List extends StatelessWidget {
                   child: Text(
                     item,
                     style: context.text.bodySmall
-                        ?.copyWith(color: s.text, height: 1.6),
+                        ?.copyWith(color: s.text, height: AppLineHeights.loose),
                   ),
                 ),
               ],

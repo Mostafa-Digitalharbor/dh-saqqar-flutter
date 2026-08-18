@@ -103,7 +103,7 @@ class AccountLinkGroup extends StatelessWidget {
           ],
           for (var i = 0; i < links.length; i++) ...[
             if (i > 0)
-              Divider(height: 1, thickness: 1, color: s.cardBorder, endIndent: 8),
+              Divider(height: AppBorderWidths.hairline, thickness: AppBorderWidths.hairline, color: s.cardBorder, endIndent: AppSpacing.s8),
             _LinkRow(link: links[i]),
           ],
         ],
@@ -136,11 +136,11 @@ class _LinkRow extends StatelessWidget {
             // so a row reads as subordinate to its heading rather than
             // competing with it.
             Container(
-              width: 30,
-              height: 30,
+              width: AppBoxSizes.glyphCompact,
+              height: AppBoxSizes.glyphCompact,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
+                color: color.withValues(alpha: AppAlphas.a12),
                 borderRadius: AppRadius.buttonR,
               ),
               child: Icon(link.icon, size: AppIconSizes.small, color: color),
@@ -155,7 +155,7 @@ class _LinkRow extends StatelessWidget {
                     link.title,
                     style: context.text.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w700,
-                      height: 1.2,
+                      height: AppLineHeights.heading,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s2),
@@ -168,7 +168,7 @@ class _LinkRow extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: context.text.bodySmall
-                        ?.copyWith(color: s.muted, height: 1.35),
+                        ?.copyWith(color: s.muted, height: AppLineHeights.label),
                   ),
                 ],
               ),

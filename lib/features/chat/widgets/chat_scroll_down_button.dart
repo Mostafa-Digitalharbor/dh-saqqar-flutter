@@ -35,11 +35,11 @@ class ChatScrollDownButton extends StatelessWidget {
             radius: AppRadius.pillR,
             onTap: onTap,
             child: Container(
-              width: 40,
-              height: 40,
+              width: AppBoxSizes.railButton,
+              height: AppBoxSizes.railButton,
               decoration: BoxDecoration(
                 color: s.surface.withValues(
-                  alpha: context.isDark ? 0.94 : 0.98,
+                  alpha: context.alpha(AppAlphaPairs.chrome),
                 ),
                 shape: BoxShape.circle,
                 border: Border.all(color: s.cardBorder),
@@ -47,8 +47,8 @@ class ChatScrollDownButton extends StatelessWidget {
                   BoxShadow(
                     color: const Color(
                       0xFF020617,
-                    ).withValues(alpha: context.isDark ? 0.30 : 0.10),
-                    blurRadius: 14,
+                    ).withValues(alpha: context.alpha(AppAlphaPairs.glow)),
+                    blurRadius: AppShadowSizes.blurButton,
                     offset: const Offset(0, 6),
                   ),
                 ],

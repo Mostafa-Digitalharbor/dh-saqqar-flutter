@@ -111,9 +111,9 @@ class _HeaderIconButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: s.surface.withValues(alpha: context.isDark ? 0.55 : 0.82),
+        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelMuted)),
         shape: StadiumBorder(
-          side: BorderSide(color: color.withValues(alpha: 0.32)),
+          side: BorderSide(color: color.withValues(alpha: AppAlphas.a32)),
         ),
         child: InkWell(
           customBorder: const StadiumBorder(),
@@ -134,7 +134,7 @@ class _HeaderIconButton extends StatelessWidget {
                     style: context.text.labelSmall?.copyWith(
                       color: color,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 0.4,
+                      letterSpacing: AppLetterSpacing.label,
                     ),
                   ),
                 ],

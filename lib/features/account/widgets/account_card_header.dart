@@ -47,11 +47,11 @@ class AccountCardHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 34,
-          height: 34,
+          width: AppBoxSizes.sheetRow,
+          height: AppBoxSizes.sheetRow,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            color: color.withValues(alpha: AppAlphas.a12),
             borderRadius: AppRadius.buttonR,
           ),
           child: Icon(icon, size: AppIconSizes.regular, color: color),
@@ -66,7 +66,7 @@ class AccountCardHeader extends StatelessWidget {
                 title,
                 style: context.text.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
-                  height: 1.2,
+                  height: AppLineHeights.heading,
                 ),
               ),
               if (subtitle != null) ...[
@@ -74,7 +74,7 @@ class AccountCardHeader extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: context.text.bodySmall
-                      ?.copyWith(color: s.muted, height: 1.35),
+                      ?.copyWith(color: s.muted, height: AppLineHeights.label),
                 ),
               ],
             ],

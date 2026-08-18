@@ -4,6 +4,7 @@ import '../../core/constants/asset_paths.dart';
 import '../../core/constants/ui_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// The single Saqqar brand logo — the hexagonal mark + "SAQQAR" lockup
 /// shipped at `assets/img/logo-light.png`. This is the canonical app logo;
@@ -23,7 +24,7 @@ import '../../core/theme/app_gradients.dart';
 class SaqqarLogo extends StatelessWidget {
   const SaqqarLogo({
     super.key,
-    this.height = 22,
+    this.height = AppLogoSizes.navBar,
     this.forceVariant,
   });
 
@@ -53,7 +54,7 @@ class SaqqarLogo extends StatelessWidget {
     // On dark surfaces the navy lockup would vanish — tint it solid white.
     if (onDark) {
       image = ColorFiltered(
-        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+        colorFilter: const ColorFilter.mode(AppColors.onBrand, BlendMode.srcIn),
         child: image,
       );
     }
@@ -83,8 +84,8 @@ class _FallbackWordmark extends StatelessWidget {
           color: AppColors.brandNavy, // overridden by ShaderMask
           fontSize: fontSize,
           fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
-          height: 1.0,
+          letterSpacing: AppLetterSpacing.wide,
+          height: AppLineHeights.flush,
         ),
       ),
     );

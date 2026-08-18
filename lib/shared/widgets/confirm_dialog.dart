@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/i18n/app_localizations.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import 'app_dialog_shell.dart';
@@ -49,7 +51,7 @@ class ConfirmDialog extends StatelessWidget {
   }) async {
     final result = await showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
+      barrierColor: AppColors.scrimBase.withValues(alpha: AppAlphas.a55),
       builder: (context) => ConfirmDialog(
         title: title,
         body: body,
@@ -104,7 +106,7 @@ class ConfirmDialog extends StatelessWidget {
                               icon: iconData,
                               color: destructive ? s.danger : s.brandCyan,
                               size: AppIconSizes.dialogHero,
-                              radius: 14,
+                              radius: AppRadius.input,
                               iconSize: AppIconSizes.boxGlyphLarge,
                               backgroundAlpha: 0.14,
                               borderAlpha: 0.28,
@@ -116,7 +118,7 @@ class ConfirmDialog extends StatelessWidget {
                           title,
                           style: context.text.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
+                            letterSpacing: AppLetterSpacing.heading,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.s8),
@@ -124,7 +126,7 @@ class ConfirmDialog extends StatelessWidget {
                           body,
                           style: context.text.bodyMedium?.copyWith(
                             color: s.muted,
-                            height: 1.5,
+                            height: AppLineHeights.body,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.s20),

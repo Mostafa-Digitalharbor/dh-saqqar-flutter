@@ -42,7 +42,7 @@ class _ToolActivityCardState extends State<ToolActivityCard> {
           AppSpacing.s7,
         ),
         decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
+          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelDense)),
           borderRadius: AppRadius.smallR,
           border: Border.all(color: s.border),
         ),
@@ -62,7 +62,7 @@ class _ToolActivityCardState extends State<ToolActivityCard> {
                       color: s.muted,
                       fontWeight: FontWeight.w700,
                       fontSize: AppFontSizes.caption,
-                      letterSpacing: 0.2,
+                      letterSpacing: AppLetterSpacing.tight,
                     ),
                   ),
                 ),

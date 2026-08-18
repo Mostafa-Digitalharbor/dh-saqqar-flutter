@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
@@ -69,14 +70,14 @@ class ChatSendButton extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               color: s.surface3,
-              border: Border.all(color: s.cardBorder, width: 1.4),
+              border: Border.all(color: s.cardBorder, width: AppBorderWidths.medium),
               shape: BoxShape.circle,
             ),
             child: stopping
                 ? Padding(
                     padding: EdgeInsets.all(size * 0.28),
                     child: CircularProgressIndicator(
-                      strokeWidth: 1.8,
+                      strokeWidth: AppStrokeWidths.spinnerHairline,
                       valueColor: AlwaysStoppedAnimation(s.muted),
                     ),
                   )
@@ -106,7 +107,7 @@ class ChatSendButton extends StatelessWidget {
           ),
           child: Icon(
             AppIcons.send,
-            color: disabled ? s.muted : Colors.white,
+            color: disabled ? s.muted : AppColors.onBrand,
             size: size * 0.43,
           ),
         ),

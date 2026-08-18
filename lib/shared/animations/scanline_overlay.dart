@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// Spec §12 — 2.6 s scan-line gradient that sweeps horizontally across the
 /// child. Used on typing / working chat bubbles to signal that Saqqar is
@@ -71,9 +72,9 @@ class _ScanlineOverlayState extends State<ScanlineOverlay>
                         begin: Alignment(t - 0.4, 0),
                         end: Alignment(t + 0.4, 0),
                         colors: [
-                          widget.color.withValues(alpha: 0),
-                          widget.color.withValues(alpha: 0.20),
-                          widget.color.withValues(alpha: 0),
+                          widget.color.withValues(alpha: AppAlphas.a0),
+                          widget.color.withValues(alpha: AppAlphas.a20),
+                          widget.color.withValues(alpha: AppAlphas.a0),
                         ],
                         stops: const [0.0, 0.5, 1.0],
                       ),

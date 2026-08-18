@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/network/api_error_mapper.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_sizes.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/security/view_model/app_lock_cubit.dart';
 import '../session/local_session_caches.dart';
@@ -59,7 +61,7 @@ Future<bool> showDeleteAccountFlow(BuildContext context) async {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.25),
+      barrierColor: AppColors.scrimBase.withValues(alpha: AppAlphas.a25),
       builder: (_) => const BlockingProgressDialog(),
     ),
   );

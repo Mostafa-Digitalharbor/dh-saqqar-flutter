@@ -116,8 +116,8 @@ class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 1,
-      height: 22,
+      width: AppBorderWidths.hairline,
+      height: AppControlSizes.verticalRuleShort,
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
       color: context.saqqar.cardBorder,
     );

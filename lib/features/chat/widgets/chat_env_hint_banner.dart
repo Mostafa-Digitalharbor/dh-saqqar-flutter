@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/accent_banner.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -36,7 +37,7 @@ class ChatEnvHintBanner extends StatelessWidget {
       action: PrimaryButton(
         label: tr.envHintUseMyDatabase,
         icon: AppIcons.database,
-        minHeight: 40,
+        minHeight: AppControlSizes.buttonMin,
         loading: busy,
         onPressed: busy ? null : onUseMyDatabase,
       ),

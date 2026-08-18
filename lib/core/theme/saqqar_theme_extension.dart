@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 import 'app_radius.dart';
+import 'app_sizes.dart';
 
 /// Custom design tokens that don't fit Material's [ColorScheme].
 ///
@@ -81,14 +82,14 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
       ? const [
           BoxShadow(
             color: AppColors.glassShadowDark,
-            blurRadius: 28,
+            blurRadius: AppShadowSizes.blurSheet,
             offset: Offset(0, 8),
           ),
         ]
       : const [
           BoxShadow(
             color: AppColors.glassShadowLight,
-            blurRadius: 30,
+            blurRadius: AppShadowSizes.blurModal,
             offset: Offset(0, 10),
           ),
         ];
@@ -104,14 +105,14 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
       ? const [
           BoxShadow(
             color: AppColors.modalShadowDark,
-            blurRadius: 36,
+            blurRadius: AppShadowSizes.blurDeep,
             offset: Offset(0, 16),
           ),
         ]
       : const [
           BoxShadow(
             color: AppColors.modalShadowLight,
-            blurRadius: 36,
+            blurRadius: AppShadowSizes.blurDeep,
             offset: Offset(0, 16),
           ),
         ];
@@ -119,8 +120,8 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
   /// Signature cyan glow on primary CTAs / FABs — `--shadow-cyan-pop`.
   List<BoxShadow> get cyanPopShadow => [
     BoxShadow(
-      color: brandCyan.withValues(alpha: 0.18),
-      blurRadius: 30,
+      color: brandCyan.withValues(alpha: AppAlphas.a18),
+      blurRadius: AppShadowSizes.blurModal,
       offset: const Offset(0, 10),
     ),
   ];

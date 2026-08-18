@@ -118,9 +118,9 @@ class _BackOnlineRow extends StatelessWidget {
           AppSpacing.s10,
         ),
         decoration: BoxDecoration(
-          color: s.success.withValues(alpha: context.isDark ? 0.18 : 0.10),
+          color: s.success.withValues(alpha: context.alpha(AppAlphaPairs.tint)),
           border: Border(
-            bottom: BorderSide(color: s.success.withValues(alpha: 0.32)),
+            bottom: BorderSide(color: s.success.withValues(alpha: AppAlphas.a32)),
           ),
         ),
         child: SafeArea(
@@ -166,9 +166,9 @@ class _OfflineRow extends StatelessWidget {
           AppSpacing.s10,
         ),
         decoration: BoxDecoration(
-          color: s.danger.withValues(alpha: context.isDark ? 0.18 : 0.10),
+          color: s.danger.withValues(alpha: context.alpha(AppAlphaPairs.tint)),
           border: Border(
-            bottom: BorderSide(color: s.danger.withValues(alpha: 0.32)),
+            bottom: BorderSide(color: s.danger.withValues(alpha: AppAlphas.a32)),
           ),
         ),
         child: SafeArea(

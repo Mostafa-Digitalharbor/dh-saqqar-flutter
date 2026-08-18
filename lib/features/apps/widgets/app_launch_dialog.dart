@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
@@ -46,7 +47,7 @@ class AppLaunchDialog extends StatefulWidget {
   }) {
     return showDialog<AppLaunchChoice>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
+      barrierColor: AppColors.scrimBase.withValues(alpha: AppAlphas.a55),
       builder: (_) => AppLaunchDialog(app: app),
     );
   }
@@ -122,7 +123,7 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
                   : tr.appLaunchOptionalEnv,
               style: context.text.bodySmall?.copyWith(
                 color: s.muted,
-                height: 1.5,
+                height: AppLineHeights.body,
               ),
             ),
             const SizedBox(height: AppSpacing.s16),
@@ -211,7 +212,7 @@ class _SectionLabel extends StatelessWidget {
         style: context.text.labelSmall?.copyWith(
           color: context.saqqar.muted,
           fontWeight: FontWeight.w800,
-          letterSpacing: 0.6,
+          letterSpacing: AppLetterSpacing.caps,
         ),
       ),
     );
@@ -231,7 +232,7 @@ class _Note extends StatelessWidget {
         text,
         style: context.text.bodySmall?.copyWith(
           color: context.saqqar.muted,
-          height: 1.5,
+          height: AppLineHeights.body,
         ),
       ),
     );
@@ -268,7 +269,7 @@ class _PickRow extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: selected
-                  ? s.brandCyan.withValues(alpha: 0.12)
+                  ? s.brandCyan.withValues(alpha: AppAlphas.a12)
                   : Colors.transparent,
               borderRadius: AppRadius.buttonR,
               border: Border.all(

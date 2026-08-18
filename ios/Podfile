@@ -1,4 +1,4 @@
-platform :ios, '13.0'
+platform :ios, '15.0'
 
 require 'xcodeproj'
 
@@ -65,6 +65,20 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+
+      # Every embedded framework carries its own MinimumOSVersion, and App
+      # Store Connect validates the lowest one it finds — not just the app
+      # binary's. `flutter_additional_ios_build_settings` only raises a pod
+      # to *Flutter's* floor (13.0), so without this a pod that predates the
+      # bump keeps shipping 13.0 inside a 15.0 app and re-triggers
+      # ITMS-90068.
+      #
+      # Raise-only: a pod that already demands something newer than 15.0
+      # must keep it, or it fails to compile against APIs it declared.
+      current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_s
+      if current.to_f < 15.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      end
 
       # permission_handler_apple compiles each permission behind a
       # PERMISSION_* macro that defaults to **0** (see its

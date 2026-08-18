@@ -5,10 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/code_plate.dart';
+import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/artifact_models.dart';
 import '../data/artifacts_api.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -112,16 +112,9 @@ class _ArtifactDetailsSheetState extends State<ArtifactDetailsSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: AppSpacing.s14),
-                decoration: BoxDecoration(
-                  color: s.border,
-                  borderRadius: AppRadius.pillR,
-                ),
-              ),
+            const Padding(
+              padding: EdgeInsets.only(bottom: AppSpacing.s14),
+              child: SheetDragHandle(),
             ),
             Text(
               context.tr.artifactDetailsTitle,
@@ -149,7 +142,7 @@ class _ArtifactDetailsSheetState extends State<ArtifactDetailsSheet> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.s32),
         child: Center(
-          child: CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
+          child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
         ),
       );
     }
@@ -176,7 +169,7 @@ class _ArtifactDetailsSheetState extends State<ArtifactDetailsSheet> {
     // Bounded height with vertical scroll; CodePlate adds horizontal scroll
     // for any single long value so nothing overflows the sheet.
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 340),
+      constraints: const BoxConstraints(maxHeight: AppSheetHeights.artifactDetailsMax),
       child: SingleChildScrollView(
         child: CodePlate(text: json, accent: s.text),
       ),

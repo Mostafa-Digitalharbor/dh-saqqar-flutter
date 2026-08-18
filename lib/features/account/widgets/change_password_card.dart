@@ -233,7 +233,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                     Text(
                       context.tr.changePasswordHint,
                       style: context.text.bodySmall
-                          ?.copyWith(color: s.muted, height: 1.4),
+                          ?.copyWith(color: s.muted, height: AppLineHeights.compact),
                     ),
                     const SizedBox(height: AppSpacing.s14),
                     AutofillGroup(

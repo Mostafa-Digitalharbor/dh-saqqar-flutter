@@ -36,7 +36,7 @@ class CodePlate extends StatelessWidget {
       style: context.text.bodySmall?.copyWith(
         fontFamily: UiStrings.monospaceFontFamily,
         color: accent,
-        height: 1.5,
+        height: AppLineHeights.body,
         fontSize: AppFontSizes.footnote,
       ),
     );

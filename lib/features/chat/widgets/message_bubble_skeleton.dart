@@ -27,7 +27,7 @@ class MessageBubbleSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     const gap = SizedBox(width: AppSpacing.s10);
-    const avatar = SkeletonBlock(width: 32, height: 32, radius: 16);
+    const avatar = SkeletonBlock.circle(size: AppSkeletonSizes.avatarSmall);
 
     // `maxWidth` + `Flexible`, never a fixed `width`. The avatar and its gap
     // take 42 px of the row, so a 280 px bubble needs a 322 px viewport —
@@ -45,11 +45,11 @@ class MessageBubbleSkeleton extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: isUser
-            ? s.brandCyan.withValues(alpha: 0.08)
-            : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.86),
+            ? s.brandCyan.withValues(alpha: AppAlphas.a08)
+            : s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelDense)),
         borderRadius: AppRadius.modalR,
         border: Border.all(
-          color: isUser ? s.brandCyan.withValues(alpha: 0.18) : s.border,
+          color: isUser ? s.brandCyan.withValues(alpha: AppAlphas.a18) : s.border,
         ),
       ),
       child: Column(
@@ -64,7 +64,7 @@ class MessageBubbleSkeleton extends StatelessWidget {
             FractionallySizedBox(
               alignment: AlignmentDirectional.centerStart,
               widthFactor: i.isEven ? 1.0 : 0.72,
-              child: const SkeletonBlock(height: 11),
+              child: const SkeletonBlock(height: AppSkeletonSizes.subtitleLine),
             ),
           ],
         ],

@@ -51,7 +51,7 @@ class InteractiveCardShell extends StatelessWidget {
                   style: context.text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: s.text,
-                    letterSpacing: -0.1,
+                    letterSpacing: AppLetterSpacing.title,
                   ),
                 ),
               ),
@@ -101,12 +101,12 @@ class CardChoiceChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: selected
-              ? s.brandCyan.withValues(alpha: 0.16)
-              : s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.9),
+              ? s.brandCyan.withValues(alpha: AppAlphas.a16)
+              : s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelCard)),
           borderRadius: AppRadius.pillR,
           border: Border.all(
             color: selected
-                ? s.brandCyan.withValues(alpha: 0.55)
+                ? s.brandCyan.withValues(alpha: AppAlphas.a55)
                 : s.cardBorder,
           ),
         ),

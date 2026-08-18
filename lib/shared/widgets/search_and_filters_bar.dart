@@ -44,7 +44,7 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
       children: [
         DecoratedBox(
           decoration: BoxDecoration(
-            color: s.surface2.withValues(alpha: context.isDark ? 0.62 : 0.86),
+            color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelStrong)),
             borderRadius: AppRadius.inputR,
             border: Border.all(color: s.cardBorder),
           ),

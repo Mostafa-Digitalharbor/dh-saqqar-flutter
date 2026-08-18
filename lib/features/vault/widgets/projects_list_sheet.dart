@@ -110,9 +110,9 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
     // the user can comfortably scroll a handful of projects without the
     // dialog reading as a full-screen page.
     return AppCardDialog(
-      heightFactor: 0.6,
-      minHeight: 380,
-      maxHeight: 560,
+      heightFactor: AppFractions.projectsListSheet,
+      minHeight: AppSheetHeights.projectsListMin,
+      maxHeight: AppSheetHeights.projectsListMax,
       child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.s18,
@@ -138,7 +138,7 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                           style: context.text.labelSmall?.copyWith(
                             color: s.brandCyan,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 1.4,
+                            letterSpacing: AppLetterSpacing.microCapsWidest,
                             fontSize: AppFontSizes.chipLabel,
                           ),
                         ),
@@ -154,13 +154,13 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                   ),
                   GhostButton(
                     label: context.tr.close,
-                    minHeight: 36,
+                    minHeight: AppControlSizes.rowMin,
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.s14),
-              Divider(color: s.cardBorder, height: 1),
+              Divider(color: s.cardBorder, height: AppBorderWidths.hairline),
               const SizedBox(height: AppSpacing.s18),
               // ── Quick "Add project" inline form ─────────────────────
               // Disabled until a name is typed (and no write in flight) —
@@ -204,7 +204,7 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                         // Pre-render rows that haven't scrolled into
                         // view yet so the sheet's scroll feels like
                         // everything was already there.
-                        cacheExtent: 1500,
+                        cacheExtent: AppScrollTuning.cacheExtent,
                         itemCount: projects.length,
                         separatorBuilder: (_, __) =>
                             const SizedBox(height: AppSpacing.s10),
@@ -251,7 +251,7 @@ class _ProjectRow extends StatelessWidget {
       onTap: onTap,
       child: Ink(
         decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
           borderRadius: AppRadius.cardR,
           border: Border.all(color: s.cardBorder),
         ),
@@ -289,7 +289,7 @@ class _ProjectRow extends StatelessWidget {
             const SizedBox(width: AppSpacing.s10),
             GhostButton(
               label: context.tr.delete,
-              minHeight: 36,
+              minHeight: AppControlSizes.rowMin,
               tone: GhostButtonTone.danger,
               onPressed: onDelete,
             ),

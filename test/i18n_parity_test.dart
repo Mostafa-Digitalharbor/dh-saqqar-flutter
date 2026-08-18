@@ -329,6 +329,51 @@ void main() {
     }
   });
 
+
+  test('no getter picks its copy with an inline `_isArabic` ternary', () {
+    // `_t` / `_f` read from the `_en` and `_ar` tables, which is what every
+    // rule in this file inspects. A getter written as
+    //
+    //   String deleteProjectBody(String name) => _isArabic
+    //       ? 'حذف الشركة "$name"؟ …'
+    //       : 'Delete company "$name"? …';
+    //
+    // returns perfectly good Arabic and is invisible to all of them: the
+    // string is not IN `_ar`, so "every English key has an Arabic
+    // translation" cannot see it, "a translation keeps every placeholder"
+    // cannot check it, and "every Arabic entry is actually written in
+    // Arabic" never reaches it. The class doc has warned about this since
+    // the interpolated getters were migrated — two survived the migration
+    // anyway, which is the argument for a rule over a comment.
+    final src = File('lib/core/i18n/app_strings.dart').readAsLinesSync();
+    final hits = <String>[];
+    for (var i = 0; i < src.length; i++) {
+      final line = src[i];
+      if (line.trimLeft().startsWith('///') ||
+          line.trimLeft().startsWith('//')) {
+        continue;
+      }
+      // The two legitimate readers: the table selector and the public flag.
+      if (line.contains('get _table =>') || line.contains('get isArabic =>')) {
+        continue;
+      }
+      if (RegExp(r'_isArabic\s*\?').hasMatch(line)) {
+        hits.add('  lib/core/i18n/app_strings.dart:${i + 1}\n      '
+            '${line.trim()}');
+      }
+    }
+
+    expect(
+      hits,
+      isEmpty,
+      reason: 'Copy chosen by an inline `_isArabic` ternary:\n'
+          '${hits.join('\n')}\n\n'
+          'Fix: add the key to BOTH `_en` and `_ar` and read it with `_t` '
+          '(plain) or `_f` (with `{placeholder}` substitution). Only then '
+          'do the parity rules in this file cover it.',
+    );
+  });
+
   test('lookup() falls back instead of leaking the raw key', () {
     // The credential form resolves backend-supplied `label_key`s through
     // `lookup`. An unknown key must degrade to the server's own label

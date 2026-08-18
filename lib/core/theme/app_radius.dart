@@ -14,6 +14,11 @@ class AppRadius {
   AppRadius._();
 
   // ── Structural surfaces ────────────────────────────────────────────────
+  /// Square corners. The PDF thumbnail renders inside a parent that
+  /// already clips, so rounding it again would double the corner and
+  /// leave a hairline of background between the two curves.
+  static const double none = 0;
+
   static const double card = 20;
   static const double button = 12;
   static const double pill = 999;

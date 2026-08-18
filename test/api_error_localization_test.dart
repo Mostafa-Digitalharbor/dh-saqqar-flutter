@@ -37,9 +37,10 @@ void main() {
     required int status,
     required String body,
     String contentType = Headers.jsonContentType,
+    Map<String, String> headers = const {},
   }) async {
     final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
-      ..httpClientAdapter = _StubAdapter(status, body, contentType)
+      ..httpClientAdapter = _StubAdapter(status, body, contentType, headers)
       ..interceptors.add(ErrorInterceptor());
     try {
       await dio.get<dynamic>('/api/v1/anything');
@@ -145,13 +146,71 @@ void main() {
     });
   });
 
+
+  group('a maintenance window says when to come back', () {
+    // A deploy answers 503 with a `Retry-After`. Both halves of that used to
+    // be thrown away: 503 was classified as a generic ServerFailure ("the
+    // server hit a problem — try again in a moment", which is a guess), and
+    // the header was parsed into `retryAfterSeconds` and then read by
+    // nothing but the 429 branch.
+    test('503 is not the same failure as 500', () async {
+      final down = await intercept(status: 503, body: '{"ok":false}');
+      final broken = await intercept(status: 500, body: '{"ok":false}');
+      expect(ApiErrorMapper.toFailure(down), isA<ServiceUnavailableFailure>());
+      expect(ApiErrorMapper.toFailure(broken), isA<ServerFailure>());
+      expect(
+        ApiErrorMapper.messageForLocale(en, down),
+        isNot(ApiErrorMapper.messageForLocale(en, broken)),
+      );
+    });
+
+    test('the Retry-After header reaches the user', () async {
+      final e = await intercept(
+        status: 503,
+        body: '{"ok":false}',
+        headers: {'retry-after': '90'},
+      );
+      final failure = ApiErrorMapper.toFailure(e);
+      expect(failure, isA<ServiceUnavailableFailure>());
+      expect((failure as ServiceUnavailableFailure).retryAfterSeconds, 90);
+
+      // The number has to be IN the sentence, in both locales — a parsed
+      // value the copy never interpolates is the same as no value at all.
+      expect(ApiErrorMapper.messageForLocale(en, e), contains('90'));
+      expect(ApiErrorMapper.messageForLocale(ar, e), contains('90'));
+      expect(
+        ApiErrorMapper.messageForLocale(ar, e),
+        isNot(ApiErrorMapper.messageForLocale(en, e)),
+      );
+    });
+
+    test('without a Retry-After it still says something specific', () async {
+      final e = await intercept(status: 503, body: '{"ok":false}');
+      expect(
+        ApiErrorMapper.messageForLocale(ar, e),
+        ar.errorServiceUnavailable,
+      );
+      expect(ar.errorServiceUnavailable, isNot(ar.errorServer));
+    });
+
+    test('408 is a timeout, not a mystery', () async {
+      // A proxy that gave up waiting for the origin. It used to land in
+      // UnknownFailure, so the user was told "something went wrong" for the
+      // one failure whose cause is exactly known.
+      final e = await intercept(status: 408, body: '{"ok":false}');
+      expect(ApiErrorMapper.toFailure(e), isA<TimeoutFailure>());
+      expect(ApiErrorMapper.messageForLocale(ar, e), ar.errorTimeout);
+      expect(ApiErrorMapper.messageForLocale(ar, e), isNot(ar.errorUnknown));
+    });
+  });
+
   group('a 200 that carries ok:false is still a failure', () {
     // Full coverage of the envelope path lives in error_envelope_test.dart;
     // this pins the LOCALIZED end of it, which is what the user reads.
     test('renders localized copy rather than passing as success', () async {
       final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
         ..httpClientAdapter = _StubAdapter(
-            200, '{"ok":false}', Headers.jsonContentType)
+            200, '{"ok":false}', Headers.jsonContentType, const {})
         ..interceptors.add(ErrorInterceptor());
 
       try {
@@ -461,11 +520,16 @@ void main() {
 
 /// Returns a canned HTTP response without touching the network.
 class _StubAdapter implements HttpClientAdapter {
-  _StubAdapter(this.status, this.body, this.contentType);
+  _StubAdapter(this.status, this.body, this.contentType, this.extraHeaders);
+
+  /// Response headers beyond content-type. `Retry-After` is the reason
+  /// this exists: the app reads it, and a stub that could not send one
+  /// meant nothing ever proved that it does.
 
   final int status;
   final String body;
   final String contentType;
+  final Map<String, String> extraHeaders;
 
   @override
   Future<ResponseBody> fetch(
@@ -478,6 +542,7 @@ class _StubAdapter implements HttpClientAdapter {
         status,
         headers: {
           Headers.contentTypeHeader: [contentType],
+          for (final e in extraHeaders.entries) e.key: [e.value],
         },
       );
 

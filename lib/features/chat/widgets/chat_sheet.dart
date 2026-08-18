@@ -15,7 +15,7 @@ class ChatSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
+    final maxHeight = MediaQuery.sizeOf(context).height * AppFractions.sheet;
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
 
     return SafeArea(
@@ -39,7 +39,7 @@ class ChatSheet extends StatelessWidget {
                 title,
                 style: context.text.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
+                  letterSpacing: AppLetterSpacing.heading,
                 ),
               ),
               const SizedBox(height: AppSpacing.s14),

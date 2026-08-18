@@ -33,8 +33,8 @@ class AppIconButton extends StatelessWidget {
 
     Widget body = TappableSurface(
       onTap: disabled ? null : onPressed,
-      splashColor: s.brandCyan.withValues(alpha: 0.10),
-      highlightColor: s.brandCyan.withValues(alpha: 0.06),
+      splashColor: s.brandCyan.withValues(alpha: AppAlphas.a10),
+      highlightColor: s.brandCyan.withValues(alpha: AppAlphas.a06),
       child: Container(
         width: size,
         height: size,

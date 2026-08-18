@@ -1297,4 +1297,529 @@ void main() {
       );
     });
   });
+
+  group('The iOS minimum is one number in three files', () {
+    // Two separate App Store failures came out of these three declarations
+    // disagreeing, and **neither one is visible from this machine** — Windows
+    // cannot run `flutter build ios` at all, so nothing catches them until
+    // App Store Connect has already accepted the binary:
+    //
+    //   * The key missing from AppFrameworkInfo.plist → hard rejection at
+    //     validation, `MinimumOSVersion in
+    //     'Runner.app/Frameworks/App.framework' is ''`.
+    //   * Any of them below 15.0 → `ITMS-90068: MinimumOSVersion too low`,
+    //     emailed after the build reaches TestFlight and shown as a yellow
+    //     warning triangle beside it. A warning today; from Spring 2027 App
+    //     Store Connect refuses the upload outright.
+    //
+    // CI is green either way — the archive builds, signs and *uploads* before
+    // anything objects — which is exactly why the check lives here instead.
+    //
+    // The Podfile's `post_install` floor covers a fourth surface (each pod
+    // carries its own MinimumOSVersion and Apple validates the lowest in the
+    // bundle) but is deliberately not asserted on: it is an implementation
+    // shape, not a declaration, and pinning a regex to it would fail on an
+    // honest rewrite.
+    const floor = 15.0;
+
+    /// Every place the minimum is declared, as `label -> raw value`.
+    /// Missing files are reported as such rather than silently skipped —
+    /// a rule that passes because it read nothing is worse than no rule.
+    Map<String, String> declarations() {
+      String read(String path) {
+        final file = File(path);
+        expect(
+          file.existsSync(),
+          isTrue,
+          reason: '$path is missing — this rule cannot check what it cannot '
+              'read. If the file moved, update the path here.',
+        );
+        return file.readAsStringSync();
+      }
+
+      final found = <String, String>{};
+
+      final plist = RegExp(
+        r'<key>MinimumOSVersion</key>\s*<string>([\d.]+)</string>',
+      ).firstMatch(read('ios/Flutter/AppFrameworkInfo.plist'));
+      if (plist != null) {
+        found['AppFrameworkInfo.plist MinimumOSVersion'] = plist.group(1)!;
+      }
+
+      final podfile = RegExp(
+        r"^platform :ios, '([\d.]+)'",
+        multiLine: true,
+      ).firstMatch(read('ios/Podfile'));
+      if (podfile != null) found['Podfile platform :ios'] = podfile.group(1)!;
+
+      final pbx = RegExp(
+        r'IPHONEOS_DEPLOYMENT_TARGET = ([\d.]+);',
+      ).allMatches(read('ios/Runner.xcodeproj/project.pbxproj'));
+      for (final (index, match) in pbx.indexed) {
+        found['project.pbxproj IPHONEOS_DEPLOYMENT_TARGET #${index + 1}'] =
+            match.group(1)!;
+      }
+
+      return found;
+    }
+
+    test('every one of them is declared', () {
+      final found = declarations();
+
+      expect(
+        found.keys,
+        contains('AppFrameworkInfo.plist MinimumOSVersion'),
+        reason: 'ios/Flutter/AppFrameworkInfo.plist has no MinimumOSVersion.\n\n'
+            'The archive still builds, signs and uploads — then App Store '
+            "Connect rejects it with `MinimumOSVersion in "
+            "'Runner.app/Frameworks/App.framework' is ''`. That is how it was "
+            'lost once already: removed as part of an unrelated migration, '
+            'and nothing noticed for six weeks.\n\n'
+            'Fix: <key>MinimumOSVersion</key><string>$floor</string>.',
+      );
+
+      expect(
+        found.keys,
+        contains('Podfile platform :ios'),
+        reason: 'ios/Podfile has no top-level `platform :ios, \'…\'` line. '
+            'Without it CocoaPods picks its own default for every pod.',
+      );
+
+      expect(
+        found.keys.where((k) => k.startsWith('project.pbxproj')),
+        isNotEmpty,
+        reason: 'No IPHONEOS_DEPLOYMENT_TARGET in project.pbxproj — either the '
+            'project stopped declaring one or this rule\'s pattern is stale.',
+      );
+    });
+
+    test('none is below the floor Apple enforces', () {
+      final tooLow = <String, String>{
+        for (final entry in declarations().entries)
+          if ((double.tryParse(entry.value) ?? 0) < floor)
+            entry.key: entry.value,
+      };
+
+      expect(
+        tooLow,
+        isEmpty,
+        reason: 'These declare an iOS minimum below $floor:\n'
+            '${tooLow.entries.map((e) => '  • ${e.key} = ${e.value}').join('\n')}'
+            '\n\nApple emails `ITMS-90068: MinimumOSVersion too low` for the '
+            'build and flags it in TestFlight, and refuses the upload entirely '
+            'from Spring 2027.\n\n'
+            'Raising the floor costs no devices: every iPhone that can run '
+            'iOS 13 can run iOS 15 — the 6s is the oldest for both.',
+      );
+    });
+
+    test('they all agree with each other', () {
+      final found = declarations();
+      final distinct = found.values.toSet();
+
+      expect(
+        distinct.length,
+        1,
+        reason: 'The iOS minimum is declared ${found.length} times and '
+            '${distinct.length} different values came back:\n'
+            '${found.entries.map((e) => '  • ${e.key} = ${e.value}').join('\n')}'
+            '\n\nApple validates the LOWEST minimum in the bundle, so the '
+            'smallest of these is the one that counts — raising only some of '
+            'them changes nothing except where the problem is visible.\n\n'
+            'The Share Extension is a separate target with its own copy; it '
+            'has to move too.',
+      );
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // The 2026-08-18 token sweep.
+  //
+  // The rules above named colour, radius, type size, icon size, spacing and
+  // motion. A census on 2026-08-18 found the axes they did NOT cover still
+  // carrying 640 bare literals: opacity (170), line height (80), letter
+  // tracking (54), the dark/light alpha ternary (54), box dimensions (283 in
+  // the two-argument form the SizedBox rule deliberately skipped), border
+  // widths (29), shadow geometry (20), stroke widths (18), elevations (14)
+  // and content max-widths (17).
+  //
+  // Every one of them is now a token. These rules are what stop the 641st.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('Opacity is named, not typed', () {
+    test('no `alpha:` takes a bare number', () {
+      // 170 of these, at 31 distinct values — including `0.2` alongside
+      // `0.20` and `0.4` alongside `0.40`, which are the same level written
+      // two ways and could therefore never be counted by anyone grepping for
+      // one of the spellings.
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(r'\balpha:\s*[0-9]').hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in an alpha:',
+          hits,
+          'use `AppAlphas.a<NN>` from lib/core/theme/app_sizes.dart, or one '
+              'of its semantic aliases (`fill`, `border`, `scrim`, `shadow`, '
+              '`deemphasis`). If the level has to differ between light and '
+              'dark, use `context.alpha(AppAlphaPairs.<name>)` instead — see '
+              'the next rule.',
+        ),
+      );
+    });
+
+    test('no brightness ternary picks an opacity inline', () {
+      // The rule above cannot see these: `alpha: context.isDark ? 0.55 : 0.9`
+      // has no digit directly after `alpha:`. That blind spot is why the
+      // first sweep of 170 literals left all 54 of these untouched, and why
+      // one role — a translucent panel — ended up written twelve different
+      // ways with nothing able to notice.
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(
+                r'alpha:\s*[\w.]*is(?:Dark|Light)\s*\?',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Inline brightness ternary choosing an opacity:',
+          hits,
+          'use `context.alpha(AppAlphaPairs.<name>)`. If no existing pair '
+              'fits, add one to `AppAlphaPairs` — that class is the census of '
+              'how many distinct pairs this app really has, and it only stays '
+              'honest if new ones land in it.',
+        ),
+      );
+    });
+  });
+
+  group('Type metrics beyond size are named', () {
+    test('no `letterSpacing:` takes a bare number', () {
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) =>
+              RegExp(r'\bletterSpacing:\s*-?[0-9]').hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in a letterSpacing:',
+          hits,
+          'use `AppLetterSpacing.<role>`. Positive values are for uppercase '
+              'labels (the smaller the caps, the wider the tracking); the '
+              'negative ones are optical tightening for headings and are '
+              'chosen against a specific text-theme role.',
+        ),
+      );
+    });
+
+    test('no TextStyle `height:` takes a bare number', () {
+      // Scoped to fractional values. `height:` is Flutter's most overloaded
+      // parameter name — a `SizedBox`, a `Container`, a `Divider` and a
+      // `TextStyle` all take one — but only line heights are written as a
+      // multiple, and every box dimension in this app is now a token, so a
+      // bare `1.x` here is a leading value with no other candidate.
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(r'\bheight:\s*[0-9]+\.[0-9]').hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare line height:',
+          hits,
+          'use `AppLineHeights.<role>`. Anything rendering both scripts '
+              'needs `reading` or `body` — IBM Plex Sans Arabic has taller '
+              'ascenders than Space Grotesk, so a value picked against '
+              'English alone clips in Arabic.',
+        ),
+      );
+    });
+  });
+
+  group('Strokes, shadows and elevation are named', () {
+    test('no `strokeWidth:` takes a bare number', () {
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(r'\bstrokeWidth:\s*[0-9]').hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in a strokeWidth:',
+          hits,
+          'use `AppStrokeWidths.spinner<Weight>`, picked against the '
+              '`AppControlSizes` diameter the spinner is drawn at — Flutter '
+              'defaults to 4.0, which is far too heavy at the 14–22 px this '
+              'app spins at.',
+        ),
+      );
+    });
+
+    test('no border `width:` takes a bare number', () {
+      // Balanced rather than line-based: `Border.all(color: x.withValues(…),
+      // width: 1)` puts parentheses between the constructor and the number,
+      // so a non-greedy `[^()]*` scan silently skips exactly the sites that
+      // have any colour computation in them — which is most of them.
+      final ctor = RegExp(
+        r'\b(?:BorderSide|Border\.all|BorderDirectional|TableBorder\.all)\(',
+      );
+      final bare = RegExp(r'\bwidth:\s*([0-9][0-9.]*)');
+      final hits = <_Line>[];
+
+      for (final file in _scanFiles()) {
+        if (file.path.endsWith('core/theme/app_sizes.dart')) continue;
+        var from = 0;
+        while (true) {
+          final m = ctor.firstMatch(file.text.substring(from));
+          if (m == null) break;
+          final open = from + m.end - 1;
+          final close = _matchParen(file.text, open);
+          if (close == -1) {
+            from = open + 1;
+            continue;
+          }
+          final region = file.text.substring(open + 1, close);
+          for (final n in bare.allMatches(region)) {
+            final at = open + 1 + n.start;
+            hits.add((
+              path: file.path,
+              number: '\n'.allMatches(file.text.substring(0, at)).length + 1,
+              text: '${m.group(0)}… width: ${n.group(1)} …',
+            ));
+          }
+          from = close;
+        }
+      }
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in a border width:',
+          hits,
+          'use `AppBorderWidths.<role>`. A border stroke is not a spinner '
+              'stroke — `AppStrokeWidths` scales with a diameter, these scale '
+              'with how much the edge is meant to assert itself.',
+        ),
+      );
+    });
+
+    test('no `thickness:` or `Divider` height is a bare number', () {
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) =>
+              RegExp(r'\bthickness:\s*[0-9]').hasMatch(l.text) ||
+              RegExp(r'Divider\([^)]*\bheight:\s*[0-9]').hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number on a rule:',
+          hits,
+          'use `AppBorderWidths.hairline`. This app always sets a Divider\'s '
+              '`height` and `thickness` to the same value because it wants a '
+              'rule with no padding — one name is what keeps the pair from '
+              'drifting apart.',
+        ),
+      );
+    });
+
+    test('no shadow geometry is a bare number', () {
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(
+                r'\b(?:blurRadius|spreadRadius|sigmaX|sigmaY):\s*[0-9]',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in shadow geometry:',
+          hits,
+          'use `AppShadowSizes.<role>`. Shadow COLOUR belongs on the theme '
+              'extension (it differs per brightness); only the geometry lives '
+              'in the size scale, because a surface\'s softness is the same '
+              'whether it renders dark or light.',
+        ),
+      );
+    });
+
+    test('no `elevation:` takes a bare number', () {
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(
+                r'(?<!scrolledUnder)\belevation:\s*[0-9]',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in an elevation:',
+          hits,
+          'use `AppElevations.<role>`. The design system is flat — surfaces '
+              'are separated by borders and translucency — so `none` is what '
+              'almost everything takes, and it is set explicitly because '
+              'Material\'s own defaults are not 0.',
+        ),
+      );
+    });
+  });
+
+  group('Box dimensions are named, not typed', () {
+    // The `SizedBox` gap rule above deliberately stops at the one-argument
+    // form and says so: "if this is really a fixed control size, give it both
+    // dimensions and name it in `AppControlSizes`." That sentence was an
+    // instruction nobody could enforce — 283 two-argument dimensions had
+    // accumulated behind it. These rules enforce it.
+
+    test('no width/height pair is a bare number', () {
+      final hits = lib
+          .where((l) => !l.path.contains('core/theme/'))
+          .where((l) => RegExp(
+                r'\b(?:width|height):\s*[0-9]+\s*,\s*(?:width|height):\s*[0-9]',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare width/height pair:',
+          hits,
+          'a sized box is a control dimension. Use `AppBoxSizes` for a '
+              'decorative square behind a glyph, `AppControlSizes` for a tap '
+              'target, `AppAvatarSizes` for an identity circle, or '
+              '`AppSkeletonSizes` for a loading placeholder. For a circle, '
+              '`SkeletonBlock.circle(size:)` already exists.',
+        ),
+      );
+    });
+
+    test('no constraint is a bare number', () {
+      final hits = lib
+          .where((l) => !l.path.contains('core/theme/'))
+          .where((l) => RegExp(
+                r'\b(?:maxWidth|minWidth|maxHeight|minHeight):\s*[0-9]',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in a BoxConstraints:',
+          hits,
+          'a max width is a responsive decision — use `AppLayoutWidths`. A '
+              'sheet\'s bounds go in `AppSheetHeights` (as a min/max PAIR, so '
+              'nothing can raise the minimum past the maximum). A control\'s '
+              'minimum goes in `AppControlSizes`.',
+        ),
+      );
+    });
+
+    test('no `cacheExtent:` is a bare number', () {
+      // Six lists, one value, and nothing saying the six were the same
+      // decision except that they happened to be equal.
+      final hits = lib
+          .where((l) => RegExp(r'\bcacheExtent:\s*[0-9]').hasMatch(l.text))
+          .where((l) => !l.path.contains('core/theme/'))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in a cacheExtent:',
+          hits,
+          'use `AppScrollTuning.cacheExtent`. A value that is right for one '
+              'long list in this app is right for all of them.',
+        ),
+      );
+    });
+  });
+
+  group('Absolute colours are named', () {
+    test('no bare `Colors.white` / `Colors.black`', () {
+      // `Colors.transparent` is deliberately NOT in this rule. It is not a
+      // colour decision — it is the absence of one, and it means the same
+      // thing at every call site, so naming it would add indirection without
+      // adding information. White and black are the opposite: this app has
+      // four distinct reasons to reach for them (a foreground on a brand
+      // fill, a modal scrim, an image viewer's backdrop, and that backdrop's
+      // foreground) which happen to resolve to the same value today.
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_colors.dart'))
+          .where((l) => !_brandLockedColours.any(l.path.contains))
+          .where((l) =>
+              RegExp(r'(?<![A-Za-z.])Colors\.(?:white|black)\b').hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare absolute colour:',
+          hits,
+          'use `AppColors.onBrand` (a label or glyph on a brand fill), '
+              '`AppColors.scrimBase` (a modal barrier, tinted by an '
+              '`AppAlphas` scrim level), `AppColors.imageBackdrop` or '
+              '`AppColors.onImageBackdrop`. `Colors.transparent` is fine and '
+              'is not covered by this rule.',
+        ),
+      );
+    });
+  });
+
+  group('Responsive boundaries are read from one place', () {
+    test('the breakpoint ladder holds no bare widths', () {
+      final src =
+          File('lib/shared/extensions/responsive_breakpoints.dart').readAsStringSync();
+      final ladder = src.substring(src.indexOf('Breakpoint breakpointForWidth'));
+
+      expect(
+        RegExp(r'width <= [0-9]').hasMatch(ladder),
+        isFalse,
+        reason: 'breakpointForWidth compares against a bare number.\n\n'
+            'Fix: read the boundary from `BreakpointWidths`. The responsive '
+            'test harness sweeps device widths against these tiers, and a '
+            'harness that hardcodes its own 340 is testing a boundary the app '
+            'may no longer have — reading them from one class means the two '
+            'can only ever agree.',
+      );
+    });
+
+    test('BreakpointWidths actually declares all three', () {
+      // Without this, the rule above passes vacuously the moment someone
+      // deletes the class and inlines the numbers somewhere else.
+      final src =
+          File('lib/shared/extensions/responsive_breakpoints.dart').readAsStringSync();
+      for (final name in ['tiny', 'compact', 'regular']) {
+        expect(
+          src,
+          contains('static const double $name ='),
+          reason: 'BreakpointWidths.$name is missing.',
+        );
+      }
+    });
+  });
 }

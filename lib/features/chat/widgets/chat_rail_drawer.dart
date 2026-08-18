@@ -183,7 +183,7 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
 
     return Material(
       color: s.surface,
-      elevation: 8,
+      elevation: AppElevations.drawer,
       child: SafeArea(
         child: Column(
           children: [
@@ -432,8 +432,8 @@ class _LanguageToggleButton extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: () => context.read<LocaleCubit>().toggleEnglishArabic(),
         child: Container(
-          width: 40,
-          height: 40,
+          width: AppBoxSizes.railButton,
+          height: AppBoxSizes.railButton,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -484,7 +484,7 @@ class _ApprovalsTab extends StatelessWidget {
         AppSpacing.s14,
         AppSpacing.s16,
       ),
-      cacheExtent: 1500,
+      cacheExtent: AppScrollTuning.cacheExtent,
       itemCount: approvals.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s10),
       itemBuilder: (_, i) => ChatApprovalCard(
@@ -523,7 +523,7 @@ class _ArtifactsTab extends StatelessWidget {
         AppSpacing.s14,
         AppSpacing.s16,
       ),
-      cacheExtent: 1500,
+      cacheExtent: AppScrollTuning.cacheExtent,
       itemCount: artifacts.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s10),
       itemBuilder: (context, i) => ChatArtifactTile(
@@ -573,7 +573,7 @@ class _EmptyTab extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: s.surface2
-                          .withValues(alpha: context.isDark ? 0.5 : 0.85),
+                          .withValues(alpha: context.alpha(AppAlphaPairs.panel)),
                       borderRadius: AppRadius.buttonR,
                       border: Border.all(color: s.cardBorder),
                     ),

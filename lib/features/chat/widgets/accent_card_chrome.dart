@@ -51,7 +51,7 @@ class AccentCardChrome extends StatelessWidget {
     final s = context.saqqar;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
+        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelOpaque)),
         borderRadius: AppRadius.bubbleR,
         border: Border.all(color: s.cardBorder),
       ),

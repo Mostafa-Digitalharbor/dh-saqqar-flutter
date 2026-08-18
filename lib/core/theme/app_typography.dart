@@ -79,17 +79,17 @@ class AppTypography {
       titleSmall: styled(AppFontSizes.titleSmall, FontWeight.w600),
 
       // Body — chat text, lists.
-      bodyLarge: styled(AppFontSizes.bodyLarge, FontWeight.w400, height: 1.5),
+      bodyLarge: styled(AppFontSizes.bodyLarge, FontWeight.w400, height: AppLineHeights.body),
       bodyMedium: styled(
         AppFontSizes.bodyMedium,
         FontWeight.w400,
-        height: 1.5,
+        height: AppLineHeights.body,
         color: text,
       ),
       bodySmall: styled(
         AppFontSizes.bodySmall,
         FontWeight.w400,
-        height: 1.45,
+        height: AppLineHeights.reading,
         color: muted,
       ),
 
@@ -108,7 +108,7 @@ class AppTypography {
       fontFamilyFallback: fontFallback,
       fontSize: AppFontSizes.caption,
       fontWeight: FontWeight.w700,
-      letterSpacing: 0,
+      letterSpacing: AppLetterSpacing.none,
       color: color,
     );
   }
@@ -120,7 +120,7 @@ class AppTypography {
       fontFamilyFallback: fontFallback,
       fontSize: AppFontSizes.chipLabel,
       fontWeight: FontWeight.w700,
-      letterSpacing: 0,
+      letterSpacing: AppLetterSpacing.none,
       color: color,
     );
   }
@@ -137,7 +137,7 @@ class AppTypography {
     return TextStyle(
       fontSize: size,
       color: color,
-      height: 1.45,
+      height: AppLineHeights.reading,
       fontFamily: fontMono,
     );
   }

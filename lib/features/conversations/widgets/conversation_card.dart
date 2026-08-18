@@ -129,7 +129,7 @@ class ConversationCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: needsAttention
                   ? Color.alphaBlend(
-                      s.warning.withValues(alpha: 0.05),
+                      s.warning.withValues(alpha: AppAlphas.a05),
                       s.cardBg,
                     )
                   : s.cardBg,
@@ -138,7 +138,7 @@ class ConversationCard extends StatelessWidget {
               // state reads at a glance; the rest get the calm card hairline.
               border: Border.all(
                 color: needsAttention
-                    ? s.warning.withValues(alpha: 0.35)
+                    ? s.warning.withValues(alpha: AppAlphas.a35)
                     : s.cardBorder,
               ),
               boxShadow: s.glassShadow,
@@ -151,7 +151,7 @@ class ConversationCard extends StatelessWidget {
                     start: 0,
                     top: 0,
                     bottom: 0,
-                    child: Container(width: 3, color: s.warning),
+                    child: Container(width: AppBorderWidths.accentBar, color: s.warning),
                   ),
                 Padding(
                   padding: EdgeInsetsDirectional.fromSTEB(
@@ -228,7 +228,7 @@ class ConversationCard extends StatelessWidget {
                                   // Brand wordmark stands in for the word
                                   // "Saqqar" so the indicator reads
                                   // "[SAQQÂR] is working now".
-                                  const SaqqarLogo(height: 15),
+                                  const SaqqarLogo(height: AppLogoSizes.avatar),
                                   const SizedBox(width: AppSpacing.s3),
                                   Flexible(
                                     child: Text(
@@ -426,11 +426,11 @@ class _ConversationAvatar extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.s2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: ring, width: 2),
+            border: Border.all(color: ring, width: AppBorderWidths.ring),
           ),
           child: Container(
-            width: 46,
-            height: 46,
+            width: AppBoxSizes.avatarRing,
+            height: AppBoxSizes.avatarRing,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -443,10 +443,10 @@ class _ConversationAvatar extends StatelessWidget {
             child: Text(
               _initialOf(seedText),
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.onBrand,
                 fontWeight: FontWeight.w700,
                 fontSize: AppFontSizes.avatarInitial,
-                height: 1.1,
+                height: AppLineHeights.displayTight,
               ),
             ),
           ),
@@ -456,12 +456,12 @@ class _ConversationAvatar extends StatelessWidget {
             bottom: 0,
             end: 0,
             child: Container(
-              width: 13,
-              height: 13,
+              width: AppBoxSizes.presenceDot,
+              height: AppBoxSizes.presenceDot,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: s.success,
-                border: Border.all(color: s.cardBg, width: 2.5),
+                border: Border.all(color: s.cardBg, width: AppBorderWidths.ringThick),
               ),
             ),
           ),
@@ -485,9 +485,9 @@ class _WarnPill extends StatelessWidget {
         vertical: AppSpacing.s3,
       ),
       decoration: BoxDecoration(
-        color: s.warning.withValues(alpha: 0.14),
+        color: s.warning.withValues(alpha: AppAlphas.a14),
         borderRadius: AppRadius.pillR,
-        border: Border.all(color: s.warning.withValues(alpha: 0.30)),
+        border: Border.all(color: s.warning.withValues(alpha: AppAlphas.a30)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -509,9 +509,9 @@ class _WarnPill extends StatelessWidget {
               softWrap: false,
               style: TextStyle(
                 fontSize: AppFontSizes.chipLabel,
-                height: 1.2,
+                height: AppLineHeights.heading,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.6,
+                letterSpacing: AppLetterSpacing.caps,
                 color: s.warning,
               ),
             ),

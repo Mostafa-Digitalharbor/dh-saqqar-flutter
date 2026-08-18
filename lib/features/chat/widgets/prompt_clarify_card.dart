@@ -128,7 +128,7 @@ class _PromptClarifyCardState extends State<PromptClarifyCard> {
             widget.payload.intro,
             style: context.text.bodyMedium?.copyWith(
               color: s.muted,
-              height: 1.5,
+              height: AppLineHeights.body,
             ),
           ),
           const SizedBox(height: AppSpacing.s12),

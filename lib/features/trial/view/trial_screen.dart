@@ -115,7 +115,7 @@ class _TrialScreenState extends State<TrialScreen> {
         );
       }
       return Center(
-        child: CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
+        child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
       );
     }
 
@@ -236,7 +236,7 @@ class _ProvisioningCard extends StatelessWidget {
           SizedBox(
             width: AppControlSizes.spinnerHero,
             height: AppControlSizes.spinnerHero,
-            child: CircularProgressIndicator(strokeWidth: 2.6, color: s.brandCyan),
+            child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerThick, color: s.brandCyan),
           ),
           const SizedBox(height: AppSpacing.s16),
           Text(title,
@@ -247,7 +247,7 @@ class _ProvisioningCard extends StatelessWidget {
           Text(
             context.tr.trialProvisioningBody,
             textAlign: TextAlign.center,
-            style: context.text.bodySmall?.copyWith(color: s.muted, height: 1.4),
+            style: context.text.bodySmall?.copyWith(color: s.muted, height: AppLineHeights.compact),
           ),
         ],
       ),
@@ -352,7 +352,7 @@ class _ReadyCard extends StatelessWidget {
               child: Text(
                 context.tr.trialCredentialsWarning,
                 style: context.text.labelSmall
-                    ?.copyWith(color: s.warning, height: 1.4),
+                    ?.copyWith(color: s.warning, height: AppLineHeights.compact),
               ),
             ),
           ],
@@ -411,7 +411,7 @@ class _CredentialRowState extends State<_CredentialRow> {
       child: Row(
         children: [
           SizedBox(
-            width: 78,
+            width: AppControlSizes.trialLabelWidth,
             child: Text(
               widget.label,
               style: context.text.labelSmall?.copyWith(color: s.muted),

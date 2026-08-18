@@ -21,7 +21,7 @@ import 'artifact_pill.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/widgets/sheet_action_row.dart';
 
 /// Spec §8 — two distinct render paths for one message:
 ///
@@ -79,9 +79,9 @@ class _UserBubble extends StatelessWidget {
               // mockup; opacity stepped per theme so the bubble
               // doesn't get washed out in light mode.
               color: s.brandCyan
-                  .withValues(alpha: context.isDark ? 0.18 : 0.10),
+                  .withValues(alpha: context.alpha(AppAlphaPairs.tint)),
               border: Border.all(
-                color: s.brandCyan.withValues(alpha: 0.30),
+                color: s.brandCyan.withValues(alpha: AppAlphas.a30),
               ),
               borderRadius:
                   AppRadius.userBubbleR.resolve(Directionality.of(context)),
@@ -111,7 +111,7 @@ class _UserBubble extends StatelessWidget {
                 fontSize: AppFontSizes.metaLine,
                 fontWeight: FontWeight.w500,
               ),
-              dotColor: s.muted.withValues(alpha: 0.7),
+              dotColor: s.muted.withValues(alpha: AppAlphas.a70),
             ),
           ),
         ],
@@ -141,7 +141,7 @@ class _AgentMessage extends StatelessWidget {
           MessageMeta(
             leading: const WidgetSpan(
               alignment: PlaceholderAlignment.middle,
-              child: SaqqarLogo(height: 14),
+              child: SaqqarLogo(height: AppLogoSizes.inline),
             ),
             time: showTime ? message.time : null,
             style: context.text.labelSmall?.copyWith(
@@ -149,7 +149,7 @@ class _AgentMessage extends StatelessWidget {
               fontSize: AppFontSizes.pillLabel,
               fontWeight: FontWeight.w500,
             ),
-            dotColor: s.muted.withValues(alpha: 0.7),
+            dotColor: s.muted.withValues(alpha: AppAlphas.a70),
           ),
           const SizedBox(height: AppSpacing.s6),
           // Optional tool name (sits above the body so the user knows
@@ -171,7 +171,7 @@ class _AgentMessage extends StatelessWidget {
                       color: s.muted,
                       fontWeight: FontWeight.w600,
                       fontSize: AppFontSizes.chipLabel,
-                      letterSpacing: 0.2,
+                      letterSpacing: AppLetterSpacing.tight,
                     ),
                   ),
                 ),
@@ -336,13 +336,13 @@ class _MessageActionsSheet extends StatelessWidget {
           children: [
             const SheetDragHandle(),
             const SizedBox(height: AppSpacing.s18),
-            _SheetRow(
+            SheetActionRow(
               icon: AppIcons.copy,
               label: tr.copyAction,
               onTap: () =>
                   Navigator.of(context).pop(_MessageAction.copy),
             ),
-            _SheetRow(
+            SheetActionRow(
               icon: AppIcons.share,
               label: tr.shareMessage,
               onTap: () =>
@@ -362,55 +362,6 @@ class _MessageActionsSheet extends StatelessWidget {
                 style: context.text.labelSmall?.copyWith(
                   color: s.muted,
                   fontSize: AppFontSizes.caption,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetRow extends StatelessWidget {
-  const _SheetRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return TappableSurface(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s6,
-          vertical: AppSpacing.s12,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: s.muted.withValues(alpha: 0.10),
-              ),
-              child: Icon(icon, size: AppIconSizes.regular, color: s.text),
-            ),
-            const SizedBox(width: AppSpacing.s14),
-            Expanded(
-              child: Text(
-                label,
-                style: context.text.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

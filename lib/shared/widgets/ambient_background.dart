@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 
 /// App-wide background. By default it's a flat surface (`bg` token) — clean,
@@ -30,13 +31,13 @@ class AmbientBackground extends StatelessWidget {
     // Single cyan glow at the top centre — cheaper to paint than the older
     // 3-blob ambient and reads as a deliberate hero light source instead of
     // ornamental haze.
-    final cyan = s.brandCyan.withValues(alpha: 0.07 * intensity);
+    final cyan = s.brandCyan.withValues(alpha: AppAlphas.a07 * intensity);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: RadialGradient(
           center: const Alignment(0, -0.9),
-          radius: 0.7,
+          radius: AppFractions.ambientGlowRadius,
           colors: [cyan, s.bg],
         ),
       ),

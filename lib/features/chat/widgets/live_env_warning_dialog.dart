@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
@@ -40,7 +41,7 @@ class LiveEnvWarningDialog extends StatefulWidget {
   }) async {
     final result = await showDialog<LiveAckResult>(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
+      barrierColor: AppColors.scrimBase.withValues(alpha: AppAlphas.a55),
       builder: (_) => LiveEnvWarningDialog(
         environmentName: environmentName,
         projectName: projectName,
@@ -87,7 +88,7 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                             icon: AppIcons.warning,
                             color: s.danger,
                             size: AppIconSizes.dialogHero,
-                            radius: 14,
+                            radius: AppRadius.input,
                             iconSize: AppIconSizes.boxGlyphLarge,
                             backgroundAlpha: 0.14,
                             borderAlpha: 0.28,
@@ -98,7 +99,7 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                           context.tr.liveWarningTitle(widget.environmentName),
                           style: context.text.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
+                            letterSpacing: AppLetterSpacing.heading,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.s8),
@@ -109,7 +110,7 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
                           ),
                           style: context.text.bodyMedium?.copyWith(
                             color: s.muted,
-                            height: 1.5,
+                            height: AppLineHeights.body,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.s14),

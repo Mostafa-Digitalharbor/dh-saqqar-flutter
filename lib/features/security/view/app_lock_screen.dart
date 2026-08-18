@@ -64,17 +64,17 @@ class _AppLockScreenState extends State<AppLockScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SaqqarLogo(height: 34),
+                    const SaqqarLogo(height: AppLogoSizes.screen),
                     const SizedBox(height: AppSpacing.s36),
                     Container(
-                      width: 76,
-                      height: 76,
+                      width: AppBoxSizes.hero,
+                      height: AppBoxSizes.hero,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: s.brandCyan.withValues(alpha: 0.12),
+                        color: s.brandCyan.withValues(alpha: AppAlphas.a12),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: s.brandCyan.withValues(alpha: 0.30),
+                          color: s.brandCyan.withValues(alpha: AppAlphas.a30),
                         ),
                       ),
                       child: Icon(AppIcons.lock, size: AppIconSizes.emptyState, color: s.brandCyan),

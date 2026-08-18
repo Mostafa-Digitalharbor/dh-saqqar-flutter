@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
@@ -161,20 +162,20 @@ class _AppsScreenState extends State<AppsScreen> {
             if (_launchingSlug != null)
               Positioned.fill(
                 child: ColoredBox(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: AppColors.scrimBase.withValues(alpha: AppAlphas.a35),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         CircularProgressIndicator(
-                          strokeWidth: 2.6,
+                          strokeWidth: AppStrokeWidths.spinnerThick,
                           color: s.brandCyan,
                         ),
                         const SizedBox(height: AppSpacing.s14),
                         Text(
                           context.tr.appsOpening,
                           style: context.text.bodyMedium
-                              ?.copyWith(color: Colors.white),
+                              ?.copyWith(color: AppColors.onBrand),
                         ),
                       ],
                     ),
@@ -259,7 +260,7 @@ class _AppsGrid extends StatelessWidget {
             // Pinned above the grid, as on web, so the active filter stays
             // visible while the user scrolls the results.
             SizedBox(
-              height: 52,
+              height: AppControlSizes.filterStripHeight,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(

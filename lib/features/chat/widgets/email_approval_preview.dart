@@ -93,7 +93,7 @@ class EmailApprovalPreview extends StatelessWidget {
       margin: const EdgeInsets.only(top: AppSpacing.s10),
       padding: const EdgeInsets.all(AppSpacing.s12),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.9),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelCard)),
         borderRadius: AppRadius.buttonR,
         border: Border.all(color: s.border),
       ),
@@ -149,7 +149,7 @@ class EmailApprovalPreview extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: context.text.bodySmall?.copyWith(
                 color: s.muted,
-                height: 1.5,
+                height: AppLineHeights.body,
               ),
             ),
           ],

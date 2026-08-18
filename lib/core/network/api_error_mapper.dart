@@ -93,6 +93,11 @@ class ApiErrorMapper {
   static AppFailure _fromStatus(int? code) {
     return switch (code) {
       401 => const UnauthorizedFailure(),
+      // A proxy that gave up waiting for the origin. Without this arm it
+      // fell to UnknownFailure and told the user "something went wrong"
+      // for the one failure whose cause is precisely known.
+      408 => const TimeoutFailure(),
+      503 => const ServiceUnavailableFailure(),
       402 => const QuotaExceededFailure(),
       403 => const ForbiddenFailure(),
       404 => const NotFoundFailure(),
@@ -116,6 +121,13 @@ class ApiErrorMapper {
     }
     if (e.statusCode == 415) {
       return UnsupportedMediaFailure(
+        serverMessage: e.message.isNotEmpty ? e.message : null,
+      );
+    }
+    if (e.statusCode == 408) return const TimeoutFailure();
+    if (e.statusCode == 503) {
+      return ServiceUnavailableFailure(
+        retryAfterSeconds: e.retryAfterSeconds,
         serverMessage: e.message.isNotEmpty ? e.message : null,
       );
     }
@@ -273,6 +285,16 @@ class ApiErrorMapper {
           SocialSignInProblem.noToken => tr.errorSocialNoToken,
           SocialSignInProblem.rejected => tr.errorSocialRejected,
         },
+      // Prefers the server's own wording (a maintenance window can name
+      // itself), then a timed message, then the untimed fallback.
+      ServiceUnavailableFailure(
+        retryAfterSeconds: final s,
+        serverMessage: final m,
+      ) =>
+        tr.presentableServerMessage(m) ??
+            (s != null && s > 0
+                ? tr.errorServiceUnavailableWithRetry(s)
+                : tr.errorServiceUnavailable),
       ServerFailure(serverMessage: final m) =>
         tr.presentableServerMessage(m) ?? tr.errorServer,
       UnknownFailure(serverMessage: final m) =>

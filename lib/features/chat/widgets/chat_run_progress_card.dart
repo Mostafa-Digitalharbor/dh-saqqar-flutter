@@ -83,9 +83,9 @@ class ChatRunProgressCard extends StatelessWidget {
                   vertical: AppSpacing.s1,
                 ),
             decoration: BoxDecoration(
-              color: s.brandCyan.withValues(alpha: 0.18),
+              color: s.brandCyan.withValues(alpha: AppAlphas.a18),
               borderRadius: AppRadius.pillR,
-              border: Border.all(color: s.brandCyan.withValues(alpha: 0.40)),
+              border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a40)),
             ),
             child: Text(
               '${((progress.fraction ?? 0) * 100).round()}%',
@@ -110,9 +110,9 @@ class ChatRunProgressCard extends StatelessWidget {
         AppSpacing.s12,
       ),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.92),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSheet)),
         borderRadius: AppRadius.cardR,
-        border: Border.all(color: s.brandCyan.withValues(alpha: 0.30)),
+        border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a30)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -158,8 +158,8 @@ class ChatRunProgressCard extends StatelessWidget {
             borderRadius: AppRadius.pillR,
             child: LinearProgressIndicator(
               value: progress.fraction,
-              minHeight: 4,
-              backgroundColor: s.brandCyan.withValues(alpha: 0.14),
+              minHeight: AppControlSizes.meterThin,
+              backgroundColor: s.brandCyan.withValues(alpha: AppAlphas.a14),
               valueColor: AlwaysStoppedAnimation(s.brandCyan),
             ),
           ),

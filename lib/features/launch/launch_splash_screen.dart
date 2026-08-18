@@ -147,7 +147,7 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
     // preference, which was the bug the user hit: the splash was
     // hardcoded to dark and ignored the active theme.
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final bg = isLight ? Colors.white : AppColors.darkBg;
+    final bg = isLight ? AppColors.lightBg : AppColors.darkBg;
 
     return Scaffold(
       backgroundColor: bg,
@@ -222,7 +222,7 @@ class _SplashLogoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fill = isLight ? AppColors.lightSurface : AppColors.darkSurface;
     final border = isLight ? AppColors.lightBorder : AppColors.darkBorder;
-    final maxW = MediaQuery.sizeOf(context).width * 0.82;
+    final maxW = MediaQuery.sizeOf(context).width * AppFractions.splashWordmark;
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxW.clamp(0, 420)),
       child: Container(
@@ -233,15 +233,15 @@ class _SplashLogoCard extends StatelessWidget {
         decoration: BoxDecoration(
           // Barely-there fill so the card lifts off the plain backdrop
           // without looking like a solid panel.
-          color: fill.withValues(alpha: isLight ? 0.55 : 0.45),
+          color: fill.withValues(alpha: AppAlphaPairs.splashFill.resolve(isDark: !isLight)),
           borderRadius: AppRadius.splashPlateR,
           border: Border.all(
-            color: border.withValues(alpha: isLight ? 0.9 : 0.8),
+            color: border.withValues(alpha: AppAlphaPairs.splashBorder.resolve(isDark: !isLight)),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isLight ? 0.05 : 0.35),
-              blurRadius: 30,
+              color: AppColors.scrimBase.withValues(alpha: AppAlphaPairs.splashShadow.resolve(isDark: !isLight)),
+              blurRadius: AppShadowSizes.blurModal,
               offset: const Offset(0, 14),
             ),
           ],
@@ -265,7 +265,7 @@ class _Wordmark extends StatelessWidget {
     // Sized against a slightly tighter fraction than before (was 0.78) so
     // the lockup sits comfortably inside the framing card's padding without
     // crowding its rounded edges on narrow phones.
-    final maxW = MediaQuery.sizeOf(context).width * 0.60;
+    final maxW = MediaQuery.sizeOf(context).width * AppFractions.splashTagline;
     final logoHeight = (maxW / 3.9).clamp(44.0, 88.0);
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -284,7 +284,7 @@ class _Wordmark extends StatelessWidget {
             color: isLight ? AppColors.lightMuted : AppColors.darkMuted,
             fontSize: AppFontSizes.dense,
             fontWeight: FontWeight.w500,
-            letterSpacing: 0.4,
+            letterSpacing: AppLetterSpacing.label,
           ),
         ),
       ],
@@ -300,12 +300,12 @@ class _ProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SizedBox(
-        width: 160,
-        height: 3,
+        width: AppControlSizes.splashProgressWidth,
+        height: AppControlSizes.splashProgressHeight,
         child: ClipRRect(
           borderRadius: AppRadius.pillR,
           child: ColoredBox(
-            color: AppColors.brandCyan.withValues(alpha: 0.18),
+            color: AppColors.brandCyan.withValues(alpha: AppAlphas.a18),
             child: AnimatedBuilder(
               animation: animation,
               builder: (context, _) {

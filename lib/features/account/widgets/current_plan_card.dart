@@ -196,7 +196,7 @@ class _PlanCardBody extends StatelessWidget {
               child: GhostButton(
                 label: tr.quotaUpgradeCta,
                 icon: AppIcons.sparkles,
-                minHeight: 40,
+                minHeight: AppControlSizes.buttonMin,
                 onPressed: () => context.pushNamed(RouteNames.pricing),
               ),
             ),

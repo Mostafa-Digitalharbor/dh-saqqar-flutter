@@ -64,15 +64,15 @@ class GlassCard extends StatelessWidget {
         boxShadow: context.isDark
             ? [
                 BoxShadow(
-                  color: s.shadowBase.withValues(alpha: 0.35),
-                  blurRadius: 24,
+                  color: s.shadowBase.withValues(alpha: AppAlphas.a35),
+                  blurRadius: AppShadowSizes.blurCard,
                   offset: const Offset(0, 8),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: s.shadowBase.withValues(alpha: 0.06),
-                  blurRadius: 3,
+                  color: s.shadowBase.withValues(alpha: AppAlphas.a06),
+                  blurRadius: AppShadowSizes.blurHairline,
                   offset: const Offset(0, 1),
                 ),
               ],
@@ -85,7 +85,7 @@ class GlassCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: borderRadius,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        filter: ImageFilter.blur(sigmaX: AppShadowSizes.glassBlurSigma, sigmaY: AppShadowSizes.glassBlurSigma),
         child: body,
       ),
     );

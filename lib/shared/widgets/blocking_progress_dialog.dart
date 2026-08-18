@@ -42,11 +42,11 @@ class BlockingProgressDialog extends StatelessWidget {
           child: ClipRRect(
             borderRadius: AppRadius.pillR,
             child: SizedBox(
-              height: 2.5,
+              height: AppControlSizes.progressBarThickness,
               child: LinearProgressIndicator(
-                backgroundColor: s.border.withValues(alpha: 0.35),
+                backgroundColor: s.border.withValues(alpha: AppAlphas.a35),
                 valueColor: AlwaysStoppedAnimation<Color>(s.brandCyanStrong),
-                minHeight: 2.5,
+                minHeight: AppControlSizes.progressBarThickness,
               ),
             ),
           ),

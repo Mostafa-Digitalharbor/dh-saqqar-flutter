@@ -8,7 +8,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/conversation_models.dart';
 import 'conversation_action.dart';
-import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/widgets/sheet_action_row.dart';
 
 /// Bottom sheet surfaced when the user long-presses a conversation row
 /// in the list. Same set of actions the ⋯ kebab exposes (Pin, Rename,
@@ -65,7 +65,7 @@ class ConversationActionsSheet extends StatelessWidget {
       // mirroring `ChatSheet` / `EnvironmentDetailSheet`.
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+          maxHeight: MediaQuery.sizeOf(context).height * AppFractions.sheet,
         ),
         child: Padding(
           padding: EdgeInsets.fromLTRB(
@@ -85,7 +85,7 @@ class ConversationActionsSheet extends StatelessWidget {
                 style: context.text.labelSmall?.copyWith(
                   color: s.muted,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
+                  letterSpacing: AppLetterSpacing.microCaps,
                   fontSize: AppFontSizes.chipLabel,
                 ),
               ),
@@ -96,7 +96,7 @@ class ConversationActionsSheet extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: context.text.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
+                  letterSpacing: AppLetterSpacing.heading,
                 ),
               ),
               const SizedBox(height: AppSpacing.s14),
@@ -108,7 +108,7 @@ class ConversationActionsSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _ActionRow(
+                      SheetActionRow(
                         // Shows the ACTION, not the state — see the same
                         // pairing in `conversation_row_menu.dart`.
                         icon: isPinned
@@ -120,20 +120,20 @@ class ConversationActionsSheet extends StatelessWidget {
                         onTap: () =>
                             Navigator.of(context).pop(ConversationAction.pin),
                       ),
-                      _ActionRow(
+                      SheetActionRow(
                         icon: AppIcons.edit,
                         label: tr.rename,
                         onTap: () => Navigator.of(
                           context,
                         ).pop(ConversationAction.rename),
                       ),
-                      _ActionRow(
+                      SheetActionRow(
                         icon: AppIcons.share,
                         label: tr.shareLink,
                         onTap: () =>
                             Navigator.of(context).pop(ConversationAction.share),
                       ),
-                      _ActionRow(
+                      SheetActionRow(
                         icon: isArchived
                             ? AppIcons.unarchive
                             : AppIcons.archive,
@@ -142,10 +142,12 @@ class ConversationActionsSheet extends StatelessWidget {
                           context,
                         ).pop(ConversationAction.archive),
                       ),
-                      _ActionRow(
+                      SheetActionRow(
                         icon: AppIcons.trash,
                         label: tr.delete,
-                        danger: true,
+                        tint: context.saqqar.danger,
+                        glyphColor: context.saqqar.danger,
+                        labelColor: context.saqqar.danger,
                         onTap: () => Navigator.of(
                           context,
                         ).pop(ConversationAction.delete),
@@ -162,55 +164,3 @@ class ConversationActionsSheet extends StatelessWidget {
   }
 }
 
-class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.danger = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final fg = danger ? s.danger : s.text;
-    return TappableSurface(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s6,
-          vertical: AppSpacing.s12,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: (danger ? s.danger : s.muted).withValues(alpha: 0.10),
-              ),
-              child: Icon(icon, size: AppIconSizes.regular, color: fg),
-            ),
-            const SizedBox(width: AppSpacing.s14),
-            Expanded(
-              child: Text(
-                label,
-                style: context.text.bodyMedium?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

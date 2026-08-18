@@ -30,9 +30,9 @@ class MiniChip extends StatelessWidget {
           vertical: AppSpacing.s4,
         ),
         decoration: BoxDecoration(
-          color: c.withValues(alpha: 0.16),
+          color: c.withValues(alpha: AppAlphas.a16),
           borderRadius: AppRadius.pillR,
-          border: Border.all(color: c.withValues(alpha: 0.30)),
+          border: Border.all(color: c.withValues(alpha: AppAlphas.a30)),
         ),
         child: Text(
           text.toUpperCase(),

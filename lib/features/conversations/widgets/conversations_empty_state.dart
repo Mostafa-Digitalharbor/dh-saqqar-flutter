@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
@@ -29,15 +30,15 @@ class ConversationsEmptyState extends StatelessWidget {
         children: [
           FloatingBob(
             child: Container(
-              width: 76,
-              height: 76,
+              width: AppBoxSizes.hero,
+              height: AppBoxSizes.hero,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: AppGradients.vivid,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                border: Border.all(color: AppColors.onBrand.withValues(alpha: AppAlphas.a18)),
               ),
-              child: const Icon(AppIcons.chats, color: Colors.white, size: AppIconSizes.emptyState),
+              child: const Icon(AppIcons.chats, color: AppColors.onBrand, size: AppIconSizes.emptyState),
             ),
           ),
           const SizedBox(height: AppSpacing.s22),
@@ -46,7 +47,7 @@ class ConversationsEmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: context.text.headlineMedium?.copyWith(
               fontWeight: FontWeight.w900,
-              letterSpacing: -0.4,
+              letterSpacing: AppLetterSpacing.display,
             ),
           ),
           const SizedBox(height: AppSpacing.s8),
@@ -57,13 +58,13 @@ class ConversationsEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: context.text.bodyMedium?.copyWith(
                 color: s.muted,
-                height: 1.5,
+                height: AppLineHeights.body,
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.s22),
           SizedBox(
-            width: 220,
+            width: AppControlSizes.emptyStateCtaWidth,
             // Breathing cyan glow under the CTA — pulls the user's eye
             // to the "start a conversation" affordance on the first
             // launch when the screen is otherwise empty. Slow tempo so
@@ -175,9 +176,9 @@ class _BreathingGlowState extends State<_BreathingGlow>
               borderRadius: AppRadius.inputR,
               boxShadow: [
                 BoxShadow(
-                  color: widget.color.withValues(alpha: 0.18 + 0.22 * t),
-                  blurRadius: 18 + 10 * t,
-                  spreadRadius: 1 + 2 * t,
+                  color: widget.color.withValues(alpha: AppAlphas.a18 + 0.22 * t),
+                  blurRadius: AppShadowSizes.blurPulseBase + AppShadowSizes.blurPulseRange * t,
+                  spreadRadius: AppShadowSizes.spreadThin + AppShadowSizes.spreadPulseRange * t,
                 ),
               ],
             ),

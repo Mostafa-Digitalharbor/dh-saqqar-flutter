@@ -21,7 +21,7 @@ class ProjectCardSkeleton extends StatelessWidget {
     final s = context.saqqar;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.92),
+        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelOpaque)),
         borderRadius: AppRadius.cardR,
         border: Border.all(color: s.cardBorder),
       ),
@@ -37,26 +37,26 @@ class ProjectCardSkeleton extends StatelessWidget {
             ),
             child: Row(
               children: [
-                SkeletonBlock(width: 34, height: 34, radius: 10),
+                SkeletonBlock(width: AppSkeletonSizes.tileLarge, height: AppSkeletonSizes.tileLarge, radius: AppRadius.small),
                 SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SkeletonBlock(width: 140, height: 14),
+                      SkeletonBlock(width: AppSkeletonSizes.title, height: AppSkeletonSizes.titleLine),
                       SizedBox(height: AppSpacing.s6),
-                      SkeletonBlock(width: 90, height: 11),
+                      SkeletonBlock(width: AppSkeletonSizes.subtitleShort, height: AppSkeletonSizes.subtitleLine),
                     ],
                   ),
                 ),
-                SkeletonBlock(width: 18, height: 18, radius: 6),
+                SkeletonBlock(width: AppSkeletonSizes.actionSquare, height: AppSkeletonSizes.actionSquare, radius: AppRadius.micro),
                 SizedBox(width: AppSpacing.s8),
-                SkeletonBlock(width: 18, height: 18, radius: 6),
+                SkeletonBlock(width: AppSkeletonSizes.actionSquare, height: AppSkeletonSizes.actionSquare, radius: AppRadius.micro),
               ],
             ),
           ),
           for (var i = 0; i < envRows; i++) ...[
-            Divider(color: s.border, height: 1),
+            Divider(color: s.border, height: AppBorderWidths.hairline),
             const Padding(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.s16,
@@ -66,19 +66,19 @@ class ProjectCardSkeleton extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  SkeletonBlock(width: 30, height: 30, radius: 8),
+                  SkeletonBlock(width: AppSkeletonSizes.tile, height: AppSkeletonSizes.tile, radius: AppRadius.tight),
                   SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SkeletonBlock(width: 110, height: 13),
+                        SkeletonBlock(width: AppSkeletonSizes.subtitle, height: AppSkeletonSizes.denseLine),
                         SizedBox(height: AppSpacing.s6),
-                        SkeletonBlock(width: 70, height: 10),
+                        SkeletonBlock(width: AppSkeletonSizes.chip, height: AppSkeletonSizes.chipLine),
                       ],
                     ),
                   ),
-                  SkeletonBlock(width: 18, height: 18, radius: 6),
+                  SkeletonBlock(width: AppSkeletonSizes.actionSquare, height: AppSkeletonSizes.actionSquare, radius: AppRadius.micro),
                 ],
               ),
             ),

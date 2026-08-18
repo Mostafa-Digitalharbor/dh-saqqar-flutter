@@ -39,7 +39,7 @@ class AppDialogShell extends StatelessWidget {
   static Gradient dangerAccent(BuildContext context) {
     final danger = context.saqqar.danger;
     return LinearGradient(
-      colors: [danger, danger.withValues(alpha: 0.7)],
+      colors: [danger, danger.withValues(alpha: AppAlphas.a70)],
     );
   }
 
@@ -89,7 +89,7 @@ class AppDialogShell extends StatelessWidget {
                 // on the chat bottom sheets so the visual family stays
                 // tight.
                 Container(
-                  height: 3,
+                  height: AppBorderWidths.accentBar,
                   decoration: BoxDecoration(
                     gradient: accent ?? AppGradients.primaryCta,
                   ),

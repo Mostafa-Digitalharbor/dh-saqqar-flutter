@@ -59,6 +59,7 @@ void main() {
     'PayloadTooLargeFailure': const PayloadTooLargeFailure(),
     'QuotaExceededFailure': const QuotaExceededFailure(),
     'UnsupportedMediaFailure': const UnsupportedMediaFailure(),
+    'ServiceUnavailableFailure': const ServiceUnavailableFailure(),
     'ServerFailure': const ServerFailure(),
     'ParseFailure': const ParseFailure(),
     'SocialSignInFailure': const SocialSignInFailure(
@@ -242,9 +243,15 @@ void main() {
       415: UnsupportedMediaFailure,
       422: ValidationFailure,
       429: RateLimitFailure,
+      // A proxy gave up waiting for the origin. This is a timeout from
+      // the user's side and telling them so is more actionable than the
+      // generic "something went wrong" it used to get.
+      408: TimeoutFailure,
       500: ServerFailure,
       502: ServerFailure,
-      503: ServerFailure,
+      // 503 is a deploy or a maintenance window, not a bug: the advice
+      // differs from a 500's, and only this one can carry a Retry-After.
+      503: ServiceUnavailableFailure,
       504: ServerFailure,
     };
 

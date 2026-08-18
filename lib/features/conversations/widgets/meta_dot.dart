@@ -32,7 +32,7 @@ class MetaDot extends StatelessWidget {
             style: context.text.labelSmall?.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.1,
+              letterSpacing: AppLetterSpacing.hairline,
             ),
           ),
         ),

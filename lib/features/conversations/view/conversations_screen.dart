@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/app_strings.dart';
@@ -831,7 +832,7 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    final fg = active ? Colors.white : s.muted;
+    final fg = active ? AppColors.onBrand : s.muted;
     return TappableSurface(
       radius: AppRadius.pillR,
       onTap: onTap,
@@ -864,15 +865,15 @@ class _FilterChip extends StatelessWidget {
             if (badge > 0) ...[
               const SizedBox(width: AppSpacing.s7),
               Container(
-                constraints: const BoxConstraints(minWidth: 18),
-                height: 18,
+                constraints: const BoxConstraints(minWidth: AppControlSizes.badgeMinWide),
+                height: AppControlSizes.badgeHeight,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s5),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: active
-                      ? Colors.white.withValues(alpha: 0.25)
+                      ? AppColors.onBrand.withValues(alpha: AppAlphas.a25)
                       : (warn
-                          ? s.warning.withValues(alpha: 0.20)
+                          ? s.warning.withValues(alpha: AppAlphas.a20)
                           : s.surface3),
                   borderRadius: AppRadius.pillR,
                 ),
@@ -880,10 +881,10 @@ class _FilterChip extends StatelessWidget {
                   '$badge',
                   style: TextStyle(
                     fontSize: AppFontSizes.caption,
-                    height: 1.2,
+                    height: AppLineHeights.heading,
                     fontWeight: FontWeight.w700,
                     color: active
-                        ? Colors.white
+                        ? AppColors.onBrand
                         : (warn ? s.warning : s.muted),
                   ),
                 ),
@@ -923,7 +924,7 @@ class _ArchivedSection extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.55 : 0.85),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelPlain)),
         borderRadius: AppRadius.inputR,
         border: Border.all(color: s.cardBorder),
       ),

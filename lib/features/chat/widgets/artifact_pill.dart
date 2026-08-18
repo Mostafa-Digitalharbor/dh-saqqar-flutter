@@ -51,9 +51,9 @@ class ArtifactPill extends StatelessWidget {
           AppSpacing.s10,
         ),
         decoration: BoxDecoration(
-          color: s.brandCyan.withValues(alpha: context.isDark ? 0.10 : 0.06),
+          color: s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintFaintest)),
           borderRadius: AppRadius.cardR,
-          border: Border.all(color: s.brandCyan.withValues(alpha: 0.32)),
+          border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a32)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +69,7 @@ class ArtifactPill extends StatelessWidget {
                     color: s.brandCyan,
                     fontWeight: FontWeight.w800,
                     fontSize: AppFontSizes.chipLabel,
-                    letterSpacing: 1.0,
+                    letterSpacing: AppLetterSpacing.microCaps,
                   ),
                 ),
               ],
@@ -80,7 +80,7 @@ class ArtifactPill extends StatelessWidget {
                 ColoredIconBox(
                   icon: _icon,
                   color: s.brandCyan,
-                  radius: 10,
+                  radius: AppRadius.small,
                   borderAlpha: 0.28,
                 ),
                 const SizedBox(width: AppSpacing.s12),

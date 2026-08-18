@@ -24,30 +24,30 @@ class ConversationCardSkeleton extends StatelessWidget {
         AppSpacing.s14,
       ),
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.62 : 0.88),
+        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelSkeleton)),
         borderRadius: AppRadius.modalR,
         border: Border.all(color: s.cardBorder),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SkeletonBlock(width: 44, height: 44, radius: 22),
+          SkeletonBlock.circle(size: AppSkeletonSizes.avatar),
           SizedBox(width: AppSpacing.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SkeletonBlock(width: 220, height: 14),
+                SkeletonBlock(width: AppSkeletonSizes.previewLong, height: AppSkeletonSizes.titleLine),
                 SizedBox(height: AppSpacing.s10),
-                SkeletonBlock(height: 11),
+                SkeletonBlock(height: AppSkeletonSizes.subtitleLine),
                 SizedBox(height: AppSpacing.s6),
-                SkeletonBlock(width: 180, height: 11),
+                SkeletonBlock(width: AppSkeletonSizes.previewShort, height: AppSkeletonSizes.subtitleLine),
                 SizedBox(height: AppSpacing.s12),
                 Row(
                   children: [
-                    SkeletonBlock(width: 50, height: 10, radius: 999),
+                    SkeletonBlock(width: AppSkeletonSizes.chipShort, height: AppSkeletonSizes.chipLine, radius: AppRadius.pill),
                     SizedBox(width: AppSpacing.s8),
-                    SkeletonBlock(width: 80, height: 10, radius: 999),
+                    SkeletonBlock(width: AppSkeletonSizes.chipWide, height: AppSkeletonSizes.chipLine, radius: AppRadius.pill),
                   ],
                 ),
               ],

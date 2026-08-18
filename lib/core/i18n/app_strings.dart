@@ -187,18 +187,16 @@ class AppStrings {
   String get projectSavedToast => _t('project_saved_toast');
   String get projectDeletedToast => _t('project_deleted_toast');
   String get deleteProjectTitle => _t('delete_project_title');
-  String deleteProjectBody(String name) => _isArabic
-      ? 'حذف الشركة "$name"؟ ستُحذف البيئات وبيانات الدخول المرتبطة بها.'
-      : 'Delete company "$name"? Environments and their credentials are deleted with it.';
+  String deleteProjectBody(String name) =>
+      _f('delete_project_body', {'name': name});
 
   String get addEnvironment => _t('add_environment');
   String get addEnvironmentHint => _t('add_environment_hint');
   String get environmentSavedToast => _t('environment_saved_toast');
   String get environmentDeletedToast => _t('environment_deleted_toast');
   String get deleteEnvironmentTitle => _t('delete_environment_title');
-  String deleteEnvironmentBody(String name) => _isArabic
-      ? 'حذف البيئة "$name"؟ ستُحذف جميع بيانات الدخول داخلها.'
-      : 'Delete environment "$name"? All credentials inside it are deleted.';
+  String deleteEnvironmentBody(String name) =>
+      _f('delete_environment_body', {'name': name});
 
   String get saveCredentialButton => _t('save_credential_button');
   String get deleteCredentialButton => _t('delete_credential_button');
@@ -688,6 +686,10 @@ class AppStrings {
   String get errorPayloadTooLarge => _t('error_payload_too_large');
   String get errorQuotaExceeded => _t('error_quota_exceeded');
   String get errorUnsupportedMedia => _t('error_unsupported_media');
+  String get errorServiceUnavailable => _t('error_service_unavailable');
+  String errorServiceUnavailableWithRetry(int seconds) =>
+      _t('error_service_unavailable_with_retry')
+          .replaceFirst('{seconds}', '$seconds');
   String get errorServer => _t('error_server');
   String get errorSocialNotConfigured => _t('error_social_not_configured');
   String get errorSocialNoToken => _t('error_social_no_token');
@@ -2124,6 +2126,12 @@ const Map<String, String> _en = {
   'error_unsupported_media':
       'That file type isn\'t supported. Try a document, spreadsheet, image '
           'or PDF.',
+  'error_service_unavailable':
+      'Saqqar is briefly unavailable, usually for an update. '
+          'Please try again shortly.',
+  'error_service_unavailable_with_retry':
+      'Saqqar is briefly unavailable, usually for an update. '
+          'Please try again in {seconds}s.',
   'error_server': 'The server hit a problem. Please try again in a moment.',
   // Native Google / Apple sign-in, failing on the device before any request
   // reaches Saqqar. Each names the way out, because "try again" is advice
@@ -2772,11 +2780,16 @@ const Map<String, String> _en = {
   'project_saved_toast': 'Company saved.',
   'project_deleted_toast': 'Company deleted.',
   'delete_project_title': 'Delete company?',
+  'delete_project_body':
+      'Delete company "{name}"? Environments and their credentials are '
+          'deleted with it.',
   'add_environment': 'Add environment',
   'add_environment_hint': 'Add environment…',
   'environment_saved_toast': 'Environment saved.',
   'environment_deleted_toast': 'Environment deleted.',
   'delete_environment_title': 'Delete environment?',
+  'delete_environment_body':
+      'Delete environment "{name}"? All credentials inside it are deleted.',
   'save_credential_button': 'Save credential',
   'delete_credential_button': 'Delete credential',
   'credential_saved_toast': 'Credential saved.',
@@ -3387,6 +3400,10 @@ const Map<String, String> _ar = {
       'استهلكت حصتك الحالية. تُجدَّد مع بداية الفترة التالية.',
   'error_unsupported_media':
       'نوع الملف غير مدعوم. جرّب مستنداً أو جدولاً أو صورة أو PDF.',
+  'error_service_unavailable':
+      'صقّار غير متاح مؤقتًا، غالبًا بسبب تحديث. حاول بعد قليل.',
+  'error_service_unavailable_with_retry':
+      'صقّار غير متاح مؤقتًا، غالبًا بسبب تحديث. حاول بعد {seconds} ثانية.',
   'error_server': 'وقعت مشكلة في الخادم. حاول بعد قليل.',
   'error_social_not_configured':
       'طريقة الدخول هذه غير متاحة في هذه النسخة. يمكنك الدخول ببريدك '
@@ -3991,11 +4008,15 @@ const Map<String, String> _ar = {
   'project_saved_toast': 'تم حفظ الشركة.',
   'project_deleted_toast': 'تم حذف الشركة.',
   'delete_project_title': 'حذف الشركة؟',
+  'delete_project_body':
+      'حذف الشركة "{name}"؟ ستُحذف البيئات وبيانات الدخول المرتبطة بها.',
   'add_environment': 'إضافة بيئة',
   'add_environment_hint': 'أضف بيئة…',
   'environment_saved_toast': 'تم حفظ البيئة.',
   'environment_deleted_toast': 'تم حذف البيئة.',
   'delete_environment_title': 'حذف البيئة؟',
+  'delete_environment_body':
+      'حذف البيئة "{name}"؟ ستُحذف جميع بيانات الدخول داخلها.',
   'save_credential_button': 'حفظ البيانات',
   'delete_credential_button': 'حذف البيانات',
   'credential_saved_toast': 'تم حفظ البيانات.',

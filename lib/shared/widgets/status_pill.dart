@@ -40,9 +40,9 @@ class StatusPill extends StatelessWidget {
         vertical: AppSpacing.s4,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: AppAlphas.a10),
         borderRadius: AppRadius.pillR,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color.withValues(alpha: AppAlphas.a35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

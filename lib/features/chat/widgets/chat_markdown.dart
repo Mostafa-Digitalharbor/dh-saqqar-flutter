@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/i18n/app_localizations.dart';
@@ -76,15 +77,15 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
     final s = context.saqqar;
     final base = context.text.bodyMedium?.copyWith(
       color: s.text,
-      height: 1.5,
+      height: AppLineHeights.body,
       fontSize: AppFontSizes.reading,
     );
 
     final codeBg = isUser
-        ? Colors.white.withValues(alpha: 0.14)
+        ? AppColors.onBrand.withValues(alpha: AppAlphas.a14)
         : s.codePlate;
     final codeBorder = isUser
-        ? Colors.white.withValues(alpha: 0.18)
+        ? AppColors.onBrand.withValues(alpha: AppAlphas.a18)
         : s.border;
 
     final styleSheet = MarkdownStyleSheet(
@@ -99,9 +100,9 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
         fontStyle: FontStyle.italic,
       ),
       blockquoteDecoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: 0.35),
+        color: s.surface2.withValues(alpha: AppAlphas.a35),
         border: BorderDirectional(
-          start: BorderSide(color: s.brandCyan, width: 3),
+          start: BorderSide(color: s.brandCyan, width: AppBorderWidths.accentBar),
         ),
       ),
       blockquotePadding: const EdgeInsets.fromLTRB(
@@ -113,13 +114,13 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
       a: base?.copyWith(
         color: s.brandCyan,
         decoration: TextDecoration.underline,
-        decorationColor: s.brandCyan.withValues(alpha: 0.6),
+        decorationColor: s.brandCyan.withValues(alpha: AppAlphas.a60),
       ),
       // Inline code — small monospace plate that flows with the line.
       code: TextStyle(
         fontFamily: UiStrings.monospaceFontFamily,
         fontSize: AppFontSizes.dense,
-        color: isUser ? Colors.white : s.brandCyan,
+        color: isUser ? AppColors.onBrand : s.brandCyan,
         backgroundColor: codeBg,
       ),
       codeblockPadding: const EdgeInsets.all(AppSpacing.s12),
@@ -132,7 +133,7 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
       listIndent: 22,
       tableHead: base?.copyWith(fontWeight: FontWeight.w700),
       tableBody: base,
-      tableBorder: TableBorder.all(color: s.cardBorder, width: 1),
+      tableBorder: TableBorder.all(color: s.cardBorder, width: AppBorderWidths.hairline),
       // IntrinsicColumnWidth (not the default FlexColumnWidth) makes each
       // column size to its content AND opts the whole table into
       // flutter_markdown's built-in horizontal SingleChildScrollView, so a

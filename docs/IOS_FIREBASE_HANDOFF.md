@@ -20,7 +20,7 @@
 | Thing | Value |
 |---|---|
 | Host app bundle id | `sa.com.digitalharbor.saqqar` |
-| iOS deployment target | `13.0` (already set in the Xcode project) |
+| iOS deployment target | `15.0` (set in the Xcode project, Podfile and AppFrameworkInfo.plist) |
 | Firebase project id | `saqqar-ai` |
 | Firebase iOS app id | `1:55105284059:ios:8518bc677c9023356ca9fe` |
 | FCM sender id | `55105284059` |
@@ -141,7 +141,7 @@ linkage, and we want to strip unused `permission_handler` handlers. Make the
 `ios/Podfile` match this shape:
 
 ```ruby
-platform :ios, '13.0'          # Firebase iOS SDK requires 13+
+platform :ios, '15.0'          # Firebase needs 13+; Apple needs 15+ (ITMS-90068)
 $FirebaseSDKVersion = '11.4.0' # optional pin; omit to let the plugin choose
 
 # Firebase's static frameworks link cleanly with Flutter when declared static:
@@ -154,7 +154,7 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       # permission_handler ships every handler by default; keep only what
       # Saqqar actually uses (microphone + notifications) so Apple's static
       # check doesn't flag unused permission APIs.
@@ -241,7 +241,7 @@ missing, conflicting, or wrong — not just push. Specifically check:
   `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)` — App Store Connect
   rejects mismatches.
 - **Deployment target consistency:** project, Podfile, and any extension all at
-  **13.0+**.
+  **15.0+** — Apple rejects anything lower from Spring 2027 (ITMS-90068).
 - **Dead config:** `Info.plist` still carries `NSSpeechRecognitionUsageDescription`
   though voice now uses server-side Whisper (`/api/v1/transcribe/`), not
   on-device recognition — safe to remove to avoid a reviewer question (optional).

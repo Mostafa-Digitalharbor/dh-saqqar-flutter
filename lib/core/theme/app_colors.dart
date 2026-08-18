@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_sizes.dart';
+
 class AppColors {
   AppColors._();
 
@@ -39,16 +41,16 @@ class AppColors {
   static const danger = Color(0xFFEF4444);
 
   // Soft tints used by mini-chip, cyan plates, etc.
-  static final Color brandCyanSoftDark = brandCyan.withValues(alpha: 0.18);
-  static final Color brandCyanSoftLight = brandCyan.withValues(alpha: 0.14);
-  static final Color brandCyanBorder = brandCyan.withValues(alpha: 0.30);
+  static final Color brandCyanSoftDark = brandCyan.withValues(alpha: AppAlphas.a18);
+  static final Color brandCyanSoftLight = brandCyan.withValues(alpha: AppAlphas.a14);
+  static final Color brandCyanBorder = brandCyan.withValues(alpha: AppAlphas.a30);
 
   // Overlay (modal/sheet backdrop) — saqqaar.com app.css uses rgba(2,6,23,0.72).
   static const overlayDark = Color(0xB8020617);
   static const overlayLight = Color(0x66020617);
 
   // Cyan pop shadow (CTA + active rows) — 0 10px 30px rgba(6,182,212,0.18).
-  static final Color popShadowCyan = brandCyan.withValues(alpha: 0.18);
+  static final Color popShadowCyan = brandCyan.withValues(alpha: AppAlphas.a18);
 
   /// Base hues every drop shadow is tinted from — the near-black the design
   /// system casts shadows in, per theme.
@@ -85,6 +87,38 @@ class AppColors {
   /// being hand-duplicated inside the conversation card. Reuses the brand /
   /// status tokens above where the stops match; the remaining stops are the
   /// palette's own accent blends.
+
+  // ── Absolutes ──────────────────────────────────────────────────────────
+  //
+  // Pure white and pure black are not part of the light/dark palettes above
+  // — they do not flip with the theme. They are named here because "white"
+  // at a call site says nothing about *why* it is white, and the four
+  // reasons this app has for reaching for it are genuinely different
+  // decisions that happen to resolve to the same value today.
+
+  /// Foreground on a brand fill — the label and glyph on a cyan button, a
+  /// gradient FAB, a selected chip, an avatar's initial.
+  ///
+  /// White regardless of theme, because the fill underneath is the brand
+  /// cyan in both. If the brand ever gains a light variant this is the one
+  /// constant that has to change, and the twenty-odd call sites do not.
+  static const onBrand = Color(0xFFFFFFFF);
+
+  /// The barrier behind a modal. Always black, tinted down by an
+  /// `AppAlphas` scrim level at the call site.
+  static const scrimBase = Color(0xFF000000);
+
+  /// The attachment viewer's backdrop when it is showing an image.
+  ///
+  /// Deliberately not `bg`: a photo is displayed against black in every
+  /// gallery on both platforms, and matching the app's surface instead
+  /// would tint the user's own image.
+  static const imageBackdrop = Color(0xFF000000);
+
+  /// Foreground on [imageBackdrop] — the viewer's app-bar title and
+  /// actions.
+  static const onImageBackdrop = Color(0xFFFFFFFF);
+
   static const List<List<Color>> avatarGradients = [
     [brandNavy, brandCyan],
     [Color(0xFF0E7490), brandCyanStrong],

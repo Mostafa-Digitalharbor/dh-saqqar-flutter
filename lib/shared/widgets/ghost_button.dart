@@ -46,10 +46,10 @@ class GhostButton extends StatelessWidget {
     final fg = isDanger ? s.danger : s.text;
     final accent = isDanger ? s.danger : s.brandCyan;
     final fillColor = isDanger
-        ? s.danger.withValues(alpha: 0.10)
-        : s.surface2.withValues(alpha: context.isDark ? 0.45 : 0.55);
+        ? s.danger.withValues(alpha: AppAlphas.a10)
+        : s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.splashFill));
     final borderColor = isDanger
-        ? s.danger.withValues(alpha: 0.40)
+        ? s.danger.withValues(alpha: AppAlphas.a40)
         : s.cardBorder;
 
     return Semantics(
@@ -60,8 +60,8 @@ class GhostButton extends StatelessWidget {
         opacity: disabled ? 0.5 : 1,
         child: TappableSurface(
           onTap: disabled ? null : onPressed,
-          splashColor: accent.withValues(alpha: 0.10),
-          highlightColor: accent.withValues(alpha: 0.06),
+          splashColor: accent.withValues(alpha: AppAlphas.a10),
+          highlightColor: accent.withValues(alpha: AppAlphas.a06),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: minHeight),
             child: Container(
@@ -94,7 +94,7 @@ class GhostButton extends StatelessWidget {
                           width: AppControlSizes.spinnerInline,
                           height: AppControlSizes.spinnerInline,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: AppStrokeWidths.spinnerThin,
                             valueColor: AlwaysStoppedAnimation(fg),
                           ),
                         ),

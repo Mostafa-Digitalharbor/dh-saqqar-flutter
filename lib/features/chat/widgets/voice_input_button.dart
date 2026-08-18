@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -44,12 +45,12 @@ class VoiceInputButton extends StatelessWidget {
               }
             : null,
         child: SizedBox(
-          width: 38,
-          height: 38,
+          width: AppControlSizes.iconBox,
+          height: AppControlSizes.iconBox,
           child: Icon(
             AppIcons.mic,
             size: AppIconSizes.action,
-            color: enabled ? s.muted : s.muted.withValues(alpha: 0.4),
+            color: enabled ? s.muted : s.muted.withValues(alpha: AppAlphas.a40),
           ),
         ),
       ),
@@ -158,7 +159,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
               width: AppControlSizes.spinnerMedium,
               height: AppControlSizes.spinnerMedium,
               child: CircularProgressIndicator(
-                strokeWidth: 2.2,
+                strokeWidth: AppStrokeWidths.spinnerSnug,
                 color: s.brandCyan,
               ),
             ),
@@ -170,15 +171,15 @@ class _RecordingOverlayState extends State<RecordingOverlay>
               builder: (context, _) {
                 final v = 0.55 + 0.45 * _pulse.value;
                 return Container(
-                  width: 10,
-                  height: 10,
+                  width: AppBoxSizes.dotLarge,
+                  height: AppBoxSizes.dotLarge,
                   decoration: BoxDecoration(
                     color: s.danger.withValues(alpha: v),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: s.danger.withValues(alpha: 0.35 * v),
-                        blurRadius: 6,
+                        color: s.danger.withValues(alpha: AppAlphas.a35 * v),
+                        blurRadius: AppShadowSizes.blurGlow,
                       ),
                     ],
                   ),
@@ -203,15 +204,15 @@ class _RecordingOverlayState extends State<RecordingOverlay>
               tooltip: tr.stopRecording,
               onPressed: widget.onStop,
               icon: Container(
-                width: 30,
-                height: 30,
+                width: AppBoxSizes.glyphCompact,
+                height: AppBoxSizes.glyphCompact,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: s.danger,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(AppIcons.stop,
-                    color: Colors.white, size: AppIconSizes.regular),
+                    color: AppColors.onBrand, size: AppIconSizes.regular),
               ),
               visualDensity: VisualDensity.compact,
             ),
@@ -235,7 +236,7 @@ class _FauxWaveform extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 22,
+      height: AppControlSizes.waveformHeight,
       child: AnimatedBuilder(
         animation: animation,
         builder: (context, _) {
@@ -274,10 +275,10 @@ class _Bar extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: AppDurations.waveformBar,
-      width: 3,
-      height: height.clamp(4, 20),
+      width: AppControlSizes.waveformBarWidth,
+      height: height.clamp(AppControlSizes.waveformBarMin, AppControlSizes.waveformBarMax),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.75),
+        color: color.withValues(alpha: AppAlphas.a75),
         borderRadius: AppRadius.waveformBarR,
       ),
     );

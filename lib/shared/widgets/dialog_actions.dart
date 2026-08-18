@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_sizes.dart';
+
 /// The cancel / confirm button pair every dialog ends with.
 ///
 /// Exists because the layout is not optional. A `Row` gives its children
@@ -22,7 +24,7 @@ class DialogActions extends StatelessWidget {
     super.key,
     required this.cancel,
     required this.confirm,
-    this.gap = 10,
+    this.gap = AppSpacing.s10,
   });
 
   /// The dismissing action — rendered first (start side), so it is the one

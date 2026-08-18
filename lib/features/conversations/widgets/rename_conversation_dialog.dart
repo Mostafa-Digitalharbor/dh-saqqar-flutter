@@ -87,7 +87,7 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.modalR),
       child: SizedBox(
-        width: 360,
+        width: AppLayoutWidths.chipCap,
         // Wrap in a scroll view so the column never overflows when
         // the Arabic font + system text-scaling (1.25x+) pushes the
         // header/buttons past the dialog's max height. On a normal

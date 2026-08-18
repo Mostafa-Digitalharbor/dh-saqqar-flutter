@@ -105,7 +105,7 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                   style: context.text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: s.text,
-                    letterSpacing: -0.1,
+                    letterSpacing: AppLetterSpacing.title,
                   ),
                 ),
               ),
@@ -123,7 +123,7 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
             approval.prompt,
             style: context.text.bodyMedium?.copyWith(
               color: s.muted,
-              height: 1.5,
+              height: AppLineHeights.body,
             ),
           ),
           // §9 — when the payload is an email, show it AS an email
@@ -250,7 +250,7 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
               context.tr.preApprovalTip,
               style: context.text.labelSmall?.copyWith(
                 color: s.muted,
-                height: 1.4,
+                height: AppLineHeights.compact,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -283,9 +283,9 @@ class _DeleteRecordList extends StatelessWidget {
         vertical: AppSpacing.s10,
       ),
       decoration: BoxDecoration(
-        color: s.danger.withValues(alpha: 0.06),
+        color: s.danger.withValues(alpha: AppAlphas.a06),
         borderRadius: AppRadius.smallR,
-        border: Border.all(color: s.danger.withValues(alpha: 0.22)),
+        border: Border.all(color: s.danger.withValues(alpha: AppAlphas.a22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +300,7 @@ class _DeleteRecordList extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s6),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 132),
+            constraints: const BoxConstraints(maxHeight: AppSheetHeights.approvalPayloadMax),
             child: Scrollbar(
               child: ListView.builder(
                 shrinkWrap: true,

@@ -281,7 +281,7 @@ class _TextBlock extends StatelessWidget {
             style: mono
                 ? context.text.bodySmall
                     ?.copyWith(fontFamily: AppTypography.fontMono)
-                : context.text.bodyMedium?.copyWith(height: 1.45),
+                : context.text.bodyMedium?.copyWith(height: AppLineHeights.reading),
           ),
         ],
       ),

@@ -29,11 +29,13 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:saqqar_app/core/constants/ui_strings.dart';
 import 'package:saqqar_app/features/app_update/view/update_required_screen.dart';
+import 'package:saqqar_app/shared/widgets/app_error_screen.dart';
 import 'package:saqqar_app/features/chat/view/attachment_viewer_screen.dart';
 import 'package:saqqar_app/features/apps/data/app_package_models.dart';
 import 'package:saqqar_app/features/apps/data/apps_api.dart';
@@ -535,5 +537,107 @@ void main() {
       );
       expect(find.textContaining('reconciliation totals'), findsWidgets);
     });
+  });
+
+  testWidgets('AppErrorScreen survives the matrix', (tester) async {
+    // This file's own header has listed AppErrorScreen as covered since it
+    // was written. It was not: nothing in the repo ever pumped it. The
+    // header was a plan that read like a result, which is the exact failure
+    // the coverage rule at the bottom of this file now makes impossible.
+    //
+    // It matters more than most screens, not less. `AppErrorScreen` is
+    // `ErrorWidget.builder` — the handler of last resort — so it renders at
+    // the moment the app has already failed once. An overflow here is a
+    // broken screen shown in place of the explanation for a broken screen.
+    //
+    // The details carry a long, wrapping message on purpose: the short-error
+    // branch renders two centred lines, which is the one layout that cannot
+    // overflow.
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => AppErrorScreen(
+        details: FlutterErrorDetails(
+          exception: StateError(
+            'Bad state: Cannot emit new states after calling close — '
+            'ChatCubit was disposed while a poll was still in flight against '
+            'conversation 8f3c1e77-2b4a-4d19-9c05-6a1f0e2d7b93',
+          ),
+          library: 'saqqar',
+          context: ErrorDescription('while building ChatScreen'),
+        ),
+      ),
+    );
+  });
+
+  test('every screen in lib is swept somewhere', () {
+    // The audit this replaces was a comment. Comments do not fail: this
+    // file's header claimed AppErrorScreen was covered while nothing pumped
+    // it, and the claim survived two subsequent coverage passes because
+    // reading the header was cheaper than grepping for the constructor.
+    final screens = <String>{};
+    for (final file in Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))) {
+      for (final m in RegExp(r'class (\w+Screen) extends')
+          .allMatches(file.readAsStringSync())) {
+        screens.add(m.group(1)!);
+      }
+    }
+    expect(screens, isNotEmpty, reason: 'The scan found no screens at all.');
+
+    final sweeps = Directory('test')
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.contains('responsive'))
+        .map((f) => f.readAsStringSync())
+        .join('\n');
+    expect(sweeps, isNotEmpty, reason: 'No responsive sweep files found.');
+
+    // Deliberately excluded, each with the reason it is not a user surface.
+    const exempt = <String, String>{
+      'StorybookScreen':
+          'a developer-only component gallery; the route exists for us, not '
+              'for users, and every widget in it is swept through the screen '
+              'that really renders it.',
+      'SaqqarScreen':
+          'not a screen — it is the scroll container `PageScaffold` wraps '
+              'every screen in, so all sixteen sweeps already exercise it. '
+              'Its own laziness contract is pinned by '
+              'saqqar_screen_lazy_test.dart.',
+    };
+
+    final missing = screens
+        .where((s) => !exempt.containsKey(s))
+        // The constructor has to be CALLED, not merely imported or named in
+        // a comment — that distinction is the whole point of this rule.
+        .where((s) => !RegExp('$s' r'\s*\(').hasMatch(sweeps))
+        .toList()
+      ..sort();
+
+    expect(
+      missing,
+      isEmpty,
+      reason: 'These screens are never pumped by any responsive sweep, so '
+          'nothing proves they survive 320 px, Arabic, or 1.4x text:\n'
+          '${missing.map((s) => '  • $s').join('\n')}\n\n'
+          'Fix: add a `sweepMatrix` case in one of the '
+          'screen_responsive_sweep*_test.dart files. Seed it with POPULATED '
+          'content — an empty state is a column of centred labels, the one '
+          'layout that cannot overflow. If the screen is genuinely not a '
+          'user surface, add it to `exempt` above WITH the reason.',
+    );
+
+    // A stale exemption is how a screen goes uncovered on purpose and then
+    // stays uncovered by accident after it is deleted or renamed.
+    for (final name in exempt.keys) {
+      expect(
+        screens,
+        contains(name),
+        reason: '`$name` is exempted from the sweep-coverage rule but no '
+            'longer exists. Drop the entry.',
+      );
+    }
   });
 }

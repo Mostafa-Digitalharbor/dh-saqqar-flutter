@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -32,8 +33,8 @@ class GradientFab extends StatelessWidget {
           borderRadius: AppRadius.pillR,
           boxShadow: [
             BoxShadow(
-              color: s.brandCyan.withValues(alpha: 0.36),
-              blurRadius: 22,
+              color: s.brandCyan.withValues(alpha: AppAlphas.a36),
+              blurRadius: AppShadowSizes.blurFab,
               offset: const Offset(0, 10),
             ),
           ],
@@ -41,7 +42,7 @@ class GradientFab extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(AppIcons.plus, color: Colors.white, size: AppIconSizes.action),
+            const Icon(AppIcons.plus, color: AppColors.onBrand, size: AppIconSizes.action),
             const SizedBox(width: AppSpacing.s8),
             // `mainAxisSize.min` keeps the pill hugging its label, but it
             // does NOT stop the label itself from exceeding the incoming
@@ -59,9 +60,9 @@ class GradientFab extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 softWrap: false,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.onBrand,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
+                  letterSpacing: AppLetterSpacing.tight,
                 ),
               ),
             ),

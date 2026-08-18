@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
@@ -44,7 +45,7 @@ class PrimaryButton extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: (context.text.labelLarge ?? const TextStyle()).copyWith(
-                color: Colors.white,
+                color: AppColors.onBrand,
                 fontWeight: FontWeight.w600,
               ),
             );
@@ -58,12 +59,12 @@ class PrimaryButton extends StatelessWidget {
                   // feels native to Saqqar rather than the default
                   // Material spinner.
                   const SizedBox(
-                    width: 28,
-                    height: 18,
-                    child: Center(child: TypingDots(color: Colors.white)),
+                    width: AppControlSizes.buttonSpinnerWidth,
+                    height: AppControlSizes.buttonSpinnerHeight,
+                    child: Center(child: TypingDots(color: AppColors.onBrand)),
                   )
                 else if (icon != null)
-                  Icon(icon, color: Colors.white, size: AppIconSizes.regular),
+                  Icon(icon, color: AppColors.onBrand, size: AppIconSizes.regular),
                 if (loading || icon != null) const SizedBox(width: AppSpacing.s10),
                 if (constraints.hasBoundedWidth)
                   Flexible(child: labelWidget)

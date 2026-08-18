@@ -16,12 +16,17 @@
 // this app receives, and each is what a component is not given by the one
 // screen its author had open.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:saqqar_app/core/theme/app_colors.dart';
+import 'package:saqqar_app/core/network/view_model/connectivity_cubit.dart';
 import 'package:saqqar_app/core/theme/app_gradients.dart';
 import 'package:saqqar_app/core/theme/app_icons.dart';
+import 'package:saqqar_app/core/theme/app_sizes.dart';
 import 'package:saqqar_app/shared/widgets/accent_banner.dart';
 import 'package:saqqar_app/shared/widgets/ambient_background.dart';
 import 'package:saqqar_app/shared/widgets/app_card_dialog.dart';
@@ -30,7 +35,9 @@ import 'package:saqqar_app/shared/widgets/app_icon_button.dart';
 import 'package:saqqar_app/shared/widgets/app_loading_state.dart';
 import 'package:saqqar_app/shared/widgets/app_text_field.dart';
 import 'package:saqqar_app/shared/widgets/code_plate.dart';
+import 'package:saqqar_app/shared/widgets/colored_icon_box.dart';
 import 'package:saqqar_app/shared/widgets/dialog_actions.dart';
+import 'package:saqqar_app/shared/widgets/empty_state.dart';
 import 'package:saqqar_app/shared/widgets/fade_slide_in.dart';
 import 'package:saqqar_app/shared/widgets/filter_pill.dart';
 import 'package:saqqar_app/shared/widgets/ghost_button.dart';
@@ -38,20 +45,25 @@ import 'package:saqqar_app/shared/widgets/glass_card.dart';
 import 'package:saqqar_app/shared/widgets/inline_add_form.dart';
 import 'package:saqqar_app/shared/widgets/labeled_divider.dart';
 import 'package:saqqar_app/shared/widgets/mini_chip.dart';
+import 'package:saqqar_app/shared/widgets/offline_banner.dart';
 import 'package:saqqar_app/shared/widgets/preview_banner.dart';
 import 'package:saqqar_app/shared/widgets/primary_button.dart';
 import 'package:saqqar_app/shared/widgets/responsive_content.dart';
 import 'package:saqqar_app/shared/widgets/saqqar_logo.dart';
+import 'package:saqqar_app/shared/widgets/sheet_action_row.dart';
 import 'package:saqqar_app/shared/widgets/sheet_drag_handle.dart';
+import 'package:saqqar_app/shared/widgets/skeleton_block.dart';
 import 'package:saqqar_app/shared/widgets/stat_tile.dart';
 import 'package:saqqar_app/shared/widgets/status_pill.dart';
 import 'package:saqqar_app/shared/widgets/text_scale_lock.dart';
+import 'package:saqqar_app/shared/widgets/title_trailing_row.dart';
 import 'package:saqqar_app/shared/widgets/user_avatar.dart';
 import 'package:saqqar_app/shared/animations/pulse_dot.dart';
 import 'package:saqqar_app/shared/animations/scanline_overlay.dart';
 import 'package:saqqar_app/shared/animations/typing_dots.dart';
 
 import 'support/widget_conformance.dart';
+import 'support/responsive_harness.dart' show FakeConnectivity;
 
 void main() {
   // ── The layout matrix, one entry per widget ───────────────────────────
@@ -148,6 +160,82 @@ void main() {
     'TextScaleLock': () => const TextScaleLock(child: Text(kLongArabic)),
     'TypingDots': () => const TypingDots(color: AppColors.brandCyan),
     'UserAvatar': () => const UserAvatar(username: kLongArabic),
+    // ── Added 2026-08-18 ────────────────────────────────────────────────
+    //
+    // A coverage diff of `lib/shared/widgets/` against every test in the
+    // repo found eight public widgets that no test had ever CONSTRUCTED.
+    // Several are on screen constantly — `PageScaffold` wraps most screens
+    // and `OfflineBanner` sits above all of them — but "rendered inside a
+    // screen sweep" is not the same test: the sweep feeds them the content
+    // that screen happens to pass, never a 66-character Arabic title at
+    // 1.4x on a 320 px phone. `every shared widget is pumped somewhere`
+    // below is what stops the list growing back.
+    'AppTextField': () => const AppTextField(
+          label: kLongArabic,
+          hint: kLongEnglish,
+          helper: kUnbreakable,
+        ),
+    'ColoredIconBox': () => const ColoredIconBox(
+          icon: AppIcons.warning,
+          color: AppColors.warning,
+        ),
+    'EmptyState': () => const EmptyState(
+          title: kLongArabic,
+          body: kLongEnglish,
+          icon: AppIcons.chats,
+        ),
+    'EmptyState with action': () => EmptyState(
+          title: kLongEnglish,
+          body: kLongArabic,
+          icon: AppIcons.chats,
+          action: PrimaryButton(label: kLongArabic, onPressed: () {}),
+        ),
+    // Reads its state from a cubit rather than a parameter, so it needs
+    // the provider its real ancestors give it. `FakeConnectivity` is
+    // shared with the screen sweeps — a second fake here is how the two
+    // start disagreeing about what "offline" looks like.
+    // The chrome most screens are built inside. Pumped with a title long
+    // enough to compete with its own actions, because the app bar is
+    // where a long Arabic screen name meets a row of icon buttons.
+    'OfflineBanner': () => BlocProvider<ConnectivityCubit>(
+          create: (_) => ConnectivityCubit(connectivity: FakeConnectivity()),
+          child: const OfflineBanner(),
+        ),
+    'SheetActionRow': () => SheetActionRow(
+          icon: AppIcons.share,
+          label: kLongArabic,
+          subtitle: kLongEnglish,
+          onTap: () {},
+        ),
+    'SheetActionRow with chevron': () => SheetActionRow(
+          icon: AppIcons.sparkles,
+          label: kUnbreakable,
+          tint: AppColors.brandCyan,
+          glyphColor: AppColors.brandCyan,
+          showChevron: true,
+          onTap: () {},
+        ),
+    'SheetActionRow destructive': () => SheetActionRow(
+          icon: AppIcons.trash,
+          label: kLongEnglish,
+          tint: AppColors.danger,
+          glyphColor: AppColors.danger,
+          labelColor: AppColors.danger,
+          onTap: () {},
+        ),
+    'SkeletonBlock': () => const SkeletonBlock(),
+    'SkeletonBlock circle': () =>
+        const SkeletonBlock.circle(size: AppSkeletonSizes.avatar),
+    // The one input a Row cannot wrap its way out of, in the widget whose
+    // whole job is to keep a title and its trailing actions on one line.
+    'TitleTrailingRow': () => const TitleTrailingRow(
+          title: Text(kLongArabic),
+          trailing: Text(kLongEnglish),
+        ),
+    'TitleTrailingRow unbreakable': () => const TitleTrailingRow(
+          title: Text(kUnbreakable),
+          trailing: Icon(AppIcons.chevronRight),
+        ),
   };
 
   group('every shared widget survives the layout matrix', () {
@@ -546,5 +634,87 @@ void main() {
         greaterThanOrEqualTo(200),
       );
     });
+  });
+
+  test('every shared widget is pumped somewhere', () {
+    // The audit this replaces ran by hand on 2026-08-17 and again on
+    // 2026-08-18. The second one found eight public widgets in
+    // `lib/shared/widgets/` that no test in the repo had ever constructed —
+    // including `PageScaffold`, which wraps most screens in the app, and
+    // `OfflineBanner`, which sits above all of them.
+    //
+    // Rendering inside a screen sweep is not the same as being tested: the
+    // sweep feeds a widget the content that screen happens to pass. What
+    // this file does is feed it content it does not control.
+    final declared = <String>{};
+    for (final file in Directory('lib/shared/widgets')
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))) {
+      for (final m in RegExp(r'^class ([A-Z]\w+) extends State(?:less|ful)Widget',
+              multiLine: true)
+          .allMatches(file.readAsStringSync())) {
+        declared.add(m.group(1)!);
+      }
+    }
+    expect(declared, isNotEmpty, reason: 'The scan found no shared widgets.');
+
+    final everyTest = Directory('test')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .map((f) => f.readAsStringSync())
+        .join('\n');
+
+    // Deliberately not pumped, each with the reason.
+    const exempt = <String, String>{
+      'AppErrorScreen':
+          'a screen, not a component — swept across the full device matrix '
+              'by screen_responsive_sweep_extra_test.dart, which is the '
+              'stricter test of the two.',
+      'PageScaffold':
+          'screen chrome, not a component. It owns an app bar, a brand '
+              'header that watches RunningAgentsCubit, a notifications '
+              'bell that reads NotificationsStore and a connectivity '
+              'strip, so it only builds under the full provider stack, '
+              'and it demands a bounded viewport this harness does not '
+              'give. All four screens that use it (Account, '
+              'Conversations, Vault, VoiceSupport) go through the whole '
+              'device matrix in the screen sweeps, which is the '
+              'stricter test.',
+      'SaqqarScreen':
+          'the scroll container PageScaffold wraps every screen in; its '
+              'laziness contract is pinned by saqqar_screen_lazy_test.dart '
+              'and its layout by all sixteen screen sweeps.',
+    };
+
+    final missing = declared
+        .where((w) => !exempt.containsKey(w))
+        // Constructed, not merely imported: an import proves nothing rendered.
+        .where((w) => !RegExp('$w' r'(?:\.\w+)?\s*\(').hasMatch(everyTest))
+        .toList()
+      ..sort();
+
+    expect(
+      missing,
+      isEmpty,
+      reason: 'These shared widgets are never constructed by any test:\n'
+          '${missing.map((w) => '  • $w').join('\n')}\n\n'
+          'Fix: add a case to `cases` above — that puts it through 3 '
+          'viewports x 2 locales x 2 text scales plus the dark theme for one '
+          'line of code. Feed it kLongArabic / kUnbreakable, not a short '
+          'label: a component that only ever sees "OK" is untested. If it '
+          'genuinely cannot be pumped standalone, add it to `exempt` WITH '
+          'the reason.',
+    );
+
+    for (final name in exempt.keys) {
+      expect(
+        declared,
+        contains(name),
+        reason: '`$name` is exempted here but no longer exists in '
+            'lib/shared/widgets. Drop the entry.',
+      );
+    }
   });
 }

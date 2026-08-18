@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -122,7 +123,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
     // we control the slide animation + scrim ourselves (see chat_screen).
     return Material(
       color: s.surface,
-      elevation: 8,
+      elevation: AppElevations.drawer,
       child: SafeArea(
         child: Column(
           children: [
@@ -147,7 +148,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                         horizontal: AppSpacing.s4,
                         vertical: AppSpacing.s4,
                       ),
-                      child: SaqqarLogo(height: 24),
+                      child: SaqqarLogo(height: AppLogoSizes.drawer),
                     ),
                   ),
                   const Spacer(),
@@ -202,7 +203,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
             ),
             // ── Vault footer pill ─────────────────────────────────────
             Container(
-              height: 1,
+              height: AppBorderWidths.hairline,
               color: s.cardBorder,
             ),
             Padding(
@@ -241,7 +242,7 @@ class _NewConversationButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(AppIcons.plus, color: Colors.white, size: AppIconSizes.regular),
+            const Icon(AppIcons.plus, color: AppColors.onBrand, size: AppIconSizes.regular),
             const SizedBox(width: AppSpacing.s8),
             // Flexible: the drawer is `min(screenW * 0.86, 320)` wide, so on
             // a 320 px phone this button gets ~240 px and a bare `Text` here
@@ -253,10 +254,10 @@ class _NewConversationButton extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.onBrand,
                   fontSize: AppFontSizes.body,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
+                  letterSpacing: AppLetterSpacing.tight,
                 ),
               ),
             ),
@@ -277,7 +278,7 @@ class _DrawerSearchField extends StatelessWidget {
     final s = context.saqqar;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
         borderRadius: AppRadius.buttonR,
         border: Border.all(color: s.cardBorder),
       ),
@@ -290,7 +291,7 @@ class _DrawerSearchField extends StatelessWidget {
           hintStyle: context.text.bodySmall?.copyWith(color: s.muted),
           prefixIcon: Icon(AppIcons.search, size: AppIconSizes.small, color: s.muted),
           prefixIconConstraints:
-              const BoxConstraints(minWidth: 36, minHeight: 36),
+              const BoxConstraints(minWidth: AppControlSizes.rowMin, minHeight: AppControlSizes.rowMin),
           isCollapsed: true,
           contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
           filled: false,
@@ -351,7 +352,7 @@ class _ConversationGroupedList extends StatelessWidget {
         AppSpacing.s8,
         AppSpacing.s16,
       ),
-      cacheExtent: 1500,
+      cacheExtent: AppScrollTuning.cacheExtent,
       children: [
         if (today.isNotEmpty) ...[
           _GroupLabel(text: context.tr.today),
@@ -398,7 +399,7 @@ class _GroupLabel extends StatelessWidget {
           color: s.muted,
           fontWeight: FontWeight.w900,
           fontSize: AppFontSizes.chipLabel,
-          letterSpacing: 1.2,
+          letterSpacing: AppLetterSpacing.microCapsWide,
         ),
       ),
     );
@@ -434,12 +435,12 @@ class _DrawerConversationRow extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isActive
-              ? s.brandCyan.withValues(alpha: 0.12)
+              ? s.brandCyan.withValues(alpha: AppAlphas.a12)
               : Colors.transparent,
           borderRadius: AppRadius.buttonR,
           border: Border.all(
             color: isActive
-                ? s.brandCyan.withValues(alpha: 0.40)
+                ? s.brandCyan.withValues(alpha: AppAlphas.a40)
                 : Colors.transparent,
           ),
         ),
@@ -502,7 +503,7 @@ class _VaultFooterButton extends StatelessWidget {
           vertical: AppSpacing.s12,
         ),
         decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
           borderRadius: AppRadius.buttonR,
           border: Border.all(color: s.cardBorder),
         ),

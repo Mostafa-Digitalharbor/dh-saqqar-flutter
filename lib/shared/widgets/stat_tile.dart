@@ -50,7 +50,7 @@ class StatTile extends StatelessWidget {
             maxLines: 1,
             style: context.text.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
-              height: 1.1,
+              height: AppLineHeights.displayTight,
               color: valueColor,
               // Tabular figures so the columns stay optically aligned
               // regardless of which digits land in them.
@@ -69,7 +69,7 @@ class StatTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: context.text.labelSmall?.copyWith(
             color: s.muted,
-            height: 1.25,
+            height: AppLineHeights.headingLoose,
             fontWeight: FontWeight.w500,
           ),
         ),

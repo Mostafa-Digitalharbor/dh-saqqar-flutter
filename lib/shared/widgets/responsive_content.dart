@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_sizes.dart';
+
 class ResponsiveContent extends StatelessWidget {
   const ResponsiveContent({
     super.key,
     required this.child,
     this.padding,
-    this.maxWidth = 920,
+    this.maxWidth = AppLayoutWidths.screen,
     this.alignment = Alignment.topCenter,
   });
 

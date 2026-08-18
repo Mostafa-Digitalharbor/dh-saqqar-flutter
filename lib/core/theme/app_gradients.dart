@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_sizes.dart';
 
 class AppGradients {
   AppGradients._();
@@ -24,8 +25,8 @@ class AppGradients {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      AppColors.brandCyan.withValues(alpha: 0.12),
-      AppColors.brandPurple.withValues(alpha: 0.08),
+      AppColors.brandCyan.withValues(alpha: AppAlphas.a12),
+      AppColors.brandPurple.withValues(alpha: AppAlphas.a08),
     ],
   );
 
@@ -34,8 +35,8 @@ class AppGradients {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      AppColors.brandPurple.withValues(alpha: 0.06),
-      AppColors.brandCyan.withValues(alpha: 0.04),
+      AppColors.brandPurple.withValues(alpha: AppAlphas.a06),
+      AppColors.brandCyan.withValues(alpha: AppAlphas.a04),
     ],
   );
 
@@ -44,8 +45,8 @@ class AppGradients {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      AppColors.brandCyan.withValues(alpha: 0.10),
-      AppColors.brandPurple.withValues(alpha: 0.10),
+      AppColors.brandCyan.withValues(alpha: AppAlphas.a10),
+      AppColors.brandPurple.withValues(alpha: AppAlphas.a10),
     ],
   );
 }

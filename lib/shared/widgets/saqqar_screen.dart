@@ -52,14 +52,14 @@ class SaqqarScreen extends StatelessWidget {
       // Pre-render ~1.5 screenfuls of off-screen rows so flick-scroll
       // never reveals a row that wasn't built yet — user explicitly
       // asked for the "everything was already there" feel.
-      cacheExtent: 1500,
+      cacheExtent: AppScrollTuning.cacheExtent,
       itemCount: children.length,
       itemBuilder: (context, i) => Align(
         alignment: Alignment.topCenter,
         child: Padding(
           padding: EdgeInsets.only(left: resolved.left, right: resolved.right),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
+            constraints: const BoxConstraints(maxWidth: AppLayoutWidths.screen),
             // `width: infinity` reproduces the old Column's
             // `crossAxisAlignment.stretch` so cards fill the content column
             // instead of shrink-wrapping to their own width.

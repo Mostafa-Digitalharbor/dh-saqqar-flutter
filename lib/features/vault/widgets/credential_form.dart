@@ -352,7 +352,7 @@ class _CredentialFormState extends State<CredentialForm> {
           child: SizedBox(
             width: AppControlSizes.spinnerMedium,
             height: AppControlSizes.spinnerMedium,
-            child: CircularProgressIndicator(strokeWidth: 2.4, color: s.muted),
+            child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
           ),
         ),
       );
@@ -638,7 +638,7 @@ class _SchemaField extends StatelessWidget {
             style: context.text.labelSmall?.copyWith(
               color: s.muted,
               fontStyle: FontStyle.italic,
-              height: 1.35,
+              height: AppLineHeights.label,
             ),
           ),
         ),
@@ -714,7 +714,7 @@ class _SchemaField extends StatelessWidget {
             status,
             style: context.text.labelSmall?.copyWith(
               color: statusColor,
-              height: 1.35,
+              height: AppLineHeights.label,
             ),
           ),
         ],
@@ -865,9 +865,9 @@ class _TestBadge extends StatelessWidget {
         vertical: AppSpacing.s8,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: AppAlphas.a10),
         borderRadius: AppRadius.tightR,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color.withValues(alpha: AppAlphas.a35)),
       ),
       child: Row(
         children: [
@@ -875,7 +875,7 @@ class _TestBadge extends StatelessWidget {
             SizedBox(
               width: AppControlSizes.spinnerDense,
               height: AppControlSizes.spinnerDense,
-              child: CircularProgressIndicator(strokeWidth: 2, color: color),
+              child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerThin, color: color),
             )
           else
             Icon(
@@ -893,7 +893,7 @@ class _TestBadge extends StatelessWidget {
                 color: color,
                 fontWeight: FontWeight.w700,
                 fontSize: AppFontSizes.footnote,
-                height: 1.35,
+                height: AppLineHeights.label,
               ),
             ),
           ),

@@ -105,7 +105,7 @@ class PlanUsageCard extends StatelessWidget {
               child: GhostButton(
                 label: context.tr.quotaUpgradeCta,
                 icon: AppIcons.sparkles,
-                minHeight: 40,
+                minHeight: AppControlSizes.buttonMin,
                 onPressed: () => context.pushNamed(RouteNames.pricing),
               ),
             ),
@@ -177,7 +177,7 @@ class _UsageRow extends StatelessWidget {
         // a word the user already knows is the wrong trade; this way the
         // label ellipsizes first and only in the tightest cell.
         TitleTrailingRow(
-          trailingMaxFraction: 0.6,
+          trailingMaxFraction: AppFractions.trailingMax,
           title: Text(
             label,
             maxLines: 1,
@@ -203,7 +203,7 @@ class _UsageRow extends StatelessWidget {
           borderRadius: AppRadius.pillR,
           child: LinearProgressIndicator(
             value: window.fraction,
-            minHeight: 7,
+            minHeight: AppControlSizes.meterThick,
             backgroundColor: s.surface2,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),

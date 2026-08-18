@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:pdfx/pdfx.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/format/file_kind.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
@@ -152,12 +153,12 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
     ].join(' · ');
 
     return Scaffold(
-      backgroundColor: isImage ? Colors.black : s.bg,
+      backgroundColor: isImage ? AppColors.imageBackdrop : s.bg,
       appBar: AppBar(
-        backgroundColor: isImage ? Colors.black : s.bg,
-        foregroundColor: isImage ? Colors.white : s.text,
-        elevation: 0,
-        titleSpacing: 0,
+        backgroundColor: isImage ? AppColors.imageBackdrop : s.bg,
+        foregroundColor: isImage ? AppColors.onImageBackdrop : s.text,
+        elevation: AppElevations.none,
+        titleSpacing: AppSpacing.zero,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -168,7 +169,7 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
               overflow: TextOverflow.ellipsis,
               style: context.text.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: isImage ? Colors.white : s.text,
+                color: isImage ? AppColors.onImageBackdrop : s.text,
               ),
             ),
             if (subtitle.isNotEmpty)
@@ -177,7 +178,7 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.text.labelSmall?.copyWith(
-                  color: isImage ? Colors.white70 : s.muted,
+                  color: isImage ? AppColors.onImageBackdrop.withValues(alpha: AppAlphas.deemphasis) : s.muted,
                   fontSize: AppFontSizes.caption,
                 ),
               ),
@@ -326,7 +327,7 @@ class _TextBodyState extends State<_TextBody> {
               horizontal: AppSpacing.s16,
               vertical: AppSpacing.s8,
             ),
-            color: s.warning.withValues(alpha: 0.12),
+            color: s.warning.withValues(alpha: AppAlphas.a12),
             child: Text(
               context.tr.viewerTruncated,
               style: context.text.labelSmall?.copyWith(color: s.warning),
@@ -342,7 +343,7 @@ class _TextBodyState extends State<_TextBody> {
                 style: const TextStyle(
                   fontFamily: AppTypography.fontMono,
                   fontSize: AppFontSizes.footnote,
-                  height: 1.5,
+                  height: AppLineHeights.body,
                 ),
               ),
             ),
@@ -373,12 +374,12 @@ class _UnsupportedBody extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: AppBoxSizes.fileKind,
+              height: AppBoxSizes.fileKind,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: s.brandCyan.withValues(alpha: 0.10),
+                color: s.brandCyan.withValues(alpha: AppAlphas.a10),
               ),
               child: Icon(AppIcons.fileText, size: AppIconSizes.tile, color: s.brandCyan),
             ),
@@ -403,7 +404,7 @@ class _UnsupportedBody extends StatelessWidget {
               label: Text(tr.viewerOpenExternally),
               style: FilledButton.styleFrom(
                 backgroundColor: s.brandCyan,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onBrand,
                 shape: const RoundedRectangleBorder(
                   borderRadius: AppRadius.buttonR,
                 ),

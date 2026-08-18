@@ -84,76 +84,97 @@ class AppErrorScreen extends StatelessWidget {
       child: Material(
         color: bg,
         child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.s32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: danger.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: danger.withValues(alpha: 0.32),
-                        ),
-                      ),
-                      child: const Icon(
-                        AppIcons.warning,
-                        color: danger,
-                        size: AppIconSizes.crash,
-                      ),
+          // Scrollable, and deliberately so on the one screen with no other
+          // way out. This is `ErrorWidget.builder` — it renders after the app
+          // has already failed once, so an overflow here replaces the
+          // explanation for a broken screen with a second broken screen.
+          //
+          // It overflowed by 17 px on a 320x568 phone in English at 1.0x
+          // text: the smallest supported device at the DEFAULT type size,
+          // not an edge case. `minHeight: constraints.maxHeight` keeps the
+          // card centred while it fits and lets it scroll once it does not,
+          // so the common case looks exactly as it did.
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: AppLayoutWidths.errorCard,
                     ),
-                    const SizedBox(height: AppSpacing.s18),
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: AppFontSizes.crashTitle,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s8),
-                    Text(
-                      body,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: muted,
-                        height: 1.45,
-                        fontSize: AppFontSizes.body,
-                      ),
-                    ),
-                    if (kDebugMode) ...[
-                      const SizedBox(height: AppSpacing.s18),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AppSpacing.s12),
-                        decoration: BoxDecoration(
-                          color: card,
-                          borderRadius: AppRadius.smallR,
-                          border: Border.all(
-                            color: muted.withValues(alpha: 0.2),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.s32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: AppBoxSizes.errorGlyph,
+                            height: AppBoxSizes.errorGlyph,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: danger.withValues(alpha: AppAlphas.a14),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: danger.withValues(alpha: AppAlphas.a32),
+                              ),
+                            ),
+                            child: const Icon(
+                              AppIcons.warning,
+                              color: danger,
+                              size: AppIconSizes.crash,
+                            ),
                           ),
-                        ),
-                        child: SelectableText(
-                          details.exceptionAsString(),
-                          style: const TextStyle(
-                            color: muted,
-                            fontFamily: UiStrings.monospaceFontFamily,
-                            fontSize: AppFontSizes.footnote,
-                            height: 1.4,
+                          const SizedBox(height: AppSpacing.s18),
+                          Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.onBrand,
+                              fontSize: AppFontSizes.crashTitle,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: AppLetterSpacing.heading,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: AppSpacing.s8),
+                          Text(
+                            body,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: muted,
+                              height: AppLineHeights.reading,
+                              fontSize: AppFontSizes.body,
+                            ),
+                          ),
+                          if (kDebugMode) ...[
+                            const SizedBox(height: AppSpacing.s18),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(AppSpacing.s12),
+                              decoration: BoxDecoration(
+                                color: card,
+                                borderRadius: AppRadius.smallR,
+                                border: Border.all(
+                                  color: muted.withValues(
+                                    alpha: AppAlphas.a20,
+                                  ),
+                                ),
+                              ),
+                              child: SelectableText(
+                                details.exceptionAsString(),
+                                style: const TextStyle(
+                                  color: muted,
+                                  fontFamily: UiStrings.monospaceFontFamily,
+                                  fontSize: AppFontSizes.footnote,
+                                  height: AppLineHeights.compact,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ],
+                    ),
+                  ),
                 ),
               ),
             ),

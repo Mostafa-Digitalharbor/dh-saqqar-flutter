@@ -322,7 +322,7 @@ class _AccountScreenState extends State<AccountScreen>
                 child: Text(
                   context.tr.poweredByDigitalHarbor,
                   style: context.text.labelSmall?.copyWith(
-                    color: context.saqqar.muted.withValues(alpha: 0.75),
+                    color: context.saqqar.muted.withValues(alpha: AppAlphas.a75),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -343,13 +343,13 @@ class _AccountScreenState extends State<AccountScreen>
 /// nested `Column` and break the existing spacing rhythm.
 List<Widget> _accountSkeletonChildren() {
   return const [
-    _SkeletonCard(height: 140),
+    _SkeletonCard(height: AppSkeletonSizes.card),
     SizedBox(height: AppSpacing.s14),
-    _SkeletonCard(height: 160),
+    _SkeletonCard(height: AppSkeletonSizes.cardTall),
     SizedBox(height: AppSpacing.s14),
-    _SkeletonCard(height: 220),
+    _SkeletonCard(height: AppSkeletonSizes.cardHero),
     SizedBox(height: AppSpacing.s14),
-    _SkeletonCard(height: 48),
+    _SkeletonCard(height: AppSkeletonSizes.cardShort),
   ];
 }
 
@@ -368,12 +368,12 @@ class _SkeletonCard extends StatelessWidget {
     // Short cards (button-height placeholders) can't fit the 3-block
     // layout — render a single fill block instead so the Column doesn't
     // overflow.
-    final isCompact = height < 80;
+    final isCompact = height < AppSkeletonSizes.cardCompactCutoff;
     return Container(
       height: height,
       padding: EdgeInsets.all(isCompact ? AppSpacing.s10 : AppSpacing.s16),
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.45 : 0.85),
+        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelSoft)),
         borderRadius: AppRadius.cardR,
         border: Border.all(color: s.cardBorder),
       ),
@@ -383,9 +383,9 @@ class _SkeletonCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                SkeletonBlock(width: 140, height: 14),
-                SkeletonBlock(height: 12),
-                SkeletonBlock(width: 200, height: 12),
+                SkeletonBlock(width: AppSkeletonSizes.title, height: AppSkeletonSizes.titleLine),
+                SkeletonBlock(height: AppSkeletonSizes.bodyLine),
+                SkeletonBlock(width: AppSkeletonSizes.preview, height: AppSkeletonSizes.bodyLine),
               ],
             ),
     );

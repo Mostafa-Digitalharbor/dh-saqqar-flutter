@@ -3,10 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import 'chat_sheet.dart';
-import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/widgets/sheet_action_row.dart';
 
 /// Where the composer should pull the next attachment from.
 enum AttachmentPickerSource { photos, camera, files }
@@ -45,20 +44,26 @@ class AttachmentPickerSourceSheet extends StatelessWidget {
     return ChatSheet(
       title: tr.attachSourceTitle,
       children: [
-        _SourceRow(
+        SheetActionRow(
+          tint: context.saqqar.brandCyan,
+          glyphColor: context.saqqar.brandCyan,
           icon: AppIcons.image,
           label: tr.attachSourcePhotos,
           subtitle: tr.attachSourcePhotosHint,
           onTap: () => Navigator.of(context).pop(AttachmentPickerSource.photos),
         ),
         if (hasCamera)
-          _SourceRow(
+          SheetActionRow(
+            tint: context.saqqar.brandCyan,
+            glyphColor: context.saqqar.brandCyan,
             icon: AppIcons.camera,
             label: tr.attachSourceCamera,
             subtitle: tr.attachSourceCameraHint,
             onTap: () => Navigator.of(context).pop(AttachmentPickerSource.camera),
           ),
-        _SourceRow(
+        SheetActionRow(
+          tint: context.saqqar.brandCyan,
+          glyphColor: context.saqqar.brandCyan,
           icon: AppIcons.files,
           label: tr.attachSourceFiles,
           subtitle: tr.attachSourceFilesHint,
@@ -69,64 +74,3 @@ class AttachmentPickerSourceSheet extends StatelessWidget {
   }
 }
 
-class _SourceRow extends StatelessWidget {
-  const _SourceRow({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return TappableSurface(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s6,
-          vertical: AppSpacing.s12,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: s.brandCyan.withValues(alpha: 0.10),
-              ),
-              child: Icon(icon, size: AppIconSizes.regular, color: s.brandCyan),
-            ),
-            const SizedBox(width: AppSpacing.s14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: context.text.bodyMedium?.copyWith(
-                      color: s.text,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.s2),
-                  Text(
-                    subtitle,
-                    style: context.text.bodySmall?.copyWith(color: s.muted),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

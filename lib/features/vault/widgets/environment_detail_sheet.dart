@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
 import '../../../core/theme/app_icons.dart';
@@ -108,7 +109,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
     final project = env != null ? data?.projectById(env.projectId) : null;
 
     final schemas = data?.schemas ?? const <CredentialSchema>[];
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.92;
+    final maxHeight = MediaQuery.sizeOf(context).height * AppFractions.sheetTall;
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
 
     if (env == null) {
@@ -171,7 +172,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                                       context.text.labelMedium?.copyWith(
                                     color: s.muted,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.4,
+                                    letterSpacing: AppLetterSpacing.label,
                                   ),
                                 ),
                               ),
@@ -226,7 +227,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: s.surface2.withValues(
-                      alpha: context.isDark ? 0.5 : 0.85,
+                      alpha: context.alpha(AppAlphaPairs.panel),
                     ),
                     borderRadius: AppRadius.cardR,
                     border: Border.all(color: s.cardBorder),
@@ -306,7 +307,7 @@ class _AudienceToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.s3),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
         borderRadius: AppRadius.pillR,
         border: Border.all(color: s.cardBorder),
       ),
@@ -344,7 +345,7 @@ class _AudienceToggle extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.text.labelMedium?.copyWith(
-              color: selected ? Colors.white : s.muted,
+              color: selected ? AppColors.onBrand : s.muted,
               fontWeight: FontWeight.w700,
             ),
           ),

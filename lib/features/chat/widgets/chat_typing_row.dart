@@ -29,7 +29,7 @@ class ChatTypingRow extends StatelessWidget {
     // Compact slot — wordmark sized so it hugs the bubble's start edge
     // instead of feeling like a full avatar's worth of space.
     final avatarSlot = SizedBox(
-      width: 50,
+      width: AppControlSizes.typingAvatarSlot,
       child: firstOfGroup
           ? const Align(
               alignment: AlignmentDirectional.centerStart,
@@ -52,7 +52,7 @@ class ChatTypingRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: s.surface2,
           borderRadius: AppRadius.modalR,
-          border: Border.all(color: s.brandCyan.withValues(alpha: 0.28)),
+          border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a28)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

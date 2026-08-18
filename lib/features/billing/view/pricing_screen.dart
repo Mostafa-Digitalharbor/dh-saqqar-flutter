@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
@@ -205,7 +206,7 @@ class _PricingScreenState extends State<PricingScreen>
                   textAlign: TextAlign.center,
                   style: context.text.bodyMedium?.copyWith(
                     color: context.saqqar.muted,
-                    height: 1.4,
+                    height: AppLineHeights.compact,
                   ),
                 ),
                 if (showPaidUpsell) ...[
@@ -283,7 +284,7 @@ class _PricingScreenState extends State<PricingScreen>
                   textAlign: TextAlign.center,
                   style: context.text.bodySmall?.copyWith(
                     color: context.saqqar.muted,
-                    height: 1.45,
+                    height: AppLineHeights.reading,
                   ),
                 ),
               ],
@@ -310,7 +311,7 @@ class _CycleSwitch extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.s4),
         decoration: BoxDecoration(
-          color: s.cardBorder.withValues(alpha: 0.35),
+          color: s.cardBorder.withValues(alpha: AppAlphas.a35),
           borderRadius: AppRadius.pillR,
         ),
         // `Wrap`, not `Row`. A Row hands its non-flex children unbounded
@@ -394,7 +395,7 @@ class _CycleChip extends StatelessWidget {
                 label,
                 style: context.text.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: selected ? Colors.white : s.text,
+                  color: selected ? AppColors.onBrand : s.text,
                 ),
               ),
               if (note != null)
@@ -402,7 +403,7 @@ class _CycleChip extends StatelessWidget {
                   note!,
                   style: context.text.labelSmall?.copyWith(
                     color: selected
-                        ? Colors.white.withValues(alpha: 0.85)
+                        ? AppColors.onBrand.withValues(alpha: AppAlphas.a85)
                         : s.muted,
                   ),
                 ),
@@ -562,13 +563,13 @@ class _PlanTierCard extends StatelessWidget {
                     ),
               style: context.text.bodySmall?.copyWith(
                 color: s.muted,
-                height: 1.45,
+                height: AppLineHeights.reading,
               ),
             ),
           ],
           if (tier.featuresText.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.s14),
-            Divider(height: 1, thickness: 1, color: s.cardBorder),
+            Divider(height: AppBorderWidths.hairline, thickness: AppBorderWidths.hairline, color: s.cardBorder),
             const SizedBox(height: AppSpacing.s14),
             // "Everything in Solo, plus:" — the ladder that makes a bullet
             // list of four items mean "four *more* than the tier below".
@@ -629,16 +630,16 @@ class _Pill extends StatelessWidget {
         vertical: AppSpacing.s4,
       ),
       decoration: BoxDecoration(
-        color: filled ? color : color.withValues(alpha: 0.12),
+        color: filled ? color : color.withValues(alpha: AppAlphas.a12),
         borderRadius: AppRadius.pillR,
         border: filled
             ? null
-            : Border.all(color: color.withValues(alpha: 0.35)),
+            : Border.all(color: color.withValues(alpha: AppAlphas.a35)),
       ),
       child: Text(
         label,
         style: context.text.labelSmall?.copyWith(
-          color: filled ? Colors.white : color,
+          color: filled ? AppColors.onBrand : color,
           fontWeight: FontWeight.w800,
         ),
       ),

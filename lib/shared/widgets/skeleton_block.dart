@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 
 /// Base shimmer block used by list-row skeletons.
@@ -13,23 +14,26 @@ class SkeletonBlock extends StatefulWidget {
   const SkeletonBlock({
     super.key,
     this.width,
-    this.height = 14,
+    this.height = AppSkeletonSizes.titleLine,
     this.radius = AppRadius.tight,
   });
+
+  /// A circular avatar-shaped block.
+  ///
+  /// Was a `factory` and therefore not `const`, which is why every one of
+  /// the four skeletons that wanted a circle hand-rolled
+  /// `SkeletonBlock(width: 44, height: 44, radius: 22)` inside a `const`
+  /// subtree instead of calling it — three literals that had to agree, in
+  /// four places, for a shape the widget already knew how to make. A
+  /// generative const constructor makes the call site usable.
+  const SkeletonBlock.circle({super.key, required double size})
+      : width = size,
+        height = size,
+        radius = size / 2;
 
   final double? width;
   final double height;
   final double radius;
-
-  /// Convenience constructor for a circular avatar-shaped block.
-  factory SkeletonBlock.circle({Key? key, required double size}) {
-    return SkeletonBlock(
-      key: key,
-      width: size,
-      height: size,
-      radius: size / 2,
-    );
-  }
 
   @override
   State<SkeletonBlock> createState() => _SkeletonBlockState();
@@ -76,8 +80,8 @@ class _SkeletonBlockState extends State<SkeletonBlock>
     // shimmer frame doesn't pay for the color math each tick.
     final edgeTone = Color.lerp(s.surface2, s.cardBorder, 0.35) ?? s.surface2;
     final border = Border.all(
-      color: s.cardBorder.withValues(alpha: 0.45),
-      width: 0.6,
+      color: s.cardBorder.withValues(alpha: AppAlphas.a45),
+      width: AppBorderWidths.subHairline,
     );
 
     final block = Container(

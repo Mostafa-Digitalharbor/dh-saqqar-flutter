@@ -139,6 +139,23 @@ class UnsupportedMediaFailure extends AppFailure {
   List<Object?> get props => [serverMessage];
 }
 
+/// 503. The service is deliberately unavailable — a deploy, a restart, a
+/// maintenance window — rather than broken.
+///
+/// Split out of [ServerFailure] because the two need different advice and
+/// only one of them can be given a time. A 500 is a bug and "try again in
+/// a moment" is a guess; a 503 is a planned outage that ships a
+/// `Retry-After`, and the app already parses that header for 429 and then
+/// threw it away here. [retryAfterSeconds] is what turns "something is
+/// wrong" into "come back in two minutes".
+class ServiceUnavailableFailure extends AppFailure {
+  const ServiceUnavailableFailure({this.retryAfterSeconds, this.serverMessage});
+  final int? retryAfterSeconds;
+  final String? serverMessage;
+  @override
+  List<Object?> get props => [retryAfterSeconds, serverMessage];
+}
+
 /// 5xx. The server hit an internal problem.
 class ServerFailure extends AppFailure {
   const ServerFailure({this.statusCode, this.serverMessage});

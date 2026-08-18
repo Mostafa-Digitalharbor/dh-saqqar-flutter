@@ -338,7 +338,7 @@ class _EntityPicker extends StatelessWidget {
               child: SizedBox(
                 width: AppControlSizes.spinnerSmall,
                 height: AppControlSizes.spinnerSmall,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerThin),
               ),
             ),
           )
@@ -354,7 +354,7 @@ class _EntityPicker extends StatelessWidget {
           // Capped height so a 1,000-row list can't swallow the chat. The
           // list scrolls inside the card; the card keeps its own size.
           ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 220),
+            constraints: const BoxConstraints(maxHeight: AppSheetHeights.reportRecordsMax),
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: items.length,
@@ -386,7 +386,7 @@ class _EntityPicker extends StatelessWidget {
               tr.reportRecordsTruncated(items.length),
               style: context.text.labelSmall?.copyWith(
                 color: s.warning,
-                height: 1.4,
+                height: AppLineHeights.compact,
               ),
             ),
           ),

@@ -95,8 +95,8 @@ class ChatAppBarTitle extends StatelessWidget {
                           text: displayTitle,
                           style: context.text.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
-                            height: 1.15,
-                            letterSpacing: -0.1,
+                            height: AppLineHeights.display,
+                            letterSpacing: AppLetterSpacing.title,
                           ),
                         ),
                       ),
@@ -104,7 +104,7 @@ class ChatAppBarTitle extends StatelessWidget {
                         const SizedBox(width: AppSpacing.s4),
                         InkResponse(
                           onTap: onRenameTap,
-                          radius: 18,
+                          radius: AppRadius.modal,
                           customBorder: const CircleBorder(),
                           child: Padding(
                             padding: const EdgeInsets.all(AppSpacing.s4),
@@ -137,8 +137,8 @@ class ChatAppBarTitle extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 6,
-                            height: 6,
+                            width: AppControlSizes.dot,
+                            height: AppControlSizes.dot,
                             decoration: BoxDecoration(
                               color: s.success,
                               shape: BoxShape.circle,
@@ -164,7 +164,7 @@ class ChatAppBarTitle extends StatelessWidget {
                           // still sit beside it rather than always wrapping.
                           Flexible(
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 220),
+                              constraints: const BoxConstraints(maxWidth: AppLayoutWidths.titleCap),
                               child: Text(
                                 activeCredentialLabel,
                                 maxLines: 1,
@@ -259,9 +259,9 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
             vertical: AppSpacing.s3,
           ),
           decoration: BoxDecoration(
-            color: s.brandCyan.withValues(alpha: 0.14),
+            color: s.brandCyan.withValues(alpha: AppAlphas.a14),
             borderRadius: AppRadius.pillR,
-            border: Border.all(color: s.brandCyan.withValues(alpha: 0.40)),
+            border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a40)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -273,10 +273,10 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
                       ? 1.0
                       : Curves.easeInOut.transform(_pulse.value);
                   return Container(
-                    width: 7,
-                    height: 7,
+                    width: AppControlSizes.dotLarge,
+                    height: AppControlSizes.dotLarge,
                     decoration: BoxDecoration(
-                      color: s.brandCyan.withValues(alpha: 0.45 + 0.55 * t),
+                      color: s.brandCyan.withValues(alpha: AppAlphas.a45 + 0.55 * t),
                       shape: BoxShape.circle,
                     ),
                   );
@@ -289,7 +289,7 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
                   color: s.brandCyan,
                   fontSize: AppFontSizes.microCaps,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
+                  letterSpacing: AppLetterSpacing.capsWide,
                 ),
               ),
             ],
@@ -334,9 +334,9 @@ class _EnvFlagBadge extends StatelessWidget {
           vertical: AppSpacing.s1,
         ),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.16),
+          color: color.withValues(alpha: AppAlphas.a16),
           borderRadius: AppRadius.pillR,
-          border: Border.all(color: color.withValues(alpha: 0.40)),
+          border: Border.all(color: color.withValues(alpha: AppAlphas.a40)),
         ),
         child: Text(
           label.toUpperCase(),
@@ -344,7 +344,7 @@ class _EnvFlagBadge extends StatelessWidget {
             color: color,
             fontSize: AppFontSizes.microCaps,
             fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
+            letterSpacing: AppLetterSpacing.capsWide,
           ),
         ),
       ),
@@ -366,9 +366,9 @@ class _AutoApprovePill extends StatelessWidget {
           vertical: AppSpacing.s1,
         ),
         decoration: BoxDecoration(
-          color: s.warning.withValues(alpha: 0.16),
+          color: s.warning.withValues(alpha: AppAlphas.a16),
           borderRadius: AppRadius.pillR,
-          border: Border.all(color: s.warning.withValues(alpha: 0.40)),
+          border: Border.all(color: s.warning.withValues(alpha: AppAlphas.a40)),
         ),
         child: Text(
           context.tr.auto.toUpperCase(),
@@ -376,7 +376,7 @@ class _AutoApprovePill extends StatelessWidget {
             color: s.warning,
             fontSize: AppFontSizes.microCaps,
             fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
+            letterSpacing: AppLetterSpacing.capsWide,
           ),
         ),
       ),

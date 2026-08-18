@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_gradients.dart';
 import '../../core/theme/app_sizes.dart';
 
@@ -28,13 +29,13 @@ class UserAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppGradients.vivid,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        border: Border.all(color: AppColors.onBrand.withValues(alpha: AppAlphas.a16)),
       ),
       alignment: Alignment.center,
       child: Text(
         _initial,
         style: TextStyle(
-          color: Colors.white,
+          color: AppColors.onBrand,
           fontWeight: FontWeight.w700,
           fontSize: size * 0.42,
         ),

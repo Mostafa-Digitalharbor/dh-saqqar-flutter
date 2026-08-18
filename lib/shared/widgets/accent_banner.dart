@@ -42,9 +42,9 @@ class AccentBanner extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(AppSpacing.s12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: AppAlphas.a10),
         borderRadius: AppRadius.buttonR,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        border: Border.all(color: color.withValues(alpha: AppAlphas.a35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

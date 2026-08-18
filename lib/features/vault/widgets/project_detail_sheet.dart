@@ -174,9 +174,9 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
     final projectName = project?.name ?? '—';
 
     return AppCardDialog(
-      heightFactor: 0.7,
-      minHeight: 420,
-      maxHeight: 640,
+      heightFactor: AppFractions.projectDetailSheet,
+      minHeight: AppSheetHeights.projectDetailMin,
+      maxHeight: AppSheetHeights.projectDetailMax,
       child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.s18,
@@ -202,7 +202,7 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                             style: context.text.labelSmall?.copyWith(
                               color: s.brandCyan,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 1.4,
+                              letterSpacing: AppLetterSpacing.microCapsWidest,
                               fontSize: AppFontSizes.chipLabel,
                             ),
                           ),
@@ -220,13 +220,13 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                     ),
                     GhostButton(
                       label: context.tr.close,
-                      minHeight: 36,
+                      minHeight: AppControlSizes.rowMin,
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.s14),
-                Divider(color: s.cardBorder, height: 1),
+                Divider(color: s.cardBorder, height: AppBorderWidths.hairline),
                 const SizedBox(height: AppSpacing.s14),
                 // ── "← All projects" back link (full-width pill) ────────
                 _BackToProjectsPill(onTap: _backToProjectsList),
@@ -242,7 +242,7 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                           style: context.text.labelSmall?.copyWith(
                             color: s.muted,
                             fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
+                            letterSpacing: AppLetterSpacing.microCapsWide,
                             fontSize: AppFontSizes.chipLabel,
                           ),
                         ),
@@ -321,10 +321,10 @@ class _BackToProjectsPill extends StatelessWidget {
         onTap: onTap,
         borderRadius: AppRadius.pillR,
         child: Container(
-          height: 36,
+          height: AppControlSizes.pillRowHeight,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+            color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
             borderRadius: AppRadius.pillR,
             border: Border.all(color: s.cardBorder),
           ),
@@ -520,14 +520,14 @@ class _EnvRowState extends State<_EnvRow> {
           AppSpacing.s12,
         ),
         decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
           borderRadius: AppRadius.cardR,
           border: Border.all(
             // Live envs get a subtle danger border so they're scannable
             // in a long project list. The web does the same via
             // `env-row--live`.
             color: env.isLive
-                ? s.danger.withValues(alpha: 0.40)
+                ? s.danger.withValues(alpha: AppAlphas.a40)
                 : s.cardBorder,
             width: env.isLive ? 1.4 : 1.0,
           ),
@@ -638,12 +638,12 @@ class _EnvRowState extends State<_EnvRow> {
                   children: [
                     PrimaryButton(
                       label: context.tr.openEnvironment,
-                      minHeight: 36,
+                      minHeight: AppControlSizes.rowMin,
                       onPressed: widget.onOpen,
                     ),
                     GhostButton(
                       label: context.tr.delete,
-                      minHeight: 36,
+                      minHeight: AppControlSizes.rowMin,
                       tone: GhostButtonTone.danger,
                       onPressed: widget.onDelete,
                     ),
@@ -675,7 +675,7 @@ class _EnvSearchField extends StatelessWidget {
     final s = context.saqqar;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
         borderRadius: AppRadius.buttonR,
         border: Border.all(color: s.cardBorder),
       ),
@@ -689,7 +689,7 @@ class _EnvSearchField extends StatelessWidget {
           hintStyle: context.text.bodySmall?.copyWith(color: s.muted),
           prefixIcon: Icon(AppIcons.search, size: AppIconSizes.small, color: s.muted),
           prefixIconConstraints:
-              const BoxConstraints(minWidth: 36, minHeight: 36),
+              const BoxConstraints(minWidth: AppControlSizes.rowMin, minHeight: AppControlSizes.rowMin),
           suffixIcon: controller.text.isEmpty
               ? null
               : IconButton(
@@ -738,7 +738,7 @@ class _InlineNameField extends StatelessWidget {
       onSubmitted: onSubmitted,
       style: context.text.titleSmall?.copyWith(
         fontWeight: FontWeight.w700,
-        height: 1.2,
+        height: AppLineHeights.heading,
       ),
       cursorColor: s.brandCyan,
       decoration: InputDecoration(
@@ -752,7 +752,7 @@ class _InlineNameField extends StatelessWidget {
           borderSide: BorderSide(color: Colors.transparent),
         ),
         focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: s.brandCyan, width: 1.4),
+          borderSide: BorderSide(color: s.brandCyan, width: AppBorderWidths.medium),
         ),
       ),
     );
@@ -791,15 +791,15 @@ class _FlagCheckbox extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 18,
-              height: 18,
+              width: AppIconSizes.regular,
+              height: AppIconSizes.regular,
               child: Checkbox(
                 value: value,
                 onChanged: (v) => onChanged(v ?? false),
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 activeColor: activeColor,
-                side: BorderSide(color: s.cardBorder, width: 1.4),
+                side: BorderSide(color: s.cardBorder, width: AppBorderWidths.medium),
               ),
             ),
             const SizedBox(width: AppSpacing.s6),

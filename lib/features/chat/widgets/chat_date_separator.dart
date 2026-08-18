@@ -35,7 +35,7 @@ class ChatDateSeparator extends StatelessWidget {
             vertical: AppSpacing.s5,
           ),
           decoration: BoxDecoration(
-            color: s.surface2.withValues(alpha: context.isDark ? 0.65 : 0.92),
+            color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSeparator)),
             borderRadius: AppRadius.pillR,
             border: Border.all(color: s.cardBorder),
           ),
@@ -45,7 +45,7 @@ class ChatDateSeparator extends StatelessWidget {
               color: s.muted,
               fontWeight: FontWeight.w700,
               fontSize: AppFontSizes.chipLabel,
-              letterSpacing: 1.0,
+              letterSpacing: AppLetterSpacing.microCaps,
             ),
           ),
         ),

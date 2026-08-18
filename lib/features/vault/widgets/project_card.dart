@@ -77,14 +77,14 @@ class ProjectCard extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: AppBoxSizes.cardTileLarge,
+                    height: AppBoxSizes.cardTileLarge,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: s.brandCyan.withValues(alpha: 0.12),
+                      color: s.brandCyan.withValues(alpha: AppAlphas.a12),
                       borderRadius: AppRadius.buttonR,
                       border: Border.all(
-                        color: s.brandCyan.withValues(alpha: 0.28),
+                        color: s.brandCyan.withValues(alpha: AppAlphas.a28),
                       ),
                     ),
                     child:
@@ -148,7 +148,7 @@ class ProjectCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (var i = 0; i < environments.length; i++) ...[
-                  if (i > 0) Divider(color: s.border, height: 1),
+                  if (i > 0) Divider(color: s.border, height: AppBorderWidths.hairline),
                   _EnvironmentRow(
                     env: environments[i],
                     onTap: () => onEnvTap(environments[i]),
@@ -298,20 +298,20 @@ class _StatusServerGlyph extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return SizedBox(
-      width: 42,
-      height: 42,
+      width: AppBoxSizes.cardTile,
+      height: AppBoxSizes.cardTile,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: AppBoxSizes.cardTile,
+            height: AppBoxSizes.cardTile,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Color.alphaBlend(tint.withValues(alpha: 0.12), s.surface3),
+              color: Color.alphaBlend(tint.withValues(alpha: AppAlphas.a12), s.surface3),
               borderRadius: AppRadius.buttonR,
               border: Border.all(
-                color: Color.alphaBlend(tint.withValues(alpha: 0.26), s.border),
+                color: Color.alphaBlend(tint.withValues(alpha: AppAlphas.a26), s.border),
               ),
             ),
             child: Icon(AppIcons.server, color: tint, size: AppIconSizes.bell),
@@ -321,12 +321,12 @@ class _StatusServerGlyph extends StatelessWidget {
               bottom: -2,
               end: -2,
               child: Container(
-                width: 12,
-                height: 12,
+                width: AppBoxSizes.badge,
+                height: AppBoxSizes.badge,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: s.success,
-                  border: Border.all(color: s.surface, width: 2),
+                  border: Border.all(color: s.surface, width: AppBorderWidths.ring),
                 ),
               ),
             )
@@ -335,8 +335,8 @@ class _StatusServerGlyph extends StatelessWidget {
               bottom: -3,
               end: -3,
               child: Container(
-                width: 16,
-                height: 16,
+                width: AppBoxSizes.glyphMini,
+                height: AppBoxSizes.glyphMini,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
@@ -368,17 +368,17 @@ class _SoftPill extends StatelessWidget {
         vertical: AppSpacing.s2,
       ),
       decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.14),
+        color: tone.withValues(alpha: AppAlphas.a14),
         borderRadius: AppRadius.pillR,
-        border: Border.all(color: tone.withValues(alpha: 0.30)),
+        border: Border.all(color: tone.withValues(alpha: AppAlphas.a30)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (dot) ...[
             Container(
-              width: 6,
-              height: 6,
+              width: AppControlSizes.dot,
+              height: AppControlSizes.dot,
               decoration: BoxDecoration(shape: BoxShape.circle, color: tone),
             ),
             const SizedBox(width: AppSpacing.s6),
@@ -398,9 +398,9 @@ class _SoftPill extends StatelessWidget {
               softWrap: false,
               style: TextStyle(
                 fontSize: AppFontSizes.chipLabel,
-                height: 1.2,
+                height: AppLineHeights.heading,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
+                letterSpacing: AppLetterSpacing.microCaps,
                 color: tone,
               ),
             ),
@@ -422,8 +422,8 @@ class _TypeGlyph extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      width: 22,
-      height: 22,
+      width: AppBoxSizes.glyphSmall,
+      height: AppBoxSizes.glyphSmall,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: s.surface3,

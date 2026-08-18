@@ -194,7 +194,7 @@ class _SectionHeader extends StatelessWidget {
         style: context.text.labelMedium?.copyWith(
           color: s.muted,
           fontWeight: FontWeight.w800,
-          letterSpacing: 0.4,
+          letterSpacing: AppLetterSpacing.label,
         ),
       ),
     );
@@ -228,7 +228,7 @@ class _DismissibleTile extends StatelessWidget {
       alignment: align,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s20),
       decoration: BoxDecoration(
-        color: s.danger.withValues(alpha: 0.14),
+        color: s.danger.withValues(alpha: AppAlphas.a14),
         borderRadius: AppRadius.cardR,
       ),
       child: Icon(AppIcons.trash, color: s.danger, size: AppIconSizes.action),
@@ -269,12 +269,12 @@ class _NotificationTile extends StatelessWidget {
             color: item.read
                 ? s.cardBg
                 : Color.alphaBlend(
-                    accent.color.withValues(alpha: 0.06), s.cardBg),
+                    accent.color.withValues(alpha: AppAlphas.a06), s.cardBg),
             borderRadius: AppRadius.cardR,
             border: Border.all(
               color: item.read
                   ? s.cardBorder
-                  : accent.color.withValues(alpha: 0.30),
+                  : accent.color.withValues(alpha: AppAlphas.a30),
             ),
           ),
           child: Row(

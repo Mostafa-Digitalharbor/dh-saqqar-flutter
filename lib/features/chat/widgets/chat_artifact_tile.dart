@@ -125,7 +125,7 @@ class ChatArtifactTile extends StatelessWidget {
           color: s.surface2,
           borderRadius: AppRadius.cardR,
           border: Border.all(
-            color: style.accent.withValues(alpha: 0.35),
+            color: style.accent.withValues(alpha: AppAlphas.a35),
           ),
         ),
         padding: const EdgeInsets.fromLTRB(
@@ -209,9 +209,9 @@ class _KindBadge extends StatelessWidget {
         vertical: AppSpacing.s2,
       ),
       decoration: BoxDecoration(
-        color: style.accent.withValues(alpha: 0.18),
+        color: style.accent.withValues(alpha: AppAlphas.a18),
         borderRadius: AppRadius.pillR,
-        border: Border.all(color: style.accent.withValues(alpha: 0.4)),
+        border: Border.all(color: style.accent.withValues(alpha: AppAlphas.a40)),
       ),
       child: Text(
         style.label,
@@ -219,7 +219,7 @@ class _KindBadge extends StatelessWidget {
           color: style.accent,
           fontSize: AppFontSizes.microCaps,
           fontWeight: FontWeight.w900,
-          letterSpacing: 0.8,
+          letterSpacing: AppLetterSpacing.capsWide,
         ),
       ),
     );

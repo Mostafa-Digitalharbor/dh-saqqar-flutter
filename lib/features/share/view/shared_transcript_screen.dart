@@ -106,9 +106,9 @@ class _ReadOnlyBadge extends StatelessWidget {
         vertical: AppSpacing.s4,
       ),
       decoration: BoxDecoration(
-        color: s.muted.withValues(alpha: 0.12),
+        color: s.muted.withValues(alpha: AppAlphas.a12),
         borderRadius: AppRadius.pillR,
-        border: Border.all(color: s.muted.withValues(alpha: 0.28)),
+        border: Border.all(color: s.muted.withValues(alpha: AppAlphas.a28)),
       ),
       child: Text(
         context.tr.readOnlyBadge,
@@ -116,7 +116,7 @@ class _ReadOnlyBadge extends StatelessWidget {
           color: s.muted,
           fontSize: AppFontSizes.chipLabel,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
+          letterSpacing: AppLetterSpacing.wide,
         ),
       ),
     );
@@ -145,7 +145,7 @@ class _TranscriptBody extends StatelessWidget {
     if (messages.isEmpty) {
       return Center(
         child: ResponsiveContent(
-          maxWidth: 560,
+          maxWidth: AppLayoutWidths.transcriptHeader,
           padding: const EdgeInsets.all(AppSpacing.s24),
           child: EmptyState(
             title: context.tr.sharedConversationTitle,
@@ -157,7 +157,7 @@ class _TranscriptBody extends StatelessWidget {
     }
 
     return ResponsiveContent(
-      maxWidth: 720,
+      maxWidth: AppLayoutWidths.transcript,
       child: LayoutBuilder(
         builder: (context, constraints) {
           // User bubbles clamp to 88% of the content width (spec §8.1); the
@@ -227,8 +227,8 @@ class _SharedMessage extends StatelessWidget {
               vertical: AppSpacing.s11,
             ),
             decoration: BoxDecoration(
-              color: s.brandCyan.withValues(alpha: context.isDark ? 0.18 : 0.10),
-              border: Border.all(color: s.brandCyan.withValues(alpha: 0.30)),
+              color: s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tint)),
+              border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a30)),
               borderRadius: AppRadius.userBubbleR,
             ),
             child: ChatMarkdown(data: message.content, isUser: true),

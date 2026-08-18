@@ -71,7 +71,7 @@ class _SocialButton extends StatelessWidget {
     final s = context.saqqar;
     final disabled = onPressed == null;
     final fillColor =
-        s.surface2.withValues(alpha: context.isDark ? 0.45 : 0.85);
+        s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSoft));
 
     return Semantics(
       button: true,
@@ -82,7 +82,7 @@ class _SocialButton extends StatelessWidget {
         child: TappableSurface(
           onTap: onPressed,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 48),
+            constraints: const BoxConstraints(minHeight: AppControlSizes.socialButtonMin),
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s16,
               vertical: AppSpacing.s8,
@@ -95,8 +95,8 @@ class _SocialButton extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(
-                  width: 22,
-                  height: 22,
+                  width: AppBoxSizes.glyphSmall,
+                  height: AppBoxSizes.glyphSmall,
                   child: Center(child: logo),
                 ),
                 Expanded(
@@ -131,8 +131,8 @@ class _GoogleGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const SizedBox(
-      width: 18,
-      height: 18,
+      width: AppIconSizes.regular,
+      height: AppIconSizes.regular,
       child: CustomPaint(painter: _GoogleLogoPainter()),
     );
   }

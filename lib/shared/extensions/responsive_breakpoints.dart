@@ -43,10 +43,33 @@ enum Breakpoint {
 /// function so widgets that already have the width in hand (e.g.
 /// inside a `LayoutBuilder`) can resolve without spinning up a
 /// `MediaQuery` lookup.
+/// The width boundaries [breakpointForWidth] splits on, in logical pixels.
+///
+/// Named because three bare numbers inside one `if`-ladder are exactly the
+/// kind of constant that gets copied: the responsive test harness sweeps
+/// device widths against these tiers, and a sweep that hardcodes its own
+/// 340 is testing a boundary the app may no longer have. Reading them from
+/// here means the harness and the app can only ever agree.
+class BreakpointWidths {
+  BreakpointWidths._();
+
+  /// Upper bound of [Breakpoint.tiny] — the 320-340 px slice of Android
+  /// that still ships in volume, plus the 1st-gen iPhone SE.
+  static const double tiny = 340;
+
+  /// Upper bound of [Breakpoint.compact] — mainstream phones in portrait.
+  static const double compact = 400;
+
+  /// Upper bound of [Breakpoint.regular]. Matches Material 3's own
+  /// compact window-size class boundary; anything above is a tablet or a
+  /// foldable's outer screen.
+  static const double regular = 600;
+}
+
 Breakpoint breakpointForWidth(double width) {
-  if (width <= 340) return Breakpoint.tiny;
-  if (width <= 400) return Breakpoint.compact;
-  if (width <= 600) return Breakpoint.regular;
+  if (width <= BreakpointWidths.tiny) return Breakpoint.tiny;
+  if (width <= BreakpointWidths.compact) return Breakpoint.compact;
+  if (width <= BreakpointWidths.regular) return Breakpoint.regular;
   return Breakpoint.wide;
 }
 

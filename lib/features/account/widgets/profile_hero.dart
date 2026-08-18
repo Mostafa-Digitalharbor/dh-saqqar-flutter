@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_gradients.dart';
@@ -107,8 +108,8 @@ class ProfileHero extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: context.text.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: -0.2,
-                                height: 1.15,
+                                letterSpacing: AppLetterSpacing.heading,
+                                height: AppLineHeights.display,
                               ),
                             ),
                           ),
@@ -210,18 +211,18 @@ class _Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return Container(
-      width: 68,
-      height: 68,
+      width: AppBoxSizes.profileAvatarRing,
+      height: AppBoxSizes.profileAvatarRing,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         // 0.10 was invisible against the light card. This reads as a halo in
         // both themes without competing with the gradient disc inside it.
-        color: s.brandCyan.withValues(alpha: context.isDark ? 0.18 : 0.16),
+        color: s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintAvatar)),
       ),
       child: Container(
-        width: 58,
-        height: 58,
+        width: AppBoxSizes.profileAvatar,
+        height: AppBoxSizes.profileAvatar,
         alignment: Alignment.center,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
@@ -230,10 +231,10 @@ class _Avatar extends StatelessWidget {
         child: Text(
           initial,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.onBrand,
             fontSize: AppFontSizes.avatarInitialLarge,
             fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
+            letterSpacing: AppLetterSpacing.wide,
           ),
         ),
       ),
@@ -245,7 +246,10 @@ class _Avatar extends StatelessWidget {
 class _Hairline extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
-      Container(height: 1, color: context.saqqar.cardBorder);
+      Container(
+        height: AppBorderWidths.hairline,
+        color: context.saqqar.cardBorder,
+      );
 }
 
 /// Web-parity meta line: "Joined 2026-05-18 · Last login 2026-05-18 22:39".
@@ -264,7 +268,7 @@ class _AccountMetaLine extends StatelessWidget {
     final style = context.text.labelSmall?.copyWith(
       color: s.muted,
       fontWeight: FontWeight.w500,
-      height: 1.4,
+      height: AppLineHeights.compact,
     );
 
     final joined = user.dateJoined;
@@ -285,7 +289,7 @@ class _AccountMetaLine extends StatelessWidget {
           child: Icon(
             AppIcons.clock,
             size: AppIconSizes.dense,
-            color: s.muted.withValues(alpha: 0.8),
+            color: s.muted.withValues(alpha: AppAlphas.a80),
           ),
         ),
         const SizedBox(width: AppSpacing.s6),
@@ -301,7 +305,7 @@ class _AccountMetaLine extends StatelessWidget {
                 if (i > 0)
                   Text('·',
                       style: style?.copyWith(
-                          color: s.muted.withValues(alpha: 0.7))),
+                          color: s.muted.withValues(alpha: AppAlphas.a70))),
                 Text(parts[i], style: style),
               ],
             ],

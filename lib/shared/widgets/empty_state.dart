@@ -81,7 +81,7 @@ class _DashedBorderPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     const dash = 6.0;
-    const gap = 4.0;
+    const gap = AppSpacing.s4;
     final rrect = RRect.fromRectAndRadius(
       Offset.zero & size,
       const Radius.circular(AppRadius.row),

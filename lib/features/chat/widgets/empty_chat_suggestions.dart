@@ -82,7 +82,7 @@ class EmptyChatSuggestions extends StatelessWidget {
                     style: context.text.headlineSmall?.copyWith(
                       color: s.text,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: -0.3,
+                      letterSpacing: AppLetterSpacing.displaySmall,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s6),
@@ -91,7 +91,7 @@ class EmptyChatSuggestions extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: context.text.bodyMedium?.copyWith(
                       color: s.muted,
-                      height: 1.35,
+                      height: AppLineHeights.label,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s22),
@@ -141,13 +141,13 @@ class _HeroIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 54,
-      height: 54,
+      width: AppBoxSizes.suggestionGlyph,
+      height: AppBoxSizes.suggestionGlyph,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: accent.withValues(alpha: 0.14),
-        border: Border.all(color: accent.withValues(alpha: 0.32), width: 1),
+        color: accent.withValues(alpha: AppAlphas.a14),
+        border: Border.all(color: accent.withValues(alpha: AppAlphas.a32), width: AppBorderWidths.hairline),
       ),
       child: Icon(
         AppIcons.message,
@@ -250,7 +250,7 @@ class _SuggestionCard extends StatelessWidget {
               style: context.text.bodyMedium?.copyWith(
                 color: s.text,
                 fontWeight: FontWeight.w800,
-                height: 1.25,
+                height: AppLineHeights.headingLoose,
                 fontSize: AppFontSizes.cardTitle,
               ),
             ),
@@ -260,7 +260,7 @@ class _SuggestionCard extends StatelessWidget {
               style: context.text.labelSmall?.copyWith(
                 color: s.muted,
                 fontSize: AppFontSizes.pillLabel,
-                height: 1.35,
+                height: AppLineHeights.label,
               ),
             ),
           ],

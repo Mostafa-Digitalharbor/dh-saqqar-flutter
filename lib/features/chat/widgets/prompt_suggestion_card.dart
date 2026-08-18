@@ -64,7 +64,7 @@ class _PromptSuggestionCardState extends State<PromptSuggestionCard> {
             widget.payload.note,
             style: context.text.bodySmall?.copyWith(
               color: s.muted,
-              height: 1.5,
+              height: AppLineHeights.body,
             ),
           ),
           const SizedBox(height: AppSpacing.s10),

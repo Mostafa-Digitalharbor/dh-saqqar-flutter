@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_sizes.dart';
 import '../../core/theme/saqqar_theme_extension.dart';
 
 /// Convenience accessors so widgets can read the design tokens with
@@ -17,6 +18,23 @@ extension SaqqarContextX on BuildContext {
   bool get isRtl => Directionality.of(this) == TextDirection.rtl;
 
   Locale get locale => Localizations.localeOf(this);
+
+  /// Resolves an [AlphaPair] against the active brightness.
+  ///
+  /// ```dart
+  /// color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
+  /// ```
+  ///
+  /// Exists so the brightness check lives in one place. Every glass surface
+  /// in the app used to inline its own `isDark ? 0.55 : 0.9`, and 54 of
+  /// those ternaries spelled 29 different pairs for what were mostly the
+  /// same few roles — see [AppAlphaPairs] for the full census.
+  double alpha(AlphaPair pair) => pair.resolve(isDark: isDark);
+
+  /// The 1 x 1 rect used as a degenerate fallback below. Not a design
+  /// token: it is the smallest legal source rect, deliberately not a
+  /// visible size.
+  static const double _fallbackOriginExtent = 1;
 
   /// Anchor rect for `share_plus`'s `sharePositionOrigin`.
   ///
@@ -38,8 +56,8 @@ extension SaqqarContextX on BuildContext {
     final size = MediaQuery.sizeOf(this);
     return Rect.fromCenter(
       center: Offset(size.width / 2, size.height / 2),
-      width: 1,
-      height: 1,
+      width: _fallbackOriginExtent,
+      height: _fallbackOriginExtent,
     );
   }
 }

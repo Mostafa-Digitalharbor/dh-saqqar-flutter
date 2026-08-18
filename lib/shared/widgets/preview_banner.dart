@@ -27,9 +27,9 @@ class PreviewBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.s10),
       decoration: BoxDecoration(
-        color: s.warning.withValues(alpha: 0.10),
+        color: s.warning.withValues(alpha: AppAlphas.a10),
         borderRadius: AppRadius.rowR,
-        border: Border.all(color: s.warning.withValues(alpha: 0.30)),
+        border: Border.all(color: s.warning.withValues(alpha: AppAlphas.a30)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,7 +40,7 @@ class PreviewBanner extends StatelessWidget {
             child: Text(
               text,
               style: context.text.labelSmall
-                  ?.copyWith(color: s.warning, height: 1.4),
+                  ?.copyWith(color: s.warning, height: AppLineHeights.compact),
             ),
           ),
         ],

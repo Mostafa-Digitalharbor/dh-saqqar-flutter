@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
@@ -173,7 +174,7 @@ class ChatComposer extends StatelessWidget {
           border: Border(top: BorderSide(color: s.border)),
         ),
         child: ResponsiveContent(
-          maxWidth: 980,
+          maxWidth: AppLayoutWidths.chatShell,
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.s12,
             AppSpacing.s10,
@@ -196,7 +197,7 @@ class ChatComposer extends StatelessWidget {
                   child: SizedBox(
                     // 72 chip + 10 top inset for the `×` that hangs off the
                     // corner + 6 slack, so nothing clips against the viewport.
-                    height: 88,
+                    height: AppControlSizes.attachmentStripHeight,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       // End inset gives the last chip's `×` room to render
@@ -279,7 +280,7 @@ class ChatComposer extends StatelessWidget {
                         textInputAction: TextInputAction.newline,
                         style: context.text.bodyMedium?.copyWith(
                           fontSize: AppFontSizes.reading,
-                          height: 1.4,
+                          height: AppLineHeights.compact,
                         ),
                         decoration: InputDecoration(
                           hintText: onStop != null
@@ -489,15 +490,15 @@ class _StagedAttachment extends StatelessWidget {
           child: Material(
             color: s.surface,
             shape: const CircleBorder(),
-            elevation: 1,
+            elevation: AppElevations.raised,
             child: InkWell(
               onTap: onRemove,
               customBorder: const CircleBorder(),
               child: Tooltip(
                 message: tooltip,
                 child: Container(
-                  width: 22,
-                  height: 22,
+                  width: AppBoxSizes.glyphSmall,
+                  height: AppBoxSizes.glyphSmall,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -600,17 +601,17 @@ class _ActiveModeBadgeState extends State<_ActiveModeBadge>
           // every point in the cycle.
           final ringAlpha = 0.25 + (0.45 * t);
           return Container(
-            width: 26,
-            height: 26,
+            width: AppBoxSizes.composerAction,
+            height: AppBoxSizes.composerAction,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: widget.color.withValues(alpha: 0.14),
+              color: widget.color.withValues(alpha: AppAlphas.a14),
               boxShadow: [
                 BoxShadow(
                   color: widget.color.withValues(alpha: ringAlpha),
-                  blurRadius: 6 + (6 * t),
-                  spreadRadius: 0.5 + (1.5 * t),
+                  blurRadius: AppShadowSizes.blurGlow + (AppShadowSizes.blurGlowRange * t),
+                  spreadRadius: AppShadowSizes.spreadHairline + (AppShadowSizes.spreadGlowRange * t),
                 ),
               ],
             ),
@@ -716,12 +717,12 @@ class _ComposerToggle extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: value
-              ? activeColor.withValues(alpha: 0.14)
+              ? activeColor.withValues(alpha: AppAlphas.a14)
               : Colors.transparent,
           borderRadius: AppRadius.pillR,
           border: Border.all(
             color: value
-                ? activeColor.withValues(alpha: 0.40)
+                ? activeColor.withValues(alpha: AppAlphas.a40)
                 : Colors.transparent,
           ),
         ),
@@ -764,19 +765,19 @@ class _MiniSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return SizedBox(
-      width: 26,
-      height: 14,
+      width: AppControlSizes.toggleWidth,
+      height: AppControlSizes.toggleHeight,
       child: Stack(
         children: [
           Container(
             decoration: BoxDecoration(
               color: value
-                  ? activeColor.withValues(alpha: 0.85)
+                  ? activeColor.withValues(alpha: AppAlphas.a85)
                   : s.surface3,
               borderRadius: AppRadius.pillR,
               border: Border.all(
                 color: value ? activeColor : s.cardBorder,
-                width: 1,
+                width: AppBorderWidths.hairline,
               ),
             ),
           ),
@@ -786,10 +787,10 @@ class _MiniSwitch extends StatelessWidget {
             top: 1,
             start: value ? 13 : 1,
             child: Container(
-              width: 10,
-              height: 10,
+              width: AppBoxSizes.dotLarge,
+              height: AppBoxSizes.dotLarge,
               decoration: BoxDecoration(
-                color: value ? Colors.white : s.muted,
+                color: value ? AppColors.onBrand : s.muted,
                 shape: BoxShape.circle,
               ),
             ),

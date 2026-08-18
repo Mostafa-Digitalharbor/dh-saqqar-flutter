@@ -70,9 +70,9 @@ class _NudgeRow extends StatelessWidget {
           AppSpacing.s10,
         ),
         decoration: BoxDecoration(
-          color: s.brandCyan.withValues(alpha: context.isDark ? 0.16 : 0.09),
+          color: s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintBanner)),
           border: Border(
-            bottom: BorderSide(color: s.brandCyan.withValues(alpha: 0.30)),
+            bottom: BorderSide(color: s.brandCyan.withValues(alpha: AppAlphas.a30)),
           ),
         ),
         child: SafeArea(

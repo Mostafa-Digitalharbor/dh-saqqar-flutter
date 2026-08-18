@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/format/byte_size.dart';
 import '../../../core/format/file_kind.dart';
@@ -36,6 +37,7 @@ import '../../../shared/widgets/fade_slide_in.dart';
 // tab-label suffixes, not as mini chips on a sheet item.
 // import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/offline_banner.dart';
+import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../../billing/view_model/saqqar_features_cubit.dart';
@@ -190,6 +192,24 @@ class _ChatScreenState extends State<ChatScreen>
   bool _recording = false;
   bool _transcribing = false;
   Duration _recordingElapsed = Duration.zero;
+  /// How often the recording timer ticks the mm:ss readout.
+  ///
+  /// Named because it is read in two places — the timer's period and the
+  /// amount added to [_recordingElapsed] on each fire. If those two ever
+  /// disagree the counter silently lies about how long the user has been
+  /// recording, and nothing else in the app would notice.
+  static const _recordingTick = Duration(milliseconds: 100);
+
+  /// Hard cap on a single recording. Auto-stops and falls through into
+  /// the same transcribe path a tap-stop uses.
+  static const _recordingMaxLength = Duration(seconds: 120);
+
+  /// Grace window after a send during which the optimistic running
+  /// marker is kept even if the snapshot still reads not-running — the
+  /// server has not picked up the new turn yet, and clearing here would
+  /// race the run to false before it ever flips true.
+  static const _sendGraceWindow = Duration(seconds: 12);
+
   Timer? _recordingTimer;
   Timer? _recordingHardStop;
   String? _recordingPath;
@@ -982,15 +1002,15 @@ class _ChatScreenState extends State<ChatScreen>
       _recordingPath = path;
     });
     // 100 ms tick gives smooth mm:ss readout without burning frames.
-    _recordingTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    _recordingTimer = Timer.periodic(_recordingTick, (_) {
       if (!mounted) return;
       setState(() {
-        _recordingElapsed += const Duration(milliseconds: 100);
+        _recordingElapsed += _recordingTick;
       });
     });
     // Hard cap at 120 s per spec. Auto-stop, surface the toast, then
     // fall through into the same transcribe path the tap-stop uses.
-    _recordingHardStop = Timer(const Duration(seconds: 120), () {
+    _recordingHardStop = Timer(_recordingMaxLength, () {
       if (!mounted || !_recording) return;
       _toast(context.tr.voiceMaxLength);
       unawaited(_stopRecording());
@@ -2320,9 +2340,9 @@ class _ChatScreenState extends State<ChatScreen>
                       tr.commandsHeader,
                       style: TextStyle(
                         fontSize: AppFontSizes.metaLine,
-                        height: 1.2,
+                        height: AppLineHeights.heading,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
+                        letterSpacing: AppLetterSpacing.capsWide,
                         color: s.muted,
                       ),
                     ),
@@ -2338,11 +2358,11 @@ class _ChatScreenState extends State<ChatScreen>
                           child: Row(
                             children: [
                               Container(
-                                width: 30,
-                                height: 30,
+                                width: AppBoxSizes.glyphCompact,
+                                height: AppBoxSizes.glyphCompact,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: s.brandCyan.withValues(alpha: 0.12),
+                                  color: s.brandCyan.withValues(alpha: AppAlphas.a12),
                                   borderRadius: AppRadius.buttonR,
                                 ),
                                 child: Icon(c.$1,
@@ -2870,7 +2890,7 @@ class _ChatScreenState extends State<ChatScreen>
       // it ever flips true.
       final sentAt = _lastSendAt;
       final inGrace = sentAt != null &&
-          DateTime.now().difference(sentAt) < const Duration(seconds: 12);
+          DateTime.now().difference(sentAt) < _sendGraceWindow;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final agents = context.read<RunningAgentsCubit>();
@@ -2909,14 +2929,14 @@ class _ChatScreenState extends State<ChatScreen>
 
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 0,
+        titleSpacing: AppSpacing.zero,
         // Slightly taller than Material's default (56 dp) so the
         // subtitle row inside [ChatAppBarTitle] can wrap to a second
         // line on tiny phones (320–360 px) when the env name + all
         // three flag badges (LIVE / READ-ONLY / AUTO) are present at
         // once. On a roomy screen the AppBar still renders at the
         // same effective height because the wrap stays on one line.
-        toolbarHeight: 64,
+        toolbarHeight: AppControlSizes.chatToolbarHeight,
         // Hamburger on the start side — toggles the custom sidebar
         // state. We don't use `Scaffold.openDrawer` anymore.
         leading: IconButton(
@@ -3176,7 +3196,7 @@ class _ChatScreenState extends State<ChatScreen>
                   _sidebarOpen = false;
                   _railOpen = false;
                 }),
-                child: Container(color: Colors.black.withValues(alpha: 0.55)),
+                child: Container(color: AppColors.scrimBase.withValues(alpha: AppAlphas.a55)),
               ),
             ),
           ),
@@ -3312,19 +3332,19 @@ class _ChatScreenState extends State<ChatScreen>
     // Six placeholder bubbles alternating user/assistant, varying widths
     // so it reads like a real conversation in shape.
     const layout = <({bool isUser, double width, int lines})>[
-      (isUser: false, width: 220, lines: 2),
-      (isUser: true, width: 180, lines: 1),
-      (isUser: false, width: 280, lines: 3),
-      (isUser: true, width: 200, lines: 1),
-      (isUser: false, width: 240, lines: 2),
-      (isUser: false, width: 260, lines: 2),
+      (isUser: false, width: AppSkeletonSizes.bubbleRegular, lines: 2),
+      (isUser: true, width: AppSkeletonSizes.bubbleShort, lines: 1),
+      (isUser: false, width: AppSkeletonSizes.bubbleWidest, lines: 3),
+      (isUser: true, width: AppSkeletonSizes.bubbleMedium, lines: 1),
+      (isUser: false, width: AppSkeletonSizes.bubbleWide, lines: 2),
+      (isUser: false, width: AppSkeletonSizes.bubbleWider, lines: 2),
     ];
     return ListView(
       padding: EdgeInsets.zero,
       children: [
         for (final row in layout)
           ResponsiveContent(
-            maxWidth: 760,
+            maxWidth: AppLayoutWidths.chatColumn,
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.s14,
               AppSpacing.s14,
@@ -3368,9 +3388,9 @@ class _ChatScreenState extends State<ChatScreen>
             bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
           child: DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.4,
-            maxChildSize: 0.92,
+            initialChildSize: AppFractions.searchSheetInitial,
+            minChildSize: AppFractions.searchSheetMin,
+            maxChildSize: AppFractions.searchSheetMax,
             expand: false,
             builder: (context, scrollController) {
               return StatefulBuilder(
@@ -3386,14 +3406,7 @@ class _ChatScreenState extends State<ChatScreen>
                   return Column(
                     children: [
                       const SizedBox(height: AppSpacing.s8),
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: s.surface3,
-                          borderRadius: AppRadius.pillR,
-                        ),
-                      ),
+                      const SheetDragHandle(),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
                           AppSpacing.s16,
@@ -3429,7 +3442,7 @@ class _ChatScreenState extends State<ChatScreen>
                           ],
                         ),
                       ),
-                      Divider(color: s.border, height: 1),
+                      Divider(color: s.border, height: AppBorderWidths.hairline),
                       Expanded(
                         child: q.isEmpty
                             ? Center(
@@ -3454,9 +3467,9 @@ class _ChatScreenState extends State<ChatScreen>
                                     itemCount: hits.length,
                                     separatorBuilder: (_, __) => Divider(
                                       color: s.border,
-                                      height: 1,
-                                      indent: 16,
-                                      endIndent: 16,
+                                      height: AppBorderWidths.hairline,
+                                      indent: AppSpacing.s16,
+                                      endIndent: AppSpacing.s16,
                                     ),
                                     itemBuilder: (context, i) {
                                       final m = hits[i];
@@ -3647,13 +3660,13 @@ class _ChatScreenState extends State<ChatScreen>
       // scrolling never hits a blank gap while the builder catches up.
       // Bumped from the default 250 dp — chat bubbles are taller than
       // average list rows because of the markdown body.
-      cacheExtent: 1500,
+      cacheExtent: AppScrollTuning.cacheExtent,
       itemBuilder: (context, index) {
         // Retry pill — the first item, and present only while a page has
         // failed. See [_LoadEarlierHeader] for why it is an error state only.
         if (headerCount == 1 && index == 0) {
           return ResponsiveContent(
-            maxWidth: 760,
+            maxWidth: AppLayoutWidths.chatColumn,
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.s14,
               AppSpacing.s12,
@@ -3674,7 +3687,7 @@ class _ChatScreenState extends State<ChatScreen>
           final approvalIdx = index - firstApprovalIndex;
           final approval = pendingApprovals[approvalIdx];
           return ResponsiveContent(
-            maxWidth: 760,
+            maxWidth: AppLayoutWidths.chatColumn,
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.s14,
               AppSpacing.s8,
@@ -3712,7 +3725,7 @@ class _ChatScreenState extends State<ChatScreen>
           final firstOfGroup = previousMessage == null ||
               previousMessage.role != DemoMessageRole.assistant;
           return ResponsiveContent(
-            maxWidth: 760,
+            maxWidth: AppLayoutWidths.chatColumn,
             padding: EdgeInsets.fromLTRB(
               AppSpacing.s14,
               firstOfGroup ? AppSpacing.s14 : AppSpacing.s2,
@@ -3791,7 +3804,7 @@ class _ChatScreenState extends State<ChatScreen>
       final isFirstOfGroup = previousLast == null ||
           previousLast.role != message.role;
       return ResponsiveContent(
-        maxWidth: 760,
+        maxWidth: AppLayoutWidths.chatColumn,
         padding: EdgeInsets.fromLTRB(
           AppSpacing.s14,
           isFirstOfGroup && !showDateSeparator ? AppSpacing.s14 : AppSpacing.s2,
@@ -3837,7 +3850,7 @@ class _ChatScreenState extends State<ChatScreen>
       ],
     );
     return ResponsiveContent(
-      maxWidth: 760,
+      maxWidth: AppLayoutWidths.chatColumn,
       padding: EdgeInsets.fromLTRB(
         AppSpacing.s14,
         showDateSeparator ? AppSpacing.s2 : AppSpacing.s14,
@@ -4043,7 +4056,7 @@ class _InboxBellTrigger extends StatelessWidget {
     final s = context.saqqar;
     final shape = RoundedRectangleBorder(
       borderRadius: AppRadius.smallR,
-      side: BorderSide(color: s.border, width: 1),
+      side: BorderSide(color: s.border, width: AppBorderWidths.hairline),
     );
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: AppSpacing.s4),
@@ -4059,8 +4072,8 @@ class _InboxBellTrigger extends StatelessWidget {
           onTap: onTap,
           customBorder: shape,
           child: SizedBox(
-            width: 38,
-            height: 38,
+            width: AppControlSizes.iconBox,
+            height: AppControlSizes.iconBox,
             child: Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
@@ -4072,21 +4085,21 @@ class _InboxBellTrigger extends StatelessWidget {
                     end: 4,
                     child: Container(
                       constraints:
-                          const BoxConstraints(minWidth: 16, minHeight: 16),
+                          const BoxConstraints(minWidth: AppControlSizes.badgeMin, minHeight: AppControlSizes.badgeMin),
                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: s.warning,
                         borderRadius: AppRadius.pillR,
-                        border: Border.all(color: s.surface, width: 1.5),
+                        border: Border.all(color: s.surface, width: AppBorderWidths.thick),
                       ),
                       child: Text(
                         badgeCount > 99 ? '99+' : '$badgeCount',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.onBrand,
                           fontSize: AppFontSizes.microCaps,
                           fontWeight: FontWeight.w900,
-                          height: 1.0,
+                          height: AppLineHeights.flush,
                         ),
                       ),
                     ),

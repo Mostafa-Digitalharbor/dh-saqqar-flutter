@@ -92,7 +92,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
               if (snap.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: CircularProgressIndicator(
-                      strokeWidth: 2.4, color: s.muted),
+                      strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
                 );
               }
               // Errors MUST be caught before the empty check. `snap.data` is
@@ -222,7 +222,7 @@ class _DeviceRowTile extends StatelessWidget {
             SizedBox(
               width: AppControlSizes.spinnerRow,
               height: AppControlSizes.spinnerRow,
-              child: CircularProgressIndicator(strokeWidth: 2, color: s.muted),
+              child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerThin, color: s.muted),
             )
           else
             IconButton(

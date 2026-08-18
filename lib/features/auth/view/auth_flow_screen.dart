@@ -117,7 +117,7 @@ class _AuthFlowView extends StatelessWidget {
                           AppSpacing.s24,
                         ),
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 440),
+                          constraints: const BoxConstraints(maxWidth: AppLayoutWidths.authCard),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -193,12 +193,12 @@ class _AuthLogoCard extends StatelessWidget {
         vertical: AppSpacing.s24,
       ),
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.isDark ? 0.45 : 0.55),
+        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.splashFill)),
         borderRadius: AppRadius.heroPlateR,
         border: Border.all(color: s.cardBorder),
         boxShadow: s.glassShadow,
       ),
-      child: const SaqqarLogo(height: 40),
+      child: const SaqqarLogo(height: AppLogoSizes.hero),
     );
   }
 }
@@ -271,7 +271,7 @@ class _EmailChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s12, AppSpacing.s10, AppSpacing.s8, AppSpacing.s10),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.isDark ? 0.5 : 0.85),
+        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
         borderRadius: AppRadius.buttonR,
         border: Border.all(color: s.cardBorder),
       ),
@@ -320,10 +320,14 @@ class _ResendRowState extends State<_ResendRow> {
     _start();
   }
 
+  /// One second per tick of the resend countdown. The label counts down in
+  /// whole seconds, so a finer tick would just burn rebuilds.
+  static const _tick = Duration(seconds: 1);
+
   void _start() {
     _timer?.cancel();
     setState(() => _remaining = _cooldown);
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    _timer = Timer.periodic(_tick, (t) {
       if (!mounted) return;
       if (_remaining <= 1) {
         t.cancel();
@@ -762,7 +766,7 @@ class _PasswordBodyState extends State<_PasswordBody> {
                 style: context.text.labelSmall?.copyWith(
                   color: context.saqqar.muted,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
+                  letterSpacing: AppLetterSpacing.caps,
                 ),
               ),
             ),

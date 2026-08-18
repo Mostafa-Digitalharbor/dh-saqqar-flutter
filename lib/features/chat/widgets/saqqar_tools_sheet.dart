@@ -8,6 +8,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../data/chat_features.dart';
 import 'chat_sheet.dart';
 import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/widgets/sheet_action_row.dart';
 
 /// What the user picked out of the Saqqar tools sheet. Toggles are NOT in
 /// here — they flip in place and report through the sheet's callbacks, so
@@ -113,7 +114,10 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
 
     final modes = <Widget>[
       if (f.promptBank)
-        _ToolRow(
+        SheetActionRow(
+          tint: context.saqqar.brandCyan,
+          glyphColor: context.saqqar.brandCyan,
+          showChevron: true,
           icon: AppIcons.sparkles,
           label: tr.toolsPromptBank,
           onTap: () => Navigator.of(context).pop(SaqqarTool.promptBank),
@@ -146,24 +150,36 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
     // three read the same on both clients.
     final odooTools = <Widget>[
       if (f.healthRadar)
-        _ToolRow(
+        SheetActionRow(
+          tint: context.saqqar.brandCyan,
+          glyphColor: context.saqqar.brandCyan,
+          showChevron: true,
           icon: AppIcons.shieldCheck,
           label: tr.toolsHealthRadar,
           onTap: () => Navigator.of(context).pop(SaqqarTool.healthRadar),
         ),
       if (f.whatIf)
-        _ToolRow(
+        SheetActionRow(
+          tint: context.saqqar.brandCyan,
+          glyphColor: context.saqqar.brandCyan,
+          showChevron: true,
           icon: AppIcons.sparkles,
           label: tr.toolsWhatIf,
           onTap: () => Navigator.of(context).pop(SaqqarTool.whatIf),
         ),
       if (f.businessPulse)
-        _ToolRow(
+        SheetActionRow(
+          tint: context.saqqar.brandCyan,
+          glyphColor: context.saqqar.brandCyan,
+          showChevron: true,
           icon: AppIcons.bolt,
           label: tr.toolsBusinessPulse,
           onTap: () => Navigator.of(context).pop(SaqqarTool.businessPulse),
         ),
-      _ToolRow(
+      SheetActionRow(
+        tint: context.saqqar.brandCyan,
+        glyphColor: context.saqqar.brandCyan,
+        showChevron: true,
         icon: AppIcons.slash,
         label: tr.commands,
         onTap: () => Navigator.of(context).pop(SaqqarTool.commands),
@@ -171,17 +187,26 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
     ];
 
     final connections = <Widget>[
-      _ToolRow(
+      SheetActionRow(
+        tint: context.saqqar.brandCyan,
+        glyphColor: context.saqqar.brandCyan,
+        showChevron: true,
         icon: AppIcons.database,
         label: tr.toolsMyDatabase,
         onTap: () => Navigator.of(context).pop(SaqqarTool.myDatabase),
       ),
-      _ToolRow(
+      SheetActionRow(
+        tint: context.saqqar.brandCyan,
+        glyphColor: context.saqqar.brandCyan,
+        showChevron: true,
         icon: AppIcons.grid,
         label: tr.appsTitle,
         onTap: () => Navigator.of(context).pop(SaqqarTool.apps),
       ),
-      _ToolRow(
+      SheetActionRow(
+        tint: context.saqqar.brandCyan,
+        glyphColor: context.saqqar.brandCyan,
+        showChevron: true,
         icon: AppIcons.projects,
         label: tr.credentialVault,
         onTap: () => Navigator.of(context).pop(SaqqarTool.credentialVault),
@@ -190,7 +215,10 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
       // ticket reaches into the bound database the same way the other rows
       // here do, and because it is the one row that leaves the chat.
       if (f.voiceSupport)
-        _ToolRow(
+        SheetActionRow(
+          tint: context.saqqar.brandCyan,
+          glyphColor: context.saqqar.brandCyan,
+          showChevron: true,
           icon: AppIcons.shieldAlert,
           label: tr.toolsVoiceSupport,
           onTap: () => Navigator.of(context).pop(SaqqarTool.voiceSupport),
@@ -200,7 +228,10 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
     return ChatSheet(
       title: tr.toolsTitle,
       children: [
-        _ToolRow(
+        SheetActionRow(
+          tint: context.saqqar.brandCyan,
+          glyphColor: context.saqqar.brandCyan,
+          showChevron: true,
           icon: AppIcons.attach,
           label: tr.toolsUploadFile,
           onTap: () => Navigator.of(context).pop(SaqqarTool.uploadFile),
@@ -219,7 +250,7 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
                 tr.toolsReadonlyNote,
                 style: context.text.labelSmall?.copyWith(
                   color: context.saqqar.muted,
-                  height: 1.4,
+                  height: AppLineHeights.compact,
                 ),
               ),
             ),
@@ -245,58 +276,12 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
           style: context.text.labelSmall?.copyWith(
             color: context.saqqar.muted,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
+            letterSpacing: AppLetterSpacing.capsWide,
           ),
         ),
       ),
       ...rows,
     ];
-  }
-}
-
-class _ToolRow extends StatelessWidget {
-  const _ToolRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return TappableSurface(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s6,
-          vertical: AppSpacing.s12,
-        ),
-        child: Row(
-          children: [
-            _ToolGlyph(icon: icon),
-            const SizedBox(width: AppSpacing.s14),
-            Expanded(
-              child: Text(
-                label,
-                style: context.text.bodyMedium?.copyWith(
-                  color: s.text,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Icon(
-              context.isRtl ? AppIcons.chevronLeft : AppIcons.chevronRight,
-              size: AppIconSizes.small,
-              color: s.muted,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -352,7 +337,7 @@ class _ToggleRow extends StatelessWidget {
                       sub,
                       style: context.text.bodySmall?.copyWith(
                         color: s.muted,
-                        height: 1.3,
+                        height: AppLineHeights.snug,
                       ),
                     ),
                   ],
@@ -379,12 +364,12 @@ class _ToolGlyph extends StatelessWidget {
     final s = context.saqqar;
     final accent = active ? s.brandPurple : s.brandCyan;
     return Container(
-      width: 34,
-      height: 34,
+      width: AppBoxSizes.sheetRow,
+      height: AppBoxSizes.sheetRow,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: accent.withValues(alpha: 0.10),
+        color: accent.withValues(alpha: AppAlphas.a10),
       ),
       child: Icon(icon, size: AppIconSizes.regular, color: accent),
     );

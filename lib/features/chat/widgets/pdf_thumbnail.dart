@@ -198,7 +198,7 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
         key: const ValueKey('loading'),
         width: widget.width,
         height: widget.height,
-        radius: 0,
+        radius: AppRadius.none,
       );
     } else if (_bytes == null) {
       child = KeyedSubtree(
