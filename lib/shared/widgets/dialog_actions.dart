@@ -10,8 +10,9 @@ import '../../core/theme/app_sizes.dart';
 /// surface, visibly on a 320 px phone, and sooner in Arabic or at 1.3× text
 /// where the same labels are longer.
 ///
-/// [ConfirmDialog], [DeleteApprovalConfirmDialog] and [LiveEnvWarningDialog]
-/// each had the correct `Expanded` + gap + `Expanded` by hand;
+/// [ConfirmDialog], [LiveEnvWarningDialog] and the since-deleted
+/// delete-approval confirm dialog each had the correct `Expanded` + gap +
+/// `Expanded` by hand;
 /// [RenameConversationDialog] did not, and overflowed by 14 px at 320×568
 /// (found by `overlay_responsive_sweep_test.dart`, 2026-08-04). Four copies of
 /// a layout rule is three chances to get it wrong, so it lives here now.

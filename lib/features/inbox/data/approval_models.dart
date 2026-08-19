@@ -225,9 +225,9 @@ class Approval extends Equatable {
       modelLabelAr:
           ml is Map ? ml[UiStrings.localeArabicCode] as String? : null,
       recordCount: (json['record_count'] as num?)?.toInt(),
-      // Non-String (or blank) means "the server didn't tell us" — the dialog
-      // then falls back to the locale-built phrases rather than requiring the
-      // user to type an empty string, which would gate the delete forever.
+      // Non-String (or blank) means "the server didn't tell us", and is
+      // normalized to null so `decide` omits the key entirely rather than
+      // posting an empty confirmation the server would reject anyway.
       confirmPhrase:
           phrase is String && phrase.trim().isNotEmpty ? phrase.trim() : null,
       batchScoped: payload['batch_scope'] == true,
