@@ -22,6 +22,20 @@ default_platform(:ios)
 # also mint a distribution certificate on its own, but it does not export
 # the private key, so the next run would mint another and burn through the
 # team's three-certificate limit — hence importing a fixed one.
+#
+# The other half of that bargain lives in Runner.xcodeproj: every Release
+# configuration now pins `CODE_SIGN_IDENTITY = "Apple Distribution"`. Xcode's
+# default for an automatically-signed target is "Apple Development", and it
+# applies to the ARCHIVE as much as to a debug run — so the archive asked for
+# an *iOS App Development* profile, found no development certificate in the
+# runner's throwaway keychain, and had `-allowProvisioningUpdates` mint one.
+# A fresh VM every run means a fresh certificate every release: eleven of them
+# in three days, ending on v1.2.17 with
+#   "Your account has reached the maximum number of certificates"
+# and `** ARCHIVE FAILED **` (exit 65) across all four targets. With the
+# identity pinned, the archive signs with the .p12 imported above and CI never
+# asks Apple for a development certificate at all. Debug and Profile still say
+# "Apple Development" — that is what a developer on a real Mac signs with.
 platform :ios do
   desc "Build a release IPA and upload it to TestFlight"
   lane :beta do

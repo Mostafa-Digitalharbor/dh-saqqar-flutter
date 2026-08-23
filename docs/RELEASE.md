@@ -164,6 +164,22 @@ carried is the one distribution certificate, because
 private key, so letting it do so would burn the team's three-certificate limit
 one CI run at a time.
 
+Automatic signing alone is not enough to hold that line. Xcode's default
+identity for an automatically-signed target is `Apple Development`, and it
+applies to the **archive**, not just to running on a device — so `xcodebuild
+archive` went looking for an *iOS App Development* profile, found no
+development certificate in the runner's throwaway keychain, and quietly had
+`-allowProvisioningUpdates` create one. Every release burned a fresh
+certificate on a fresh VM; eleven accumulated in three days and v1.2.17 died on
+"Your account has reached the maximum number of certificates" before it ever
+reached the upload. Every **Release** configuration in `Runner.xcodeproj`
+therefore pins `CODE_SIGN_IDENTITY = "Apple Distribution"`, so the archive
+signs with the `.p12` that is already imported. Debug and Profile keep
+`Apple Development`. If that pin is ever dropped, the failure comes back as an
+archive error listing all four targets, and the fix is to revoke the
+API-created development certificates at
+`developer.apple.com` → Certificates before re-running.
+
 ### Shared
 
 | Secret | Notes |
