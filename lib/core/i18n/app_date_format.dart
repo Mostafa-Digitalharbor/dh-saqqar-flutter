@@ -22,16 +22,42 @@ import 'app_localizations.dart';
 /// ## Digits
 ///
 /// Arabic renders WESTERN digits (`18 مايو 2026`, not `١٨ مايو ٢٠٢٦`) — the
-/// month and meridiem localize, the numerals don't. That's CLDR's own
-/// default for `ar` and `ar_SA`: only `ar_EG` selects Arabic-Indic. It also
-/// matches the app-wide convention `compactCount` documents, and the Gulf
-/// market this ships to.
+/// month and meridiem localize, the numerals don't. It matches the app-wide
+/// convention `compactCount` documents, the Gulf market this ships to, and
+/// every one of the 1,100+ Arabic strings in `app_strings.dart`.
 ///
 /// So don't "fix" it by forcing an Arabic-Indic numbering system — the whole
-/// app would have to move together, and the market doesn't want it. This
-/// paragraph exists because the doc here used to CLAIM Arabic-Indic output
-/// while the code always produced Western, which sent a reviewer hunting a
-/// bug that was never there.
+/// app would have to move together, and the market doesn't want it.
+///
+/// ### Why [_western] exists
+///
+/// That paragraph used to end by saying the code "always produced Western"
+/// and warning a reviewer off a bug that was never there. The warning was
+/// wrong, and it cost this app a visible defect for as long as it stood:
+/// **the code produced Arabic-Indic**, and had been doing so on every
+/// Arabic device.
+///
+/// The claim was right about CLDR and wrong about this app. Raw ICU — what
+/// you get from `initializeDateFormatting()` — does resolve `ar` and
+/// `ar_SA` to Western digits, and a probe written that way agrees with the
+/// paragraph. But this app never calls it: `flutter_localizations` installs
+/// the date symbols instead, and **its** Arabic symbols carry the
+/// Arabic-Indic numbering system. So a test that set up `intl` itself
+/// confirmed the doc, while the running app disagreed with it.
+///
+/// The mixture reached one screen at a time. A conversation row rendered
+///
+/// ```text
+/// ٣٠ يوليو        ← this file, via flutter_localizations' symbols
+/// منذ 17 س        ← this file, via NumberFormat  (Western)
+/// آخر 7 أيام      ← app_strings.dart             (Western)
+/// ```
+///
+/// — two digit systems from three sources, and the first two from the same
+/// method a few lines apart.
+///
+/// [_western] settles it at the one choke point every rendered date already
+/// passes through, which is the reason this class exists at all.
 class AppDateFormat {
   AppDateFormat._();
 
@@ -53,6 +79,44 @@ class AppDateFormat {
   static final _dateMMMd = <String, DateFormat>{};
   static final _decimal = <String, NumberFormat>{};
 
+  /// Rewrites Arabic-Indic digits to Western ones, leaving every other
+  /// character alone.
+  ///
+  /// Applied to formatter OUTPUT rather than by choosing a different locale,
+  /// because the numbering system here does not come from the locale we
+  /// pass: `flutter_localizations` supplies the symbols, and its `ar` set is
+  /// Arabic-Indic no matter what string reaches [DateFormat]. Passing
+  /// `'ar_SA'` would change the month names and not the digits.
+  ///
+  /// Also maps the Arabic decimal separator (U+066B) and thousands
+  /// separator (U+066C), which travel with those digits: a formatter that
+  /// emits `٠١٢` emits `٬` between groups, and leaving those behind would
+  /// turn one mixed string into another.
+  ///
+  /// Cheap enough to run unconditionally — it is a single scan, and every
+  /// caller is already paying for an ICU format. Running it for English too
+  /// keeps the two paths identical, so an English-only test still exercises
+  /// the line an Arabic user depends on.
+  static String _western(String s) {
+    if (!s.contains(_easternDigits)) return s;
+    final out = StringBuffer();
+    for (final rune in s.runes) {
+      if (rune >= 0x0660 && rune <= 0x0669) {
+        out.writeCharCode(0x30 + (rune - 0x0660));
+      } else if (rune == 0x066B) {
+        out.write('.');
+      } else if (rune == 0x066C) {
+        out.write(',');
+      } else {
+        out.writeCharCode(rune);
+      }
+    }
+    return out.toString();
+  }
+
+  /// Arabic-Indic digits and the two separators that travel with them.
+  static final _easternDigits = RegExp(r'[٠-٩٫٬]');
+
   static DateFormat _jm(String loc) =>
       _timeJm[loc] ??= DateFormat.jm(loc);
   static DateFormat _hm(String loc) =>
@@ -64,18 +128,18 @@ class AppDateFormat {
   static NumberFormat _decimalFor(String loc) =>
       _decimal[loc] ??= NumberFormat.decimalPattern(loc);
 
-  /// "11:42 AM" / "١١:٤٢ ص". When [twentyFour] is true, renders as
+  /// "11:42 AM" / "11:42 ص". When [twentyFour] is true, renders as
   /// "11:42" without the meridiem.
   static String time(BuildContext context, DateTime when,
       {bool twentyFour = false}) {
     final loc = _locale(context);
     final pattern = twentyFour ? _hm(loc) : _jm(loc);
-    return pattern.format(when.toLocal());
+    return _western(pattern.format(when.toLocal()));
   }
 
-  /// "May 18, 2026" / "١٨ مايو ٢٠٢٦".
+  /// "May 18, 2026" / "18 مايو 2026".
   static String date(BuildContext context, DateTime when) {
-    return _yMMMd(_locale(context)).format(when.toLocal());
+    return _western(_yMMMd(_locale(context)).format(when.toLocal()));
   }
 
   /// "May 18, 2026 · 11:42 AM".
@@ -84,7 +148,7 @@ class AppDateFormat {
   }
 
   /// Web-parity full timestamp: "May 18, 2026 at 06:24 PM" /
-  /// "١٨ مايو ٢٠٢٦ في ٠٦:٢٤ م". Uses a natural-language connector
+  /// "18 مايو 2026 في 06:24 م". Uses a natural-language connector
   /// ("at" / "في") instead of the middle-dot — read better when shown
   /// under a chat bubble as the message's authoritative timestamp.
   static String fullDateTime(BuildContext context, DateTime when) {
@@ -115,9 +179,9 @@ class AppDateFormat {
     final loc = _locale(context);
     // Same-year dates drop the year — it's redundant and costs width on
     // the 320 px tier where this pill is centred.
-    return stamp.year == today.year
+    return _western(stamp.year == today.year
         ? _mMMd(loc).format(stamp)
-        : _yMMMd(loc).format(stamp);
+        : _yMMMd(loc).format(stamp));
   }
 
   /// Human relative-time. Buckets:
@@ -146,15 +210,18 @@ class AppDateFormat {
     final tr = context.tr;
     final loc = _locale(context);
     final n = _decimalFor(loc);
+    String num(int v) => _western(n.format(v));
 
     if (delta.inSeconds < 60) return tr.now;
-    if (delta.inMinutes < 60) return tr.relativeMinutesAgo(n.format(delta.inMinutes));
-    if (delta.inHours < 24) return tr.relativeHoursAgo(n.format(delta.inHours));
+    if (delta.inMinutes < 60) return tr.relativeMinutesAgo(num(delta.inMinutes));
+    if (delta.inHours < 24) return tr.relativeHoursAgo(num(delta.inHours));
     if (delta.inHours < 48) return tr.dateYesterday;
-    if (delta.inDays < 7) return tr.relativeDaysAgo(n.format(delta.inDays));
+    if (delta.inDays < 7) {
+      return tr.relativeDaysAgo(num(delta.inDays), delta.inDays);
+    }
     final local = when.toLocal();
-    return local.year == now.year
+    return _western(local.year == now.year
         ? _mMMd(loc).format(local)
-        : _yMMMd(loc).format(local);
+        : _yMMMd(loc).format(local));
   }
 }

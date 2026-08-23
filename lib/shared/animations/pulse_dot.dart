@@ -46,7 +46,7 @@ class _PulseDotState extends State<PulseDot>
     return FadeTransition(
       opacity: Tween<double>(
         begin: 0.35,
-        end: 1,
+        end: AppSpacing.s1,
       ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut)),
       child: _staticDot(),
     );

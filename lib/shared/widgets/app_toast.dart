@@ -139,7 +139,7 @@ class _ToastContent extends StatelessWidget {
               BoxShadow(
                 color: s.shadowBase.withValues(alpha: AppAlphas.a35),
                 blurRadius: AppShadowSizes.blurCard,
-                offset: const Offset(0, 8),
+                offset: const Offset(0, AppShadowSizes.dropCard),
               ),
             ],
           ),

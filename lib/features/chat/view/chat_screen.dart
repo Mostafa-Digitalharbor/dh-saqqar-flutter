@@ -1,6 +1,5 @@
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -9,19 +8,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:record/record.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/ui_strings.dart';
-import '../../../core/format/byte_size.dart';
 import '../../../core/format/file_kind.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/i18n/app_strings.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/error/app_failure.dart';
@@ -37,18 +32,18 @@ import '../../../shared/widgets/fade_slide_in.dart';
 // tab-label suffixes, not as mini chips on a sheet item.
 // import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/offline_banner.dart';
-import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../../billing/view_model/saqqar_features_cubit.dart';
 import '../../data_api/data/odoo_data_api.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import '../view_model/task_prep_cubit.dart';
 import '../view_model/earlier_paging.dart';
 import '../data/chat_features.dart';
 import '../data/saqqar_tools_api.dart';
 import '../data/chat_timeline.dart';
 import '../data/interactive_cards.dart';
+import '../data/approval_adapter.dart';
 import '../data/message_adapter.dart';
 import '../data/message_visibility.dart';
 import '../data/live_env_ack_service.dart';
@@ -57,7 +52,6 @@ import '../view_model/running_agents_cubit.dart';
 import '../data/tool_status.dart';
 import '../widgets/widgets.dart';
 import 'attachment_viewer_screen.dart';
-import '../../conversations/data/attachment_models.dart' as api;
 import '../../conversations/data/conversation_models.dart' as api;
 import '../../conversations/data/conversations_repository.dart';
 import '../../conversations/view_model/conversations_cubit.dart';
@@ -69,7 +63,11 @@ import '../../vault/data/projects_api.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import '../../vault/widgets/project_detail_sheet.dart';
 import '../view_model/chat_cubit.dart';
+import '../view_model/chat_reveal_window.dart';
+import '../view_model/staged_file.dart';
 import '../view_model/chat_state.dart';
+import '../view_model/attachment_staging.dart';
+import '../view_model/voice_note_recorder.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 
 /// The chat screen. Owns the conversation state (messages, active credential,
@@ -91,12 +89,12 @@ class _ChatScreenState extends State<ChatScreen>
   final _composer = TextEditingController();
   final _composerFocus = FocusNode();
   final _scroll = ScrollController();
-  late List<DemoMessage> _messages;
+  late List<ChatMessage> _messages;
 
   /// Snapshot of the messages currently rendered in the lane — cached each
   /// build so the AppBar's in-conversation search sheet can read them from
   /// a button callback (where `context.watch` isn't valid).
-  List<DemoMessage> _searchableMessages = const [];
+  List<ChatMessage> _searchableMessages = const [];
 
   /// In-memory cache of the last scroll offset per conversation id so
   /// jumping out (Conversations tab, another chat) and back lands the
@@ -144,19 +142,20 @@ class _ChatScreenState extends State<ChatScreen>
   bool _sidebarOpen = false;
   bool _railOpen = false;
 
-  /// Currently staged attachments. Non-empty when the user has picked
-  /// one or more files via the paperclip OR received a share-intent
-  /// hand-off from another app. Each entry renders as its own chip in
-  /// the composer and Send becomes enabled even on empty text.
+  /// Currently staged files. Non-empty when the user has picked one or more
+  /// via the paperclip OR received a share-intent hand-off from another app.
+  /// Each entry renders as its own chip in the composer, and Send becomes
+  /// enabled even on empty text.
   ///
-  /// Stays in sync with [_pendingFiles] by index — `_attachments[i]` is
-  /// the display metadata for `_pendingFiles[i]`. The two lists exist
-  /// because chips only need the metadata, but uploads need the actual
-  /// `File` on disk and the deferred-upload path in
-  /// `_sendAsNewConversation` doesn't have the `File` handy from the
-  /// chip alone.
-  final List<DemoAttachment> _attachments = [];
-  final List<File> _pendingFiles = [];
+  /// ONE list, of [StagedFile] — chip and file together. This used to be two
+  /// lists "kept in sync by index", which is a rule nothing enforced: see
+  /// [StagedFile] for what that cost at each call site.
+  final List<StagedFile> _staged = [];
+
+  /// The chips, for the composer. Derived, so it cannot fall out of step
+  /// with the files the way a second stored list could.
+  List<ChatAttachment> get _attachmentChips =>
+      [for (final s in _staged) s.chip];
 
   bool _showScrollDown = false;
   bool _isThinking = false;
@@ -182,27 +181,14 @@ class _ChatScreenState extends State<ChatScreen>
   /// (b) the user fires another Send.
   bool _localStopOverride = false;
 
-  // ── Voice recording state ───────────────────────────────────────────
-  // Per SAQQAR_MOBILE_VOICE.md: the composer text field is replaced
-  // with a recording overlay (waveform + timer + stop / discard) while
-  // [_recording] is true. After stop, [_transcribing] is true until
-  // `/api/v1/transcribe/` returns — the overlay shows "Transcribing…"
-  // during that window. Hard-stop after 120 s via [_recordingHardStop].
-  final AudioRecorder _audioRecorder = AudioRecorder();
-  bool _recording = false;
-  bool _transcribing = false;
-  Duration _recordingElapsed = Duration.zero;
-  /// How often the recording timer ticks the mm:ss readout.
-  ///
-  /// Named because it is read in two places — the timer's period and the
-  /// amount added to [_recordingElapsed] on each fire. If those two ever
-  /// disagree the counter silently lies about how long the user has been
-  /// recording, and nothing else in the app would notice.
-  static const _recordingTick = Duration(milliseconds: 100);
-
-  /// Hard cap on a single recording. Auto-stops and falls through into
-  /// the same transcribe path a tap-stop uses.
-  static const _recordingMaxLength = Duration(seconds: 120);
+  // ── Voice recording ─────────────────────────────────────────────────
+  // Per SAQQAR_MOBILE_VOICE.md the composer text field is replaced with a
+  // recording overlay (waveform + timer + stop / discard) while
+  // `_voice.isRecording`, then shows "Transcribing…" while
+  // `_voice.isTranscribing` until `/api/v1/transcribe/` returns.
+  /// Owns the recorder handle, the mm:ss ticker, the 120 s cap and the temp
+  /// file. Built in `initState` so its max-length callback can reach `this`.
+  late final VoiceNoteRecorder _voice;
 
   /// Grace window after a send during which the optimistic running
   /// marker is kept even if the snapshot still reads not-running — the
@@ -210,9 +196,6 @@ class _ChatScreenState extends State<ChatScreen>
   /// race the run to false before it ever flips true.
   static const _sendGraceWindow = Duration(seconds: 12);
 
-  Timer? _recordingTimer;
-  Timer? _recordingHardStop;
-  String? _recordingPath;
 
   /// Text of the most recent message sent on this chat. Captured inside
   /// [_send] *before* the composer is cleared so [_stopGeneration] can
@@ -255,37 +238,11 @@ class _ChatScreenState extends State<ChatScreen>
   // surface as a 404 from the snapshot API now — DataStateView handles
   // the error rendering uniformly.
 
-  /// How many visible messages the lane currently shows. Display-only — the
-  /// cubit holds every loaded message; this just windows what we render.
-  ///
-  /// The opening window is deliberately larger than the step. A chat used to
-  /// open on ten messages, which on a transcript where most rows are `tool`
-  /// rows is a screen and a bit: the user is already at the top and paging
-  /// before they have read anything. Opening on [_visibleOpening] means the
-  /// first screenful is history, not a starting pistol.
-  ///
-  /// Growing it is cheap. `ListView.builder` only builds what is near the
-  /// viewport, so a wider window costs the timeline pass over the extra rows
-  /// and no extra layout — the rows above the fold are never built.
-  static const _visibleOpening = 20;
-
-  /// How many more messages each reveal uncovers. Sized so one fetched page
-  /// (~40 visible rows out of 100 raw) is spent over roughly two reveals
-  /// rather than four — every reveal costs the user a separate deliberate
-  /// gesture, because the auto-load latch re-arms per drag.
-  static const _visibleStep = 25;
-  int _visibleLimit = _visibleOpening;
-
-  /// Refill the bank once fewer than this many loaded-but-unrevealed messages
-  /// remain.
-  ///
-  /// Deliberately about two pages, not one. A page yields roughly 40 visible
-  /// rows and takes seconds to arrive; at one page of headroom a user scrolling
-  /// briskly drains the bank faster than a single in-flight request refills it,
-  /// and the lane stops — which is the whole failure this is here to prevent.
-  /// Two pages means the next request starts while there is still a page left
-  /// to read, so the wait is spent reading rather than watching.
-  static const _prefetchHeadroom = 80;
+  /// How much of the loaded transcript the lane renders, and how that grows
+  /// as the user pages back. The policy — opening size, doubling step, cap,
+  /// prefetch margin, and the slice itself — lives in [ChatRevealWindow],
+  /// where it can be read in one place and tested as the arithmetic it is.
+  ChatRevealWindow _window = const ChatRevealWindow.opening();
 
   /// Predicate for "this server message is shown to the user" — drops the
   /// agent's internal plumbing (tool outputs, empty tool-call invocations,
@@ -318,7 +275,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   // Memo for [_allVisibleMessages]. The adaptation (filter + map to
-  // `DemoMessage` + per-row intl date formatting) is a pure function of the
+  // `ChatMessage` + per-row intl date formatting) is a pure function of the
   // snapshot object and the locale, but the getter is invoked ~4× per
   // build() (count, effective-slice, message-list, search) — so without a
   // cache the whole transcript is re-adapted four times every frame, and
@@ -329,7 +286,7 @@ class _ChatScreenState extends State<ChatScreen>
   // so timestamps re-localize.
   Object? _visibleMemoSnapshot;
   String? _visibleMemoLocaleTag;
-  List<DemoMessage>? _visibleMemo;
+  List<ChatMessage>? _visibleMemo;
 
   /// EVERY loaded visible message (no display window), adapted to the
   /// demo-shaped widgets. Source of truth for the count + in-chat search.
@@ -337,7 +294,7 @@ class _ChatScreenState extends State<ChatScreen>
   /// * **Existing chats** — read from the `ChatCubit` snapshot via
   ///   `context.watch`, so the screen rebuilds on each polling tick.
   /// * **New chats** — the local optimistic list (no cubit yet).
-  List<DemoMessage> get _allVisibleMessages {
+  List<ChatMessage> get _allVisibleMessages {
     if (_isNewChat) return _messages;
     final snapshot = context.watch<ChatCubit>().state.data.dataOrNull;
     if (snapshot == null) return const [];
@@ -360,11 +317,12 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   /// The windowed slice actually rendered in the lane — the most-recent
-  /// [_visibleLimit] visible messages. "Load earlier" grows the window.
-  List<DemoMessage> get _effectiveMessages {
+  /// [ChatRevealWindow.limit] visible messages. "Load earlier" grows it.
+  List<ChatMessage> get _effectiveMessages {
     final all = _allVisibleMessages;
-    if (_isNewChat || all.length <= _visibleLimit) return all;
-    return all.sublist(all.length - _visibleLimit);
+    // A new chat has no window: its handful of optimistic rows are all there
+    // is, and there is nothing older to page back to.
+    return _isNewChat ? all : _window.slice(all);
   }
 
   /// True when the server reports the agent is mid-run for this
@@ -391,19 +349,6 @@ class _ChatScreenState extends State<ChatScreen>
   /// A §6 Odoo scan is in flight. Server-side work with no local message to
   /// show for it until the report is posted.
   bool _toolRunning = false;
-
-  /// Inert placeholder used ONLY as a last-resort title fallback in the
-  /// rename dialog when the live title isn't in the list cubit yet. Carries
-  /// no data — real chats always source their title from ConversationsCubit
-  /// / the snapshot (see `_renameConversation`, `_effectiveChatTitle`).
-  DemoConversation get _conversation => DemoConversation(
-        id: UiStrings.newConversationId,
-        title: context.tr.startConversation,
-        preview: context.tr.liveAccessNote,
-        updatedLabel: context.tr.now,
-        messageCount: 0,
-        activeCredential: UiStrings.none,
-      );
 
   /// Resolves the currently-bound environment for this chat.
   ///
@@ -747,7 +692,15 @@ class _ChatScreenState extends State<ChatScreen>
     // keep it empty too (no demo seed) — the empty state surface
     // (EmptyChatSuggestions) renders until the create-then-route flow
     // hands off to a real cubit.
-    _messages = <DemoMessage>[];
+    _messages = <ChatMessage>[];
+    // The cap fires from inside the recorder; the toast needs a context, so
+    // the screen supplies the reaction and the recorder supplies the timing.
+    _voice = VoiceNoteRecorder(onMaxLengthReached: () {
+      if (!mounted) return;
+      _toast(context.tr.voiceMaxLength);
+      unawaited(_stopRecording());
+    })
+      ..addListener(_onVoiceChanged);
 
     // Existing chats resolve their bound env from the server snapshot (see
     // `_resolveEnv`); new chats from the local vault picker. No demo seed.
@@ -807,7 +760,7 @@ class _ChatScreenState extends State<ChatScreen>
     _consumeShareIntake();
   }
 
-  /// Drains [ShareIntakeService] into [_attachments] / [_pendingFiles]
+  /// Drains [ShareIntakeService] into [_staged]
   /// when the user has just picked this chat as the destination for an
   /// Android share intent. No-op for the common case where the screen
   /// was opened normally (paperclip, tab nav, deep link).
@@ -821,41 +774,34 @@ class _ChatScreenState extends State<ChatScreen>
     final files = service.take(widget.conversationId);
     if (files.isEmpty) return;
 
-    // Build the chips synchronously — `lengthSync` instead of the
-    // async `length()` means the setState below lands in the SAME
-    // microtask as the deliverTo notification, before any rebuild can
-    // intervene. The async version used to lose the setState when the
-    // bootstrap's `context.go` happened to recreate the chat page
-    // mid-await (2026-05-23 tester report: file only showed up after
-    // exiting + re-entering the chat).
-    final chips = <DemoAttachment>[];
-    final keptFiles = <File>[];
-    for (final f in files) {
-      final name = f.path.split(RegExp(r'[\\/]')).last;
-      final ext = name.contains('.') ? name.split('.').last : '';
-      int size;
-      try {
-        size = f.lengthSync();
-      } catch (_) {
-        // Some content-URIs don't expose length until they're streamed —
-        // fall back to 0 and let the chip subtitle read "0 B" rather
-        // than blocking the whole batch on one unreadable entry.
-        size = 0;
-      }
-      chips.add(DemoAttachment(
-        name: name,
-        kind: _kindForExtension(ext),
-        size: humanBytes(size, context.tr),
-        imageUrl: FileKinds.isImage(ext) ? f.path : null,
-        localPath: f.path,
-      ));
-      keptFiles.add(f);
+    // Same caps and the same chips as the paperclip — see
+    // [AttachmentStaging], which exists because this path used to skip the
+    // cap check entirely and let a 200 MB share become a 413 after the
+    // upload rather than a message before it.
+    //
+    // Built synchronously: `candidateFromFile` uses `lengthSync` so the
+    // setState below lands in the SAME microtask as the deliverTo
+    // notification, before any rebuild can intervene. The async version
+    // used to lose the setState when the bootstrap's `context.go` happened
+    // to recreate the chat page mid-await (2026-05-23 tester report: file
+    // only showed up after exiting + re-entering the chat).
+    final staged = AttachmentStaging.validate(
+      files.map(AttachmentStaging.candidateFromFile),
+      context.tr,
+    );
+    final chips = staged.chips;
+    final keptFiles = staged.files;
+
+    if (staged.rejected.isNotEmpty && mounted) {
+      final first = staged.rejected.first;
+      _toast(context.tr.attachmentTooLarge(first.name, first.capMb));
     }
     if (!mounted || keptFiles.isEmpty) return;
 
     setState(() {
-      _attachments.addAll(chips);
-      _pendingFiles.addAll(keptFiles);
+      for (var i = 0; i < keptFiles.length; i++) {
+        _staged.add(StagedFile(chip: chips[i], file: keptFiles[i]));
+      }
     });
 
     // Mirror the paperclip flow: existing chats eagerly upload so the
@@ -868,13 +814,8 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
       if (!ok) {
         setState(() {
-          for (final f in keptFiles) {
-            final idx = _pendingFiles.indexOf(f);
-            if (idx >= 0) {
-              _pendingFiles.removeAt(idx);
-              if (idx < _attachments.length) _attachments.removeAt(idx);
-            }
-          }
+          final dropped = {for (final f in keptFiles) f.path};
+          _staged.removeWhere((s) => dropped.contains(s.file.path));
         });
         _surfaceActionFailure();
       }
@@ -885,13 +826,12 @@ class _ChatScreenState extends State<ChatScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _shareIntakeService?.removeListener(_onShareIntakeChanged);
-    _recordingTimer?.cancel();
-    _recordingHardStop?.cancel();
-    // Don't await — the recorder's stop() returns a Future but the
-    // State is going away anyway; the temp file will be GC'd by the
-    // OS the next time it cleans the temp dir.
-    unawaited(_audioRecorder.cancel());
-    unawaited(_audioRecorder.dispose());
+    // Cancels its timers and tears down the plugin handle. Not awaited —
+    // the State is going away and the temp file is deleted on every path
+    // that produced one.
+    _voice
+      ..removeListener(_onVoiceChanged)
+      ..dispose();
     _scroll.removeListener(_onScrollChanged);
     _persistScrollOffset();
     _composer.dispose();
@@ -901,6 +841,15 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   // ── Voice recording lifecycle ───────────────────────────────────────
+
+  /// Repaints the composer when the recorder ticks or changes phase.
+  ///
+  /// The recorder is a `ChangeNotifier` rather than something the widget
+  /// tree watches, because it drives exactly one subtree and a listener is
+  /// cheaper than a provider for a value that changes ten times a second.
+  void _onVoiceChanged() {
+    if (mounted) setState(() {});
+  }
 
   /// Mic-tap entry point wired through [ChatComposer.onStartRecording].
   /// Owns the permission prompt, recorder setup, timer + hard-stop
@@ -956,159 +905,62 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  /// Mic-tap entry point wired through [ChatComposer.onStartRecording].
+  ///
+  /// Owns only the two things that need a `BuildContext`: the permission
+  /// consent flow and the copy for whatever goes wrong. The recorder handle,
+  /// the ticker, the 120 s cap and the temp file all live in
+  /// [VoiceNoteRecorder].
   Future<void> _startRecording() async {
-    if (_recording || _transcribing) return;
-    // Permission gate. Ordering matters for App Store review (guideline
+    if (_voice.isRecording || _voice.isTranscribing) return;
+    // Permission gate first. Ordering matters for App Store review (guideline
     // 5.1.1(iv)): the native OS prompt must be the FIRST permission-related
     // thing the user ever sees — we never route them to Settings before it.
     if (!await _ensureMicPermission()) return;
-    // m4a + AAC + mono + 16 kHz + 32 kbps — see SAQQAR_MOBILE_VOICE.md §3.
-    // Output file lives under the OS temp dir; we delete it after the
-    // transcribe upload (or on discard).
-    final tmp = await getTemporaryDirectory();
-    final path =
-        '${tmp.path}/saqqar-voice-${DateTime.now().millisecondsSinceEpoch}.m4a';
-    try {
-      final isSupported = await _audioRecorder.hasPermission();
-      if (!isSupported) {
-        if (!mounted) return;
-        _toast(context.tr.micUnavailable);
-        return;
-      }
-      await _audioRecorder.start(
-        const RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          sampleRate: 16000,
-          numChannels: 1,
-          bitRate: 32000,
-        ),
-        path: path,
-      );
-    } catch (e, st) {
-      AppLogger.warn('VoiceRecording', 'start failed',
-          error: e, stackTrace: st);
-      if (!mounted) return;
-      _toast(context.tr.micUnavailable);
-      return;
-    }
-    if (!mounted) {
-      // Race: widget left the tree mid-permission. Stop + delete.
-      await _audioRecorder.cancel();
-      return;
-    }
-    setState(() {
-      _recording = true;
-      _recordingElapsed = Duration.zero;
-      _recordingPath = path;
-    });
-    // 100 ms tick gives smooth mm:ss readout without burning frames.
-    _recordingTimer = Timer.periodic(_recordingTick, (_) {
-      if (!mounted) return;
-      setState(() {
-        _recordingElapsed += _recordingTick;
-      });
-    });
-    // Hard cap at 120 s per spec. Auto-stop, surface the toast, then
-    // fall through into the same transcribe path the tap-stop uses.
-    _recordingHardStop = Timer(_recordingMaxLength, () {
-      if (!mounted || !_recording) return;
-      _toast(context.tr.voiceMaxLength);
-      unawaited(_stopRecording());
-    });
+    final problem = await _voice.start();
+    if (!mounted || problem == null) return;
+    _toast(context.tr.micUnavailable);
   }
 
-  /// Tapped on the stop pill (or fired by [_recordingHardStop] at 120 s).
-  /// Stops the recorder, flips to the "transcribing" state, uploads the
-  /// audio file, and appends the returned text to the composer.
+  /// Tapped on the stop pill (or fired by the recorder's 120 s cap). Uploads
+  /// the audio and appends the transcript to whatever is already typed.
   Future<void> _stopRecording() async {
-    if (!_recording) return;
-    _recordingTimer?.cancel();
-    _recordingHardStop?.cancel();
-    final path = await _audioRecorder.stop();
+    final api = context.read<TranscribeApi>();
+    final outcome = await _voice.stop((audio) => api.transcribe(audio: audio));
     if (!mounted) return;
-    setState(() {
-      _recording = false;
-      _transcribing = true;
-    });
-    final localPath = path ?? _recordingPath;
-    if (localPath == null) {
-      setState(() => _transcribing = false);
-      _toast(context.tr.transcribeFailed);
-      return;
-    }
-    final file = File(localPath);
-    try {
-      final transcript = await context.read<TranscribeApi>().transcribe(
-            audio: file,
-          );
-      if (!mounted) return;
-      if (transcript.isEmpty) {
-        _toast(context.tr.transcribeEmpty);
-      } else {
-        // Append (don't replace) — preserves whatever the user already
-        // typed before tapping mic. Caret jumps to the end so the user
-        // can keep typing if they want.
+
+    switch (outcome) {
+      case VoiceNoteTranscribed(text: final transcript):
+        // Append rather than replace — preserves whatever the user typed
+        // before tapping the mic. The caret jumps to the end and focus comes
+        // back so they can keep editing without a second tap.
         final existing = _composer.text;
         final joiner = existing.isEmpty || existing.endsWith(' ') ? '' : ' ';
         final next = '$existing$joiner$transcript';
         _composer.text = next;
         _composer.selection = TextSelection.collapsed(offset: next.length);
-        // Restore focus so the keyboard stays up and the user can edit.
         _composerFocus.requestFocus();
-      }
-    } catch (e, st) {
-      AppLogger.warn('VoiceRecording', 'transcribe failed',
-          error: e, stackTrace: st);
-      if (!mounted) return;
-      // Gap C — a 403 from /transcribe/ means voice is locked on the
-      // caller's plan (the mic is normally hidden, but a stale snapshot or
-      // a race can still let one request through). Map it to a friendly
-      // "voice is a Pro feature" hint rather than the generic forbidden copy.
-      final failure = ApiErrorMapper.toFailure(e);
-      _toast(failure is ForbiddenFailure
-          ? context.tr.voiceLockedPro
-          : ApiErrorMapper.message(context, e));
-    } finally {
-      // Best-effort cleanup of the temp file (we either consumed it or
-      // the upload failed — either way it's not useful anymore). Sync
-      // check + async delete dodges the `avoid_slow_async_io` lint
-      // without changing the semantics.
-      try {
-        if (file.existsSync()) await file.delete();
-      } catch (_) {}
-      if (mounted) {
-        setState(() {
-          _transcribing = false;
-          _recordingPath = null;
-          _recordingElapsed = Duration.zero;
-        });
-      }
+      case VoiceNoteEmpty():
+        _toast(context.tr.transcribeEmpty);
+      case VoiceNoteNoAudio():
+        _toast(context.tr.transcribeFailed);
+      case VoiceNoteFailed(error: final error):
+        // Gap C — a 403 from /transcribe/ means voice is locked on the
+        // caller's plan (the mic is normally hidden, but a stale snapshot or
+        // a race can still let one request through). Map it to a friendly
+        // "voice is a Pro feature" hint rather than the generic forbidden
+        // copy.
+        final failure = ApiErrorMapper.toFailure(error);
+        _toast(failure is ForbiddenFailure
+            ? context.tr.voiceLockedPro
+            : ApiErrorMapper.message(context, error));
     }
   }
 
-  /// Tapped on the discard X. Drops the audio buffer without uploading
-  /// and returns to idle. Disabled inside [RecordingOverlay] once
-  /// transcription has started (the bytes are already in flight).
-  Future<void> _discardRecording() async {
-    if (!_recording) return;
-    _recordingTimer?.cancel();
-    _recordingHardStop?.cancel();
-    await _audioRecorder.cancel();
-    if (!mounted) return;
-    setState(() {
-      _recording = false;
-      _recordingElapsed = Duration.zero;
-      _recordingPath = null;
-    });
-    // Best-effort delete of whatever the recorder may have flushed.
-    final path = _recordingPath;
-    if (path != null) {
-      try {
-        final f = File(path);
-        if (f.existsSync()) await f.delete();
-      } catch (_) {}
-    }
-  }
+  /// Tapped on the discard X. Drops the audio without uploading. Disabled
+  /// inside [RecordingOverlay] once transcription has started — the bytes are
+  /// already in flight.
+  Future<void> _discardRecording() => _voice.discard();
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -1143,9 +995,15 @@ class _ChatScreenState extends State<ChatScreen>
     if (!_scroll.hasClients) return;
     final position = _scroll.position;
     if (!position.hasContentDimensions) return;
-    final atBottom = position.extentAfter < 32;
+    // `reverse: true` puts the newest message at offset 0, so "was the user
+    // reading the latest reply when they left?" is a question about
+    // `extentBefore` — how far back toward the newest they still are.
+    // Storing `null` for that case is what makes re-entry land on the
+    // newest message rather than on a stale pixel offset that a newly
+    // arrived reply has since moved.
+    final atNewest = position.extentBefore < 32;
     _savedScrollOffsets[widget.conversationId] =
-        atBottom ? null : position.pixels;
+        atNewest ? null : position.pixels;
   }
 
   /// Jumps to the last-seen offset for this conversation (or to the
@@ -1196,26 +1054,6 @@ class _ChatScreenState extends State<ChatScreen>
   /// `logcat | grep ChatScroll` and see the whole decision chain.
   static const _scrollTag = 'ChatScroll';
 
-  /// How close to the hard top edge counts as "pinned there".
-  ///
-  /// A few pixels, not a zone: the question is only whether the correction
-  /// left the user against the boundary with nothing above them. Anything
-  /// larger would nudge readers who are legitimately near the top of a chat
-  /// they have finished loading.
-  static const _topEdgeSlack = 8.0;
-
-  /// How far [_nudgeOffTopEdge] eases the list down, as a share of the
-  /// viewport.
-  ///
-  /// A fraction rather than a pixel count so it reads as *a few messages* on
-  /// any screen — roughly five short ones on a phone — without trying to count
-  /// rows whose heights range from a one-word reply to a full report.
-  ///
-  /// It does not need to clear [_autoLoadEarlierThreshold]: the trigger is
-  /// latched off after firing and only a fresh finger-down drag re-arms it, so
-  /// landing inside the trigger zone re-fires nothing.
-  static const _topEdgeBumpFraction = 0.6;
-
   /// Re-entrancy guard for [_loadEarlier].
   ///
   /// Scroll notifications arrive on essentially every frame of a drag, so
@@ -1251,73 +1089,57 @@ class _ChatScreenState extends State<ChatScreen>
   /// on the next successful load.
   bool _autoLoadEarlierFailed = false;
 
-  /// Carried by the one message row whose on-screen position must survive the
-  /// next prepend.
-  ///
-  /// The obvious alternative is to diff scroll *metrics* — remember
-  /// `maxScrollExtent`, subtract after the insert, push the offset down by the
-  /// difference. That works only as far as `maxScrollExtent` is trustworthy,
-  /// and on a lazy `ListView.builder` it is an estimate that firms up as
-  /// layout walks into new territory rather than a measurement. Measuring this
-  /// row sidesteps the estimate entirely: whatever the sliver decides the
-  /// geometry is, the row is where it is.
-  ///
-  /// The precondition is that the row is actually laid out —
-  /// `test/chat_prepend_anchor_test.dart` pins that, and it is why the 600 px
-  /// trigger distance and the list's 1500 px `cacheExtent` are a matched pair.
-  final GlobalKey _scrollAnchorKey = GlobalKey();
-
-  /// Message id the anchor key is pinned to while a prepend is in flight.
-  ///
-  /// Normally the key rides the oldest rendered row, which is re-evaluated
-  /// every build. That's wrong mid-prepend: the insert makes some *older*
-  /// message the new oldest, so an un-pinned key would jump to a different
-  /// row between the before- and after-measurements and the correction would
-  /// be computed from two different widgets. Pinning holds it on the message
-  /// we actually measured. Cleared once the correction has been applied.
-  String? _scrollAnchorId;
 
   void _onScrollChanged() {
     if (!_scroll.hasClients) return;
     final position = _scroll.position;
-    // Show the jump button when the user has scrolled away from the latest
-    // message by more than ~one screenful.
-    final shouldShow = position.extentAfter > 240;
+    // ── Everything below reads `extentBefore` ──────────────────────────
+    //
+    // The list is `reverse: true`, so offset 0 is the NEWEST message and
+    // `extentBefore` is the distance back toward it. That makes the two
+    // questions this handler asks read the same way they would in a forward
+    // list, just against the other end:
+    //
+    //   * `extentBefore` — how far the user has travelled INTO history.
+    //   * `extentAfter`  — how much loaded history is still ahead of them.
+    //
+    // Show the jump button once they are more than ~one screenful into
+    // history.
+    final shouldShow = position.extentBefore > 240;
     if (shouldShow != _showScrollDown) {
       setState(() => _showScrollDown = shouldShow);
     }
 
-    // Infinite scroll upward: approaching the start of the loaded transcript
-    // pulls the next page automatically, matching the web. `extentBefore` is
-    // clamped at 0, so an overscroll bounce at the top reads as 0 rather than
-    // going negative and skipping the check.
+    // Infinite scroll into history: running out of loaded rows AHEAD pulls
+    // the next page automatically. `extentAfter` is clamped at 0, so an
+    // overscroll bounce at the far end reads as 0 rather than going negative
+    // and skipping the check.
     //
-    // Hysteresis, not a bare threshold. The trigger re-arms only once the user
-    // has moved back out of the zone, which makes the whole mechanism safe
-    // against the one thing that would otherwise runaway: an anchor
-    // correction that couldn't be applied (the anchor row wasn't laid out, so
-    // there is nothing to measure). Without re-arming, the user would still be
-    // sitting inside the threshold afterwards and the next scroll frame would
-    // fire again, and again, until the entire transcript had loaded. With it,
-    // a failed correction costs one extra page and then waits for the user.
-    if (position.extentBefore > _autoLoadEarlierThreshold * 2) {
+    // Hysteresis, not a bare threshold. The trigger re-arms only once the
+    // user has moved back out of the zone. In a forward list that guard was
+    // load-bearing for a second reason — an anchor correction that could not
+    // be applied would leave the user parked inside the threshold and fire
+    // again every frame until the whole transcript had loaded. A reversed
+    // list has no correction to fail, so what remains is the ordinary job of
+    // not firing twice for one gesture.
+    if (position.extentAfter > _autoLoadEarlierThreshold * 2) {
       _autoLoadArmed = true;
       _viewportFillAttempts = 0;
     }
-    if (_autoLoadArmed && position.extentBefore <= _autoLoadEarlierThreshold) {
+    if (_autoLoadArmed && position.extentAfter <= _autoLoadEarlierThreshold) {
       _autoLoadArmed = false;
       unawaited(_loadEarlier(auto: true));
     }
 
-    // Top up the bank on approach, not only after a reveal lands.
+    // Top up the bank on approach, not only after a page lands.
     //
     // Refilling solely from the reveal has a hole: during one long
     // uninterrupted scroll the reveals are what drain the bank, and if a
-    // reveal is itself waiting on a fetch, nothing asks for the page after it.
-    // Watching the approach instead means the request goes out while the user
-    // is still on their way. Cheap enough for a scroll frame — two integer
-    // reads, and it no-ops while a page is in flight.
-    if (position.extentBefore <= _autoLoadEarlierThreshold * 4) {
+    // reveal is itself waiting on a fetch, nothing asks for the page after
+    // it. Watching the approach instead means the request goes out while the
+    // user is still on their way. Cheap enough for a scroll frame — two
+    // integer reads, and it no-ops while a page is in flight.
+    if (position.extentAfter <= _autoLoadEarlierThreshold * 4) {
       _topUpPrefetch();
     }
   }
@@ -1338,8 +1160,7 @@ class _ChatScreenState extends State<ChatScreen>
 
     final cubit = context.read<ChatCubit>();
     final loadedBefore = _loadedVisibleCount();
-    final shownBefore =
-        loadedBefore < _visibleLimit ? loadedBefore : _visibleLimit;
+    final shownBefore = _window.shownOf(loadedBefore);
     // Every guard lives in `decideEarlierPage` so the scroll handler can call
     // this on any frame without the caller having to know the rules — see
     // that function for why they're kept out of the widget.
@@ -1365,17 +1186,9 @@ class _ChatScreenState extends State<ChatScreen>
     final needsFetch = action == EarlierPageAction.fetchOlder;
 
     _loadingEarlier = true;
-    // Measure the anchor row BEFORE the prepend. Older rows are inserted above
-    // the viewport, so without a correction the content the user was reading
-    // slides down the screen by the height of everything added — and, worse
-    // for automatic paging, they stay pinned near the top, which satisfies the
-    // trigger again and walks the list to the start of the conversation in one
-    // gesture.
-    final anchorYBefore = _anchorRowY();
-    _scrollAnchorId = _anchorRowId();
 
     if (needsFetch) {
-      await cubit.loadOlder();
+      await cubit.loadOlder(rows: _window.nextStep);
       if (!mounted) return;
       // Surface a failed fetch instead of silently widening the window
       // over messages that never arrived.
@@ -1392,36 +1205,35 @@ class _ChatScreenState extends State<ChatScreen>
     }
 
     _autoLoadEarlierFailed = false;
-    // Reveal once the list has stopped moving — see [_afterScrollSettles].
-    // The network fetch above already ran, so by the time the user's flick
-    // decays the rows are in hand and appear immediately.
-    _afterScrollSettles(() {
-      if (!mounted) {
-        _loadingEarlier = false;
-        return;
-      }
-      // Re-measure: the anchor may have scrolled since we sampled it, and the
-      // correction has to be relative to where it is now.
-      final anchorYAtReveal = _anchorRowY() ?? anchorYBefore;
-      setState(() => _visibleLimit = shownBefore + _visibleStep);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        // The row-anchor correction is exact when it can be measured, and
-        // simply does nothing when the row has been culled — which a fast
-        // fling guarantees. There is deliberately no fallback: the only other
-        // signal available is `maxScrollExtent`, and it is an estimate that
-        // moves in both directions, so a correction derived from it is noise
-        // (see the note in `earlier_paging.dart`). `_nudgeOffTopEdge` covers
-        // the unmeasurable case with a bounded move instead.
-        _reanchorAfterPrepend(anchorYAtReveal);
-        _scrollAnchorId = null;
-        _loadingEarlier = false;
-        // Only after the corrections, so this sees where the user actually
-        // ended up rather than where they were mid-prepend.
-        _nudgeOffTopEdge();
-        _fillViewportIfNotScrollable();
-        _topUpPrefetch();
-      });
+
+    // Reveal immediately — no measuring, no waiting for the scroll to settle.
+    //
+    // This is the payoff from `reverse: true` on the list. Older rows land at
+    // HIGH indices, which is off-screen in the direction the user is already
+    // travelling, so widening the window moves nothing they can see. Every
+    // row that is currently on screen keeps the exact pixel it occupied.
+    //
+    // What this replaces: sample an anchor row's Y, wait for the momentum to
+    // decay (a `jumpTo` mid-drag cancels the gesture), widen, re-measure the
+    // anchor, `jumpTo` the difference — and, because a fast fling culls the
+    // anchor row before any of that can run, a bounded "nudge" as a fallback
+    // for the correction that could not be made. Five steps and two failure
+    // modes, all of them to answer a question a reversed list never asks.
+    //
+    // The user-visible difference is the one that was reported: rows now
+    // appear while the flick is still running, instead of after it stops.
+    // Block body, not an arrow: an arrow returns the value of the assignment,
+    // and `source_invariants_test` bans that shape for any right-hand side
+    // that is a call — because the one that hands back a Future is
+    // indistinguishable from this one until it throws in someone's face.
+    setState(() {
+      _window = _window.revealedFrom(shownBefore);
+    });
+    _loadingEarlier = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _fillViewportIfNotScrollable();
+      _topUpPrefetch();
     });
   }
 
@@ -1439,177 +1251,9 @@ class _ChatScreenState extends State<ChatScreen>
     if (_isNewChat) return;
     final cubit = context.read<ChatCubit>();
     if (!cubit.state.hasMoreOlder) return;
-    final headroom = _loadedVisibleCount() - _visibleLimit;
-    if (headroom >= _prefetchHeadroom) return;
-    unawaited(cubit.prefetchOlder());
+    if (!_window.needsPrefetch(_loadedVisibleCount())) return;
+    unawaited(cubit.prefetchOlder(rows: _window.nextStep));
   }
-
-  /// Runs [action] as soon as the list is not scrolling — immediately when it
-  /// is already still.
-  ///
-  /// Prepending has to be paired with a scroll correction, and the only tool
-  /// for that is `ScrollController.jumpTo`, which is **not safe during a
-  /// gesture**: `ScrollPositionWithSingleContext.beginActivity` disposes the
-  /// active drag, so correcting mid-flick makes the list stop dead under the
-  /// user's finger. (`test/chat_prepend_anchor_test.dart` demonstrates it —
-  /// the drag stops responding after the jump.)
-  ///
-  /// So the *fetch* is eager (it is the slow part and the user shouldn't wait
-  /// on it) while the *reveal* waits for the scroll to settle. Because the
-  /// trigger fires ~600 px before the top, a normal flick has already decayed
-  /// by the time the rows land and the paging still reads as instant.
-  void _afterScrollSettles(VoidCallback action) {
-    if (!_scroll.hasClients) {
-      action();
-      return;
-    }
-    final scrolling = _scroll.position.isScrollingNotifier;
-    if (!scrolling.value) {
-      action();
-      return;
-    }
-    void onSettled() {
-      if (scrolling.value) return;
-      scrolling.removeListener(onSettled);
-      action();
-    }
-
-    scrolling.addListener(onSettled);
-  }
-
-  /// Id of the message currently carrying [_scrollAnchorKey] — the oldest
-  /// rendered row unless a prepend has pinned it.
-  String? _anchorRowId() {
-    if (_scrollAnchorId != null) return _scrollAnchorId;
-    final all = _isNewChat ? _messages : (_visibleMemo ?? const []);
-    if (all.isEmpty) return null;
-    final windowed =
-        all.length <= _visibleLimit ? all : all.sublist(all.length - _visibleLimit);
-    return windowed.isEmpty ? null : windowed.first.id;
-  }
-
-  /// Vertical position of the anchor row, in the scroll view's own
-  /// coordinates. Null when the row isn't laid out — which shouldn't happen
-  /// (the anchor is the oldest rendered row and the trigger fires within the
-  /// list's 1500 px `cacheExtent` of it) but must not throw if it does.
-  double? _anchorRowY() {
-    final context = _scrollAnchorKey.currentContext;
-    if (context == null) return null;
-    final box = context.findRenderObject();
-    if (box is! RenderBox || !box.hasSize) return null;
-    final viewport = _scroll.hasClients
-        ? _scroll.position.context.storageContext.findRenderObject()
-        : null;
-    if (viewport is! RenderBox) return null;
-    return box.localToGlobal(Offset.zero, ancestor: viewport).dy;
-  }
-
-  /// Restores the reading position after older rows were prepended, by moving
-  /// the offset exactly as far as the anchor row moved.
-  ///
-  /// Measured, not estimated — see [_scrollAnchorKey].
-  /// Puts the row the user was reading back under their eye after a prepend.
-  ///
-  /// Returns whether a correction was actually applied — the caller needs to
-  /// know, because "could not measure" and "no correction needed" look
-  /// identical from outside and only the first one needs a fallback.
-  bool _reanchorAfterPrepend(double? anchorYBefore) {
-    if (anchorYBefore == null) return false;
-    if (!_scroll.hasClients) return false;
-    final position = _scroll.position;
-    if (!position.hasContentDimensions) return false;
-    final anchorYAfter = _anchorRowY();
-    // The anchor row is not laid out. This is the common case after a fast
-    // fling: the lazy list culls the row we sampled long before the reveal
-    // lands, so there is nothing to measure against. [_reanchorByGrowth] takes
-    // over.
-    if (anchorYAfter == null) return false;
-    // The row moved DOWN by `shift`; scrolling down by the same amount puts
-    // it back under the user's eye.
-    final shift = anchorYAfter - anchorYBefore;
-    AppLogger.debug(
-      _scrollTag,
-      'row-fix shift=${shift.toStringAsFixed(0)} '
-      'px=${position.pixels.toStringAsFixed(0)}',
-    );
-    // Already in place — a real outcome, not a failure, so the caller must not
-    // apply a second correction on top.
-    if (shift.abs() < 0.5) return true;
-    _scroll.jumpTo(
-      (position.pixels + shift).clamp(0.0, position.maxScrollExtent),
-    );
-    return true;
-  }
-
-  /// Eases the list down a few messages once a page has landed at the edge.
-  ///
-  /// Reported by the user: flinging to the top of a long chat parks you there
-  /// with older messages still unloaded, and the only way forward is to scroll
-  /// down and back up. That is not a discoverable gesture, and sitting against
-  /// a dead edge reads as the app being broken.
-  ///
-  /// Two things were wrong. The correction above could silently not apply, and
-  /// the auto-load trigger disarms after firing and re-arms only once the user
-  /// travels back past twice the threshold — which needs a scroll event, and a
-  /// user resting at the edge produces none. So the list stopped asking.
-  ///
-  /// A small animated nudge fixes both at once: it moves the newly revealed
-  /// rows above the reader where they can scroll into them, it emits the
-  /// scroll notification that re-arms the trigger, and it makes the moment
-  /// legible — the list visibly answers instead of freezing.
-  ///
-  /// Deliberately does nothing at the true start of the conversation. Bumping
-  /// a user away from the first message they came to read, to reveal nothing,
-  /// would be the same rudeness in the other direction.
-  void _nudgeOffTopEdge() {
-    if (!_scroll.hasClients) return;
-    final position = _scroll.position;
-    if (!position.hasContentDimensions) return;
-    final target = topEdgeNudgeTarget(
-      pixels: position.pixels,
-      extentBefore: position.extentBefore,
-      maxScrollExtent: position.maxScrollExtent,
-      viewportDimension: position.viewportDimension,
-      hasMoreToReveal: _hasMoreToReveal,
-      slack: _topEdgeSlack,
-      bumpFraction: _topEdgeBumpFraction,
-    );
-    // Debug-only, and load-bearing for diagnosis: both reported failures of
-    // this feature ("it still parks me at the top", "it threw me to the end")
-    // are intermittent and depend on scroll metrics at one instant, which is
-    // the one thing a static read of the code cannot recover. `AppLogger`
-    // compiles out in release.
-    AppLogger.debug(
-      _scrollTag,
-      'nudge? px=${position.pixels.toStringAsFixed(0)} '
-      'before=${position.extentBefore.toStringAsFixed(0)} '
-      'max=${position.maxScrollExtent.toStringAsFixed(0)} '
-      'vp=${position.viewportDimension.toStringAsFixed(0)} '
-      'more=$_hasMoreToReveal => ${target?.toStringAsFixed(0) ?? 'skip'}',
-    );
-    if (target == null) return;
-    // Honour Reduce Motion: the point is to leave the edge, and the animation
-    // is only how that is communicated.
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _scroll.jumpTo(target);
-      return;
-    }
-    unawaited(
-      _scroll.animateTo(
-        target,
-        duration: AppDurations.cardIn,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-  }
-
-  /// Whether anything older is still available — loaded but not yet revealed,
-  /// or still on the server.
-  bool get _hasMoreToReveal {
-    if (_loadedVisibleCount() > _visibleLimit) return true;
-    return context.read<ChatCubit>().state.hasMoreOlder;
-  }
-
   /// Pulls another page when the rendered window doesn't fill the viewport.
   ///
   /// Ten short messages on a tall phone produce a list that cannot scroll —
@@ -1655,24 +1299,44 @@ class _ChatScreenState extends State<ChatScreen>
   /// behaviour for free: a chat the user hasn't touched follows the tail as
   /// new messages land. Skipped when there's a saved offset — returning to a
   /// chat you had scrolled back through should land where you left it.
+  /// Holds the lane on the newest message while rows are still arriving.
+  ///
+  /// Nearly a no-op now, and kept for the one case that survives the flip.
+  /// A reversed list RESTS at offset 0, so a chat opens on its newest
+  /// message with no scrolling at all — the forward list needed a
+  /// post-frame `jumpTo(maxScrollExtent)` here because `maxScrollExtent`
+  /// grew as unbuilt rows below the viewport were laid out, and each growth
+  /// left the user one screenful short of where they asked to be.
+  ///
+  /// What remains: a rebuild triggered while the list is at a tiny non-zero
+  /// offset — a bounce settling, or a row above resizing as its markdown
+  /// finishes laying out — can leave the lane a few pixels off the newest
+  /// message. Snapping those back is invisible and keeps "I have not
+  /// scrolled" meaning exactly what it says.
   void _pinToBottomIfUnscrolled() {
     if (_userHasScrolled || _isNewChat) return;
     if (_savedScrollOffsets[widget.conversationId] != null) return;
     if (!_scroll.hasClients) return;
     final position = _scroll.position;
     if (!position.hasContentDimensions) return;
-    final max = position.maxScrollExtent;
-    // A lane too short to scroll has no bottom to pin to; the viewport fill
-    // owns that case.
-    if (max <= 0) return;
-    if ((position.pixels - max).abs() < 1.0) return;
-    _scroll.jumpTo(max);
+    if (position.pixels.abs() < 1.0) return;
+    _scroll.jumpTo(_newestOffset);
   }
+
+  /// The offset of the newest message.
+  ///
+  /// Zero, because the list is `reverse: true`. Named rather than written as
+  /// a bare `0` at four call sites: in a forward list this was
+  /// `position.maxScrollExtent`, which is an ESTIMATE while rows below the
+  /// viewport are still unbuilt — animating to it landed short on a long
+  /// transcript and needed a second pass. The reversed list has no such
+  /// problem, and the name is what says so.
+  static const _newestOffset = 0.0;
 
   void _scrollToBottom() {
     if (!_scroll.hasClients) return;
     _scroll.animateTo(
-      _scroll.position.maxScrollExtent,
+      _newestOffset,
       duration: AppDurations.scrollToEnd,
       curve: Curves.easeOutQuart,
     );
@@ -1682,7 +1346,7 @@ class _ChatScreenState extends State<ChatScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.animateTo(
-          _scroll.position.maxScrollExtent,
+          _newestOffset,
           duration: AppDurations.scrollToEndSoft,
           curve: Curves.easeOutQuart,
         );
@@ -1752,7 +1416,7 @@ class _ChatScreenState extends State<ChatScreen>
 
   Future<void> _sendInternal() async {
     final text = _composer.text.trim();
-    if (text.isEmpty && _attachments.isEmpty) return;
+    if (text.isEmpty && _staged.isEmpty) return;
 
     // Block sends until the user picks an environment — the agent has no
     // credentials to work against otherwise. Resolves real env first
@@ -1836,7 +1500,7 @@ class _ChatScreenState extends State<ChatScreen>
     // toast below can read "Sent · 3 files attached" — testers asked
     // for explicit feedback that the picker output didn't vanish into
     // the void when they hit Send (2026-05-23).
-    final stagedCount = _attachments.length;
+    final stagedCount = _staged.length;
     // Stash the outgoing text BEFORE clearing the composer so
     // [_stopGeneration] can restore it if the user changes their mind
     // mid-reply. Also clears any stale Stop override from a prior round
@@ -1844,10 +1508,7 @@ class _ChatScreenState extends State<ChatScreen>
     _lastSentText = text;
     _localStopOverride = false;
     _composer.clear();
-    setState(() {
-      _attachments.clear();
-      _pendingFiles.clear();
-    });
+    setState(_staged.clear);
     _lastSendAt = DateTime.now();
     context.read<RunningAgentsCubit>().markRunning(widget.conversationId);
     final ok = await context.read<ChatCubit>().sendMessage(
@@ -1904,12 +1565,11 @@ class _ChatScreenState extends State<ChatScreen>
     // Snapshot copies — we'll restore them onto the screen state if any of
     // the create / upload / send steps below blow up, so the user doesn't
     // lose a multi-file batch they painstakingly attached.
-    final pendingFiles = List<File>.from(_pendingFiles);
-    final attachmentChips = List<DemoAttachment>.from(_attachments);
+    final stagedBatch = List<StagedFile>.from(_staged);
+    final pendingFiles = [for (final s in stagedBatch) s.file];
     _composer.clear();
     setState(() {
-      _attachments.clear();
-      _pendingFiles.clear();
+      _staged.clear();
       _isThinking = true;
     });
     try {
@@ -1975,12 +1635,9 @@ class _ChatScreenState extends State<ChatScreen>
         // Restore the picked files + chips so the user doesn't have to
         // re-attach after a transient failure (network blip, server
         // 500 between create and send, etc.).
-        _attachments
+        _staged
           ..clear()
-          ..addAll(attachmentChips);
-        _pendingFiles
-          ..clear()
-          ..addAll(pendingFiles);
+          ..addAll(stagedBatch);
       });
       _composer.text = pendingText == context.tr.attachedFilesForReview
           ? ''
@@ -2420,14 +2077,14 @@ class _ChatScreenState extends State<ChatScreen>
   /// Drops a single staged attachment by index — clears its composer chip
   /// AND removes the matching cubit-side staged row so the next
   /// `sendMessage` doesn't ship the orphaned id. The screen-level
-  /// `_attachments` / `_pendingFiles` lists and the cubit's
+  /// `_staged` list and the cubit's
   /// `stagedAttachments` are appended to in the same order in
   /// [_pickAttachment], so positional index → cubit id maps 1:1 for any
   /// row whose upload has settled. Rows still mid-upload (or whose upload
   /// failed) haven't reached the cubit yet — we skip the cubit call for
   /// those and just drop the local row.
   void _removeAttachmentAt(int index) {
-    if (index < 0 || index >= _attachments.length) return;
+    if (index < 0 || index >= _staged.length) return;
     if (!_isNewChat) {
       final cubit = context.read<ChatCubit>();
       final staged = cubit.state.stagedAttachments;
@@ -2435,12 +2092,10 @@ class _ChatScreenState extends State<ChatScreen>
         cubit.removeStagedAttachment(staged[index].id);
       }
     }
-    setState(() {
-      _attachments.removeAt(index);
-      if (index < _pendingFiles.length) {
-        _pendingFiles.removeAt(index);
-      }
-    });
+    // One removal, because there is one list. This used to be two, with a
+    // `if (index < other.length)` guard on the second — a guard that only
+    // makes sense if you do not believe the alignment it is guarding.
+    setState(() => _staged.removeAt(index));
   }
 
   /// Opens a staged attachment so the user can verify they picked the
@@ -2448,20 +2103,20 @@ class _ChatScreenState extends State<ChatScreen>
   /// [AttachmentViewerScreen] a sent attachment uses, so the preview a
   /// user gets before Send matches what they get after. Skips silently
   /// for indices that don't map to a real on-disk file (a row mid-upload
-  /// that hasn't reached `_pendingFiles` yet — shouldn't happen given our
-  /// pick flow, but defensive).
+  /// user gets before Send matches what they get after.
+  ///
+  /// The chip and the file are one row now, so the old "a chip whose file
+  /// hasn't arrived yet — shouldn't happen, but defensive" branch is gone
+  /// along with the possibility it was guarding.
   Future<void> _previewAttachmentAt(int index) async {
-    if (index < 0 || index >= _pendingFiles.length) return;
-    final file = _pendingFiles[index];
-    final chip = (index < _attachments.length) ? _attachments[index] : null;
+    if (index < 0 || index >= _staged.length) return;
+    final staged = _staged[index];
     await AttachmentViewerScreen.open(
       context,
-      file: file,
-      // The staged chip carries the display name; fall back to the path's
-      // basename so the viewer can still pick a render mode by extension.
-      name: chip?.name ?? file.uri.pathSegments.last,
-      kindLabel: chip?.kind,
-      sizeLabel: chip?.size,
+      file: staged.file,
+      name: staged.chip.name,
+      kindLabel: staged.chip.kind,
+      sizeLabel: staged.chip.size,
     );
   }
 
@@ -2555,45 +2210,33 @@ class _ChatScreenState extends State<ChatScreen>
   /// Shared tail for every attachment source: enforces the per-kind size
   /// cap, builds the composer chips, and stages the upload.
   Future<void> _stagePickedFiles(List<PlatformFile> pickedFiles) async {
-    final newChips = <DemoAttachment>[];
-    final newFiles = <File>[];
-    final tooLarge = <String>[];
-    for (final picked in pickedFiles) {
-      final path = picked.path;
-      if (path == null || path.isEmpty) continue;
-      // Kind-aware size cap (Gap F): archives up to 500 MB (addon zips),
-      // everything else 25 MB. Matches the server, which 413s over the cap.
-      final capMb = FileKinds.isArchive(picked.extension) ? 500 : 25;
-      if (picked.size > capMb * kBytesPerMb) {
-        tooLarge.add(picked.name);
-        continue;
-      }
-      newChips.add(DemoAttachment(
-        name: picked.name,
-        kind: _kindForExtension(picked.extension),
-        size: humanBytes(picked.size, context.tr),
-        imageUrl: FileKinds.isImage(picked.extension) ? picked.path : null,
-        localPath: path,
-      ));
-      newFiles.add(File(path));
-    }
-    if (tooLarge.isNotEmpty) {
+    // Kind-aware size caps (Gap F) and the chips live in
+    // [AttachmentStaging], shared with the share-sheet path below.
+    final staged = AttachmentStaging.validate(
+      pickedFiles.map((p) => (
+            name: p.name,
+            path: p.path,
+            size: p.size,
+            extension: p.extension,
+          )),
+      context.tr,
+    );
+    final newChips = staged.chips;
+    final newFiles = staged.files;
+
+    if (staged.rejected.isNotEmpty) {
       // Name the cap of the first rejected file; the rest were skipped too.
-      final firstExt = pickedFiles
-          .firstWhere((f) => f.name == tooLarge.first)
-          .extension;
-      _toast(context.tr.attachmentTooLarge(
-        tooLarge.first,
-        FileKinds.isArchive(firstExt) ? 500 : 25,
-      ));
+      final first = staged.rejected.first;
+      _toast(context.tr.attachmentTooLarge(first.name, first.capMb));
     }
     if (newFiles.isEmpty) return;
 
     // UI metadata for the composer chips — keeps the visual confirmation
     // instant even if the upload below is still in flight.
     setState(() {
-      _attachments.addAll(newChips);
-      _pendingFiles.addAll(newFiles);
+      for (var i = 0; i < newFiles.length; i++) {
+        _staged.add(StagedFile(chip: newChips[i], file: newFiles[i]));
+      }
     });
 
     // Existing chats own a [ChatCubit] — stage the uploads immediately
@@ -2609,34 +2252,14 @@ class _ChatScreenState extends State<ChatScreen>
         // Upload failed — drop just the chips we added this round so any
         // previously-staged batch the user might still want stays put.
         setState(() {
-          for (final f in newFiles) {
-            final idx = _pendingFiles.indexOf(f);
-            if (idx >= 0) {
-              _pendingFiles.removeAt(idx);
-              if (idx < _attachments.length) _attachments.removeAt(idx);
-            }
-          }
+          final dropped = {for (final f in newFiles) f.path};
+          _staged.removeWhere((s) => dropped.contains(s.file.path));
         });
         _surfaceActionFailure();
       }
     }
   }
 
-  /// Maps a file extension to one of the [DemoAttachment.kind] tokens
-  /// the chat bubble + attachment chip already know how to render.
-  /// The chip's kind label.
-  ///
-  /// "Image" is a category *word*, so it translates and is resolved here
-  /// where there is a `BuildContext`; every other label is a format
-  /// identifier that reads the same in Arabic and comes straight from
-  /// [FileKinds.badge]. The extension table itself lives in `FileKinds` —
-  /// five surfaces used to keep their own, and they disagreed about HEIC.
-  String _kindForExtension(String? ext) =>
-      FileKinds.isImage(ext) ? context.tr.fileKindImage : FileKinds.badge(ext);
-
-  /// Human-readable file size — "184 KB" / "2.4 MB". Used in the
-  /// attachment chip subtitle so the user gets a sense of upload cost
-  /// before tapping Send.
   // Bell trigger is inlined below as a private widget so the AppBar
   // `actions` slot stays terse.
 
@@ -2645,10 +2268,14 @@ class _ChatScreenState extends State<ChatScreen>
   /// so the AppBar title, conversation list row, and any other watcher
   /// update in one frame.
   Future<void> _renameConversation() async {
-    final conv = _conversation;
-    // Live title comes from the list cubit when known; falls back to
-    // the local conv title for the "new chat" sentinel that doesn't
+    // Live title comes from the list cubit when known; falls back to the
+    // "start a conversation" copy for the new-chat sentinel, which does not
     // exist in the list yet.
+    //
+    // That fallback used to be `_conversation.title` — a whole six-field
+    // view model built here purely so one string could be read off it, with
+    // the other five values invented on the spot. Reading the copy directly
+    // says the same thing without keeping a model alive to say it.
     final live = context
         .read<ConversationsCubit>()
         .state
@@ -2656,7 +2283,7 @@ class _ChatScreenState extends State<ChatScreen>
         .dataOrNull
         ?.byId(widget.conversationId)
         ?.title;
-    final current = live ?? conv.title;
+    final current = live ?? context.tr.startConversation;
     final next = await RenameConversationDialog.show(
       context,
       initial: current,
@@ -2807,20 +2434,65 @@ class _ChatScreenState extends State<ChatScreen>
   // dead because a file-level `ignore_for_file: unused_element` (added for a
   // different, since-deleted set of handlers) suppressed the warning.
 
+  /// Pushes what this chat's snapshot knows out to the two app-wide cubits
+  /// that other screens read.
+  ///
+  /// Split out of `build` because it is the one part of it that is not
+  /// building anything: `build` derives values and composes widgets, and
+  /// these two writes travel in the opposite direction. Both must also be
+  /// deferred a frame — calling `emit` on a cubit during `build` is a setState
+  /// during build, which Flutter forbids — and burying two
+  /// `addPostFrameCallback`s in the middle of a widget tree is how that rule
+  /// gets broken by the next person who adds a third.
+  ///
+  /// Cheap to call on every build: both cubits no-op when already in the
+  /// target state, so this costs a post-frame callback and two comparisons.
+  void _scheduleOutwardSync(api.Conversation? snapshotConv) {
+    if (_isNewChat) return;
+
+    // Surface the latest plan / quota / feature snapshot app-wide (Gap A) so
+    // the account usage card, plan badge and feature gating all read one
+    // source of truth.
+    final planSnapshot = snapshotConv?.plan;
+    if (planSnapshot != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<PlanCubit>().update(planSnapshot);
+      });
+    }
+
+    // Mirror the SERVER's run state into the cross-app RunningAgentsCubit so
+    // the Chats list shows the live "Saqqar is working" indicator for the
+    // WHOLE generation, not just the ~1 s send request.
+    final running = snapshotConv?.isRunning ?? false;
+    final convId = widget.conversationId;
+    // Grace window: within ~12 s of a send, keep the optimistic marker even
+    // if the snapshot still reads not-running — the server hasn't picked up
+    // the new turn yet, and clearing here would race the run to false before
+    // it ever flips true.
+    final sentAt = _lastSendAt;
+    final inGrace =
+        sentAt != null && DateTime.now().difference(sentAt) < _sendGraceWindow;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final agents = context.read<RunningAgentsCubit>();
+      if (running) {
+        agents.markRunning(convId);
+      } else if (!inGrace) {
+        agents.markIdle(convId);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // `_conversation` (demo lookup) was previously read here for the
-    // AppBar title; the AppBar now sources its title via the
-    // snapshot-first `_effectiveChatTitle` getter, so the local is
-    // dead. Kept the helper around because legacy code paths still
-    // reach for `_conversation.title` in places not yet migrated.
     final online = context.watch<ConnectivityCubit>().state;
     // Watch the share intake service so this chat rebuilds whenever the
     // bootstrap notifies (stage / deliverTo / take). When the
     // bootstrap has just committed a batch to THIS chat — e.g. the
     // user shared from WhatsApp and picked "current chat" from the
     // destination sheet — schedule a post-frame consume so the staged
-    // files land in `_attachments` without requiring the user to
+    // files land in `_staged` without requiring the user to
     // leave + re-enter the chat. The post-frame defer is critical:
     // calling `_consumeShareIntake` inline would cause a setState
     // during build, which Flutter forbids. `take()` inside the
@@ -2866,41 +2538,7 @@ class _ChatScreenState extends State<ChatScreen>
       context.watch<SaqqarFeaturesCubit>().state,
     );
 
-    // Surface the latest plan / quota / feature snapshot app-wide (Gap A)
-    // so the account usage card, plan badge, and feature gating all read one
-    // source of truth. Deferred a frame for the same reason as deep-think.
-    final planSnapshot = snapshotConv?.plan;
-    if (planSnapshot != null && !_isNewChat) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        context.read<PlanCubit>().update(planSnapshot);
-      });
-    }
-
-    // Mirror the SERVER's run state into the cross-app RunningAgentsCubit so
-    // the Chats list shows the live "Saqqar is working" indicator for the
-    // WHOLE generation (not just the ~1 s send request). markRunning/markIdle
-    // no-op when already in the target state, so firing every build is cheap.
-    if (!_isNewChat) {
-      final running = snapshotConv?.isRunning ?? false;
-      final convId = widget.conversationId;
-      // Grace window: within ~12 s of a send, keep the optimistic marker even
-      // if the snapshot still reads not-running — the server hasn't picked up
-      // the new turn yet, and clearing here would race the run to false before
-      // it ever flips true.
-      final sentAt = _lastSendAt;
-      final inGrace = sentAt != null &&
-          DateTime.now().difference(sentAt) < _sendGraceWindow;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final agents = context.read<RunningAgentsCubit>();
-        if (running) {
-          agents.markRunning(convId);
-        } else if (!inGrace) {
-          agents.markIdle(convId);
-        }
-      });
-    }
+    _scheduleOutwardSync(snapshotConv);
 
     // Brief §4.1 mobile header — hamburger left + title middle + bell
     // right with a pending-approvals badge. Badge count reads from the
@@ -3045,7 +2683,7 @@ class _ChatScreenState extends State<ChatScreen>
               child: Stack(
                 children: [
                   if (_loadingMessages)
-                    _buildSkeletonList()
+                    const ChatSkeletonList()
                   else if (_effectiveMessages.isEmpty)
                     EmptyChatSuggestions(onSuggestionTap: _seedSuggestion)
                   else
@@ -3062,8 +2700,8 @@ class _ChatScreenState extends State<ChatScreen>
                       child: _buildMessageList(),
                     ),
                   PositionedDirectional(
-                    end: 16,
-                    bottom: 12,
+                    end: AppSpacing.s16,
+                    bottom: AppSpacing.s12,
                     child: ChatScrollDownButton(
                       visible:
                           _showScrollDown && _effectiveMessages.isNotEmpty,
@@ -3110,8 +2748,8 @@ class _ChatScreenState extends State<ChatScreen>
                 // common Odoo operation. Hidden while recording / transcribing
                 // and on a brand-new empty chat (the welcome grid covers that).
                 ChatSuggestionStrip(
-                  visible: !_recording &&
-                      !_transcribing &&
+                  visible: !_voice.isRecording &&
+                      !_voice.isTranscribing &&
                       _effectiveMessages.isNotEmpty,
                   onSelect: _seedSuggestion,
                 ),
@@ -3121,7 +2759,7 @@ class _ChatScreenState extends State<ChatScreen>
                 ChatComposer(
               controller: _composer,
               focusNode: _composerFocus,
-              attachments: _attachments,
+              attachments: _attachmentChips,
               onAttach: _pickAttachment,
               onTools: () => _openToolsSheet(
                 features: chatFeatures,
@@ -3144,9 +2782,9 @@ class _ChatScreenState extends State<ChatScreen>
                   context.watch<PlanCubit>().state?.feature('voice') ?? true,
               // Voice recording — overlay replaces the text field while
               // [_recording] / [_transcribing] is true.
-              recording: _recording,
-              transcribing: _transcribing,
-              recordingElapsed: _recordingElapsed,
+              recording: _voice.isRecording,
+              transcribing: _voice.isTranscribing,
+              recordingElapsed: _voice.elapsed,
               onStartRecording: _startRecording,
               onStopRecording: _stopRecording,
               onDiscardRecording: _discardRecording,
@@ -3273,249 +2911,23 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// One-way bridge: real `api.Approval` → demo-shaped `DemoApproval`
-  /// so the existing `ChatApprovalCard` widget keeps working until it
-  /// migrates to the real model. Mirrors the rail drawer's adapter.
-  DemoApproval _adaptApiApproval(api.Approval a) {
-    return DemoApproval(
-      id: a.id,
-      title: _approvalTitleForApi(a),
-      prompt: a.prompt,
-      actionType: a.actionType.wire,
-      risk: _riskFor(a.actionType),
-      status: switch (a.status) {
-        api.ApprovalStatus.pending => DemoApprovalStatus.pending,
-        api.ApprovalStatus.approved => DemoApprovalStatus.approved,
-        api.ApprovalStatus.rejected => DemoApprovalStatus.rejected,
-      },
-      // NULLS ARE DROPPED, not stringified. `entry.value.toString()` on a
-      // null yields the literal string "null", and the server sends null for
-      // every optional field — so an ordinary email approval (cc, bcc and
-      // in_reply_to all null) rendered "Cc: null", "Bcc: null", and a Reply
-      // badge on every single mail, because "null" is a non-empty string.
-      // An absent field must read as absent.
-      payload: {
-        for (final entry in a.payload.entries)
-          if (entry.value != null) entry.key: entry.value.toString(),
-      },
-      recordCount: a.recordCount,
-      confirmPhrase: a.confirmPhrase,
-      deleteRecords: a.deleteRecords,
-      batchScoped: a.batchScoped,
-    );
-  }
-
-  /// Friendly approval title (Gap E). For Odoo writes with a server-resolved
-  /// model label, reads "Create 6 × Manufacturing Order" in the active
-  /// locale; otherwise a localized action-type title. Replaces the old
-  /// English-only [_approvalTitleFor].
-  String _approvalTitleForApi(api.Approval a) {
-    final tr = context.tr;
-    final label = a.modelLabel(isArabic: tr.isArabic);
-    if (label != null) {
-      final verb = tr.approvalOperationVerb(a.payload['operation']?.toString());
-      return tr.approvalModelTitle(verb, a.recordCount, label);
-    }
-    return tr.approvalActionTitle(a.actionType.wire);
-  }
-
-  String _riskFor(api.ApprovalActionType t) {
-    return switch (t) {
-      api.ApprovalActionType.credentialStorage => 'medium',
-      api.ApprovalActionType.credentialUsage => 'medium',
-      api.ApprovalActionType.reportExport => 'low',
-      _ => 'high',
-    };
-  }
-
-  Widget _buildSkeletonList() {
-    // Six placeholder bubbles alternating user/assistant, varying widths
-    // so it reads like a real conversation in shape.
-    const layout = <({bool isUser, double width, int lines})>[
-      (isUser: false, width: AppSkeletonSizes.bubbleRegular, lines: 2),
-      (isUser: true, width: AppSkeletonSizes.bubbleShort, lines: 1),
-      (isUser: false, width: AppSkeletonSizes.bubbleWidest, lines: 3),
-      (isUser: true, width: AppSkeletonSizes.bubbleMedium, lines: 1),
-      (isUser: false, width: AppSkeletonSizes.bubbleWide, lines: 2),
-      (isUser: false, width: AppSkeletonSizes.bubbleWider, lines: 2),
-    ];
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        for (final row in layout)
-          ResponsiveContent(
-            maxWidth: AppLayoutWidths.chatColumn,
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.s14,
-              AppSpacing.s14,
-              AppSpacing.s14,
-              0,
-            ),
-            child: MessageBubbleSkeleton(
-              isUser: row.isUser,
-              bubbleWidth: row.width,
-              linesCount: row.lines,
-            ),
-          ),
-        const SizedBox(height: AppSpacing.s16),
-      ],
-    );
-  }
-
-  /// Opens the in-conversation search sheet (the design's header search
-  /// affordance). Filters the currently-loaded messages by substring match
-  /// and lists the hits with a highlighted snippet. Self-contained — it does
-  /// not touch the fragile message-list rendering.
-  Future<void> _openConversationSearch() async {
-    final messages = _searchableMessages;
-    final s = context.saqqar;
-    // Owned here (not inside the sheet builder) so it can be disposed when
-    // the sheet closes — an earlier revision created it inside `builder` and
-    // never disposed it, leaking one TextEditingController per search-open
-    // for the app's lifetime.
-    final controller = TextEditingController();
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: s.surface,
-        builder: (sheetContext) {
-          return Padding(
-          padding: EdgeInsets.only(
-            // Scoped accessor — wholesale `MediaQuery.of` would rebuild this
-            // sheet on every unrelated MediaQuery change (text scale,
-            // brightness, padding) when only the keyboard inset matters.
-            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-          ),
-          child: DraggableScrollableSheet(
-            initialChildSize: AppFractions.searchSheetInitial,
-            minChildSize: AppFractions.searchSheetMin,
-            maxChildSize: AppFractions.searchSheetMax,
-            expand: false,
-            builder: (context, scrollController) {
-              return StatefulBuilder(
-                builder: (context, setSheetState) {
-                  final q = controller.text.trim().toLowerCase();
-                  final hits = q.isEmpty
-                      ? const <DemoMessage>[]
-                      : messages
-                          .where((m) => m.content.toLowerCase().contains(q))
-                          .toList()
-                          .reversed
-                          .toList();
-                  return Column(
-                    children: [
-                      const SizedBox(height: AppSpacing.s8),
-                      const SheetDragHandle(),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.s16,
-                          AppSpacing.s14,
-                          AppSpacing.s16,
-                          AppSpacing.s10,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(AppIcons.search, size: AppIconSizes.regular, color: s.muted),
-                            const SizedBox(width: AppSpacing.s10),
-                            Expanded(
-                              child: TextField(
-                                controller: controller,
-                                autofocus: true,
-                                onChanged: (_) => setSheetState(() {}),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  filled: false,
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  hintText: context.tr.searchInConversation,
-                                ),
-                              ),
-                            ),
-                            if (q.isNotEmpty)
-                              Text(
-                                '${hits.length}',
-                                style: context.text.labelMedium
-                                    ?.copyWith(color: s.muted),
-                              ),
-                          ],
-                        ),
-                      ),
-                      Divider(color: s.border, height: AppBorderWidths.hairline),
-                      Expanded(
-                        child: q.isEmpty
-                            ? Center(
-                                child: Text(
-                                  context.tr.searchMessagesHint,
-                                  style: context.text.bodyMedium
-                                      ?.copyWith(color: s.muted),
-                                ),
-                              )
-                            : hits.isEmpty
-                                ? Center(
-                                    child: Text(
-                                      context.tr.noResults,
-                                      style: context.text.bodyMedium
-                                          ?.copyWith(color: s.muted),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    controller: scrollController,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: AppSpacing.s8),
-                                    itemCount: hits.length,
-                                    separatorBuilder: (_, __) => Divider(
-                                      color: s.border,
-                                      height: AppBorderWidths.hairline,
-                                      indent: AppSpacing.s16,
-                                      endIndent: AppSpacing.s16,
-                                    ),
-                                    itemBuilder: (context, i) {
-                                      final m = hits[i];
-                                      return ListTile(
-                                        leading: Icon(AppIcons.message,
-                                            size: AppIconSizes.regular, color: s.brandCyan),
-                                        title: Text(
-                                          m.content.trim(),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: context.text.bodyMedium,
-                                        ),
-                                        subtitle: Text(
-                                          m.time,
-                                          style: context.text.labelSmall
-                                              ?.copyWith(color: s.muted),
-                                        ),
-                                        onTap: () =>
-                                            Navigator.of(context).pop(),
-                                      );
-                                    },
-                                  ),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
-        );
-      },
-      );
-    } finally {
-      controller.dispose();
-    }
-  }
+  /// Opens the in-conversation search sheet from the header affordance.
+  ///
+  /// Thin on purpose: the sheet is `ChatSearchSheet`, which owns its own
+  /// controller lifecycle and touches none of this screen's scroll, paging or
+  /// window state. All this side supplies is WHICH messages to search —
+  /// `_searchableMessages`, cached by the list build so the search covers the
+  /// whole loaded transcript rather than only the rendered window.
+  Future<void> _openConversationSearch() =>
+      ChatSearchSheet.show(context, messages: _searchableMessages);
 
   Widget _buildMessageList() {
     // Compute the full visible list ONCE (it subscribes via `context.watch`,
     // so cubit ticks rebuild the screen), then window it to the most-recent
-    // [_visibleLimit] for rendering. `all.length` drives whether the "Load
-    // earlier" button still has buffered messages to reveal.
+    // current [ChatRevealWindow] for rendering. `all.length` drives whether
+    // the "Load earlier" button still has buffered messages to reveal.
     final all = _allVisibleMessages;
-    final messages = all.length <= _visibleLimit
-        ? all
-        : all.sublist(all.length - _visibleLimit);
+    final messages = _window.slice(all);
     // Cache for the AppBar search sheet (read outside build) — searches the
     // WHOLE loaded transcript, not just the rendered window.
     _searchableMessages = all;
@@ -3579,15 +2991,6 @@ class _ChatScreenState extends State<ChatScreen>
         pendingApprovals.length +
         1;
 
-    // Which message carries the scroll anchor this build. Normally the oldest
-    // rendered row — that's the one closest to where a prepend inserts, so
-    // it's guaranteed to still be laid out afterwards. While a prepend is in
-    // flight `_scrollAnchorId` pins it to the message we measured BEFORE the
-    // insert, because by then `messages.first` is a different (older) row and
-    // following it would measure the wrong thing.
-    final anchorId = _scrollAnchorId ??
-        (messages.isEmpty ? null : messages.first.id);
-
     // Schedule a one-shot restore for the first frame in which the
     // ListView has measurable content. _restoreScrollIfNeeded guards
     // itself with `_hasRestoredScroll`, so subsequent poll-driven
@@ -3645,6 +3048,32 @@ class _ChatScreenState extends State<ChatScreen>
       controller: _scroll,
       padding: EdgeInsets.zero,
       itemCount: totalCount,
+      // ── Why this list is reversed ──────────────────────────────────────
+      //
+      // `reverse: true` puts scroll offset 0 at the BOTTOM, so index 0 is
+      // the newest row and older history grows away from the user. Three
+      // things fall out of that, and together they are the difference
+      // between paging that feels native and paging that feels homemade:
+      //
+      //  1. **Opening is free.** A chat rests at the newest message with no
+      //     scroll at all — no post-frame `jumpTo`, no estimated extent to
+      //     land against, no one-shot restore racing rows that arrive after
+      //     it.
+      //  2. **Prepending older rows moves nothing.** Older history is
+      //     APPENDED at high indices, which is off-screen in the direction
+      //     the user is heading. In a forward list the same insert lands at
+      //     index 0 and pushes the entire viewport down, which is why this
+      //     screen used to carry an anchor-measure / re-measure / `jumpTo`
+      //     correction — and why a page landing mid-drag cancelled the
+      //     user's gesture.
+      //  3. **"Scroll to newest" is `jumpTo(0)`**, not a guess at
+      //     `maxScrollExtent` that is itself an estimate while rows below
+      //     are unbuilt.
+      //
+      // The cost is one subtraction per item — [itemBuilder] maps the
+      // reversed index back to the logical top-to-bottom order below, so
+      // the layout arithmetic reads in the order the list is written.
+      reverse: true,
       // Smooth iOS-style scroll on every platform — Android's default
       // `ClampingScrollPhysics` reads as "heavy" / "panicky" the moment
       // you touch the screen. Bouncing physics gives momentum, gentle
@@ -3661,7 +3090,12 @@ class _ChatScreenState extends State<ChatScreen>
       // Bumped from the default 250 dp — chat bubbles are taller than
       // average list rows because of the markdown body.
       cacheExtent: AppScrollTuning.cacheExtent,
-      itemBuilder: (context, index) {
+      itemBuilder: (context, reversedIndex) {
+        // Back to logical order: 0 = the retry pill at the very top of the
+        // transcript, `totalCount - 1` = the spacer under the newest row.
+        // Every index expression below is written in that order because
+        // that is the order the reader sees on screen.
+        final index = totalCount - 1 - reversedIndex;
         // Retry pill — the first item, and present only while a page has
         // failed. See [_LoadEarlierHeader] for why it is an error state only.
         if (headerCount == 1 && index == 0) {
@@ -3705,9 +3139,9 @@ class _ChatScreenState extends State<ChatScreen>
               key: ValueKey('approval-${approval.id}'),
               index: approvalIdx,
               duration: AppDurations.cardIn,
-              offset: const Offset(0, 6),
+              offset: const Offset(0, AppMotionTravel.riseTight),
               child: ChatApprovalCard(
-                approval: _adaptApiApproval(approval),
+                approval: adaptApiApproval(approval, context.tr),
                 onApprove: () => _decideApprovalInline(approval, true),
                 onReject: () => _decideApprovalInline(approval, false),
                 onApproveAllSimilar: () =>
@@ -3723,7 +3157,7 @@ class _ChatScreenState extends State<ChatScreen>
               ? null
               : timeline.last.lastMessage;
           final firstOfGroup = previousMessage == null ||
-              previousMessage.role != DemoMessageRole.assistant;
+              previousMessage.role != ChatMessageRole.assistant;
           return ResponsiveContent(
             maxWidth: AppLayoutWidths.chatColumn,
             padding: EdgeInsets.fromLTRB(
@@ -3778,13 +3212,32 @@ class _ChatScreenState extends State<ChatScreen>
                 ],
               );
 
-        // Tag the scroll anchor. `_scrollAnchorId` names one specific message
-        // whose on-screen position must survive the next prepend; carrying
-        // the key on that row is what lets `_reanchorAfterPrepend` measure
-        // where it actually moved to. See `_loadEarlier`.
-        return entryAnchor.id == anchorId
-            ? KeyedSubtree(key: _scrollAnchorKey, child: row)
-            : row;
+        // …with ONE exception: the newest row.
+        //
+        // A reply landing is the one moment in this screen where something
+        // appears while the user is watching it, and having it pop in fully
+        // formed is what makes the chat feel mechanical. Fading it up is the
+        // difference, and it costs nothing here because there is only ever
+        // one of them — the `Opacity` + `Transform` the comment above rules
+        // out for every row is affordable for exactly one.
+        //
+        // Keyed by message id, which is what makes it fire once per arrival
+        // rather than once per rebuild: the poll ticks every ~1.5 s, and an
+        // unkeyed `FadeSlideIn` here would replay the entrance on each tick.
+        // A new id mounts a new element and animates; the same id keeps the
+        // element and stays still.
+        //
+        // Scrolling into history never reaches this branch, so the "stiff on
+        // flick-scroll" regression the comment above records cannot come
+        // back through it.
+        final isNewest = entryIdx == timeline.length - 1;
+        if (!isNewest) return row;
+        return FadeSlideIn(
+          key: ValueKey('newest-${entry.lastMessage.id}'),
+          duration: AppDurations.cardIn,
+          offset: const Offset(0, AppMotionTravel.riseTight),
+          child: row,
+        );
       },
       ),
     );
@@ -3797,7 +3250,7 @@ class _ChatScreenState extends State<ChatScreen>
   Widget _buildTimelineEntry(
     TimelineEntry entry, {
     required bool showDateSeparator,
-    required DemoMessage? previousLast,
+    required ChatMessage? previousLast,
   }) {
     if (entry is SingleMessageEntry) {
       final message = entry.message;
@@ -3866,7 +3319,7 @@ class _ChatScreenState extends State<ChatScreen>
   /// Lives in `data/chat_timeline.dart` so the grouping — including the rule
   /// that keeps interactive cards out of the collapsed thinking pill — is
   /// testable without pumping the screen.
-  List<TimelineEntry> _buildTimeline(List<DemoMessage> messages) =>
+  List<TimelineEntry> _buildTimeline(List<ChatMessage> messages) =>
       buildChatTimeline(messages);
 
   // -------- Sheets --------
@@ -3885,7 +3338,7 @@ class _ChatScreenState extends State<ChatScreen>
   ///      very first frame after sending, before the backend has chosen a
   ///      tool. Once the chat is wired to the streaming API the heuristic
   ///      branch will only trigger for the first ~200 ms.
-  String _contextualActivityLabel(DemoMessage? lastMessage) {
+  String _contextualActivityLabel(ChatMessage? lastMessage) {
     if (lastMessage == null) {
       return pendingStatusForTool(context, toolName: null);
     }
@@ -4029,15 +3482,11 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// "Sent · N file(s) attached" — picks the right pluralized string
-  /// and substitutes the count. Lives next to [_toast] so both
-  /// `_send` and `_sendAsNewConversation` can share it without
-  /// duplicating the localization shape.
-  String _sentWithFilesLabel(int count) {
-    final tr = context.tr;
-    if (count <= 1) return tr.sentToastOneFile;
-    return tr.sentToastManyFiles.replaceFirst('{count}', count.toString());
-  }
+  /// "Sent · N file(s) attached". Lives next to [_toast] so both `_send` and
+  /// `_sendAsNewConversation` can share it. The one-vs-many branch that used
+  /// to live here is gone: it was English's plural rule, and Arabic has six
+  /// forms — `AppStrings._p` owns the choice now.
+  String _sentWithFilesLabel(int count) => context.tr.sentToastFiles(count);
 }
 
 /// Bell icon in the chat AppBar's end slot — opens the rail drawer
@@ -4081,8 +3530,8 @@ class _InboxBellTrigger extends StatelessWidget {
                 Icon(AppIcons.bell, color: s.text, size: AppIconSizes.action),
                 if (badgeCount > 0)
                   PositionedDirectional(
-                    top: 4,
-                    end: 4,
+                    top: AppSpacing.s4,
+                    end: AppSpacing.s4,
                     child: Container(
                       constraints:
                           const BoxConstraints(minWidth: AppControlSizes.badgeMin, minHeight: AppControlSizes.badgeMin),
@@ -4191,7 +3640,7 @@ class _LoadEarlierHeader extends StatelessWidget {
 }
 
 /// Adapts a server-shaped [api.Message] into the demo-shaped
-/// [DemoMessage] the existing chat widgets still consume.
+/// [ChatMessage] the existing chat widgets still consume.
 ///
 /// Temporary bridge — once the chat widgets (MessageRow, MessageBubble,
 /// AttachmentChip, ArtifactPill, ApprovalCard) are migrated to take the
@@ -4207,36 +3656,22 @@ class _LoadEarlierHeader extends StatelessWidget {
 /// without a `BuildContext`; this wrapper only resolves the two things that
 /// genuinely need one — the localized timestamp label and the attachment
 /// size/kind copy.
-DemoMessage _adaptApiMessage(api.Message m, BuildContext context) {
+ChatMessage _adaptApiMessage(api.Message m, BuildContext context) {
   return adaptApiMessage(
     m,
     time: AppDateFormat.fullDateTime(context, m.createdAt),
     attachments: m.attachments
-        .map((a) => _adaptApiAttachment(a, context.tr))
+        .map((a) => adaptApiAttachment(a, context.tr))
         .toList(),
-  );
-}
-
-DemoAttachment _adaptApiAttachment(api.Attachment a, AppStrings tr) {
-  return DemoAttachment(
-    name: a.originalName,
-    kind: a.kind.toUpperCase(),
-    size: humanBytes(a.sizeBytes, tr),
-    imageUrl: a.kind == 'image' ? a.absoluteUrl : null,
-    // Carry the server-side id + absolute URL so the AttachmentChip
-    // tap handler can download + open the file via [ArtifactDownloader].
-    serverId: a.id,
-    downloadUrl: a.absoluteUrl,
   );
 }
 
 /// Source-agnostic env reference resolved by [_ChatScreenState._resolveEnv].
 ///
-/// Built from either:
-///   * A real [Environment] looked up via `VaultCubit` (the common case
-///     once Phase 4 ships — header dropdowns feed real UUIDs), OR
-///   * A `DemoEnvironment` for legacy seeded chats that still carry
-///     hardcoded ids.
+/// Built from a real [Environment] looked up via `VaultCubit`. It used to
+/// have a second source — a `DemoEnvironment` for legacy seeded chats
+/// carrying hardcoded ids — but no such chat exists any more and that type
+/// was deleted; every id now comes from the vault or the snapshot.
 ///
 /// Kept as a flat record-shaped class so the send flow doesn't have to
 /// import either source-of-truth type.

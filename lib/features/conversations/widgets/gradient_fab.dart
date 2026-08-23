@@ -35,7 +35,7 @@ class GradientFab extends StatelessWidget {
             BoxShadow(
               color: s.brandCyan.withValues(alpha: AppAlphas.a36),
               blurRadius: AppShadowSizes.blurFab,
-              offset: const Offset(0, 10),
+              offset: const Offset(0, AppShadowSizes.dropFab),
             ),
           ],
         ),

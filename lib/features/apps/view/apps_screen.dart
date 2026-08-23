@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/state/data_state.dart';
@@ -132,11 +133,17 @@ class _AppsScreenState extends State<AppsScreen> {
                     // the data rather than hardcoded, so a group the backend
                     // introduces gets a pill without a mobile release — and
                     // a group it retires stops showing an empty filter.
+                    final tr = context.tr;
                     final groups = <String>{
                       for (final a in apps)
                         if (a.group.trim().isNotEmpty) a.group.trim(),
                     }.toList()
-                      ..sort();
+                      // Sorted by the label the user actually reads, not by
+                      // the server's English. Sorting the raw values put the
+                      // Arabic pills in an order with no relation to their
+                      // own alphabet — المحاسبة · المالية · التكاملات, which
+                      // is A-C-F in a language that does not use A-C-F.
+                      ..sort((a, b) => tr.appGroup(a).compareTo(tr.appGroup(b)));
                     // A selection that no longer matches anything (the
                     // catalogue changed under a pull-to-refresh) falls back
                     // to All instead of showing a permanently empty grid.
@@ -388,17 +395,46 @@ class _AppTile extends StatelessWidget {
   }
 }
 
-/// Group taxonomy → a definitely-present Material icon. The server also
-/// sends an inline SVG, but the app bundles no SVG renderer, so this keeps
-/// each tile visually distinct without a new dependency.
+/// Group taxonomy → a definitely-present icon. The server also sends an
+/// inline SVG, but the app bundles no SVG renderer, so this keeps each tile
+/// visually distinct without a new dependency.
+///
+/// Keyed through [AppStrings.taxonomyKey], the same normalization the label
+/// lookup uses — a padded or differently-cased `Finance` must not translate
+/// correctly and then draw the generic grid glyph.
 IconData _iconForGroup(String group) {
-  switch (group.toLowerCase()) {
+  switch (AppStrings.taxonomyKey(group)) {
     case 'accounting':
       return AppIcons.calculator;
     case 'finance':
       return AppIcons.bank;
     case 'integrations':
       return AppIcons.puzzle;
+    // The rest of the ERP taxonomy the catalogue can grow into. Same reason
+    // the labels are pre-translated: a new group otherwise arrives as a wall
+    // of identical grid glyphs, which is what the tile icon exists to avoid.
+    case 'sales':
+    case 'crm':
+      return AppIcons.barChart;
+    case 'purchasing':
+    case 'inventory':
+    case 'manufacturing':
+      return AppIcons.projects;
+    case 'hr':
+      return AppIcons.user;
+    case 'marketing':
+      return AppIcons.send;
+    case 'operations':
+    case 'automation':
+      return AppIcons.bolt;
+    case 'productivity':
+      return AppIcons.sparkles;
+    case 'reporting':
+    case 'data':
+      return AppIcons.table;
+    case 'compliance':
+    case 'security':
+      return AppIcons.shieldCheck;
     default:
       return AppIcons.grid;
   }

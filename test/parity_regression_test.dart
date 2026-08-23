@@ -22,7 +22,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/features/chat/widgets/email_approval_preview.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 import 'package:saqqar_app/features/inbox/data/approval_models.dart';
 
 /// The payload adapter both approval surfaces use, extracted verbatim so this
@@ -44,18 +44,18 @@ Approval _approval(Map<String, dynamic> extra) => Approval.fromJson({
       ...extra,
     });
 
-DemoApproval _demo({
+ChatApproval _demo({
   required String actionType,
   Map<String, String> payload = const {},
   bool batchScoped = false,
 }) =>
-    DemoApproval(
+    ChatApproval(
       id: 'a1',
       title: 't',
       prompt: 'p',
       actionType: actionType,
       risk: 'high',
-      status: DemoApprovalStatus.pending,
+      status: ChatApprovalStatus.pending,
       payload: payload,
       batchScoped: batchScoped,
     );
@@ -238,45 +238,73 @@ void main() {
     });
   });
 
-  group('both approval surfaces adapt the payload the same way', () {
-    // The adapter is duplicated in `chat_screen.dart` and
-    // `chat_rail_drawer.dart` — one-way translation at each widget boundary.
-    // Two copies is two places to regress, and the drawer copy is the one
-    // nobody looks at. A source assertion is crude but it is the only thing
-    // that catches "fixed in one, missed in the other", which is exactly how
-    // the null bug would come back.
-    const sources = [
-      'lib/features/chat/view/chat_screen.dart',
-      'lib/features/chat/widgets/chat_rail_drawer.dart',
-    ];
+  group('one approval adapter, and only one', () {
+    // This used to read: "the adapter is duplicated in `chat_screen.dart` and
+    // `chat_rail_drawer.dart` — two copies is two places to regress, and the
+    // drawer copy is the one nobody looks at."
+    //
+    // It was right. The two copies HAD drifted, on the field that matters
+    // most: the inline card titled an approval "Create 6 × Manufacturing
+    // Order" while the drawer titled the same one "Odoo write". They now
+    // share `data/approval_adapter.dart`, and `approval_adapter_test.dart`
+    // asserts the null-payload behaviour on the real function instead of by
+    // reading source.
+    //
+    // What is left here is the invariant a behavioural test cannot see: that
+    // nobody adds a THIRD copy. The cheap source scan is retargeted to that.
+    const adapter = 'lib/features/chat/data/approval_adapter.dart';
 
-    test('neither stringifies a null payload value', () {
-      for (final path in sources) {
-        // Comment lines are stripped first. The note explaining this very
-        // bug quotes the offending expression, and counting it as code makes
-        // the guard fail on its own documentation — which is how a test
-        // starts getting weakened instead of believed.
-        final code = File(path)
+    test('the one adapter still guards its nulls', () {
+      // Comment lines are stripped first. The note explaining this very bug
+      // quotes the offending expression, and counting it as code makes the
+      // guard fail on its own documentation — which is how a test starts
+      // getting weakened instead of believed.
+      final code = File(adapter)
+          .readAsLinesSync()
+          .where((l) => !l.trimLeft().startsWith('//'))
+          .join('\n');
+
+      final stringifications = 'entry.value.toString()'.allMatches(code).length;
+      final guards = 'if (entry.value != null)'.allMatches(code).length;
+
+      expect(
+        stringifications,
+        greaterThan(0),
+        reason: '$adapter no longer adapts a payload — retarget this guard',
+      );
+      expect(
+        guards,
+        greaterThanOrEqualTo(stringifications),
+        reason: '$adapter stringifies a payload value without a null guard — '
+            'that renders the literal "null" to the user',
+      );
+    });
+
+    test('no other file builds a ChatApproval', () {
+      // The regression this whole group exists for is "fixed in one, missed
+      // in the other". The way that comes back is a second construction site,
+      // so that is what is banned — not a particular spelling of the bug.
+      final offenders = <String>[];
+      for (final f in Directory('lib').listSync(recursive: true)) {
+        if (f is! File || !f.path.endsWith('.dart')) continue;
+        final path = f.path.replaceAll(r'\', '/');
+        if (path.endsWith('approval_adapter.dart')) continue;
+        // The model's own declaration is not a construction site.
+        if (path.endsWith('chat_view_models.dart')) continue;
+        final code = f
             .readAsLinesSync()
             .where((l) => !l.trimLeft().startsWith('//'))
             .join('\n');
-
-        final stringifications =
-            'entry.value.toString()'.allMatches(code).length;
-        final guards = 'if (entry.value != null)'.allMatches(code).length;
-
-        expect(
-          stringifications,
-          greaterThan(0),
-          reason: '$path no longer adapts a payload — retarget this guard',
-        );
-        expect(
-          guards,
-          greaterThanOrEqualTo(stringifications),
-          reason: '$path stringifies a payload value without a null guard — '
-              'that renders the literal "null" to the user',
-        );
+        if (code.contains('ChatApproval(')) offenders.add(path);
       }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'These files construct a ChatApproval themselves instead of '
+            'calling `adaptApiApproval`, which is how the two surfaces drifted '
+            'apart the first time:\n${offenders.join('\n')}',
+      );
     });
   });
 

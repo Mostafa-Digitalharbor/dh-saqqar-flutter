@@ -56,7 +56,8 @@ class _SaqqarAppState extends State<SaqqarApp> {
   @override
   Widget build(BuildContext context) {
     // Rebuild the MaterialApp on every theme/locale change so the font
-    // family (Inter / Tajawal) and surface palette swap correctly.
+    // family (Space Grotesk / IBM Plex Sans Arabic) and surface palette swap
+    // correctly.
     final mode = context.watch<ThemeCubit>().state;
     final locale = context.watch<LocaleCubit>().state;
 
@@ -217,18 +218,30 @@ class _SaqqarAppState extends State<SaqqarApp> {
           // the chat bubble + tab bar layouts. 0.85–1.4 keeps the spec
           // §2.2 type hierarchy legible without overflowing fixed-height
           // surfaces.
-          final media = MediaQuery.of(context);
-          final clamped = media.textScaler.clamp(
-            minScaleFactor: 0.85,
-            maxScaleFactor: 1.4,
-          );
+          //
+          // `withClampedTextScaling`, NOT `MediaQuery.of(context)` +
+          // `copyWith`. The two produce the same clamp; they differ in WHERE
+          // the MediaQuery dependency is registered, and that is the whole
+          // point. Reading it on this `context` made the widget that runs
+          // this builder depend on every MediaQuery field — `viewInsets`
+          // included — so each frame of the keyboard's open/close animation
+          // re-ran the builder and rebuilt all four gates below, ~15 times
+          // per keyboard transition, at the root of the app.
+          //
+          // The helper takes `child` as an already-built widget and reads
+          // MediaQuery inside its own `Builder`. A keyboard frame now
+          // rebuilds that Builder alone: the gate subtree is the identical
+          // widget instance, so the element diff stops there. Same clamp,
+          // none of the churn.
+          //
           // [ShareIntentBootstrap] lives INSIDE the MaterialApp.router
           // builder so it sits BELOW the Navigator — that's the level at
           // which `showModalBottomSheet` finds an Overlay to draw on.
           // Wrapping above the router would yield "No MaterialLocalizations
           // found" the moment the share sheet tries to render.
-          return MediaQuery(
-            data: media.copyWith(textScaler: clamped),
+          return MediaQuery.withClampedTextScaling(
+            minScaleFactor: 0.85,
+            maxScaleFactor: 1.4,
             // AppUpdateGate sits OUTSIDE AppLockGate: when a build is below
             // the backend's supported floor there is nothing behind the lock
             // worth authenticating into, so making the user pass Face ID

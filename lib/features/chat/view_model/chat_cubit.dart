@@ -64,15 +64,27 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   static const _attachmentPollInterval = Duration(seconds: 1);
   static const _attachmentPollTimeout = Duration(seconds: 30);
 
-  /// Messages fetched on the first paint. A bounded window keeps the
-  /// open-chat path fast — we deserialise + lay out ~40 recent rows
-  /// instead of the entire transcript on the UI isolate. Older history
-  /// loads on demand via [loadOlder].
-  static const _initialLimit = 40;
+  /// Raw rows fetched on the first paint.
+  ///
+  /// Sized to cover the view's opening window of 50 VISIBLE messages, at the
+  /// ~2.5 raw rows each one costs ([_rawRowsPerVisible]). It used to be 40,
+  /// which is about sixteen bubbles — the chat opened, the user scrolled once,
+  /// and it was already paging. Bounded either way: the alternative is the
+  /// entire transcript, which on a 5,000-message conversation is seconds of
+  /// decode before anything paints.
+  ///
+  /// Safe to raise only because [load] now decodes off the UI isolate. On the
+  /// UI thread this many rows would move the cost from "a page the user is
+  /// scrolling toward" to "the frame the chat first appears on", which is the
+  /// most expensive place in the app to spend it.
+  static const _initialLimit = 125;
 
-  /// Page size for each backwards step, in RAW rows. Fixed, not growing:
-  /// every fetch returns exactly one page of history that gets PREPENDED to
-  /// what we already hold.
+  /// DEFAULT page size for a backwards step, in RAW rows, used when the
+  /// caller has no opinion. A caller that knows how many messages it is
+  /// about to reveal passes `rows:` and gets a page sized by [_requestRows].
+  ///
+  /// Every fetch returns one page of history that gets PREPENDED to what we
+  /// already hold — the size varies, the one-page-per-step shape does not.
   ///
   /// Deliberately larger than [_initialLimit]. Raw rows are not what the user
   /// sees: on a real transcript roughly half are `tool` rows the chat filters
@@ -83,6 +95,40 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   /// alone make it scrollable enough to trigger the next page. 100 is still
   /// one request and still well under the server's 500 ceiling.
   static const _olderPageSize = 100;
+
+  /// Hard ceiling the server enforces on `?limit=`.
+  ///
+  /// Named because exceeding it does not error — it silently returns 500 rows,
+  /// and the "did we get a full page?" test then reads a short page as *no
+  /// more history*. That is what stranded 4,840 messages of a 5,340-message
+  /// conversation before cursor paging landed, so anything computing a limit
+  /// clamps here rather than trusting its own arithmetic.
+  static const _serverRowCeiling = 500;
+
+  /// Roughly how many raw rows it takes to surface one visible message.
+  ///
+  /// From the same live sample as [_olderPageSize]: 200 raw rows were 89
+  /// tool / 94 assistant / 17 user, and consecutive assistant rows collapse
+  /// into a single "thinking" pill. Call it two and a half raw rows per row
+  /// the user actually sees. Approximate on purpose — it only has to be
+  /// close enough that a page covers the reveal it was fetched for, and
+  /// over-fetching costs one request either way.
+  static const _rawRowsPerVisible = 2.5;
+
+  /// How many raw rows to ask for when the view wants [visible] more
+  /// messages, or the default page when it has no opinion.
+  ///
+  /// The view's reveal step grows as the user travels back through a long
+  /// transcript (50, then 100, 200, 400), and a fixed 100-row page stops
+  /// covering it after the second step. When that happens the bank runs dry
+  /// mid-scroll and the next reveal has to fetch synchronously — the lane
+  /// stops, which is the exact failure the page-ahead exists to prevent.
+  static int _requestRows(int? visible) {
+    if (visible == null) return _olderPageSize;
+    final wanted = (visible * _rawRowsPerVisible).ceil();
+    if (wanted < _olderPageSize) return _olderPageSize;
+    return wanted > _serverRowCeiling ? _serverRowCeiling : wanted;
+  }
 
   /// The `?before=` cursor for the next backwards page — the server's
   /// `oldest_cursor` from the oldest page we've loaded so far.
@@ -190,8 +236,17 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       }
     }
     try {
-      final snapshot =
-          await _repo.getSnapshot(conversationId, limit: _initialLimit);
+      // Off the UI isolate. The initial page carries enough rows to fill
+      // the chat's opening window, and decoding that much JSON on the UI
+      // thread is a visible hitch on exactly the frame the user is watching
+      // — the chat painting for the first time. Paging has decoded off-
+      // isolate since cursor paging landed; this is the same call for the
+      // same reason, and it also picks up the `ok: false` envelope check
+      // that the plain-text response type hides from `ErrorInterceptor`.
+      final snapshot = await _repo.getSnapshotOffIsolate(
+        conversationId,
+        limit: _initialLimit,
+      );
       // Through [_mergeSnapshot], NOT a direct adopt-and-replace.
       //
       // This asks for the newest [_initialLimit] rows. Adopting that verbatim
@@ -521,7 +576,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   ///
   /// Decode runs OFF the UI isolate. No-op while a fetch is in flight, once
   /// the start is reached, or if we have no cursor to page from.
-  Future<void> loadOlder() => _pageOlder(silent: false);
+  Future<void> loadOlder({int? rows}) => _pageOlder(silent: false, rows: rows);
 
   /// Fetches the next backwards page **ahead of the user asking for it**, so
   /// that by the time they scroll into it the rows are already in memory and
@@ -545,10 +600,10 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   /// and the next page is only fetched when the view says the headroom is
   /// running down. Self-chaining here would quietly walk the whole
   /// conversation into memory on a chat the user opened to read one message.
-  Future<void> prefetchOlder() => _pageOlder(silent: true);
+  Future<void> prefetchOlder({int? rows}) => _pageOlder(silent: true, rows: rows);
 
   /// One backwards page, shared by the user-driven and page-ahead paths.
-  Future<void> _pageOlder({required bool silent}) {
+  Future<void> _pageOlder({required bool silent, int? rows}) {
     final inFlight = _olderPageInFlight;
     if (inFlight != null) {
       // A page is already on the wire. Ride it rather than issuing a second
@@ -572,7 +627,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       return Future<void>.value();
     }
     if (!silent) emit(state.copyWith(isLoadingOlder: true));
-    final future = _fetchOlderPage(cursor: cursor, silent: silent)
+    final future = _fetchOlderPage(cursor: cursor, silent: silent, rows: rows)
         .whenComplete(() => _olderPageInFlight = null);
     _olderPageInFlight = future;
     return future;
@@ -580,13 +635,14 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
 
   Future<void> _fetchOlderPage({
     required String cursor,
+    int? rows,
     required bool silent,
   }) async {
     try {
       final page = await _repo.getSnapshotOffIsolate(
         conversationId,
         before: cursor,
-        limit: _olderPageSize,
+        limit: _requestRows(rows),
       );
       // The paging position can move while a page is on the wire — a full
       // refresh adopts the newest window and rewinds the cursor. Landing this

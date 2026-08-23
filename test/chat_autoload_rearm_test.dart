@@ -6,7 +6,7 @@
 //
 // The subtle part is what re-arms it. The obvious answer — re-arm by
 // position, once the user has scrolled back out of the zone — has a dead end
-// that only shows up at the very top of the transcript: `extentBefore` is 0
+// that only shows up at the very top of the transcript: `extentAfter` is 0
 // there and cannot climb back over the re-arm line, so the latch stays down
 // forever and further upward swipes do nothing at all. Found on a live
 // 816-message chat: the lane stopped paging with "Load earlier messages"
@@ -26,7 +26,7 @@ const _rowCount = 20;
 const _viewportHeight = 600.0;
 
 /// Mirrors the chat lane's latch exactly — same constants, same two rules,
-/// same physics — against real `Scrollable` machinery, so `extentBefore`,
+/// same physics — against real `Scrollable` machinery, so `extentAfter`,
 /// overscroll clamping and notification ordering are the framework's and not
 /// a stand-in.
 class _LatchedList extends StatefulWidget {
@@ -69,10 +69,10 @@ class _LatchedListState extends State<_LatchedList> {
   void _onScrollChanged() {
     if (!widget.controller.hasClients) return;
     final position = widget.controller.position;
-    if (position.extentBefore > _threshold * 2) _armed = true;
-    if (_armed && position.extentBefore <= _threshold) {
+    if (position.extentAfter > _threshold * 2) _armed = true;
+    if (_armed && position.extentAfter <= _threshold) {
       _armed = false;
-      widget.fires.add(position.extentBefore);
+      widget.fires.add(position.extentAfter);
     }
   }
 
@@ -92,6 +92,9 @@ class _LatchedListState extends State<_LatchedList> {
             },
             child: ListView.builder(
               controller: widget.controller,
+              // The chat lane is reversed: offset 0 is the newest message and
+              // `extentAfter` is how much loaded history is still ahead.
+              reverse: true,
               // The chat lane's physics. Load-bearing here: at the top of a
               // clamping list a drag moves nothing, so no scroll notification
               // would be emitted at all and there would be no dead end to
@@ -127,15 +130,16 @@ Future<ScrollController> _pumpAtBottom(
       rearmOnDrag: rearmOnDrag,
     ),
   );
-  // A chat opens pinned to the newest message.
-  controller.jumpTo(controller.position.maxScrollExtent);
+  // A reversed lane already RESTS on the newest message — no jump needed,
+  // which is the whole point of the flip. Settle one frame so the listener
+  // has seen the resting metrics before the first swipe.
   await tester.pump();
-  fires.clear(); // The jump itself is not a user gesture.
+  fires.clear();
   return controller;
 }
 
-/// One upward swipe, settled. `dy` positive drags content down, i.e. scrolls
-/// toward older messages.
+/// One swipe deeper into history, settled. In a reversed lane a positive
+/// `dy` drags content down, which travels toward older messages.
 Future<void> _swipeUp(WidgetTester tester, double dy) async {
   await tester.drag(find.byType(ListView), Offset(0, dy));
   await tester.pumpAndSettle();
@@ -165,11 +169,11 @@ void main() {
 
         await _swipeUp(tester, 2000);
         expect(fires, hasLength(1), reason: 'first page requested');
-        expect(controller.position.extentBefore, lessThan(100.0));
+        expect(controller.position.extentAfter, lessThan(100.0));
 
         // The user keeps asking. Every one of these moves the offset (bouncing
         // physics overscrolls past the edge), so the scroll listener does run
-        // — it just never re-arms, because `extentBefore` is pinned at 0 and
+        // — it just never re-arms, because `extentAfter` is pinned at 0 and
         // can never exceed the re-arm line again.
         for (var i = 0; i < 4; i++) {
           await _swipeUp(tester, 400);
@@ -193,7 +197,7 @@ void main() {
 
       await _swipeUp(tester, 2000);
       expect(fires, hasLength(1));
-      expect(controller.position.extentBefore, lessThan(100.0));
+      expect(controller.position.extentAfter, lessThan(100.0));
 
       await _swipeUp(tester, 400);
       expect(fires, hasLength(2), reason: 'the user asked again');

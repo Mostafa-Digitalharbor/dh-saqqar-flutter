@@ -14,7 +14,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import '../../inbox/data/artifact_downloader.dart';
 import '../view/attachment_viewer_screen.dart';
 import 'artifact_pill.dart';
@@ -44,7 +44,7 @@ class MessageBubble extends StatelessWidget {
   });
 
   final bool isUser;
-  final DemoMessage message;
+  final ChatMessage message;
   final bool showTime;
 
   @override
@@ -57,7 +57,7 @@ class MessageBubble extends StatelessWidget {
 class _UserBubble extends StatelessWidget {
   const _UserBubble({required this.message, required this.showTime});
 
-  final DemoMessage message;
+  final ChatMessage message;
   final bool showTime;
 
   @override
@@ -123,7 +123,7 @@ class _UserBubble extends StatelessWidget {
 class _AgentMessage extends StatelessWidget {
   const _AgentMessage({required this.message, required this.showTime});
 
-  final DemoMessage message;
+  final ChatMessage message;
   final bool showTime;
 
   @override
@@ -254,7 +254,7 @@ class MessageMeta extends StatelessWidget {
   }
 }
 
-Future<void> _copyMessage(BuildContext context, DemoMessage message) async {
+Future<void> _copyMessage(BuildContext context, ChatMessage message) async {
   // Fire haptic the moment the long-press resolves — before the async
   // clipboard write — so the user feels the action register without
   // waiting for the toast.
@@ -277,7 +277,7 @@ Future<void> _copyMessage(BuildContext context, DemoMessage message) async {
 /// Dismissing the sheet without picking is a no-op.
 Future<void> _showMessageActions(
   BuildContext context,
-  DemoMessage message,
+  ChatMessage message,
 ) async {
   unawaited(HapticFeedback.mediumImpact());
   final action = await showModalBottomSheet<_MessageAction>(
@@ -296,7 +296,7 @@ Future<void> _showMessageActions(
 
 Future<void> _shareMessage(
   BuildContext context,
-  DemoMessage message,
+  ChatMessage message,
 ) async {
   if (message.content.trim().isEmpty) return;
   final subject = context.tr.shareMessageSubject;
@@ -387,7 +387,7 @@ class _MessageAttachments extends StatelessWidget {
     required this.spacing,
   });
 
-  final List<DemoAttachment> attachments;
+  final List<ChatAttachment> attachments;
 
   /// Gap above each attachment block. The user bubble is tighter (8) than
   /// the bubble-less agent reply (10).
@@ -397,8 +397,8 @@ class _MessageAttachments extends StatelessWidget {
   Widget build(BuildContext context) {
     if (attachments.isEmpty) return const SizedBox.shrink();
 
-    final artifacts = <DemoAttachment>[];
-    final plain = <DemoAttachment>[];
+    final artifacts = <ChatAttachment>[];
+    final plain = <ChatAttachment>[];
     for (final a in attachments) {
       (a.isAgentGenerated ? artifacts : plain).add(a);
     }
@@ -439,7 +439,7 @@ class _MessageAttachments extends StatelessWidget {
 class _AttachmentStrip extends StatelessWidget {
   const _AttachmentStrip({required this.attachments});
 
-  final List<DemoAttachment> attachments;
+  final List<ChatAttachment> attachments;
 
   @override
   Widget build(BuildContext context) {
@@ -478,7 +478,7 @@ class _AttachmentStrip extends StatelessWidget {
 /// function asserts both [downloadUrl] and [serverId] are set.
 Future<void> _openAttachment(
   BuildContext context,
-  DemoAttachment attachment,
+  ChatAttachment attachment,
 ) async {
   final url = attachment.downloadUrl;
   final cacheKey = attachment.serverId;

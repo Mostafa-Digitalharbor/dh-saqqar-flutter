@@ -18,7 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/constants/ui_strings.dart';
 import 'package:saqqar_app/core/format/file_kind.dart';
 import 'package:saqqar_app/features/chat/view/attachment_viewer_screen.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
 void main() {
   group('extensionOf', () {
@@ -46,7 +46,7 @@ void main() {
     });
 
     test('is an image to the message bubble', () {
-      const attachment = DemoAttachment(
+      const attachment = ChatAttachment(
         name: heic,
         kind: 'صورة',
         size: '2.4 MB',

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/responsive_breakpoints.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import '../data/interactive_cards.dart';
 import 'message_bubble.dart';
 import 'prompt_clarify_card.dart';
@@ -33,7 +33,7 @@ class MessageRow extends StatelessWidget {
     this.entityLoader,
   });
 
-  final DemoMessage message;
+  final ChatMessage message;
   final bool isFirstOfGroup;
   final bool isLastOfGroup;
 
@@ -47,15 +47,15 @@ class MessageRow extends StatelessWidget {
   /// Backs the report card's record multi-select. Null hides that section.
   final ReportEntityLoader? entityLoader;
 
-  bool get _isUser => message.role == DemoMessageRole.user;
-  bool get _isTool => message.role == DemoMessageRole.tool;
+  bool get _isUser => message.role == ChatMessageRole.user;
+  bool get _isTool => message.role == ChatMessageRole.tool;
 
   /// The interactive card this message carries, if any.
   ///
   /// Static so the chat timeline can ask the same question before grouping
   /// messages — a card folded into a "thinking steps" run would be
   /// unreachable, which is the same bug as not rendering it at all.
-  static InteractiveCardKind? interactiveKindOf(DemoMessage message) =>
+  static InteractiveCardKind? interactiveKindOf(ChatMessage message) =>
       interactiveCardKind(message.toolPayload);
 
   @override

@@ -103,9 +103,27 @@ AndroidNotificationChannel _updatesChannel(AppStrings tr) =>
 /// [stop] on logout (which also unregisters the device server-side so a
 /// signed-out phone stops receiving that user's pushes).
 class PushNotificationsService {
-  PushNotificationsService(this._devices, this._store, this._platformStrings);
+  PushNotificationsService(
+    this._devices,
+    this._store,
+    this._platformStrings, {
+    Future<void>? firebaseReady,
+  }) : _firebaseReady = firebaseReady;
 
   static const _tag = 'PushNotificationsService';
+
+  /// Completes when `Firebase.initializeApp()` has finished (or failed).
+  ///
+  /// Boot no longer *awaits* Firebase before `runApp` — a cold init costs
+  /// hundreds of milliseconds of platform-channel work that nothing on the
+  /// first frame needs, and paying it there delayed every pixel. It now runs
+  /// alongside the rest of the boot, and this is the handle that makes that
+  /// safe: `FirebaseMessaging.instance` throws if it is touched first, so
+  /// every entry point that reaches for it waits here.
+  ///
+  /// Null in tests and anywhere the caller initialises Firebase itself, in
+  /// which case the waits are no-ops.
+  final Future<void>? _firebaseReady;
 
   final DevicesApi _devices;
   final NotificationsStore _store;
@@ -137,9 +155,18 @@ class PushNotificationsService {
   Future<void> start({String? localeCode}) async {
     _localeCode = localeCode;
     if (_started) return;
+    // Claimed BEFORE the await below, not after: `_started` is the
+    // once-only guard, and yielding first would let two callers — the
+    // splash's cold-start registration and the auth listener — both get
+    // past it and register the device twice.
     _started = true;
     final gen = _generation;
     try {
+      // Firebase is initialised alongside boot rather than before it, so
+      // this is the point where that has to have landed. Already complete
+      // in the common case (the caller waits on `/auth/me/` first), so this
+      // usually costs nothing.
+      await _firebaseReady;
       final messaging = FirebaseMessaging.instance;
       // iOS shows the system prompt here; Android 13+ shows the runtime
       // POST_NOTIFICATIONS prompt. A denial just means no notifications —
@@ -228,6 +255,10 @@ class PushNotificationsService {
     if (!_started || localeCode == _localeCode) return;
     _localeCode = localeCode;
     try {
+      // `_started` is set before [start] awaits, so a language switch in
+      // that window would otherwise reach `FirebaseMessaging.instance`
+      // ahead of the init. Cheap once it has completed.
+      await _firebaseReady;
       final messaging = FirebaseMessaging.instance;
       final token = await _getTokenForRegistration(messaging);
       if (token != null) await _registerToken(token);

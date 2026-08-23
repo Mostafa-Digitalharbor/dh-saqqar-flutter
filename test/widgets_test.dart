@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
+import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/attachment_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_avatar.dart';
@@ -20,7 +21,7 @@ import 'package:saqqar_app/features/chat/view_model/running_agents_cubit.dart';
 import 'package:saqqar_app/features/conversations/view_model/conversations_cubit.dart';
 import 'package:saqqar_app/features/conversations/widgets/conversation_card.dart';
 import 'package:saqqar_app/features/conversations/widgets/meta_dot.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 import 'package:saqqar_app/features/inbox/data/approvals_api.dart';
 import 'package:saqqar_app/features/inbox/view_model/approvals_cubit.dart';
 
@@ -261,13 +262,73 @@ void main() {
       expect(opacity.opacity, 0);
     });
 
+    testWidgets('ChatScrollDownButton carries an accessible name', (
+      tester,
+    ) async {
+      // It is an icon with no text beside it. A `uiautomator` dump of the
+      // release build on 2026-08-20 listed every other control in the chat by
+      // name and this one as an unnamed node — which is exactly what a screen
+      // reader would have announced.
+      //
+      // The assertion is on the node that carries the TAP, not merely on the
+      // label existing somewhere. The first fix here added a `Semantics`
+      // label and `find.bySemanticsLabel` went green — while the device still
+      // reported `content-desc=""`, because the label had landed on a sibling
+      // node and `TappableSurface`'s gesture node stayed unnamed. That node
+      // is the one a screen reader focuses, so the label has to be ON it
+      // (`container: true`), and this checks the two are the same node.
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _harness(ChatScrollDownButton(visible: true, onTap: () {})),
+      );
+
+      final label = AppStrings(const Locale('en')).scrollToLatest;
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(label)),
+        matchesSemantics(
+          label: label,
+          isButton: true,
+          hasTapAction: true,
+          // Flutter attaches these to any focusable control; naming them
+          // keeps the matcher about the label-on-the-tappable-node property
+          // rather than about the framework's focus plumbing.
+          isFocusable: true,
+          hasFocusAction: true,
+        ),
+        reason: 'the named node must BE the button — a label on a node that '
+            'cannot be tapped leaves the real control unnamed, which is what '
+            'the device reported.',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('ChatScrollDownButton leaves the semantics tree when hidden', (
+      tester,
+    ) async {
+      // `IgnorePointer` stops taps but does NOT remove the node, so a
+      // faded-out button stayed focusable: the screen reader's focus ring
+      // stopped on empty space and announced a control that did nothing.
+      // Worse than a missing label, because it looks like a bug in the
+      // reader rather than in the app.
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _harness(ChatScrollDownButton(visible: false, onTap: () {})),
+      );
+
+      expect(
+        find.bySemanticsLabel(AppStrings(const Locale('en')).scrollToLatest),
+        findsNothing,
+      );
+      handle.dispose();
+    });
+
     testWidgets('AttachmentChip renders the attachment name + meta', (
       tester,
     ) async {
       await tester.pumpWidget(
         _harness(
           const AttachmentChip(
-            attachment: DemoAttachment(
+            attachment: ChatAttachment(
               name: 'report.xlsx',
               kind: 'EXCEL',
               size: '24 KB',
@@ -288,8 +349,8 @@ void main() {
           const MessageBubble(
             isUser: true,
             showTime: true,
-            message: DemoMessage(
-              role: DemoMessageRole.user,
+            message: ChatMessage(
+              role: ChatMessageRole.user,
               content: text,
               time: '12:04',
             ),
@@ -316,8 +377,8 @@ void main() {
           const MessageBubble(
             isUser: false,
             showTime: false,
-            message: DemoMessage(
-              role: DemoMessageRole.assistant,
+            message: ChatMessage(
+              role: ChatMessageRole.assistant,
               content: 'OK',
               time: '12:05',
             ),

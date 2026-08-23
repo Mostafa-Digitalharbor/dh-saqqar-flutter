@@ -33,7 +33,7 @@ import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_approval_card.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_markdown.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 import 'package:saqqar_app/features/inbox/data/approval_models.dart';
 import 'package:saqqar_app/features/inbox/data/approvals_api.dart';
 
@@ -231,13 +231,13 @@ void main() {
           home: Scaffold(body: SingleChildScrollView(child: child)),
         );
 
-    DemoApproval deleteApproval({int count = 12}) => DemoApproval(
+    ChatApproval deleteApproval({int count = 12}) => ChatApproval(
           id: '9ba6585a',
           title: 'Delete records',
           prompt: 'Delete 12 records from Sales Order Line',
           actionType: 'odoo_write',
           risk: 'high',
-          status: DemoApprovalStatus.pending,
+          status: ChatApprovalStatus.pending,
           payload: const {'operation': 'delete', 'model': 'sale.order.line'},
           recordCount: count,
           confirmPhrase: 'delete $count',
@@ -364,13 +364,13 @@ void main() {
       await tester.pumpWidget(
         harness(
           ChatApprovalCard(
-            approval: const DemoApproval(
+            approval: const ChatApproval(
               id: 'a',
               title: 'Create records',
               prompt: 'Create 3 records',
               actionType: 'odoo_write',
               risk: 'medium',
-              status: DemoApprovalStatus.pending,
+              status: ChatApprovalStatus.pending,
               payload: {'operation': 'create'},
               recordCount: 3,
             ),

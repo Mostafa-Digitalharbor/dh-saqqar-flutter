@@ -9,7 +9,7 @@
 /// that pumps a `MessageRow` on its own.
 library;
 
-import '../../demo/saqqar_demo_data.dart';
+import 'chat_view_models.dart';
 import 'interactive_cards.dart';
 
 /// One renderable slot in the chat list.
@@ -18,11 +18,11 @@ sealed class TimelineEntry {
 
   /// First message in this entry — used for date-separator anchoring
   /// (calendar-day boundary against the previous entry).
-  DemoMessage get firstMessage;
+  ChatMessage get firstMessage;
 
   /// Last message in this entry — used for the "previous role" check when
   /// the next entry starts a new group.
-  DemoMessage get lastMessage;
+  ChatMessage get lastMessage;
 }
 
 /// A solo bubble — a user message, an interactive card, or a lone assistant
@@ -30,13 +30,13 @@ sealed class TimelineEntry {
 class SingleMessageEntry extends TimelineEntry {
   const SingleMessageEntry(this.message);
 
-  final DemoMessage message;
+  final ChatMessage message;
 
   @override
-  DemoMessage get firstMessage => message;
+  ChatMessage get firstMessage => message;
 
   @override
-  DemoMessage get lastMessage => message;
+  ChatMessage get lastMessage => message;
 }
 
 /// A multi-step agent turn: the intermediate "thinking" messages collapsed
@@ -47,15 +47,15 @@ class AgentTurnEntry extends TimelineEntry {
     required this.finalReply,
   });
 
-  final List<DemoMessage> thinkingSteps;
-  final DemoMessage finalReply;
+  final List<ChatMessage> thinkingSteps;
+  final ChatMessage finalReply;
 
   @override
-  DemoMessage get firstMessage =>
+  ChatMessage get firstMessage =>
       thinkingSteps.isEmpty ? finalReply : thinkingSteps.first;
 
   @override
-  DemoMessage get lastMessage => finalReply;
+  ChatMessage get lastMessage => finalReply;
 
   /// Wall-clock duration the agent spent on this turn — first thinking step's
   /// `createdAt` → final reply's `createdAt`. Null when either side has no
@@ -77,7 +77,7 @@ class AgentTurnEntry extends TimelineEntry {
 /// thinks a message is ordinary and the renderer thinks it is a card (or the
 /// reverse), the card is either buried in a pill or rendered where the layout
 /// does not expect it.
-bool isInteractiveCardMessage(DemoMessage message) =>
+bool isInteractiveCardMessage(ChatMessage message) =>
     interactiveCardKind(message.toolPayload) != null;
 
 /// Groups a flat message list into renderable entries.
@@ -109,20 +109,20 @@ const _turnGap = Duration(minutes: 2);
 ///
 /// Messages with no timestamp are treated as the same turn — the old
 /// behaviour — since there is nothing to measure against.
-bool _startsNewTurn(DemoMessage prev, DemoMessage next) {
+bool _startsNewTurn(ChatMessage prev, ChatMessage next) {
   final a = prev.createdAt;
   final b = next.createdAt;
   if (a == null || b == null) return false;
   return b.difference(a).abs() >= _turnGap;
 }
 
-List<TimelineEntry> buildChatTimeline(List<DemoMessage> messages) {
+List<TimelineEntry> buildChatTimeline(List<ChatMessage> messages) {
   final out = <TimelineEntry>[];
   var i = 0;
   while (i < messages.length) {
     final m = messages[i];
     // A card always stands alone — see the library note above.
-    if (m.role != DemoMessageRole.assistant || isInteractiveCardMessage(m)) {
+    if (m.role != ChatMessageRole.assistant || isInteractiveCardMessage(m)) {
       out.add(SingleMessageEntry(m));
       i++;
       continue;
@@ -132,7 +132,7 @@ List<TimelineEntry> buildChatTimeline(List<DemoMessage> messages) {
     // pause, which means a *different* turn rather than more thinking.
     var j = i;
     while (j < messages.length &&
-        messages[j].role == DemoMessageRole.assistant &&
+        messages[j].role == ChatMessageRole.assistant &&
         !isInteractiveCardMessage(messages[j]) &&
         (j == i || !_startsNewTurn(messages[j - 1], messages[j]))) {
       j++;

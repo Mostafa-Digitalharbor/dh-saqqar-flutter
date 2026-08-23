@@ -99,7 +99,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: AppElevations.none,
         scrolledUnderElevation: 0,
-        toolbarHeight: 60,
+        toolbarHeight: AppControlSizes.appBar,
         centerTitle: false,
         titleTextStyle: (textTheme.titleLarge ?? const TextStyle()).copyWith(
           fontWeight: FontWeight.w800,

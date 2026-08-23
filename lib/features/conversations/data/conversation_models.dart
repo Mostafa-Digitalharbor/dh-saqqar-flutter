@@ -211,7 +211,10 @@ class PendingAction extends Equatable {
 // clock-derived text) IS value-equal — see [ConversationSnapshot].
 @immutable
 class ConversationSummary {
-  const ConversationSummary({
+  // Not `const` any more — see [_searchHaystack], which needs a `late final`
+  // to memoize. Nothing constructed one as a const literal, so this costs
+  // nothing at the call sites.
+  ConversationSummary({
     required this.id,
     required this.title,
     required this.createdAt,
@@ -287,6 +290,33 @@ class ConversationSummary {
   static const liveWindow = Duration(hours: 2);
 
   bool get isLive => DateTime.now().difference(updatedAt) <= liveWindow;
+
+  /// Lower-cased `title` + `lastMessagePreview`, the text the Chats search
+  /// runs against — built **once per row**, on first use.
+  ///
+  /// The screen used to lower-case both fields inline, for every row, inside
+  /// a filter it re-derived several times per build. With ~166 conversations
+  /// and a preview that can run to a couple of hundred characters, a single
+  /// keystroke in the search box allocated hundreds of throwaway strings and
+  /// re-scanned the same rows. None of that input changes between builds, so
+  /// none of it needed repeating: the row owns the text, so the row caches
+  /// it.
+  ///
+  /// The two fields are joined by a newline rather than concatenated, so a
+  /// query cannot match by straddling the boundary between a title and the
+  /// preview underneath it — "invoice draft" must find a row that really
+  /// says that, not one whose title ends in "invoice" above a preview
+  /// starting with "draft".
+  late final String _searchHaystack =
+      '$title\n$lastMessagePreview'.toLowerCase();
+
+  /// Whether this row matches [lowercaseQuery].
+  ///
+  /// Takes an **already lower-cased** query: the caller is looping over the
+  /// whole list, so folding the needle once outside the loop is the point.
+  /// An empty query matches everything, which is what "no search" means.
+  bool matchesQuery(String lowercaseQuery) =>
+      lowercaseQuery.isEmpty || _searchHaystack.contains(lowercaseQuery);
 
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     return ConversationSummary(

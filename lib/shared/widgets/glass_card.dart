@@ -66,14 +66,14 @@ class GlassCard extends StatelessWidget {
                 BoxShadow(
                   color: s.shadowBase.withValues(alpha: AppAlphas.a35),
                   blurRadius: AppShadowSizes.blurCard,
-                  offset: const Offset(0, 8),
+                  offset: const Offset(0, AppShadowSizes.dropCard),
                 ),
               ]
             : [
                 BoxShadow(
                   color: s.shadowBase.withValues(alpha: AppAlphas.a06),
                   blurRadius: AppShadowSizes.blurHairline,
-                  offset: const Offset(0, 1),
+                  offset: const Offset(0, AppShadowSizes.dropHairline),
                 ),
               ],
       ),

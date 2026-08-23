@@ -72,10 +72,22 @@ void main() {
     // which is why the i18n parity test couldn't see it. Deleted; these pin
     // the survivor.
     //
-    // Note the digits: Arabic gets WESTERN numerals here, deliberately. CLDR
-    // defaults `ar`/`ar_SA` to Latin numerals (only `ar_EG` picks
-    // Arabic-Indic), and `compactCount` documents the same app-wide
-    // convention. Asserted below so nobody "fixes" it into an inconsistency.
+    // Note the digits: Arabic gets WESTERN numerals here, deliberately —
+    // `compactCount` documents the same app-wide convention and all 1,100+
+    // Arabic strings follow it.
+    //
+    // The assertion below used to be the only one, and it checked the
+    // 5-minutes bucket. That bucket formats its number with `NumberFormat`,
+    // which was already Western, so the test passed while the buckets that
+    // format with `DateFormat` — anything older than 7 days — rendered
+    // `٣٠ يوليو` on every Arabic device. Under `flutter_localizations` the
+    // `ar` date symbols carry the Arabic-Indic numbering system, and this
+    // app never calls `initializeDateFormatting()`, so the CLDR default the
+    // old comment cited was never what shipped.
+    //
+    // One property asserted on the one input that already had it is how a
+    // rule reads as covered while its real cases go untested, so the sweep
+    // below covers every bucket and every public method instead.
     Future<String> relativeIn(
       WidgetTester tester,
       Locale locale,
@@ -115,6 +127,72 @@ void main() {
             'Western digits in both locales by convention (see '
             'compactCount). Got "$out".',
       );
+    });
+
+    testWidgets('no bucket of any method renders an Arabic-Indic digit',
+        (tester) async {
+      // Arabic-Indic digits and the two separators that ship with them.
+      final eastern = RegExp(r'[٠-٩٫٬]');
+
+      // Every method that renders a number, at every bucket boundary that
+      // switches which formatter produces it. `relative` alone crosses from
+      // NumberFormat to DateFormat at 7 days and from MMMd to yMMMd at the
+      // year boundary — the two crossings the old single-input test could
+      // not see.
+      final now = DateTime.now();
+      final samples = <String, DateTime>{
+        'just now': now.subtract(const Duration(seconds: 5)),
+        'minutes': now.subtract(const Duration(minutes: 5)),
+        'hours': now.subtract(const Duration(hours: 3)),
+        'yesterday': now.subtract(const Duration(hours: 30)),
+        'days': now.subtract(const Duration(days: 3)),
+        'this year': now.subtract(const Duration(days: 21)),
+        'last year': now.subtract(const Duration(days: 400)),
+      };
+
+      for (final entry in samples.entries) {
+        late Map<String, String> rendered;
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('ar'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en'), Locale('ar')],
+            home: Builder(
+              builder: (context) {
+                rendered = {
+                  'relative': AppDateFormat.relative(context, entry.value),
+                  'date': AppDateFormat.date(context, entry.value),
+                  'dateTime': AppDateFormat.dateTime(context, entry.value),
+                  'fullDateTime':
+                      AppDateFormat.fullDateTime(context, entry.value),
+                  'dayLabel': AppDateFormat.dayLabel(context, entry.value),
+                  'time': AppDateFormat.time(context, entry.value),
+                  'time24': AppDateFormat.time(context, entry.value,
+                      twentyFour: true),
+                };
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        rendered.forEach((method, out) {
+          expect(
+            eastern.hasMatch(out),
+            isFalse,
+            reason: 'AppDateFormat.$method rendered Arabic-Indic digits for '
+                'the "${entry.key}" bucket: "$out". The app writes numbers '
+                'in Western digits everywhere — a screen that mixes the two '
+                'shows both at once, which is what a conversation row did '
+                'with "٣٠ يوليو" above "منذ 17 س".',
+          );
+        });
+      }
     });
 
     testWidgets('every locale renders real copy, not an i18n key',

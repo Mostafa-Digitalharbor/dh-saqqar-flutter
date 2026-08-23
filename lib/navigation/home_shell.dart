@@ -107,7 +107,7 @@ class HomeShell extends StatelessWidget {
                     0xFF020617,
                   ).withValues(alpha: context.alpha(AppAlphaPairs.glowNav)),
                   blurRadius: AppShadowSizes.blurCard,
-                  offset: const Offset(0, 10),
+                  offset: const Offset(0, AppShadowSizes.dropFab),
                 ),
               ],
             ),

@@ -8,7 +8,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/tappable_surface.dart';
 
@@ -105,7 +105,7 @@ class ChatArtifactTile extends StatelessWidget {
     this.onLongPress,
   });
 
-  final DemoArtifact artifact;
+  final ChatArtifact artifact;
   final VoidCallback onOpen;
 
   /// Optional long-press (e.g. "show details"). Additive — the tap/download

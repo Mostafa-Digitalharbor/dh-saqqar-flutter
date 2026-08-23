@@ -20,21 +20,21 @@ import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_approval_card.dart';
 import 'package:saqqar_app/features/chat/widgets/email_approval_preview.dart';
 import 'package:saqqar_app/features/inbox/data/approval_models.dart' show kDeleteOperation;
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
-DemoApproval _approval({
+ChatApproval _approval({
   required Map<String, String> payload,
   int? recordCount,
   String? confirmPhrase,
   bool batchScoped = false,
 }) =>
-    DemoApproval(
+    ChatApproval(
       id: 'a1',
       title: 'Delete 6× Sales Order',
       prompt: 'Saqqar wants to delete records.',
       actionType: 'odoo_write',
       risk: 'high',
-      status: DemoApprovalStatus.pending,
+      status: ChatApprovalStatus.pending,
       payload: payload,
       recordCount: recordCount,
       confirmPhrase: confirmPhrase,
@@ -43,7 +43,7 @@ DemoApproval _approval({
 
 Future<List<String>> _pumpCard(
   WidgetTester tester,
-  DemoApproval approval, {
+  ChatApproval approval, {
   Locale locale = const Locale('en'),
   bool withBatch = true,
 }) async {

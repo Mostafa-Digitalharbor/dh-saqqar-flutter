@@ -292,8 +292,8 @@ class _NotificationsBell extends StatelessWidget {
               // Unread COUNT badge (caps at "9+"). Hidden at zero.
               if (unread > 0)
                 PositionedDirectional(
-                  top: -2,
-                  end: -2,
+                  top: -AppSpacing.s2,
+                  end: -AppSpacing.s2,
                   child: Container(
                     constraints: const BoxConstraints(
                       minWidth: AppControlSizes.badgeMin,

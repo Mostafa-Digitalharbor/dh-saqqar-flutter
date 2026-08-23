@@ -1,29 +1,30 @@
-// Validates the scroll-anchoring technique the chat uses when older messages
-// are paged in above the viewport.
+// What happens to the reading position when older messages are paged in.
 //
-// The chat list is a normal top-to-bottom `ListView.builder`, so inserting
-// older rows at the head pushes everything the user is reading down the
-// screen by the height of what was added. While paging was driven by a
-// button that was merely ugly. With automatic paging it is disqualifying:
-// the user stays pinned near offset 0, which immediately satisfies the
-// trigger again, and the list walks itself to the start of the conversation
-// in one gesture.
+// The chat lane is a `reverse: true` `ListView.builder`: offset 0 is the
+// NEWEST message and older history grows away from the user. Older rows
+// therefore land at HIGH indices — the far end, off-screen in the direction
+// the user is heading — and the viewport does not move.
 //
-// `_ChatScreenState` corrects for this by keying one row, recording where that
-// row sits before the insert, and moving the offset by however far the row
-// actually moved. Three things about that are worth pinning, and none of them
-// can be checked by reading the code:
+// That is the whole claim, and it is worth pinning against the real
+// `Scrollable` machinery rather than trusted from the docs, because the
+// version this file replaces existed to work around the opposite:
 //
-//   1. it really does hold the reading position;
-//   2. the anchor row has to be laid out for it to work at all — which is
-//      what ties the trigger distance to the list's `cacheExtent`; and
-//   3. `jumpTo` **cancels an in-flight drag**, so the correction cannot be
-//      applied while the user's finger is down. This is the constraint that
-//      shapes `_afterScrollSettles`, and the least obvious of the three.
+//   The lane used to be a forward list, so inserting older rows at the head
+//   pushed everything the user was reading DOWN by the height of what was
+//   added. `_ChatScreenState` corrected for it by keying one row, measuring
+//   where that row sat before the insert, and jumping the offset by however
+//   far it had actually moved. That correction had two failure modes of its
+//   own: the anchor row has to still be laid out for it to work at all (a
+//   fast fling culls it), and `jumpTo` **cancels an in-flight drag**, so it
+//   could not be applied while the user's finger was down — which is why the
+//   reveal had to wait for the scroll to settle before it could happen.
 //
-// The chat screen itself needs a dozen providers and sits behind login, so
-// this exercises the same technique against the real `Scrollable` machinery
-// on a list with known row heights, where the arithmetic is exact.
+// Both of those are gone. The tests below assert that they are gone, in the
+// two shapes that used to break: a settled list, and a list mid-drag.
+//
+// `chat_screen.dart` itself needs a dozen providers and sits behind login, so
+// this exercises the same list configuration on rows of known height, where
+// the arithmetic is exact.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,254 +32,205 @@ import 'package:flutter_test/flutter_test.dart';
 const _rowHeight = 100.0;
 const _viewportHeight = 600.0;
 
-/// A list that grows at the HEAD, mirroring the chat lane. Rows carry stable
-/// ids so a prepend shifts every index — exactly as prepending older messages
-/// does — and `find.text('row-N')` refers to the same content before and
-/// after.
-class _PrependingList extends StatefulWidget {
-  const _PrependingList({
+/// A reversed list that grows at the TAIL, mirroring the chat lane.
+///
+/// Rows are labelled by index with 0 = newest, so `find.text('row-N')` refers
+/// to the same content before and after a page lands and its on-screen
+/// position can be compared directly.
+class _ReversedChatLane extends StatefulWidget {
+  const _ReversedChatLane({
+    super.key,
     required this.controller,
     required this.initialRows,
-    this.cacheExtent = 1500,
   });
 
   final ScrollController controller;
   final int initialRows;
 
-  /// Matches the chat lane by default. Overridden by the test that shows what
-  /// the metrics-based anchor does when the prepended rows fall outside it.
-  final double cacheExtent;
-
   @override
-  State<_PrependingList> createState() => _PrependingListState();
+  State<_ReversedChatLane> createState() => _ReversedChatLaneState();
 }
 
-class _PrependingListState extends State<_PrependingList> {
-  late int _oldestId = 0;
+class _ReversedChatLaneState extends State<_ReversedChatLane> {
+  /// Rows are labelled by index, and index 0 is the NEWEST. A page of history
+  /// only ever appends, so a row keeps its label — and therefore its
+  /// `find.text` — across a load.
   late int _count = widget.initialRows;
 
-  /// Mirrors `_ChatScreenState._scrollAnchorKey` / `_scrollAnchorId`.
-  final GlobalKey _anchorKey = GlobalKey();
-  int? _pinnedAnchorId;
-
-  int get _anchorId => _pinnedAnchorId ?? _oldestId;
-
-  double? _anchorY() {
-    final context = _anchorKey.currentContext;
-    if (context == null) return null;
-    final box = context.findRenderObject();
-    if (box is! RenderBox || !box.hasSize) return null;
-    final viewport =
-        widget.controller.position.context.storageContext.findRenderObject();
-    if (viewport is! RenderBox) return null;
-    return box.localToGlobal(Offset.zero, ancestor: viewport).dy;
-  }
-
-  /// Prepends [n] older rows and re-anchors, using the same
-  /// measure-before / correct-after shape as the chat screen.
-  void prependOlder(int n) {
-    final controller = widget.controller;
-    final anchorYBefore = _anchorY();
-
-    setState(() {
-      _pinnedAnchorId = _anchorId;
-      _oldestId -= n;
-      _count += n;
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!controller.hasClients) return;
-      final position = controller.position;
-      if (!position.hasContentDimensions) return;
-      final anchorYAfter = _anchorY();
-      if (anchorYBefore != null && anchorYAfter != null) {
-        final shift = anchorYAfter - anchorYBefore;
-        if (shift.abs() >= 0.5) {
-          controller.jumpTo(
-            (position.pixels + shift).clamp(0.0, position.maxScrollExtent),
-          );
-        }
-      }
-      setState(() => _pinnedAnchorId = null);
-    });
-  }
+  /// Adds [n] older rows — no measuring, no correction, no waiting for the
+  /// scroll to stop. This is the entire production code path.
+  void loadOlder(int n) => setState(() => _count += n);
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
       controller: widget.controller,
+      reverse: true,
       itemCount: _count,
-      itemExtent: _rowHeight,
-      // Load-bearing for anchoring: the anchor row sits just above the
-      // viewport, and a row outside the cache extent has no render object to
-      // measure. The chat triggers 600 px from the top, well inside its 1500.
-      cacheExtent: widget.cacheExtent,
       itemBuilder: (context, index) {
-        final id = _oldestId + index;
-        final row = Text('row-$id');
-        return id == _anchorId
-            ? KeyedSubtree(key: _anchorKey, child: row)
-            : row;
+        // index 0 = newest, matching the screen: a higher index is OLDER.
+        return SizedBox(
+          height: _rowHeight,
+          child: Text('row-$index', textDirection: TextDirection.ltr),
+        );
       },
     );
   }
 }
 
-Future<_PrependingListState> _pump(
-  WidgetTester tester,
-  ScrollController controller, {
-  double cacheExtent = 1500,
-}) async {
-  await tester.binding.setSurfaceSize(const Size(400, _viewportHeight));
-  addTearDown(() => tester.binding.setSurfaceSize(null));
-  await tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(
-        body: _PrependingList(
-          controller: controller,
-          initialRows: 20,
-          cacheExtent: cacheExtent,
+void main() {
+  Future<
+      ({
+        ScrollController controller,
+        GlobalKey<_ReversedChatLaneState> key,
+      })> pumpLane(
+    WidgetTester tester, {
+    int rows = 40,
+  }) async {
+    final controller = ScrollController();
+    final key = GlobalKey<_ReversedChatLaneState>();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(size: Size(400, _viewportHeight)),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox(
+            height: _viewportHeight,
+            child: _ReversedChatLane(
+              key: key,
+              controller: controller,
+              initialRows: rows,
+            ),
+          ),
         ),
       ),
-    ),
-  );
-  return tester.state<_PrependingListState>(find.byType(_PrependingList));
-}
+    );
+    return (controller: controller, key: key);
+  }
 
-void main() {
-  testWidgets('prepending older rows leaves the reading position untouched',
+  /// Where `row-<index>` currently sits in the viewport, or null if it is not
+  /// laid out.
+  double? rowY(WidgetTester tester, int index) {
+    final finder = find.text('row-$index');
+    if (finder.evaluate().isEmpty) return null;
+    return tester.getTopLeft(finder).dy;
+  }
+
+  testWidgets('a chat opens on its newest message with no scrolling',
       (tester) async {
-    final controller = ScrollController();
-    addTearDown(controller.dispose);
-    final list = await _pump(tester, controller);
+    // The forward list had to schedule a post-frame jump to
+    // `maxScrollExtent` for this, against an extent that was still an
+    // estimate while rows below the fold were unbuilt — so it landed short
+    // and needed a second pass. A reversed list simply rests here.
+    final lane = await pumpLane(tester);
 
-    controller.jumpTo(500);
-    await tester.pump();
-    final anchoredRow = find.text('row-5');
-    final yBefore = tester.getTopLeft(anchoredRow).dy;
+    expect(lane.controller.offset, 0);
+    expect(find.text('row-0'), findsOneWidget,
+        reason: 'row-0 is the newest message and must be on screen at rest');
+  });
 
-    list.prependOlder(10);
+  testWidgets('paging in older rows leaves the reading position untouched',
+      (tester) async {
+    final lane = await pumpLane(tester);
+
+    // Scroll a few screenfuls into history.
+    lane.controller.jumpTo(_rowHeight * 12);
     await tester.pump();
+
+    final offsetBefore = lane.controller.offset;
+    final anchorBefore = rowY(tester, 12);
+    expect(anchorBefore, isNotNull,
+        reason: 'the row under test must be laid out for the comparison to '
+            'mean anything');
+
+    lane.key.currentState!.loadOlder(100);
     await tester.pump();
 
     expect(
-      tester.getTopLeft(anchoredRow).dy,
-      moreOrLessEquals(yBefore, epsilon: 0.5),
-      reason: 'the row the user was reading moved on screen — this is the '
-          'jump that makes automatic paging feel broken, and the reason the '
-          'list would immediately re-trigger from offset 0',
+      lane.controller.offset,
+      offsetBefore,
+      reason: 'a page of older rows lands at the far end of a reversed list, '
+          'so the scroll offset cannot move. In the forward list this is the '
+          'assertion that needed a measure-and-jump correction to hold.',
     );
-    expect(controller.offset, moreOrLessEquals(500 + 10 * _rowHeight));
+    expect(
+      rowY(tester, 12),
+      anchorBefore,
+      reason: 'and the row the user was reading keeps its exact pixel',
+    );
   });
 
-  testWidgets('the anchor row must be laid out for the correction to happen',
+  testWidgets('a page landing mid-drag does not cancel the gesture',
       (tester) async {
-    // The one precondition of the measured approach: you cannot measure a row
-    // that has no render object. `cacheExtent: 0` puts the anchor (which sits
-    // above the viewport) outside the built region, and the correction
-    // correctly declines rather than guessing.
-    //
-    // This is why the chat's 600 px trigger and 1500 px `cacheExtent` are a
-    // pair — the anchor is always well inside the built region when the
-    // trigger fires. Tightening one without the other silently disables
-    // anchoring, and `_onScrollChanged`'s re-arm hysteresis is what keeps that
-    // degrading into "one extra page" instead of a runaway load.
-    final controller = ScrollController();
-    addTearDown(controller.dispose);
-    final list = await _pump(tester, controller, cacheExtent: 0);
-
-    controller.jumpTo(500);
-    await tester.pump();
-    list.prependOlder(10);
-    await tester.pump();
-    await tester.pump();
-
-    expect(controller.offset, moreOrLessEquals(500));
-  });
-
-  testWidgets('correcting mid-drag cancels the gesture — why reveal defers',
-      (tester) async {
-    // This is the constraint that shapes `_afterScrollSettles`, recorded as a
-    // test so nobody "simplifies" the reveal back to being eager.
-    //
-    // `ScrollPositionWithSingleContext.beginActivity` disposes the active
-    // drag, and `jumpTo` goes through it. Correct the offset while the finger
-    // is down and the list stops following it — the user's flick dies
-    // mid-stroke and they have to lift and start again.
-    final controller = ScrollController();
-    addTearDown(controller.dispose);
-    await _pump(tester, controller);
-
-    controller.jumpTo(400);
-    await tester.pump();
+    // The constraint that shaped the old design: `jumpTo` disposes the active
+    // drag (`ScrollPositionWithSingleContext.beginActivity`), so the list
+    // stopped dead under the user's finger. The old code avoided it by
+    // deferring the reveal until the scroll settled — which is why rows
+    // appeared only after the flick had decayed.
+    final lane = await pumpLane(tester);
 
     final gesture = await tester.startGesture(const Offset(200, 300));
-    await gesture.moveBy(const Offset(0, 60)); // drag down = scroll up
-    await tester.pump();
-    final offsetMidDrag = controller.offset;
-    expect(offsetMidDrag, lessThan(400), reason: 'drag should scroll up');
-
-    controller.jumpTo(offsetMidDrag + 100); // the unsafe correction
+    await gesture.moveBy(const Offset(0, 200));
     await tester.pump();
 
-    await gesture.moveBy(const Offset(0, 60));
+    final midDragOffset = lane.controller.offset;
+    expect(midDragOffset, greaterThan(0));
+
+    // The page lands while the finger is still down.
+    lane.key.currentState!.loadOlder(100);
+    await tester.pump();
+
+    expect(lane.controller.offset, midDragOffset,
+        reason: 'the insert must not move the list mid-gesture');
+
+    // The gesture must still be live.
+    await gesture.moveBy(const Offset(0, 150));
     await tester.pump();
     expect(
-      controller.offset,
-      moreOrLessEquals(offsetMidDrag + 100),
-      reason: 'if this ever starts moving, jumpTo became drag-safe and the '
-          'reveal no longer needs to wait for the scroll to settle',
+      lane.controller.offset,
+      greaterThan(midDragOffset),
+      reason: 'the drag must keep driving the list after the page landed. '
+          'This is what allows the reveal to happen immediately instead of '
+          'waiting for the scroll to settle.',
     );
 
     await gesture.up();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('a settled list corrects cleanly, gesture intact afterwards',
-      (tester) async {
-    // The path the chat actually takes: the flick has decayed, the reveal
-    // lands, the correction holds position, and the list is fully usable.
-    final controller = ScrollController();
-    addTearDown(controller.dispose);
-    final list = await _pump(tester, controller);
+  testWidgets('older rows really are reachable after paging', (tester) async {
+    // The position not moving would also be true of a page that never
+    // rendered, so this checks the rows actually arrived and can be scrolled
+    // to — the counterpart assertion that keeps the one above honest.
+    final lane = await pumpLane(tester, rows: 10);
 
-    controller.jumpTo(400);
-    await tester.pump();
-    expect(controller.position.isScrollingNotifier.value, isFalse);
-
-    final anchored = find.text('row-4');
-    final yBefore = tester.getTopLeft(anchored).dy;
-
-    list.prependOlder(10);
-    await tester.pump();
+    lane.key.currentState!.loadOlder(50);
     await tester.pump();
 
-    expect(tester.getTopLeft(anchored).dy, moreOrLessEquals(yBefore, epsilon: 0.5));
-
-    // And the list still scrolls normally afterwards.
-    final gesture = await tester.startGesture(const Offset(200, 300));
-    await gesture.moveBy(const Offset(0, 60));
+    lane.controller.jumpTo(_rowHeight * 45);
     await tester.pump();
-    expect(controller.offset, lessThan(1400));
-    await gesture.up();
-    await tester.pumpAndSettle();
+
+    expect(find.text('row-45'), findsOneWidget,
+        reason: 'a row from the newly paged-in range must be reachable');
   });
 
-  testWidgets('a prepend that adds nothing leaves the offset alone',
+  testWidgets('scrolling back to the newest message is offset zero',
       (tester) async {
-    // Guards the `grew <= 0` early-out: a no-op page (server returned rows we
-    // already had) must not nudge the user.
-    final controller = ScrollController();
-    addTearDown(controller.dispose);
-    final list = await _pump(tester, controller);
-
-    controller.jumpTo(300);
+    // `_ChatScreenState._newestOffset`. In the forward list this was
+    // `maxScrollExtent`, which moves as unbuilt rows are laid out.
+    final lane = await pumpLane(tester);
+    lane.key.currentState!.loadOlder(200);
     await tester.pump();
 
-    list.prependOlder(0);
+    lane.controller.jumpTo(_rowHeight * 100);
     await tester.pump();
+    expect(find.text('row-0'), findsNothing);
+
+    lane.controller.jumpTo(0);
     await tester.pump();
 
-    expect(controller.offset, moreOrLessEquals(300));
+    expect(find.text('row-0'), findsOneWidget);
   });
 }

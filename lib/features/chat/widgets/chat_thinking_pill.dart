@@ -5,7 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import 'chat_markdown.dart';
 
 /// Collapsible "Saqqar thinking" pill that groups all the intermediate
@@ -30,7 +30,7 @@ class ChatThinkingPill extends StatefulWidget {
   /// Intermediate assistant messages (everything between the user turn
   /// and the final assistant reply). The widget renders them in order,
   /// each as a bullet with the message body inline.
-  final List<DemoMessage> steps;
+  final List<ChatMessage> steps;
 
   /// Wall-clock time the agent spent thinking — first step's createdAt
   /// → final reply's createdAt. Rendered as `· 14s` / `· 1m 30s` next
@@ -123,7 +123,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                   ),
                   Flexible(
                     child: Text(
-                      '${widget.steps.length} ${context.tr.thinkingStepsLabel}',
+                      context.tr.thinkingSteps(widget.steps.length),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.text.labelSmall?.copyWith(
@@ -218,7 +218,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
 class _StepBullet extends StatelessWidget {
   const _StepBullet({required this.step, required this.accent});
 
-  final DemoMessage step;
+  final ChatMessage step;
   final Color accent;
 
   @override

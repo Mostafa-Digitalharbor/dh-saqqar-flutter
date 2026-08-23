@@ -11,7 +11,7 @@ import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/attachment_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/pdf_thumbnail.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
 Widget _host(Widget child, {Locale locale = const Locale('en')}) {
   return MaterialApp(
@@ -177,7 +177,7 @@ void main() {
       await tester.pumpWidget(_host(
         const AttachmentChip(
           compact: true,
-          attachment: DemoAttachment(
+          attachment: ChatAttachment(
             name: 'invoice.pdf',
             kind: 'PDF',
             size: '240 KB',
@@ -197,7 +197,7 @@ void main() {
       await tester.pumpWidget(_host(
         const AttachmentChip(
           compact: true,
-          attachment: DemoAttachment(
+          attachment: ChatAttachment(
             name: 'invoice.pdf',
             kind: 'PDF',
             size: '240 KB',
@@ -215,7 +215,7 @@ void main() {
       await tester.pumpWidget(_host(
         const AttachmentChip(
           compact: true,
-          attachment: DemoAttachment(
+          attachment: ChatAttachment(
             name: 'book.xlsx',
             kind: 'XLSX',
             size: '12 KB',

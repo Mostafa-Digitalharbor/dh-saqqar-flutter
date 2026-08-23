@@ -199,7 +199,7 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
           PositionedDirectional(
             start: 0,
             end: 0,
-            bottom: 64,
+            bottom: AppSpacing.s64,
             child: _ProgressBar(animation: _progress),
           ),
         ],
@@ -242,7 +242,7 @@ class _SplashLogoCard extends StatelessWidget {
             BoxShadow(
               color: AppColors.scrimBase.withValues(alpha: AppAlphaPairs.splashShadow.resolve(isDark: !isLight)),
               blurRadius: AppShadowSizes.blurModal,
-              offset: const Offset(0, 14),
+              offset: const Offset(0, AppShadowSizes.dropHalo),
             ),
           ],
         ),

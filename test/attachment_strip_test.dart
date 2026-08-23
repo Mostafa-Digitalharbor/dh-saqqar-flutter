@@ -6,11 +6,11 @@ import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/attachment_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_composer.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
-List<DemoAttachment> _images(int count) => [
+List<ChatAttachment> _images(int count) => [
       for (var i = 0; i < count; i++)
-        DemoAttachment(
+        ChatAttachment(
           name: 'shot-$i.png',
           // Arabic label on purpose: this is what a real Arabic device
           // stages, and it must not change the layout.
@@ -19,7 +19,7 @@ List<DemoAttachment> _images(int count) => [
         ),
     ];
 
-Widget _composerHost(List<DemoAttachment> attachments) {
+Widget _composerHost(List<ChatAttachment> attachments) {
   const locale = Locale('ar');
   return MaterialApp(
     locale: locale,

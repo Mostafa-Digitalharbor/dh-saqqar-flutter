@@ -8,7 +8,7 @@ import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/view/attachment_viewer_screen.dart';
 import 'package:saqqar_app/features/chat/widgets/attachment_chip.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
 Widget _host(Widget child, {Locale locale = const Locale('en')}) {
   return MaterialApp(
@@ -141,21 +141,21 @@ void main() {
     });
   });
 
-  group('DemoAttachment.isImage', () {
+  group('ChatAttachment.isImage', () {
     test('recognises an image staged under a non-English locale', () {
       // Regression guard. `kind` is a LOCALIZED display label — the composer
       // fills it from `tr.fileKindImage`, which is "صورة" in Arabic. Matching
       // English tokens against it made every image attached on an Arabic
       // device render as a generic file square with "صورة" underneath, while
       // an English emulator looked fine.
-      const arabic = DemoAttachment(
+      const arabic = ChatAttachment(
         name: 'screenshot.png',
         kind: 'صورة',
         size: '184 KB',
       );
       expect(arabic.isImage, isTrue);
 
-      const english = DemoAttachment(
+      const english = ChatAttachment(
         name: 'screenshot.png',
         kind: 'Image',
         size: '184 KB',
@@ -164,7 +164,7 @@ void main() {
     });
 
     test('still trusts the server kind when the name has no extension', () {
-      const fromApi = DemoAttachment(
+      const fromApi = ChatAttachment(
         name: 'b3d1f0e2-no-extension',
         kind: 'IMAGE',
         size: '12 KB',
@@ -175,7 +175,7 @@ void main() {
     test('does not mistake a document for an image in any locale', () {
       for (final kind in const ['PDF', 'ملف', 'XLSX']) {
         expect(
-          DemoAttachment(name: 'report.pdf', kind: kind, size: '1 MB').isImage,
+          ChatAttachment(name: 'report.pdf', kind: kind, size: '1 MB').isImage,
           isFalse,
           reason: kind,
         );
@@ -190,7 +190,7 @@ void main() {
       // pill and the size, so two screenshots were indistinguishable.
       await tester.pumpWidget(_host(
         const AttachmentChip(
-          attachment: DemoAttachment(
+          attachment: ChatAttachment(
             name: 'invoice-scan.png',
             kind: 'IMAGE',
             size: '184 KB',

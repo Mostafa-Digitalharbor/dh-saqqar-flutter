@@ -79,17 +79,30 @@ class SaqqarApp {
   ///
   /// Both are checked, so a translation lands whichever key matches, and a
   /// package with neither still renders the server's own strings.
-  List<String> _keys(String prefix) => [
-        if (slug.isNotEmpty) '$prefix$slug',
-        if (name.isNotEmpty) '$prefix${normalizeKey(name)}',
-      ];
+  ///
+  /// The slug is **normalized**, not used raw. The live catalogue sends
+  /// `chart-of-accounts` and `bank-reconciliation` — hyphens — while every
+  /// key in `app_strings.dart` is snake_case, so the raw form built
+  /// `app_name_chart-of-accounts` and matched nothing on either table. That
+  /// left the slug path dead for two of the four live packages: they only
+  /// ever translated by display name, and would have gone back to English
+  /// the first time the backend reworded a card.
+  List<String> _keys(String prefix) {
+    final bySlug = normalizeKey(slug);
+    final byName = normalizeKey(name);
+    return [
+      if (bySlug.isNotEmpty) '$prefix$bySlug',
+      if (byName.isNotEmpty && byName != bySlug) '$prefix$byName',
+    ];
+  }
 
   /// `ZATCA e-invoicing` → `zatca_e_invoicing`. Lowercased, every run of
   /// non-alphanumerics collapsed to one underscore, ends trimmed.
-  static String normalizeKey(String value) => value
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-      .replaceAll(RegExp(r'^_+|_+$'), '');
+  ///
+  /// Delegates to [AppStrings.taxonomyKey] so the package keys and the
+  /// group/category keys cannot normalize differently — they used to be two
+  /// copies of the same regex pair, and only one of them trimmed its ends.
+  static String normalizeKey(String value) => AppStrings.taxonomyKey(value);
 
   String _resolve(AppStrings tr, String prefix, String fallback) {
     for (final key in _keys(prefix)) {
@@ -104,8 +117,21 @@ class SaqqarApp {
   String displayTagline(AppStrings tr) =>
       _resolve(tr, 'app_tagline_', tagline);
 
-  String displayCategory(AppStrings tr) =>
-      _resolve(tr, 'app_category_', category);
+  /// The short chip label (`Compliance · KSA`).
+  ///
+  /// Translated **word by word** by [AppStrings.appCategory], which is what
+  /// makes an unseen pairing like `Compliance · Egypt` come out Arabic
+  /// without a release. Falling straight through to the server's English
+  /// (what this used to do, since no `app_category_*` key existed for any
+  /// package) left the chip Latin on every Arabic card that had no group to
+  /// show instead.
+  ///
+  /// Deliberately **not** keyed per package the way [displayName] is. The
+  /// `app_category_*` table is a shared vocabulary, so a per-package lookup
+  /// would collide with it: the `meetings` package would have resolved
+  /// `app_category_meetings` — the word "Meetings" — and rendered that
+  /// instead of its own category, whatever the server actually sent.
+  String displayCategory(AppStrings tr) => tr.appCategory(category);
 
   /// The taxonomy chip the web shows on each card (`FINANCE`,
   /// `INTEGRATIONS`, `ACCOUNTING`) and the value its filter pills key off.

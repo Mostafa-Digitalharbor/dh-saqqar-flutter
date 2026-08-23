@@ -11,6 +11,7 @@
 // something legitimate, widen the allowlist beside the rule — do not delete
 // the rule.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -147,6 +148,42 @@ int _matchParen(String s, int open) {
     }
   }
   return -1;
+}
+
+/// Dart source with `//` lines, doc comments and `/* */` blocks removed.
+///
+/// The line-based scanners above do this inline for `lib/`; this is the same
+/// job for a whole file read on its own. It exists because a rule that greps
+/// source for a construct will otherwise match the paragraph EXPLAINING that
+/// construct — and the explanation is usually the first thing in the file, so
+/// the rule passes on every file it is pointed at.
+String _stripComments(String source) {
+  final out = StringBuffer();
+  var inBlock = false;
+  for (final raw in const LineSplitter().convert(source)) {
+    final trimmed = raw.trimLeft();
+    if (inBlock) {
+      final end = raw.indexOf('*/');
+      if (end == -1) continue;
+      inBlock = false;
+      out.writeln(raw.substring(end + 2));
+      continue;
+    }
+    if (trimmed.startsWith('//')) continue;
+    final block = raw.indexOf('/*');
+    if (block != -1 && !raw.substring(0, block).contains("'")) {
+      final end = raw.indexOf('*/', block);
+      if (end == -1) {
+        inBlock = true;
+        out.writeln(raw.substring(0, block));
+      } else {
+        out.writeln(raw.substring(0, block) + raw.substring(end + 2));
+      }
+      continue;
+    }
+    out.writeln(raw);
+  }
+  return out.toString();
 }
 
 String _report(String rule, List<_Line> hits, String fix) {
@@ -1662,6 +1699,85 @@ void main() {
       );
     });
 
+    // The rule above spells out the four geometry parameters by name, and a
+    // shadow has a fifth: how far it drops. `offset:` is not `blurRadius:`,
+    // so eleven `Offset(0, 8)`-shaped literals sat in plain sight while the
+    // rule beside them read as covering shadow geometry — the same
+    // narrowest-spelling gap that let `Radius.circular` past the corner rule.
+    //
+    // Split from the rule above rather than folded into its alternation
+    // because the fix differs: a blur takes `AppShadowSizes.blur*`, a drop
+    // takes `AppShadowSizes.drop*`, and a `dy` that is *animating* takes
+    // neither — it is travel, and belongs in `AppMotionTravel`.
+    test('no shadow or motion `Offset` is a bare number', () {
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          // `Offset.zero` and a computed `Offset(0, dy)` are both fine — the
+          // rule is about a literal typed into the second slot. The first
+          // slot is `0` at every site in the app (shadows fall straight
+          // down), so matching `Offset(0, <digit>` keeps the rule narrow
+          // enough not to flag a genuinely two-dimensional offset written
+          // from named parts.
+          .where((l) => RegExp(
+                r'\bOffset\(\s*-?[0-9.]+\s*,\s*-?[0-9.]+\s*\)',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in an Offset:',
+          hits,
+          'a `BoxShadow.offset` takes `AppShadowSizes.drop<role>`; an '
+              'entrance animation\'s travel takes `AppMotionTravel.<role>`. '
+              'The two look identical at the call site and are not the same '
+              'decision — re-tuning the shadow scale must not move how far '
+              'a card rises, and vice versa.',
+        ),
+      );
+    });
+
+    // `Positioned` insets are padding by another name — the distance between
+    // a stacked child and its parent's edge — but they are not spelled
+    // `padding:`, so the `EdgeInsets` rule never looked at them. Only two
+    // `Positioned`s exist in the app and one of them held three bare `4`s
+    // that should have read `AppSpacing.s4`; the rule is here so the third
+    // one written does not repeat it.
+    //
+    // `PositionedDirectional` is matched too. Its `start:`/`end:` are the
+    // RTL-correct spelling of the same measurement and would otherwise be
+    // the obvious way around this rule.
+    //
+    // `0` is allowed for the same reason the `EdgeInsets` rule allows it:
+    // `top: 0, bottom: 0` on a `Positioned` is not a measurement, it is the
+    // way you say "stretch to both edges". Nobody re-tunes it and it sits on
+    // no grid. A NEGATIVE inset, by contrast, very much is a measurement —
+    // it is how far a badge overhangs its parent — so those are flagged and
+    // written as a negated step (`-AppSpacing.s2`), which keeps the
+    // magnitude on the scale and lets the sign carry the meaning.
+    test('no `Positioned` inset is a bare number', () {
+      final hits = lib
+          .where((l) => RegExp(
+                r'^\s*(?:top|bottom|left|right|start|end):\s*'
+                r'-?(?!0\s*,)[0-9]+(?:\.[0-9]+)?\s*,\s*$',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare number in a Positioned inset:',
+          hits,
+          'use `AppSpacing.s<n>`. An inset on a stacked child is the same '
+              'decision as the padding on a laid-out one — it should move '
+              'with the spacing scale, not stay behind at whatever number '
+              'looked right against one screenshot.',
+        ),
+      );
+    });
+
     test('no `elevation:` takes a bare number', () {
       final hits = lib
           .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
@@ -1820,6 +1936,77 @@ void main() {
           reason: 'BreakpointWidths.$name is missing.',
         );
       }
+    });
+  });
+
+  group('A test that models a screen says so', () {
+    // Three chat scroll tests build a REPLICA of the lane — a synthetic
+    // `ListView` with known row heights — rather than pumping `ChatScreen`,
+    // which needs a dozen providers and sits behind login. That is a
+    // legitimate technique and the arithmetic it buys is exact.
+    //
+    // It is also silently fragile, and on 2026-08-20 it went wrong in the
+    // worst available way. The chat lane was converted to `reverse: true`,
+    // which deleted the entire anchor-correction mechanism those three files
+    // exist to pin — and all 1,906 tests stayed green, because each replica
+    // still tested its own unchanged forward list. A suite reporting success
+    // for a mechanism that no longer existed is worse than one reporting
+    // nothing: it was read as evidence the conversion was safe.
+    //
+    // There is no way to make a replica track the thing it models
+    // automatically. What there is: make the replica IMPOSSIBLE to mistake
+    // for the real screen, so the next person changing the lane knows these
+    // files need changing too. Naming the widget under test after the screen
+    // it stands in for is what does that — `_ReversedChatLane`, not
+    // `_PrependingList`.
+    test('a chat-scroll replica names the lane it models', () {
+      const files = [
+        'test/chat_prepend_anchor_test.dart',
+        'test/chat_open_position_test.dart',
+        'test/chat_autoload_rearm_test.dart',
+      ];
+
+      final offenders = <String>[];
+      for (final path in files) {
+        final file = File(path);
+        if (!file.existsSync()) {
+          offenders.add('$path — missing; if the file was renamed, update '
+              'this list so the rule keeps covering it');
+          continue;
+        }
+        // Comments stripped first. Every one of these files DISCUSSES the
+        // lane's direction in its header — that is the point of the header —
+        // so a raw `contains` matches the prose and passes for a replica
+        // whose code says the opposite. Checked against exactly that: with
+        // `reverse: true` deleted from the widget, the rule still went green
+        // off line 3.
+        final source = _stripComments(file.readAsStringSync());
+
+        // It must not silently be a ChatScreen test either — if one of these
+        // ever gains the providers to pump the real screen, the replica
+        // should go, not sit beside it disagreeing.
+        if (source.contains('ChatScreen(')) continue;
+
+        // The replica has to declare which way the lane runs. `reverse: true`
+        // is the single fact that the deleted mechanism turned on, so a
+        // replica that does not set it is modelling the old lane.
+        if (!source.contains('reverse: true')) {
+          offenders.add('$path — models the chat lane but never sets '
+              '`reverse: true`');
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'These tests stand in for the chat lane and no longer match '
+            'it:\n${offenders.map((o) => '  • $o').join('\n')}\n\n'
+            'Fix: update the replica to the lane it models. If the lane\'s '
+            'direction changed, every assertion about `extentBefore` / '
+            '`extentAfter`, drag sign and insert position changed with it — '
+            'and none of it will fail on its own, because the replica is '
+            'self-consistent whatever the real screen does.',
+      );
     });
   });
 }

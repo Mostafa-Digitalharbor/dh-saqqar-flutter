@@ -8,7 +8,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/responsive_content.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import 'attachment_chip.dart';
 import 'chat_send_button.dart';
 import 'voice_input_button.dart';
@@ -76,7 +76,7 @@ class ChatComposer extends StatelessWidget {
   /// item renders as its own [AttachmentChip] in a single horizontally
   /// scrolling row above the pill, so staging 20 files costs the same
   /// vertical space as staging one.
-  final List<DemoAttachment> attachments;
+  final List<ChatAttachment> attachments;
 
   /// Tapped on the paperclip icon. The chat screen opens the native
   /// file picker rooted at Photos / Files (multi-select).
@@ -468,7 +468,7 @@ class _StagedAttachment extends StatelessWidget {
     required this.tooltip,
   });
 
-  final DemoAttachment attachment;
+  final ChatAttachment attachment;
   final VoidCallback onRemove;
   final VoidCallback onPreview;
   final String tooltip;
@@ -485,8 +485,8 @@ class _StagedAttachment extends StatelessWidget {
           onTap: onPreview,
         ),
         PositionedDirectional(
-          top: -8,
-          end: -8,
+          top: -AppSpacing.s8,
+          end: -AppSpacing.s8,
           child: Material(
             color: s.surface,
             shape: const CircleBorder(),
@@ -784,7 +784,7 @@ class _MiniSwitch extends StatelessWidget {
           AnimatedPositionedDirectional(
             duration: AppDurations.fast,
             curve: Curves.easeOutCubic,
-            top: 1,
+            top: AppSpacing.s1,
             start: value ? 13 : 1,
             child: Container(
               width: AppBoxSizes.dotLarge,

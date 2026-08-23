@@ -27,22 +27,23 @@ import '../../../shared/widgets/fade_slide_in.dart';
 import '../../../shared/widgets/page_scaffold.dart';
 import '../../../shared/widgets/pagination_bar.dart';
 import '../../../shared/widgets/search_and_filters_bar.dart';
+export '../view_model/chats_list_view.dart' show ChatsFilterMode;
+
 import '../data/conversation_models.dart';
 import '../view_model/conversations_cubit.dart';
+import '../view_model/chats_list_view.dart';
 import '../view_model/conversations_state.dart';
 import '../widgets/rename_conversation_dialog.dart';
 import '../widgets/swipe_archive_background.dart';
 import '../widgets/widgets.dart';
 import '../../../shared/widgets/tappable_surface.dart';
 
-/// Triage segments for the Chats list, mirroring the Saqqar Design System.
-/// `all` shows everything; `pending` keeps only conversations with pending
-/// approvals (real signal from [ApprovalsCubit]); `live` keeps recently-active
-/// conversations (representative — derived from `updatedAt` recency).
-enum ChatsFilterMode { all, pending, live }
-
 /// See [ConversationSummary.isLive] — the window itself lives on the model
 /// so the card and this screen can't drift apart on what "live" means.
+///
+/// [ChatsFilterMode] moved next to [ChatsListView]: the enum names slices of
+/// the list, and that is the object that produces them. It is re-exported
+/// here so existing importers of this screen keep resolving it.
 bool conversationIsLive(ConversationSummary c) => c.isLive;
 
 /// Conversations list — search + archive filter + paginated rows, with
@@ -136,8 +137,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   void _goToPage(int pageIndex) {
     final data = context.read<ConversationsCubit>().state.data.dataOrNull;
-    final pageCount =
-        data == null ? 1 : _pageCountFor(_filter(data).length);
+    final pageCount = data == null ? 1 : _view(data).pageCount(_pageSize);
     final next = pageIndex.clamp(0, pageCount - 1);
     if (next == _pageIndex) return;
     setState(() => _pageIndex = next);
@@ -159,57 +159,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  int _pageCountFor(int total) {
-    if (total == 0) return 1;
-    return ((total - 1) ~/ _pageSize) + 1;
-  }
-
-  // ── Filtering ───────────────────────────────────────────────────────
-
-  /// Returns the conversations matching the current search + archive
-  /// filters. Computed from [data.ordered] so pinned rows always lead.
+  /// The whole Chats list, sliced once for the current search + triage.
   ///
-  /// The archive filter is a hard split: when the toggle is off the user
-  /// sees only non-archived rows, when it's on they see only archived
-  /// rows (never a mix — the previous "show all" behaviour confused
-  /// users who expected the toggle to scope the list, not extend it).
-  /// Active (non-archived) conversations the main list shows. Archived
-  /// rows live inside the dedicated collapsible "Archived" card —
-  /// they're never mixed into the main list.
-  List<ConversationSummary> _filter(ConversationsData data) {
-    final q = _query.trim().toLowerCase();
-    return data.ordered.where((c) {
-      if (c.isArchived) return false;
-      if (q.isNotEmpty &&
-          !(c.title.toLowerCase().contains(q) ||
-              c.lastMessagePreview.toLowerCase().contains(q))) {
-        return false;
-      }
-      switch (_filterMode) {
-        case ChatsFilterMode.all:
-          return true;
-        case ChatsFilterMode.pending:
-          // REAL needs-approval signal — the conversation has at least one
-          // pending approval in the flat `/approvals/?status=pending` feed.
-          return data.needsApproval(c.id);
-        case ChatsFilterMode.live:
-          return conversationIsLive(c);
-      }
-    }).toList();
-  }
-
-  /// Archived conversations matching the current search query. Search
-  /// applies to both buckets so a query like "invoice" surfaces matches
-  /// regardless of where the conversation lives.
-  List<ConversationSummary> _archived(ConversationsData data) {
-    final q = _query.trim().toLowerCase();
-    return data.ordered.where((c) {
-      if (!c.isArchived) return false;
-      if (q.isEmpty) return true;
-      return c.title.toLowerCase().contains(q) ||
-          c.lastMessagePreview.toLowerCase().contains(q);
-    }).toList();
-  }
+  /// One call, one pass. The screen used to hand `_filter` and `_archived`
+  /// down to its body as callbacks and both layers invoked them, so the same
+  /// rows were walked five times per build — on every keystroke.
+  ChatsListView _view(ConversationsData data) =>
+      ChatsListView.of(data, query: _query, mode: _filterMode);
 
   // ── Actions ─────────────────────────────────────────────────────────
 
@@ -525,7 +481,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             : data.conversations
                 .where((c) => !c.isArchived && data.needsApproval(c.id))
                 .length;
-        final totalCount = data == null ? 0 : _filter(data).length;
+        // Derived here ONLY for the header subtitle. The body derives its
+        // own view from the same inputs, so the two agree by construction —
+        // they used to be two independent filter passes that a reviewer had
+        // to eyeball to confirm still matched.
+        final totalCount = data == null ? 0 : _view(data).active.length;
         final subtitleText = pendingCount > 0
             ? '$totalCount ${context.tr.conversations} · '
                 '$pendingCount ${context.tr.pending}'
@@ -604,9 +564,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 onGoToPage: _goToPage,
                 openFresh: _openFreshConversation,
                 buildGroupedRows: _buildGroupedRows,
-                filter: _filter,
-                archived: _archived,
-                pageCountFor: _pageCountFor,
+                view: _view(data),
                 onRowAction: _handleRowAction,
               ),
             ),
@@ -641,9 +599,7 @@ class _ConversationsBody extends StatelessWidget {
     required this.onGoToPage,
     required this.openFresh,
     required this.buildGroupedRows,
-    required this.filter,
-    required this.archived,
-    required this.pageCountFor,
+    required this.view,
     required this.onRowAction,
   });
 
@@ -660,9 +616,11 @@ class _ConversationsBody extends StatelessWidget {
   final ValueChanged<int> onGoToPage;
   final VoidCallback openFresh;
   final List<Widget> Function(List<ConversationSummary>) buildGroupedRows;
-  final List<ConversationSummary> Function(ConversationsData) filter;
-  final List<ConversationSummary> Function(ConversationsData) archived;
-  final int Function(int) pageCountFor;
+
+  /// The list, already sliced. Passed as a VALUE, not as the callbacks that
+  /// produce it — handing down `filter`/`archived` meant this widget re-ran
+  /// the same derivation its parent had just run.
+  final ChatsListView view;
   final Future<void> Function(
     ConversationSummary,
     ConversationAction,
@@ -670,17 +628,13 @@ class _ConversationsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = filter(data);
-    final archivedRows = archived(data);
-    final pageCount = pageCountFor(filtered.length);
-    final paged = filtered.skip(pageIndex * pageSize).take(pageSize).toList();
-
-    // REAL "needs approval" total — the number of conversations that have at
-    // least one pending approval (same source as the filter + the per-row
-    // pill), so the badge always equals what tapping "Needs approval" reveals.
-    final pendingTotal = data.conversations
-        .where((c) => !c.isArchived && data.needsApproval(c.id))
-        .length;
+    final filtered = view.active;
+    final archivedRows = view.archived;
+    final pageCount = view.pageCount(pageSize);
+    final paged = view.page(pageIndex, pageSize);
+    // Counted in the same pass that produced the rows, so the chip badge and
+    // what tapping it reveals cannot disagree.
+    final pendingTotal = view.pendingCount;
 
     return Column(
       children: [

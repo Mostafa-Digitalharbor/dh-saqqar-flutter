@@ -12,6 +12,9 @@
 // see. So every widget here gets the matrix, and every widget with a callback
 // also gets assertions on what it hands back.
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,7 +39,17 @@ import 'package:saqqar_app/features/chat/widgets/prompt_suggestion_card.dart';
 import 'package:saqqar_app/features/chat/widgets/report_builder_card.dart';
 import 'package:saqqar_app/features/chat/widgets/voice_input_button.dart';
 import 'package:saqqar_app/features/conversations/widgets/conversation_row_menu.dart';
+import 'package:saqqar_app/features/account/widgets/plan_badge.dart';
+import 'package:saqqar_app/features/account/widgets/profile_hero.dart';
+import 'package:saqqar_app/features/auth/view_model/auth_cubit.dart';
+import 'package:saqqar_app/features/billing/view_model/plan_cubit.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_markdown.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_sheet.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_skeleton_list.dart';
+import 'package:saqqar_app/features/chat/widgets/email_approval_preview.dart';
+import 'package:saqqar_app/features/chat/widgets/message_bubble.dart';
 
+import 'support/responsive_harness.dart' show SeededAuthCubit;
 import 'support/widget_conformance.dart';
 
 // ── Payloads ──────────────────────────────────────────────────────────────
@@ -75,6 +88,42 @@ const _report = ReportBuilderPayload(
     ReportOption(key: 'pdf', label: 'PDF'),
   ],
 );
+
+/// A reply shaped like the ones the agent actually sends, and like the ones
+/// that break a 320 px bubble.
+///
+/// `ChatMarkdown` renders model output, so its input is the only text in the
+/// app nobody reviews before a user reads it. A fixture of `'# Hello'` would
+/// prove the widget compiles and nothing else — every way this can go wrong
+/// needs content that cannot wrap:
+///
+///   * a table wider than any phone (must scroll, not overflow),
+///   * an unbroken URL and an unbroken token,
+///   * a fenced code block with long lines,
+///   * mixed Arabic and English in one paragraph, which is where the
+///     bidirectional runs get their boundaries wrong,
+///   * a deep nested list, whose indent is what eventually eats the row.
+const _markdown = '''
+# $kLongArabic
+
+$kLongArabic **bold** و`inline_code_that_is_quite_long_indeed` و$kLongEnglish.
+
+| Column | $kLongEnglish | Another long header | And one more |
+| --- | --- | --- | --- |
+| $kUnbreakable | $kLongArabic | 12345678901234567890 | value |
+
+```dart
+final aVeryLongIdentifier = someFunction(withA, few, arguments, thatDoNotWrap);
+```
+
+- level one $kLongArabic
+  - level two $kLongEnglish
+    - level three $kUnbreakable
+
+> $kLongArabic
+
+https://saqqaar.com/a/very/long/path/that/will/not/break/anywhere/at/all/x
+''';
 
 void main() {
   // `AuthHeaderActions` reads the theme and locale cubits off the tree. Kept
@@ -168,6 +217,97 @@ void main() {
         VoiceInputButton(onStart: () {}, enabled: false),
     'ChatAppBarToggles': () =>
         ChatAppBarToggles(autoApprove: true, onAutoApproveChanged: (_) {}),
+
+    // ── Added 2026-08-20 ──────────────────────────────────────────────────
+    //
+    // A sweep of `lib/features/**` for widgets no test ever *constructs*
+    // (as opposed to merely naming in a comment) turned up six. Five are
+    // below; `StorybookScreen` is a screen and is swept as one.
+    //
+    // Naming-in-a-comment is what hid them: three of the six appear in test
+    // prose often enough that a grep for the class name reports them as
+    // covered. `EmailApprovalPreview` is discussed thirteen times across the
+    // suite and was built zero times.
+    //
+    // `ChatMarkdown` is the one that mattered most: it renders the agent's
+    // reply, so its input is model output — the only text in the app nobody
+    // reviews before a user sees it. It was the largest untested surface in
+    // the chat and the easiest place for an unbounded line to overflow.
+
+    'ChatMarkdown agent': () => const ChatMarkdown(
+          data: _markdown,
+          isUser: false,
+        ),
+    'ChatMarkdown user': () => const ChatMarkdown(
+          data: _markdown,
+          isUser: true,
+        ),
+    // Takes a bare `List<Widget>`, so the thing to feed it is content it has
+    // no say over: a row that cannot wrap, under a title that cannot either.
+
+    // Bounded on purpose. `ChatSkeletonList` IS a scrollable, and the harness
+    // wraps every case in a `SingleChildScrollView` — a vertical viewport
+    // inside a vertical viewport gets unbounded height and throws before it
+    // can render anything. 300 fits inside the shortest cell in the matrix
+    // (568×320 landscape), so the box is real at every viewport rather than
+    // being clipped at one.
+    //
+    // Height is not what this widget can get wrong. The failure it is swept
+    // for is a bubble that will not fit ACROSS a 320 px phone at 1.4× text in
+    // Arabic, and that is measured exactly the same inside a bounded box.
+    'ChatSkeletonList': () => const SizedBox(
+          height: 300,
+          child: ChatSkeletonList(),
+        ),
+    'ChatSheet': () => const ChatSheet(
+          title: kLongArabic,
+          children: [Text(kLongEnglish), Text(kUnbreakable)],
+        ),
+    'EmailApprovalPreview': () => const EmailApprovalPreview(
+          to: 'finance@example.com, accounts.payable@a-very-long-domain.com',
+          subject: kLongArabic,
+          body: kLongEnglish,
+          cc: 'cc@example.com',
+          bcc: 'bcc@example.com',
+        ),
+    'EmailApprovalPreview reply': () => const EmailApprovalPreview(
+          to: kUnbreakable,
+          subject: kLongEnglish,
+          body: kLongArabic,
+          isReply: true,
+        ),
+    // Both spans it is built for: a plain "You" and a widget-span mark.
+    'MessageMeta text': () => const MessageMeta(
+          leading: TextSpan(text: kLongArabic),
+          time: '14:32',
+          style: TextStyle(),
+          dotColor: AppColors.brandCyan,
+        ),
+    'MessageMeta widget span': () => const MessageMeta(
+          leading: WidgetSpan(child: Icon(AppIcons.sparkles)),
+          time: kUnbreakable,
+          style: TextStyle(),
+          dotColor: AppColors.brandCyan,
+          align: TextAlign.end,
+        ),
+    // `plan_badge_test.dart` is a whole file about this widget and never
+    // builds it — it drives `PlanUsageCard` and asserts on what shows
+    // through. The only literal `PlanBadge(` in that file is inside a
+    // comment, which is precisely how it read as covered.
+    'PlanBadge': () => const PlanBadge(name: kLongArabic),
+    'PlanBadge dense': () => const PlanBadge(name: kLongEnglish, dense: true),
+    // Watches AuthCubit and PlanCubit off the tree, so it needs both. The
+    // plan is left at its `null` default deliberately — that is what the
+    // hero renders during the first paint after sign-in, before
+    // `/conversations/` has answered, and it is the state a seeded-only
+    // fixture would never exercise.
+    'ProfileHero': () => MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthCubit>(create: (_) => SeededAuthCubit()),
+            BlocProvider<PlanCubit>(create: (_) => PlanCubit()),
+          ],
+          child: const ProfileHero(),
+        ),
   };
 
   group('every feature widget survives the layout matrix', () {
@@ -434,5 +574,122 @@ void main() {
         isTrue,
       );
     });
+  });
+
+  // The twin of `every shared widget is pumped somewhere` in
+  // `widget_conformance_shared_test.dart`. That rule has guarded
+  // `lib/shared/widgets/` since 2026-08-18; `lib/features/**` had four times
+  // as many widgets and no equivalent, which is how six of them reached
+  // 2026-08-20 without a single test ever building one.
+  //
+  // The check is CONSTRUCTION, not mention. A name search would have called
+  // all six covered: `EmailApprovalPreview` is named in thirteen test
+  // comments, `ChatMarkdown` in four. Requiring an open paren after the name
+  // is the difference between "some test talks about this" and "some test
+  // renders it".
+  //
+  // …and requiring the paren is not enough on its own. The first version of
+  // this rule scanned raw file text, so it passed with every `ChatMarkdown`
+  // case commented out: `// 'ChatMarkdown': () => const ChatMarkdown(` still
+  // matches. A rule written against comment-hidden coverage that reads
+  // comments as coverage is no rule at all, so the sources are stripped
+  // first. That failure showed up only because the rule was checked against
+  // the bug it exists for, which is the check worth keeping.
+  test('every feature widget is constructed by some test', () {
+    /// Test source with `//` lines, `/* */` blocks and doc comments removed.
+    String stripComments(String source) {
+      final out = StringBuffer();
+      var inBlock = false;
+      for (final raw in const LineSplitter().convert(source)) {
+        final trimmed = raw.trimLeft();
+        if (inBlock) {
+          final end = raw.indexOf('*/');
+          if (end == -1) continue;
+          inBlock = false;
+          out.writeln(raw.substring(end + 2));
+          continue;
+        }
+        if (trimmed.startsWith('//')) continue;
+        final block = raw.indexOf('/*');
+        if (block != -1 && !raw.substring(0, block).contains("'")) {
+          final end = raw.indexOf('*/', block);
+          if (end == -1) {
+            inBlock = true;
+            out.writeln(raw.substring(0, block));
+          } else {
+            out.writeln(raw.substring(0, block) + raw.substring(end + 2));
+          }
+          continue;
+        }
+        out.writeln(raw);
+      }
+      return out.toString();
+    }
+
+    final declared = <String, String>{};
+    for (final entity in Directory('lib/features').listSync(recursive: true)) {
+      if (entity is! File || !entity.path.endsWith('.dart')) continue;
+      final source = entity.readAsStringSync();
+      for (final m
+          in RegExp(r'^class ([A-Z]\w+) extends State(?:less|ful)Widget',
+                  multiLine: true)
+              .allMatches(source)) {
+        declared[m.group(1)!] = entity.path.replaceAll(r'\', '/');
+      }
+    }
+    expect(declared, isNotEmpty, reason: 'The scan found no feature widgets.');
+
+    final everyTest = Directory('test')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))
+        .map((f) => stripComments(f.readAsStringSync()))
+        .join('\n');
+
+    // Deliberately not constructed, each with the reason.
+    const exempt = <String, String>{
+      'StorybookScreen':
+          'a developer-only gallery behind /_/storybook, not a product '
+              'surface. It builds every other widget in the app, so pumping '
+              'it here would re-run the whole matrix inside one test and '
+              'report any failure against the gallery rather than against '
+              'the widget that actually broke.',
+      'ShareIntentBootstrap':
+          'a platform-channel host, not a layout. `initState` subscribes to '
+              'ReceiveSharingIntent and an iOS MethodChannel — neither of '
+              'which exists under flutter_test — and `build` returns '
+              'SizedBox.shrink() until a share is staged, so the matrix '
+              'would be measuring an empty box. Its actual surface is '
+              'ShareDestinationSheet, which the screen sweeps cover; the '
+              'intake logic is covered by share_position_origin_test.dart.',
+    };
+
+    final missing = declared.keys
+        .where((w) => !exempt.containsKey(w))
+        .where((w) => !RegExp('$w' r'(?:\.\w+)?\s*\(').hasMatch(everyTest))
+        .toList()
+      ..sort();
+
+    expect(
+      missing,
+      isEmpty,
+      reason: 'These feature widgets are never constructed by any test:\n'
+          '${missing.map((w) => '  • $w  (${declared[w]})').join('\n')}\n\n'
+          'Fix: add a case to `cases` above — that is one line for 5 '
+          'viewports x 2 locales x 2 text scales plus the dark theme. Feed '
+          'it kLongArabic / kUnbreakable, never a short label: a widget that '
+          'has only ever seen "OK" is untested. A screen belongs in the '
+          'screen sweeps instead. If it genuinely cannot be built '
+          'standalone, add it to `exempt` WITH the reason.',
+    );
+
+    for (final name in exempt.keys) {
+      expect(
+        declared.keys,
+        contains(name),
+        reason: '`$name` is exempted here but no longer exists under '
+            'lib/features. Drop the entry.',
+      );
+    }
   });
 }

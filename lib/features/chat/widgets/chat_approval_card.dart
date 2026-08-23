@@ -11,7 +11,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../inbox/data/approval_models.dart' show kDeleteOperation;
 import 'accent_card_chrome.dart';
@@ -33,7 +33,7 @@ class ChatApprovalCard extends StatefulWidget {
     this.onApproveAllSimilar,
   });
 
-  final DemoApproval approval;
+  final ChatApproval approval;
   final VoidCallback onApprove;
   final VoidCallback onReject;
 

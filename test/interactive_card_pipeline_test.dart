@@ -26,7 +26,7 @@ import 'package:saqqar_app/features/chat/data/message_adapter.dart';
 import 'package:saqqar_app/features/chat/data/message_visibility.dart';
 import 'package:saqqar_app/features/chat/widgets/message_row.dart';
 import 'package:saqqar_app/features/conversations/data/conversation_models.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
 /// The clarify payload from Appendix A.1, verbatim.
 const _clarifyPayload = {
@@ -75,7 +75,7 @@ Map<String, dynamic> _snapshotWithCard({
     };
 
 /// Runs stages 1–3 and returns what the chat list would be handed.
-List<DemoMessage> _pipeline(Map<String, dynamic> body) {
+List<ChatMessage> _pipeline(Map<String, dynamic> body) {
   final snapshot = ConversationSnapshot.fromJson(body);
   return snapshot.messages
       .where(isVisibleMessage)
@@ -85,7 +85,7 @@ List<DemoMessage> _pipeline(Map<String, dynamic> body) {
 
 Future<void> _pumpTimeline(
   WidgetTester tester,
-  List<DemoMessage> messages, {
+  List<ChatMessage> messages, {
   Locale locale = const Locale('en'),
   required ValueChanged<String> onSend,
 }) async {
@@ -157,7 +157,7 @@ void main() {
       );
 
       expect(adapted.toolPayload?['kind'], 'prompt_clarify');
-      expect(adapted.role, DemoMessageRole.assistant);
+      expect(adapted.role, ChatMessageRole.assistant);
     });
   });
 

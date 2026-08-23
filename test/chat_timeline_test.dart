@@ -14,7 +14,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/features/chat/data/chat_timeline.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
 const _clarify = {
   'kind': 'prompt_clarify',
@@ -33,14 +33,14 @@ const _report = {
   ],
 };
 
-DemoMessage _msg(
+ChatMessage _msg(
   String id,
-  DemoMessageRole role, {
+  ChatMessageRole role, {
   String content = 'text',
   Map<String, dynamic>? payload,
   DateTime? at,
 }) =>
-    DemoMessage(
+    ChatMessage(
       id: id,
       role: role,
       content: content,
@@ -49,10 +49,10 @@ DemoMessage _msg(
       createdAt: at,
     );
 
-DemoMessage _user(String id) => _msg(id, DemoMessageRole.user);
-DemoMessage _agent(String id) => _msg(id, DemoMessageRole.assistant);
-DemoMessage _card(String id, [Map<String, dynamic> payload = _clarify]) =>
-    _msg(id, DemoMessageRole.assistant, content: '', payload: payload);
+ChatMessage _user(String id) => _msg(id, ChatMessageRole.user);
+ChatMessage _agent(String id) => _msg(id, ChatMessageRole.assistant);
+ChatMessage _card(String id, [Map<String, dynamic> payload = _clarify]) =>
+    _msg(id, ChatMessageRole.assistant, content: '', payload: payload);
 
 /// The ids in an entry, in render order — the shape a test actually cares
 /// about, without matching on widget internals.
@@ -214,7 +214,7 @@ void main() {
         _agent('a1'),
         _msg(
           'a2',
-          DemoMessageRole.assistant,
+          ChatMessageRole.assistant,
           payload: {'tool_calls': <String>[]},
         ),
         _agent('a3'),
@@ -248,9 +248,9 @@ void main() {
   group('turn duration', () {
     test('measures first thinking step → final reply', () {
       final turn = buildChatTimeline([
-        _msg('a1', DemoMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0)),
-        _msg('a2', DemoMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 5)),
-        _msg('a3', DemoMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 14)),
+        _msg('a1', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0)),
+        _msg('a2', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 5)),
+        _msg('a3', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 14)),
       ]).single as AgentTurnEntry;
 
       expect(turn.duration, const Duration(seconds: 14));
@@ -267,8 +267,8 @@ void main() {
       // Clock skew between the server and a cached row would otherwise
       // render "· -3s".
       final turn = buildChatTimeline([
-        _msg('a1', DemoMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 9)),
-        _msg('a2', DemoMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0)),
+        _msg('a1', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 9)),
+        _msg('a2', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0)),
       ]).single as AgentTurnEntry;
 
       expect(turn.duration, isNull);
@@ -302,9 +302,9 @@ void main() {
   group('a long pause ends the turn', () {
     test('a report posted hours later is its own entry', () {
       final entries = buildChatTimeline([
-        _msg('a1', DemoMessageRole.assistant, at: DateTime(2026, 8, 9, 11, 3)),
+        _msg('a1', ChatMessageRole.assistant, at: DateTime(2026, 8, 9, 11, 3)),
         // Health Radar, run by the user this evening.
-        _msg('a2', DemoMessageRole.assistant, at: DateTime(2026, 8, 9, 22, 27)),
+        _msg('a2', ChatMessageRole.assistant, at: DateTime(2026, 8, 9, 22, 27)),
       ]);
 
       expect(
@@ -319,10 +319,10 @@ void main() {
       // The behaviour the pill exists for must survive the fix: seconds
       // apart is one turn.
       final entries = buildChatTimeline([
-        _msg('a1', DemoMessageRole.assistant, at: DateTime(2026, 8, 9, 10, 0)),
-        _msg('a2', DemoMessageRole.assistant,
+        _msg('a1', ChatMessageRole.assistant, at: DateTime(2026, 8, 9, 10, 0)),
+        _msg('a2', ChatMessageRole.assistant,
             at: DateTime(2026, 8, 9, 10, 0, 6)),
-        _msg('a3', DemoMessageRole.assistant,
+        _msg('a3', ChatMessageRole.assistant,
             at: DateTime(2026, 8, 9, 10, 0, 21)),
       ]);
 

@@ -100,12 +100,7 @@ class _ShareDestinationOverlayContentState
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final tr = context.tr;
-    final subtitle = widget.fileCount <= 1
-        ? tr.shareCountFile
-        : tr.shareCountFiles.replaceFirst(
-            '{count}',
-            widget.fileCount.toString(),
-          );
+    final subtitle = tr.shareCountFiles(widget.fileCount);
 
     return Scaffold(
       backgroundColor: s.bg,

@@ -16,7 +16,8 @@ import '../../../core/theme/view_model/theme_cubit.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/marquee_text.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
+import '../data/approval_adapter.dart';
 import '../../inbox/data/approval_models.dart' as inbox_api;
 import '../../inbox/data/approvals_api.dart';
 import '../../inbox/data/artifact_downloader.dart';
@@ -300,62 +301,24 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Bridge: real Approval / Artifact → DemoApproval / DemoArtifact so the
-// existing card widgets keep working until they're migrated. Same pattern
-// as the chat screen's `_adaptApiMessage` — one-way translation at the
-// widget boundary, isolated from the live data path.
+// Bridge: real Artifact → ChatArtifact so the existing card widgets keep
+// working until they're migrated. One-way translation at the widget
+// boundary, isolated from the live data path.
+//
+// The APPROVAL half of this bridge moved to `data/approval_adapter.dart`.
+// It lived here as a private copy of the chat screen's, over the same input
+// type, and the two had drifted on the one field that matters most — the
+// title the user reads before approving a write to their Odoo.
 // ─────────────────────────────────────────────────────────────────────────
 
-DemoApproval _adaptApiApproval(inbox_api.Approval a, AppStrings tr) {
-  return DemoApproval(
-    id: a.id,
-    // Localized via the shared approval-title table (same one the inline
-    // chat approval card uses) so Arabic users don't see English titles.
-    title: tr.approvalActionTitle(a.actionType.wire),
-    prompt: a.prompt,
-    actionType: a.actionType.wire,
-    risk: _riskFor(a.actionType),
-    status: switch (a.status) {
-      inbox_api.ApprovalStatus.pending => DemoApprovalStatus.pending,
-      inbox_api.ApprovalStatus.approved => DemoApprovalStatus.approved,
-      inbox_api.ApprovalStatus.rejected => DemoApprovalStatus.rejected,
-    },
-    // Nulls dropped rather than stringified — see the note on the chat
-    // screen's copy of this adapter. "null" is a non-empty string and would
-    // render as a real value in every field the server left empty.
-    payload: {
-      for (final entry in a.payload.entries)
-        if (entry.value != null) entry.key: entry.value.toString(),
-    },
-    recordCount: a.recordCount,
-    // The delete type-to-confirm gate lives on the card, so BOTH surfaces
-    // that render approvals need the server's phrase — dropping it here
-    // would leave the drawer accepting only the client-built strings.
-    confirmPhrase: a.confirmPhrase,
-    deleteRecords: a.deleteRecords,
-    batchScoped: a.batchScoped,
-  );
-}
-
-String _riskFor(inbox_api.ApprovalActionType t) {
-  // High-risk by default; only explicit reads are low. The card uses
-  // this as a coloured chip — the bias matches the web's behavior.
-  return switch (t) {
-    inbox_api.ApprovalActionType.credentialStorage => 'medium',
-    inbox_api.ApprovalActionType.credentialUsage => 'medium',
-    inbox_api.ApprovalActionType.reportExport => 'low',
-    _ => 'high',
-  };
-}
-
-DemoArtifact _adaptApiArtifact(
+ChatArtifact _adaptApiArtifact(
   BuildContext context,
   inbox_api.Artifact a,
   AppStrings tr,
 ) {
   final bytes = a.sizeBytes;
   final created = a.createdAt;
-  return DemoArtifact(
+  return ChatArtifact(
     id: a.id,
     name: a.name,
     kind: a.kind.toUpperCase(),
@@ -488,7 +451,7 @@ class _ApprovalsTab extends StatelessWidget {
       itemCount: approvals.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s10),
       itemBuilder: (_, i) => ChatApprovalCard(
-        approval: _adaptApiApproval(approvals[i], context.tr),
+        approval: adaptApiApproval(approvals[i], context.tr),
         onApprove: () => onApprove(approvals[i]),
         onReject: () => onReject(approvals[i]),
       ),

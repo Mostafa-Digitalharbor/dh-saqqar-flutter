@@ -221,9 +221,85 @@ void main() {
       expect(
         pagedLimits.toSet(),
         hasLength(1),
-        reason: 'every backwards page must request the SAME fixed size; a '
-            'growing limit is what re-downloaded the transcript and hit the '
-            '500-row server cap',
+        reason: 'with no size asked for, every backwards page requests the '
+            'SAME default. The regression this replaced grew `limit` on a '
+            'cursor-less fetch, which re-downloaded the whole transcript from '
+            'the newest message each step and then hit the 500-row cap.',
+      );
+    });
+
+    test('a caller can size the page to the reveal it is fetching for',
+        () async {
+      // The view's reveal step grows as the user travels back through a long
+      // transcript (50, then 100, 200, 400). A fixed 100-row page stops
+      // covering it after the second step, the bank runs dry mid-scroll, and
+      // the next reveal has to fetch synchronously — the lane stops, which is
+      // the exact failure the page-ahead exists to prevent.
+      //
+      // Growing the size is safe HERE in a way it was not in the regression
+      // above, and the difference is the cursor: each page starts from
+      // `?before=` rather than from the newest message, so a bigger page
+      // fetches more HISTORY instead of re-fetching what is already held.
+      final repo = _PagingRepo(
+        newest: _snap(
+          messages: [_msg('m9')],
+          oldestCursor: 'CUR-A',
+          hasMoreBefore: true,
+        ),
+        olderByCursor: {
+          'CUR-A': _snap(
+            messages: [_msg('m8')],
+            oldestCursor: 'CUR-B',
+            hasMoreBefore: true,
+          ),
+          'CUR-B': _snap(
+            messages: [_msg('m7')],
+            oldestCursor: 'CUR-C',
+            hasMoreBefore: true,
+          ),
+        },
+      );
+      final cubit = ChatCubit(conversationId: 'c1', repository: repo);
+      addTearDown(() {
+        cubit.pause();
+        return cubit.close();
+      });
+
+      await cubit.load();
+      await cubit.loadOlder(rows: 50);
+      await cubit.loadOlder(rows: 400);
+
+      final pagedLimits = [
+        for (var i = 0; i < repo.beforeSeen.length; i++)
+          if (repo.beforeSeen[i] != null) repo.limitsSeen[i],
+      ];
+      expect(pagedLimits, hasLength(2));
+
+      // A small ask still gets the default page — raw rows are not what the
+      // user sees (roughly half are `tool` rows the chat filters out), so
+      // under-fetching surfaces two or three bubbles and fails to make the
+      // lane scrollable enough to trigger the next page.
+      expect(
+        pagedLimits.first,
+        100,
+        reason: 'a reveal smaller than the default page must not shrink the '
+            'request below it',
+      );
+
+      // A large ask scales, because 400 visible messages need far more than
+      // 100 raw rows behind them.
+      expect(
+        pagedLimits.last,
+        greaterThan(pagedLimits.first!),
+        reason: 'a 400-message reveal must fetch more than a 50-message one, '
+            'or the bank cannot cover it',
+      );
+      expect(
+        pagedLimits.last,
+        lessThanOrEqualTo(500),
+        reason: 'the server caps `?limit=` at 500 and does not error above '
+            'it — it silently returns 500, and the short page then reads as '
+            '"no more history". Every computed limit clamps.',
       );
     });
   });

@@ -16,7 +16,6 @@
 // this app receives, and each is what a component is not given by the one
 // screen its author had open.
 
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +30,7 @@ import 'package:saqqar_app/shared/widgets/accent_banner.dart';
 import 'package:saqqar_app/shared/widgets/ambient_background.dart';
 import 'package:saqqar_app/shared/widgets/app_card_dialog.dart';
 import 'package:saqqar_app/shared/widgets/app_dialog_shell.dart';
+import 'package:saqqar_app/shared/widgets/app_error_state.dart';
 import 'package:saqqar_app/shared/widgets/app_icon_button.dart';
 import 'package:saqqar_app/shared/widgets/app_loading_state.dart';
 import 'package:saqqar_app/shared/widgets/app_text_field.dart';
@@ -38,6 +38,7 @@ import 'package:saqqar_app/shared/widgets/code_plate.dart';
 import 'package:saqqar_app/shared/widgets/colored_icon_box.dart';
 import 'package:saqqar_app/shared/widgets/dialog_actions.dart';
 import 'package:saqqar_app/shared/widgets/empty_state.dart';
+import 'package:saqqar_app/shared/widgets/eyebrow_label.dart';
 import 'package:saqqar_app/shared/widgets/fade_slide_in.dart';
 import 'package:saqqar_app/shared/widgets/filter_pill.dart';
 import 'package:saqqar_app/shared/widgets/ghost_button.dart';
@@ -62,6 +63,7 @@ import 'package:saqqar_app/shared/animations/pulse_dot.dart';
 import 'package:saqqar_app/shared/animations/scanline_overlay.dart';
 import 'package:saqqar_app/shared/animations/typing_dots.dart';
 
+import 'support/dart_source.dart';
 import 'support/widget_conformance.dart';
 import 'support/responsive_harness.dart' show FakeConnectivity;
 
@@ -236,6 +238,17 @@ void main() {
           title: Text(kUnbreakable),
           trailing: Icon(AppIcons.chevronRight),
         ),
+    'AppErrorState': () => const AppErrorState(message: kLongArabic),
+    'AppErrorState + retry': () => AppErrorState(
+          title: kLongEnglish,
+          message: kLongArabic,
+          icon: AppIcons.warning,
+          retryLabel: kLongEnglish,
+          onRetry: () {},
+        ),
+    'EyebrowLabel': () => const EyebrowLabel(kLongEnglish),
+    'EyebrowLabel coloured': () =>
+        const EyebrowLabel(kLongArabic, color: AppColors.warning),
   };
 
   group('every shared widget survives the layout matrix', () {
@@ -516,6 +529,151 @@ void main() {
     });
   });
 
+  group('AppErrorState', () {
+    testWidgets('collapses a body identical to its headline', (tester) async {
+      // The widget's own doc describes this rule, and nothing verified it.
+      // `default_api_error` and `error_unknown` are deliberately the same
+      // sentence, so the commonest failure of all — an error the mapper
+      // cannot classify — is exactly the one that stacks the line on itself:
+      //
+      //     Something went wrong. Please try again.
+      //     Something went wrong. Please try again.
+      //
+      // Asserting on the count, not on `findsOneWidget`, because the bug is
+      // duplication and `findsOneWidget` would fail either way without
+      // saying which direction it broke in.
+      const sentence = 'Something went wrong. Please try again.';
+      await tester.pumpWidget(
+        conformanceHarness(
+          const AppErrorState(title: sentence, message: sentence),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      expect(find.text(sentence), findsOneWidget);
+    });
+
+    testWidgets('renders headline and body when they differ', (tester) async {
+      await tester.pumpWidget(
+        conformanceHarness(
+          const AppErrorState(title: 'Offline', message: 'Check your network.'),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      expect(find.text('Offline'), findsOneWidget);
+      expect(find.text('Check your network.'), findsOneWidget);
+    });
+
+    testWidgets('an empty message reserves no blank line', (tester) async {
+      // `ApiErrorMapper` returning '' is not hypothetical — a bodiless
+      // error response maps to one. Whitespace-only is the same case.
+      for (final message in ['', '   ', '\n']) {
+        await tester.pumpWidget(
+          conformanceHarness(
+            AppErrorState(title: 'Offline', message: message),
+            locale: const Locale('en'),
+            scale: 1.0,
+          ),
+        );
+        expect(tester.takeException(), isNull);
+        expect(
+          find.text('Offline'),
+          findsOneWidget,
+          reason: 'The headline vanished for message "$message".',
+        );
+      }
+    });
+
+    testWidgets('shows a retry only when there is something to retry',
+        (tester) async {
+      // Omitting `onRetry` is how a terminal error (a 404 deep link) is
+      // expressed. A button that looks live and does nothing is worse than
+      // no button, because the user taps it repeatedly.
+      await tester.pumpWidget(
+        conformanceHarness(
+          const AppErrorState(message: 'Not found'),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      expect(find.byType(GhostButton), findsNothing);
+
+      var retries = 0;
+      await tester.pumpWidget(
+        conformanceHarness(
+          AppErrorState(
+            message: 'Not found',
+            retryLabel: 'Reload',
+            onRetry: () => retries++,
+          ),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      expect(find.text('Reload'), findsOneWidget);
+      await tester.tap(find.byType(GhostButton));
+      await tester.pump();
+      expect(retries, 1);
+    });
+  });
+
+  group('EyebrowLabel', () {
+    testWidgets('uppercases its text', (tester) async {
+      // The uppercasing is the widget's whole reason to exist over a styled
+      // `Text` — §5.7 specifies the label as caps, and every caller passes
+      // sentence case expecting the widget to do it.
+      await tester.pumpWidget(
+        conformanceHarness(
+          const EyebrowLabel('Account details'),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      expect(find.text('ACCOUNT DETAILS'), findsOneWidget);
+      expect(find.text('Account details'), findsNothing);
+    });
+
+    testWidgets('leaves Arabic text alone — it has no case', (tester) async {
+      // `toUpperCase()` is a no-op on Arabic script, but it is not a no-op
+      // on every non-Latin string, and this widget labels Arabic panels far
+      // more often than English ones. Pinning it so a future "smarter"
+      // casing helper cannot mangle the copy.
+      const arabic = 'تفاصيل الحساب';
+      await tester.pumpWidget(
+        conformanceHarness(
+          const EyebrowLabel(arabic),
+          locale: const Locale('ar'),
+          scale: 1.0,
+        ),
+      );
+      expect(find.text(arabic), findsOneWidget);
+    });
+
+    testWidgets('honours a colour override', (tester) async {
+      await tester.pumpWidget(
+        conformanceHarness(
+          const EyebrowLabel('Warning', color: AppColors.warning),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      final text = tester.widget<Text>(find.text('WARNING'));
+      expect(text.style?.color, AppColors.warning);
+    });
+
+    testWidgets('survives an empty label', (tester) async {
+      await tester.pumpWidget(
+        conformanceHarness(
+          const EyebrowLabel(''),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('CodePlate', () {
     testWidgets('clamps to maxLines instead of growing without bound',
         (tester) async {
@@ -646,25 +804,15 @@ void main() {
     // Rendering inside a screen sweep is not the same as being tested: the
     // sweep feeds a widget the content that screen happens to pass. What
     // this file does is feed it content it does not control.
-    final declared = <String>{};
-    for (final file in Directory('lib/shared/widgets')
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))) {
-      for (final m in RegExp(r'^class ([A-Z]\w+) extends State(?:less|ful)Widget',
-              multiLine: true)
-          .allMatches(file.readAsStringSync())) {
-        declared.add(m.group(1)!);
-      }
-    }
+    //
+    // The scan reads test source with comments STRIPPED. Before that, this
+    // guard passed while `EyebrowLabel` was constructed by nothing: its only
+    // appearance in the whole of `test/` was the phrase "render through
+    // EyebrowLabel (uppercased)" in a `//` comment, and the trailing
+    // "(uppercased)" satisfied the `Widget(` match. A coverage guard that
+    // counts prose as coverage reports the opposite of the truth.
+    final declared = declaredWidgetsIn('lib/shared/widgets');
     expect(declared, isNotEmpty, reason: 'The scan found no shared widgets.');
-
-    final everyTest = Directory('test')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))
-        .map((f) => f.readAsStringSync())
-        .join('\n');
 
     // Deliberately not pumped, each with the reason.
     const exempt = <String, String>{
@@ -691,7 +839,7 @@ void main() {
     final missing = declared
         .where((w) => !exempt.containsKey(w))
         // Constructed, not merely imported: an import proves nothing rendered.
-        .where((w) => !RegExp('$w' r'(?:\.\w+)?\s*\(').hasMatch(everyTest))
+        .where((w) => !isConstructedByATest(w))
         .toList()
       ..sort();
 

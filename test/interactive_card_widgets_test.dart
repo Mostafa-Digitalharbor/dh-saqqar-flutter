@@ -16,11 +16,11 @@ import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/data/interactive_cards.dart';
 import 'package:saqqar_app/features/chat/widgets/message_row.dart';
 import 'package:saqqar_app/features/chat/widgets/report_builder_card.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
-DemoMessage _toolMessage(Map<String, dynamic>? payload) => DemoMessage(
+ChatMessage _toolMessage(Map<String, dynamic>? payload) => ChatMessage(
       id: 'm1',
-      role: DemoMessageRole.assistant,
+      role: ChatMessageRole.assistant,
       content: '{"kind":"…"}',
       time: '10:00',
       toolName: 'prompt_tool',
@@ -29,7 +29,7 @@ DemoMessage _toolMessage(Map<String, dynamic>? payload) => DemoMessage(
 
 Future<void> _pumpRow(
   WidgetTester tester,
-  DemoMessage message, {
+  ChatMessage message, {
   Locale locale = const Locale('en'),
   bool dark = false,
   ValueChanged<String>? onSend,

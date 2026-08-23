@@ -77,6 +77,19 @@ class _IdleRepo implements ConversationsRepository {
     return calls == 1 ? _initial : _steady;
   }
 
+  // Same scripted answer for both fetch paths. The production repo decodes
+  // this one off the UI isolate; under `flutter_test` there is no isolate
+  // boundary worth modelling, and a fake that answered only one of them
+  // would make `load()` fail for a reason the test is not about.
+  @override
+  Future<ConversationSnapshot> getSnapshotOffIsolate(
+    String id, {
+    DateTime? since,
+    int? limit,
+    String? before,
+  }) =>
+      getSnapshot(id, since: since, limit: limit, before: before);
+
   @override
   ConversationSnapshot? cachedSnapshot(String id) => null;
 

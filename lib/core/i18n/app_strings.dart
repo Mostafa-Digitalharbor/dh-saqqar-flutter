@@ -46,6 +46,45 @@ class AppStrings {
     return out;
   }
 
+  /// CLDR plural category for [n] in the active locale.
+  ///
+  /// English has two forms and Arabic has six, and treating Arabic as if it
+  /// had English's two is not a nuance — the chat's thinking pill rendered a
+  /// literal **"1 خطوات"** ("1 stepS") on a real device, because a count was
+  /// pasted in front of a fixed plural noun. Arabic inflects the noun on the
+  /// count: خطوة / خطوتان / ٣ خطوات / ١١ خطوة, and the numeral is often
+  /// dropped entirely at one and two.
+  ///
+  /// The bands key off `n % 100` because Arabic's `few` and `many` repeat
+  /// every hundred — 103 is `few` for exactly the reason 3 is. The `n == 2`
+  /// test deliberately reads the whole number, not the remainder, so 102
+  /// lands in `other` (CLDR) rather than borrowing the dual.
+  String _category(int n) {
+    if (!_isArabic) return n == 1 ? 'one' : 'other';
+    if (n == 0) return 'zero';
+    if (n == 1) return 'one';
+    if (n == 2) return 'two';
+    final mod = n % 100;
+    if (mod >= 3 && mod <= 10) return 'few';
+    if (mod >= 11 && mod <= 99) return 'many';
+    return 'other';
+  }
+
+  /// [_f] against the plural form of [key] for [n].
+  ///
+  /// Resolves `<key>_<category>`. Every plural key defines **all six**
+  /// categories in **both** tables, even where several share a wording, so
+  /// there is no fallback chain to reason about and `i18n_parity_test` can
+  /// check the set by equality. A missing Arabic `few` that quietly rendered
+  /// the `other` form would be precisely the silent drift the parity guard
+  /// exists to prevent.
+  ///
+  /// `{n}` is pre-bound to the count so the common case needs no [vars];
+  /// [vars] is applied after and may override it, which is how the relative
+  /// stamp passes an already locale-formatted numeral instead of a raw int.
+  String _p(String key, int n, [Map<String, Object?> vars = const {}]) =>
+      _f('${key}_${_category(n)}', {'n': n, ...vars});
+
   /// Public lookup by raw key. Used by schema-driven UIs (e.g. the
   /// credential form) where the field schema carries the i18n key
   /// directly instead of mapping through a typed getter. Returns
@@ -141,8 +180,7 @@ class AppStrings {
   String get envMultiApply => _t('env_multi_apply');
   String get envMultiUpdated => _t('env_multi_updated');
   String get envMultiNone => _t('env_multi_none');
-  String envMultiSelectedCount(int n) =>
-      _f('env_multi_selected_count', {'n': n});
+  String envMultiSelectedCount(int n) => _p('env_multi_selected_count', n);
   String envMultiExtra(int n) => _f('env_multi_extra', {'n': n});
 
   // Inline pending approvals banner (above composer)
@@ -297,7 +335,7 @@ class AppStrings {
   String get preApprovalTip => _t('pre_approval_tip');
   String get approveAllSimilar => _t('approve_all_similar');
   String approvalBatchResolved(int count) =>
-      _f('approval_batch_resolved', {'count': count});
+      _p('approval_batch_resolved', count);
   String get showIndividualRecords => _t('show_individual_records');
   String get hideIndividualRecords => _t('hide_individual_records');
   String approvalGrantedWithPreapproval(int count) =>
@@ -337,6 +375,11 @@ class AppStrings {
   String get system => _t('system');
   String get live => _t('live');
   String get latest => _t('latest');
+
+  /// Accessible name for the floating chevron that returns the chat to its
+  /// newest message. The control is an icon with no visible text, so without
+  /// this a screen reader announces an unnamed button.
+  String get scrollToLatest => _t('scroll_to_latest');
   String get all => _t('all');
   String get archived => _t('archived');
   String get showArchivedAction => _t('show_archived_action');
@@ -481,7 +524,7 @@ class AppStrings {
   String get emailPreviewReply => _t('email_preview_reply');
   // Destructive-delete type-to-confirm (web parity — `renderDeleteApproval`).
   /// The red button on a destructive-delete approval card — "Delete 12" /
-  /// "حذف ١٢".
+  /// "حذف 12".
   ///
   /// The count is the informed consent. It used to live in a phrase the user
   /// had to type back; that gate was removed on 2026-08-17 because it was too
@@ -603,7 +646,7 @@ class AppStrings {
   String get agentThinking => _t('agent_thinking');
   String get saqqarThinking => _t('saqqar_thinking');
   String get saqqarWorkingNow => _t('saqqar_working_now');
-  String get thinkingStepsLabel => _t('thinking_steps_label');
+  String thinkingSteps(int n) => _p('thinking_steps', n);
   String get composerBusy => _t('composer_busy');
   // Long-running report progress (run_progress.phase = building_report /
   // rendering_report). Shown on the typing row while Excel/PDF/Word
@@ -823,7 +866,7 @@ class AppStrings {
   String get searchInConversation => _t('search_in_conversation');
 
   /// Pending-approval safety pill on a conversation row — "2 TO APPROVE" /
-  /// "٢ للموافقة".
+  /// "2 للموافقة".
   String toApprove(int n) => _f('to_approve', {'n': n});
   String get slashRestartDesc => _t('slash_restart_desc');
   String get slashReportDesc => _t('slash_report_desc');
@@ -867,7 +910,13 @@ class AppStrings {
   String get compactMillions => _t('compact_millions');
   String relativeMinutesAgo(String n) => _f('relative_minutes_ago', {'n': n});
   String relativeHoursAgo(String n) => _f('relative_hours_ago', {'n': n});
-  String relativeDaysAgo(String n) => _f('relative_days_ago', {'n': n});
+  /// [n] is the count already rendered through the locale's numbering
+  /// system; [count] is the same value as an int, which is what picks the
+  /// plural form. They are separate because the Arabic dual drops the
+  /// numeral altogether ("منذ يومين"), so the form has to be chosen from the
+  /// number even when the number never reaches the screen.
+  String relativeDaysAgo(String n, int count) =>
+      _p('relative_days_ago', count, {'n': n});
 
   /// Company header stats line — "3 environments · 1 live · 2 credentials"
   /// (pluralized for EN, RTL-natural for AR). Segments after the count are
@@ -995,15 +1044,13 @@ class AppStrings {
   String get shareSheetSubtitle => _t('share_sheet_subtitle');
   String get shareNewChat => _t('share_new_chat');
   String get shareExistingChats => _t('share_existing_chats');
-  String get shareCountFile => _t('share_count_file');
-  String get shareCountFiles => _t('share_count_files');
+  String shareCountFiles(int n) => _p('share_count_files', n);
   String get shareNoConversations => _t('share_no_conversations');
   String get shareCancel => _t('share_cancel');
 
   // Tester feedback batch (2026-05-23): sent-confirmation toast, voice
   // input, share-message, quick replies, swipe-archive hints.
-  String get sentToastOneFile => _t('sent_toast_one_file');
-  String get sentToastManyFiles => _t('sent_toast_many_files');
+  String sentToastFiles(int n) => _p('sent_toast_files', n);
   String get shareMessage => _t('share_message');
   String get shareMessageSubject => _t('share_message_subject');
   String get voiceHoldToTalk => _t('voice_hold_to_talk');
@@ -1607,10 +1654,67 @@ class AppStrings {
 
   /// Group taxonomy label. Falls back to the server's own English value so a
   /// group the backend adds still reads as itself rather than as a key.
-  String appGroup(String group) => lookup(
-        'app_group_${group.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_')}',
-        fallback: group,
+  String appGroup(String group) =>
+      lookup('app_group_${taxonomyKey(group)}', fallback: group);
+
+  /// Category chip label — the compound taxonomy string the catalogue sends
+  /// on each package (`Compliance · KSA`, `Accounting · Setup`).
+  ///
+  /// Translated **token by token**, not as a whole string. The backend
+  /// composes these labels from a small vocabulary, so the pairings are open
+  /// ended while the words are not: keying the whole value would leave
+  /// `Compliance · Egypt` English on the day someone adds it, even though
+  /// both of its words are already translated. Each token falls back through
+  /// `app_category_*` → `app_group_*` (the two taxonomies share `Finance`,
+  /// `Accounting`, `Integrations` — no reason to spell them twice) → the
+  /// server's own word, so an unknown token degrades to English rather than
+  /// blanking the chip.
+  ///
+  /// The separator is normalized to `·`: the vocabulary is what carries
+  /// meaning, and re-emitting a `/` or `,` the server happened to use would
+  /// put three different separators on one grid.
+  String appCategory(String category) {
+    final raw = category.trim();
+    if (raw.isEmpty) return raw;
+    final parts = [
+      for (final p in raw.split(_categorySeparator))
+        if (p.trim().isNotEmpty) p.trim(),
+    ];
+    if (parts.isEmpty) return raw;
+    return parts.map((p) {
+      final key = taxonomyKey(p);
+      if (key.isEmpty) return p;
+      return lookup(
+        'app_category_$key',
+        fallback: lookup('app_group_$key', fallback: p),
       );
+    }).join(' · ');
+  }
+
+  /// Splits a compound taxonomy label on every separator the catalogue is
+  /// known to use. `·` is the documented one; `/`, `,` and `|` are accepted
+  /// because they cost nothing and a label written with one of them would
+  /// otherwise translate as a single unmatched blob.
+  static final RegExp _categorySeparator = RegExp(r'[·|/,]');
+
+  /// `ZATCA e-invoicing` → `zatca_e_invoicing`. Lowercased, every run of
+  /// non-alphanumerics collapsed to one underscore, both ends trimmed.
+  ///
+  /// Shared by every taxonomy lookup (and by `SaqqarApp`'s per-package key)
+  /// so `Finance`, `finance` and ` FINANCE ` all resolve the same entry.
+  /// The trim is not cosmetic: without it a padded server value produced
+  /// `_finance_`, which matches nothing and silently fell back to English.
+  ///
+  /// The [RegExp]s are `static final`, not rebuilt per call — this runs once
+  /// per tile per frame on a scrolling grid, and compiling two patterns each
+  /// time is work the grid does not need to repeat.
+  static String taxonomyKey(String value) => value
+      .toLowerCase()
+      .replaceAll(_nonAlphanumeric, '_')
+      .replaceAll(_edgeUnderscores, '');
+
+  static final RegExp _nonAlphanumeric = RegExp(r'[^a-z0-9]+');
+  static final RegExp _edgeUnderscores = RegExp(r'^_+|_+$');
 
   /// Toast title when launching a guided app fails. Names the action; the
   /// toast body carries the mapped reason from [ApiErrorMapper].
@@ -1788,6 +1892,7 @@ const Map<String, String> _en = {
   'system': 'System',
   'live': 'Live',
   'latest': 'Latest',
+  'scroll_to_latest': 'Scroll to latest message',
   'all': 'All',
   'archived': 'Archived',
   'show_archived_action': 'Show',
@@ -1945,12 +2050,26 @@ const Map<String, String> _en = {
       'Onboard Saudi Fatoora Phase-2 e-invoicing on your Odoo — CSR, OTP, '
           'and go-live.',
 
+  // `whatsapp` is the slug the catalogue actually sends
+  // (docs/BACKEND_FIXES_RESPONSE.md §5: `zatca · whatsapp ·
+  // chart-of-accounts · bank-reconciliation`). The `_integration` key is the
+  // normalized *display name* — both are kept because the two resolve
+  // independently, and a rename on either side must not un-translate the
+  // card.
+  'app_name_whatsapp': 'WhatsApp integration',
   'app_name_whatsapp_integration': 'WhatsApp integration',
+  'app_tagline_whatsapp':
+      'Connect WhatsApp Business (Cloud API) so Odoo can send and receive '
+          'messages.',
   'app_tagline_whatsapp_integration':
       'Connect WhatsApp Business (Cloud API) so Odoo can send and receive '
           'messages.',
 
+  'app_name_chart_of_accounts': 'Chart of Accounts builder',
   'app_name_chart_of_accounts_builder': 'Chart of Accounts builder',
+  'app_tagline_chart_of_accounts':
+      'Build or import a clean, localized chart of accounts and wire up '
+          'default postings.',
   'app_tagline_chart_of_accounts_builder':
       'Build or import a clean, localized chart of accounts and wire up '
           'default postings.',
@@ -1960,12 +2079,84 @@ const Map<String, String> _en = {
       'Set up bank journals, statement import, and reconciliation rules that '
           'match automatically.',
 
-  // Group taxonomy — a closed set, shown as the card chip and as the filter
-  // pills. `app_group_all` is the client-side "no filter" pill.
+  // The fifth CARD in the live grid, captured from `GET /api/v1/apps/` on
+  // 2026-08-22: slug `factory`, name "Your factory", group `Operations`.
+  // It is the package that made the whole screen look untranslated — the
+  // other four resolved through their display names, this one had no key at
+  // all, so an Arabic phone showed four Arabic cards and one English one.
+  'app_name_factory': 'Your factory',
+  'app_name_your_factory': 'Your factory',
+  'app_tagline_factory':
+      'Production status, missing material, and a delivery date computed '
+          'from your Odoo.',
+  'app_tagline_your_factory':
+      'Production status, missing material, and a delivery date computed '
+          'from your Odoo.',
+
+  // `meetings` — NOT in the live grid: `/apps/` filters it out (it is
+  // direct-launch and staff-gated on web). Kept because the mobile grid
+  // deliberately renders whatever the endpoint sends, so the moment that
+  // gate opens the card arrives translated instead of arriving in English
+  // and waiting for a release.
+  'app_name_meetings': 'Meeting notetaker',
+  'app_name_meeting_notetaker': 'Meeting notetaker',
+  'app_tagline_meetings':
+      'Record, transcribe, and summarize meetings, then file the actions '
+          'back into Odoo.',
+  'app_tagline_meeting_notetaker':
+      'Record, transcribe, and summarize meetings, then file the actions '
+          'back into Odoo.',
+
+  // Group taxonomy — shown as the card chip and as the filter pills.
+  // `app_group_all` is the client-side "no filter" pill.
+  //
+  // The first three are the taxonomy the catalogue ships today. The rest are
+  // the ERP domains the backend draws from, pre-translated: the grid renders
+  // whatever `/apps/` sends, so a package landing in a new group would put an
+  // English pill on an Arabic screen until someone shipped a release. A key
+  // costs one line; the pill it saves is user-visible for weeks.
   'app_group_all': 'All',
   'app_group_accounting': 'Accounting',
   'app_group_finance': 'Finance',
   'app_group_integrations': 'Integrations',
+  'app_group_sales': 'Sales',
+  'app_group_purchasing': 'Purchasing',
+  'app_group_inventory': 'Inventory',
+  'app_group_manufacturing': 'Manufacturing',
+  'app_group_hr': 'HR',
+  'app_group_crm': 'CRM',
+  'app_group_marketing': 'Marketing',
+  'app_group_operations': 'Operations',
+  'app_group_productivity': 'Productivity',
+  'app_group_reporting': 'Reporting',
+  'app_group_compliance': 'Compliance',
+  'app_group_automation': 'Automation',
+  'app_group_data': 'Data',
+  'app_group_security': 'Security',
+  'app_group_other': 'Other',
+
+  // Category vocabulary — the words the compound chip label is built from
+  // (`Compliance · KSA`). `AppStrings.appCategory` translates each token and
+  // falls through to `app_group_*` for the words the two taxonomies share,
+  // so `Finance` and `Accounting` are deliberately NOT repeated here.
+  'app_category_ksa': 'KSA',
+  'app_category_saudi_arabia': 'Saudi Arabia',
+  'app_category_egypt': 'Egypt',
+  'app_category_uae': 'UAE',
+  'app_category_gcc': 'GCC',
+  'app_category_messaging': 'Messaging',
+  'app_category_banking': 'Banking',
+  'app_category_e_invoicing': 'E-invoicing',
+  'app_category_invoicing': 'Invoicing',
+  'app_category_tax': 'Tax',
+  'app_category_payments': 'Payments',
+  'app_category_setup': 'Setup',
+  'app_category_onboarding': 'Onboarding',
+  'app_category_migration': 'Migration',
+  'app_category_localization': 'Localization',
+  'app_category_meetings': 'Meetings',
+  'app_category_odoo': 'Odoo',
+  'app_category_ai': 'AI',
   // Launch picker — shown before the app opens a conversation.
   'app_launch_title': 'Where should this run?',
   'app_launch_project': 'Company',
@@ -2056,7 +2247,12 @@ const Map<String, String> _en = {
   'agent_thinking': 'Working on your request.',
   'saqqar_thinking': 'Saqqar thinking',
   'saqqar_working_now': 'is working now',
-  'thinking_steps_label': 'steps',
+  'thinking_steps_zero': '{n} steps',
+  'thinking_steps_one': '1 step',
+  'thinking_steps_two': '{n} steps',
+  'thinking_steps_few': '{n} steps',
+  'thinking_steps_many': '{n} steps',
+  'thinking_steps_other': '{n} steps',
   'composer_busy': 'Saqqar is working — type your next task; send unlocks when done.',
   'save_and_continue': 'Save and continue',
   'credential_saved_continuing': 'Credential saved — Saqqar is resuming.',
@@ -2360,12 +2556,20 @@ const Map<String, String> _en = {
   'share_sheet_subtitle': 'Pick a chat to attach to, or start a new one.',
   'share_new_chat': 'Start a new chat',
   'share_existing_chats': 'Recent chats',
-  'share_count_file': '1 file from another app',
-  'share_count_files': '{count} files from another app',
+  'share_count_files_zero': '{n} files from another app',
+  'share_count_files_one': '1 file from another app',
+  'share_count_files_two': '{n} files from another app',
+  'share_count_files_few': '{n} files from another app',
+  'share_count_files_many': '{n} files from another app',
+  'share_count_files_other': '{n} files from another app',
   'share_no_conversations': 'No chats yet — start a new one to attach.',
   'share_cancel': 'Cancel share',
-  'sent_toast_one_file': 'Sent · 1 file attached',
-  'sent_toast_many_files': 'Sent · {count} files attached',
+  'sent_toast_files_zero': 'Sent · {n} files attached',
+  'sent_toast_files_one': 'Sent · 1 file attached',
+  'sent_toast_files_two': 'Sent · {n} files attached',
+  'sent_toast_files_few': 'Sent · {n} files attached',
+  'sent_toast_files_many': 'Sent · {n} files attached',
+  'sent_toast_files_other': 'Sent · {n} files attached',
   'share_message': 'Share',
   'share_message_subject': 'From Saqqar',
   'voice_hold_to_talk': 'Hold the mic to talk',
@@ -2878,7 +3082,12 @@ const Map<String, String> _en = {
   // Interpolated copy — `{placeholder}` slots are filled by `_f`. These
   // were inline `_isArabic ? … : …` ternaries until they were moved here
   // so `i18n_parity_test` can see both sides.
-  'env_multi_selected_count': '{n} selected',
+  'env_multi_selected_count_zero': '{n} selected',
+  'env_multi_selected_count_one': '1 selected',
+  'env_multi_selected_count_two': '{n} selected',
+  'env_multi_selected_count_few': '{n} selected',
+  'env_multi_selected_count_many': '{n} selected',
+  'env_multi_selected_count_other': '{n} selected',
   'env_multi_extra': '+{n} more',
   'more_pending_approvals': '+ {n} more pending approvals',
   'last_verified_at': 'Last verified {at}',
@@ -2887,7 +3096,12 @@ const Map<String, String> _en = {
   'approve_all_n': 'Approve all {count}',
   'reject_all_n': 'Reject all {count}',
   'approve_all_similar': 'Approve all similar requests',
-  'approval_batch_resolved': 'Approved {count} requests',
+  'approval_batch_resolved_zero': 'Approved {n} requests',
+  'approval_batch_resolved_one': 'Approved 1 request',
+  'approval_batch_resolved_two': 'Approved {n} requests',
+  'approval_batch_resolved_few': 'Approved {n} requests',
+  'approval_batch_resolved_many': 'Approved {n} requests',
+  'approval_batch_resolved_other': 'Approved {n} requests',
   'approval_granted_with_preapproval':
       'Approval granted. {count} similar request(s) pre-approved.',
   'live_warning_title': 'Live environment: {envName}',
@@ -2903,7 +3117,12 @@ const Map<String, String> _en = {
   'to_approve': '{n} TO APPROVE',
   'relative_minutes_ago': '{n} m ago',
   'relative_hours_ago': '{n} h ago',
-  'relative_days_ago': '{n} d ago',
+  'relative_days_ago_zero': '{n} d ago',
+  'relative_days_ago_one': '{n} d ago',
+  'relative_days_ago_two': '{n} d ago',
+  'relative_days_ago_few': '{n} d ago',
+  'relative_days_ago_many': '{n} d ago',
+  'relative_days_ago_other': '{n} d ago',
   'auth_resend_in': 'Resend in {seconds} s',
   'plan_pct_used': '{pct}% used',
   'item_count': '{visible} of {total} {label}',
@@ -3101,6 +3320,7 @@ const Map<String, String> _ar = {
   'system': 'النظام',
   'live': 'مباشر',
   'latest': 'الأحدث',
+  'scroll_to_latest': 'انتقل إلى أحدث رسالة',
   'all': 'الكل',
   'archived': 'مؤرشف',
   'show_archived_action': 'عرض',
@@ -3247,12 +3467,19 @@ const Map<String, String> _ar = {
       'تفعيل فوترة المرحلة الثانية (فاتورة) على أودو – CSR ورمز التحقق '
           'والإطلاق.',
 
+  'app_name_whatsapp': 'تكامل واتساب',
   'app_name_whatsapp_integration': 'تكامل واتساب',
+  'app_tagline_whatsapp':
+      'اربط واتساب للأعمال (Cloud API) ليتمكّن أودو من إرسال الرسائل '
+          'واستقبالها.',
   'app_tagline_whatsapp_integration':
       'اربط واتساب للأعمال (Cloud API) ليتمكّن أودو من إرسال الرسائل '
           'واستقبالها.',
 
+  'app_name_chart_of_accounts': 'مُنشئ شجرة الحسابات',
   'app_name_chart_of_accounts_builder': 'مُنشئ شجرة الحسابات',
+  'app_tagline_chart_of_accounts':
+      'أنشئ أو استورد شجرة حسابات نظيفة ومحلّية واضبط القيود الافتراضية.',
   'app_tagline_chart_of_accounts_builder':
       'أنشئ أو استورد شجرة حسابات نظيفة ومحلّية واضبط القيود الافتراضية.',
 
@@ -3261,10 +3488,58 @@ const Map<String, String> _ar = {
       'إعداد اليوميات البنكية واستيراد الكشوف وقواعد التسوية التي تطابق '
           'تلقائيًا.',
 
+  'app_name_factory': 'مصنعك',
+  'app_name_your_factory': 'مصنعك',
+  'app_tagline_factory':
+      'حالة الإنتاج والمواد الناقصة وتاريخ التسليم، محسوبة من أودو.',
+  'app_tagline_your_factory':
+      'حالة الإنتاج والمواد الناقصة وتاريخ التسليم، محسوبة من أودو.',
+
+  'app_name_meetings': 'مدوّن الاجتماعات',
+  'app_name_meeting_notetaker': 'مدوّن الاجتماعات',
+  'app_tagline_meetings':
+      'سجّل الاجتماعات وفرّغها ولخّصها، ثم أدرج المهام الناتجة في أودو.',
+  'app_tagline_meeting_notetaker':
+      'سجّل الاجتماعات وفرّغها ولخّصها، ثم أدرج المهام الناتجة في أودو.',
+
   'app_group_all': 'الكل',
   'app_group_accounting': 'المحاسبة',
   'app_group_finance': 'المالية',
   'app_group_integrations': 'التكاملات',
+  'app_group_sales': 'المبيعات',
+  'app_group_purchasing': 'المشتريات',
+  'app_group_inventory': 'المخزون',
+  'app_group_manufacturing': 'التصنيع',
+  'app_group_hr': 'الموارد البشرية',
+  'app_group_crm': 'إدارة العملاء',
+  'app_group_marketing': 'التسويق',
+  'app_group_operations': 'العمليات',
+  'app_group_productivity': 'الإنتاجية',
+  'app_group_reporting': 'التقارير',
+  'app_group_compliance': 'الالتزام',
+  'app_group_automation': 'الأتمتة',
+  'app_group_data': 'البيانات',
+  'app_group_security': 'الأمان',
+  'app_group_other': 'أخرى',
+
+  'app_category_ksa': 'السعودية',
+  'app_category_saudi_arabia': 'السعودية',
+  'app_category_egypt': 'مصر',
+  'app_category_uae': 'الإمارات',
+  'app_category_gcc': 'دول الخليج',
+  'app_category_messaging': 'المراسلة',
+  'app_category_banking': 'المصرفية',
+  'app_category_e_invoicing': 'الفوترة الإلكترونية',
+  'app_category_invoicing': 'الفوترة',
+  'app_category_tax': 'الضرائب',
+  'app_category_payments': 'المدفوعات',
+  'app_category_setup': 'الإعداد',
+  'app_category_onboarding': 'التهيئة',
+  'app_category_migration': 'الترحيل',
+  'app_category_localization': 'التوطين',
+  'app_category_meetings': 'الاجتماعات',
+  'app_category_odoo': 'أودو',
+  'app_category_ai': 'الذكاء الاصطناعي',
   'app_launch_title': 'أين تريد تشغيل هذا؟',
   'app_launch_project': 'الشركة',
   'app_launch_environment': 'قاعدة البيانات',
@@ -3339,7 +3614,12 @@ const Map<String, String> _ar = {
   'agent_thinking': 'يعمل على طلبك.',
   'saqqar_thinking': 'صقّار يفكر',
   'saqqar_working_now': 'يعمل الآن',
-  'thinking_steps_label': 'خطوات',
+  'thinking_steps_zero': 'بدون خطوات',
+  'thinking_steps_one': 'خطوة واحدة',
+  'thinking_steps_two': 'خطوتان',
+  'thinking_steps_few': '{n} خطوات',
+  'thinking_steps_many': '{n} خطوة',
+  'thinking_steps_other': '{n} خطوة',
   'composer_busy': 'صقّار يعمل — اكتب مهمتك التالية، وسيُفعَّل الإرسال عند الانتهاء.',
   'save_and_continue': 'حفظ ومتابعة',
   'credential_saved_continuing': 'تم حفظ البيانات — صقّار يكمل العمل.',
@@ -3616,12 +3896,20 @@ const Map<String, String> _ar = {
   'share_sheet_subtitle': 'اختر محادثة لإرفاق الملفات بها، أو ابدأ محادثة جديدة.',
   'share_new_chat': 'محادثة جديدة',
   'share_existing_chats': 'المحادثات الأخيرة',
-  'share_count_file': 'ملف واحد من تطبيق آخر',
-  'share_count_files': '{count} ملفات من تطبيق آخر',
+  'share_count_files_zero': 'لا ملفات من تطبيق آخر',
+  'share_count_files_one': 'ملف واحد من تطبيق آخر',
+  'share_count_files_two': 'ملفان من تطبيق آخر',
+  'share_count_files_few': '{n} ملفات من تطبيق آخر',
+  'share_count_files_many': '{n} ملفاً من تطبيق آخر',
+  'share_count_files_other': '{n} ملف من تطبيق آخر',
   'share_no_conversations': 'لا توجد محادثات — ابدأ واحدة جديدة لإرفاق الملفات.',
   'share_cancel': 'إلغاء المشاركة',
-  'sent_toast_one_file': 'تم الإرسال · ملف واحد مرفق',
-  'sent_toast_many_files': 'تم الإرسال · {count} ملفات مرفقة',
+  'sent_toast_files_zero': 'تم الإرسال',
+  'sent_toast_files_one': 'تم الإرسال · ملف واحد مرفق',
+  'sent_toast_files_two': 'تم الإرسال · ملفان مرفقان',
+  'sent_toast_files_few': 'تم الإرسال · {n} ملفات مرفقة',
+  'sent_toast_files_many': 'تم الإرسال · {n} ملفاً مرفقاً',
+  'sent_toast_files_other': 'تم الإرسال · {n} ملف مرفق',
   'share_message': 'مشاركة',
   'share_message_subject': 'من صقّار',
   'voice_hold_to_talk': 'اضغط مطوّل على الميكروفون',
@@ -3810,7 +4098,7 @@ const Map<String, String> _ar = {
   'auth_signup_email_title': 'أنشئ حسابك',
   'auth_signup_email_subtitle': 'أدخل بريدك الإلكتروني للبدء.',
   'auth_check_email_title': 'تحقّق من بريدك',
-  'auth_check_email_subtitle': 'أدخل الرمز المكوّن من ٦ أرقام الذي أرسلناه.',
+  'auth_check_email_subtitle': 'أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه.',
   'auth_profile_title': 'أكمل ملفك الشخصي',
   'auth_profile_subtitle': 'أضف اسمك واختر كلمة مرور.',
   'auth_welcome_back_title': 'مرحبًا بعودتك',
@@ -3826,9 +4114,9 @@ const Map<String, String> _ar = {
   'auth_new_password_label': 'كلمة المرور الجديدة',
   'auth_confirm_new_password': 'تأكيد كلمة المرور الجديدة',
   'auth_otp_label': 'رمز التحقق',
-  'auth_otp_hint': 'أرسلنا رمزًا من ٦ أرقام إلى بريدك. تنتهي صلاحيته خلال ١٠ دقائق.',
+  'auth_otp_hint': 'أرسلنا رمزًا من 6 أرقام إلى بريدك. تنتهي صلاحيته خلال 10 دقائق.',
   'auth_email_placeholder': 'you@example.com',
-  'auth_password_placeholder': '٨ أحرف على الأقل',
+  'auth_password_placeholder': '8 أحرف على الأقل',
   'auth_password_enter_placeholder': 'أدخل كلمة المرور',
   'auth_confirm_placeholder': 'أعد إدخال كلمة المرور',
   'auth_confirm_new_placeholder': 'أعد إدخال كلمة المرور الجديدة',
@@ -3854,7 +4142,7 @@ const Map<String, String> _ar = {
   'auth_resend_now': 'إعادة الإرسال',
   'auth_remember_it_now': 'تذكّرتها الآن؟',
   'auth_passwords_mismatch': 'كلمتا المرور غير متطابقتين.',
-  'auth_code_required': 'أدخل الرمز المكوّن من ٦ أرقام.',
+  'auth_code_required': 'أدخل الرمز المكوّن من 6 أرقام.',
   'auth_name_required': 'أدخل اسمك الأول.',
   'auth_password_set': 'تم تعيين كلمة المرور. سجّل الدخول بكلمتك الجديدة.',
   'personal_info_title': 'المعلومات الشخصية',
@@ -4099,7 +4387,12 @@ const Map<String, String> _ar = {
   'activity_preparing_approval': 'يُجهّز طلب موافقة',
 
   // النصوص ذات المتغيّرات — خانات `{placeholder}` يملؤها `_f`.
-  'env_multi_selected_count': '{n} بيئة مختارة',
+  'env_multi_selected_count_zero': 'لم تُختر أي بيئة',
+  'env_multi_selected_count_one': 'بيئة واحدة مختارة',
+  'env_multi_selected_count_two': 'بيئتان مختارتان',
+  'env_multi_selected_count_few': '{n} بيئات مختارة',
+  'env_multi_selected_count_many': '{n} بيئة مختارة',
+  'env_multi_selected_count_other': '{n} بيئة مختارة',
   'env_multi_extra': '+{n} أخرى',
   'more_pending_approvals': '+ {n} موافقات أخرى معلّقة',
   'last_verified_at': 'آخر تحقق: {at}',
@@ -4108,7 +4401,12 @@ const Map<String, String> _ar = {
   'approve_all_n': 'وافق على الكل ({count})',
   'reject_all_n': 'ارفض الكل ({count})',
   'approve_all_similar': 'وافق على كل الطلبات المشابهة',
-  'approval_batch_resolved': 'تمت الموافقة على {count} طلب',
+  'approval_batch_resolved_zero': 'لم تتم الموافقة على أي طلب',
+  'approval_batch_resolved_one': 'تمت الموافقة على طلب واحد',
+  'approval_batch_resolved_two': 'تمت الموافقة على طلبين',
+  'approval_batch_resolved_few': 'تمت الموافقة على {n} طلبات',
+  'approval_batch_resolved_many': 'تمت الموافقة على {n} طلباً',
+  'approval_batch_resolved_other': 'تمت الموافقة على {n} طلب',
   'approval_granted_with_preapproval':
       'تمت الموافقة. {count} طلب مماثل تمت الموافقة عليه مسبقاً.',
   'live_warning_title': 'بيئة مباشرة: {envName}',
@@ -4124,7 +4422,12 @@ const Map<String, String> _ar = {
   'to_approve': '{n} للموافقة',
   'relative_minutes_ago': 'منذ {n} د',
   'relative_hours_ago': 'منذ {n} س',
-  'relative_days_ago': 'منذ {n} أيام',
+  'relative_days_ago_zero': 'منذ أقل من يوم',
+  'relative_days_ago_one': 'منذ يوم',
+  'relative_days_ago_two': 'منذ يومين',
+  'relative_days_ago_few': 'منذ {n} أيام',
+  'relative_days_ago_many': 'منذ {n} يوماً',
+  'relative_days_ago_other': 'منذ {n} يوم',
   'auth_resend_in': 'إعادة الإرسال خلال {seconds} ث',
   'plan_pct_used': 'مُستخدَم {pct}٪',
   'item_count': '{visible} من {total} {label}',
@@ -4137,7 +4440,7 @@ const Map<String, String> _ar = {
   'compact_millions': 'م',
 
   'file_kind_image': 'صورة',
-  'auth_otp_placeholder': '١ ٢ ٣ ٤ ٥ ٦',
+  'auth_otp_placeholder': '1 2 3 4 5 6',
 
   // مجموعات روابط الحساب
   'account_group_workspace': 'مساحة العمل',

@@ -90,6 +90,42 @@ void main() {
   final enSet = enKeys.toSet();
   final arSet = arKeys.toSet();
 
+  /// The CLDR categories `AppStrings._category` can return. Arabic uses all
+  /// six; English only ever asks for `one` and `other`, but a plural key
+  /// still defines the full set in both tables so resolution never has to
+  /// fall back (see `_p`'s doc).
+  const pluralCategories = ['zero', 'one', 'two', 'few', 'many', 'other'];
+
+  /// Base names of the plural key families, recovered from the tables by
+  /// stripping a category suffix. Derived from the source rather than
+  /// hand-listed so a new plural key is covered the moment it is added.
+  ///
+  /// A family is recognised by `_one` **and** `_other` both being present,
+  /// not by `_other` alone. Four of the six CLDR category words are also
+  /// ordinary English — `one`, `two`, `few`, `many`, `other` — so keying on
+  /// a single suffix makes any lone key that happens to end in one of them
+  /// look like a plural family and then reports its five imaginary siblings
+  /// as missing. `app_group_other` (the taxonomy label "Other") did exactly
+  /// that. English's own rule is `n == 1 ? one : other`, so a real family
+  /// always has both halves and this cannot miss one.
+  ///
+  /// Nothing is lost by the tightening: a family reached through `_p` is
+  /// independently expanded to all six categories and checked against the
+  /// English table by the reference test below, so a family that somehow
+  /// declared only `_other` is still caught there.
+  final pluralBases = <String>{
+    for (final k in enSet)
+      for (final c in pluralCategories)
+        if (k.endsWith('_$c'))
+          if (enSet.contains('${k.substring(0, k.length - c.length - 1)}_other') &&
+              enSet.contains('${k.substring(0, k.length - c.length - 1)}_one'))
+            k.substring(0, k.length - c.length - 1),
+  };
+
+  bool isPluralForm(String key) => pluralCategories
+      .any((c) => key.endsWith('_$c') && pluralBases.contains(
+          key.substring(0, key.length - c.length - 1)));
+
   test('every English key has an Arabic translation', () {
     final missing = enSet.difference(arSet).toList()..sort();
     expect(
@@ -142,10 +178,17 @@ void main() {
     // Both readers: `_t('key')` and `_f('key', {...})`. Missing `_f` here
     // would leave every interpolated string unguarded — which is most of
     // the copy that carries a user's own data.
+    // Three readers, not two: `_p('key', n)` resolves `key_<category>`, so
+    // its literal is a BASE name and has to be expanded before the lookup.
+    // Scanning only `_t`/`_f` would leave every pluralized string unguarded
+    // — and a plural key is six entries, six chances to typo one.
     final referenced = RegExp(r"_[tf]\(\s*'([A-Za-z][A-Za-z0-9_]*)'")
         .allMatches(source)
         .map((m) => m.group(1)!)
-        .toSet();
+        .toSet()
+      ..addAll(RegExp(r"_p\(\s*'([A-Za-z][A-Za-z0-9_]*)'")
+          .allMatches(source)
+          .expand((m) => pluralCategories.map((c) => '${m.group(1)!}_$c')));
 
     final undefined = referenced.difference(enSet).toList()..sort();
     expect(
@@ -178,6 +221,22 @@ void main() {
       if (en == null || ar == null) continue;
       final enSlots = slots.allMatches(en).map((m) => m.group(1)!).toSet();
       final arSlots = slots.allMatches(ar).map((m) => m.group(1)!).toSet();
+      // A plural form may legitimately drop `{n}`: Arabic carries small
+      // counts in the noun's own inflection, so the natural wording of the
+      // dual is "منذ يومين", with no numeral at all. Requiring equality
+      // there would force "منذ 2 يومين", which is the bug this whole plural
+      // pass exists to remove. The half of the rule that matters is kept —
+      // Arabic must not introduce a slot English lacks, because `_f` leaves
+      // an unknown `{slot}` on screen verbatim.
+      if (isPluralForm(key)) {
+        if (!enSlots.containsAll(arSlots)) {
+          mismatches.add(
+            '$key — ar declares ${arSlots.difference(enSlots).toList()..sort()} '
+            'which en does not; a raw {slot} would render.',
+          );
+        }
+        continue;
+      }
       if (enSlots.length != arSlots.length ||
           !enSlots.containsAll(arSlots)) {
         mismatches.add(
@@ -193,6 +252,121 @@ void main() {
       reason: 'These Arabic templates declare a different placeholder set '
           'than their English source, so a value goes missing (or a raw '
           '{slot} renders) for Arabic users:\n${mismatches.join('\n')}',
+    );
+  });
+
+  test('every plural key defines all six CLDR categories in both tables', () {
+    // `_p` builds `<base>_<category>` and hands it to `_t`, which falls back
+    // to `_en[key] ?? key`. So a missing `_two` in `_ar` renders the ENGLISH
+    // dual inside an Arabic sentence, and a category missing from BOTH
+    // tables renders the raw identifier — `thinking_steps_two` — on screen.
+    // Neither throws, neither is visible to `flutter analyze`, and Arabic's
+    // `zero`/`two`/`few`/`many` are exactly the forms an English-speaking
+    // author forgets. Completeness is the contract `_p` documents; this is
+    // the test that holds it.
+    expect(pluralBases, isNotEmpty,
+        reason: 'The scan found no plural key families — did the `_<category>` '
+            'suffix convention change?');
+
+    final gaps = <String>[];
+    for (final base in pluralBases.toList()..sort()) {
+      for (final c in pluralCategories) {
+        if (!enSet.contains('${base}_$c')) gaps.add('_en is missing ${base}_$c');
+        if (!arSet.contains('${base}_$c')) gaps.add('_ar is missing ${base}_$c');
+      }
+    }
+    expect(gaps, isEmpty, reason: gaps.join('\n'));
+  });
+
+  test('English plural forms it can never select mirror `other`', () {
+    // English's CLDR rule is `n == 1 ? one : other` — it never asks for
+    // `zero`, `two`, `few` or `many`. Those four entries exist only because
+    // `_p` resolves without a fallback chain and so needs the full set
+    // present. That makes them a trap: they sit in the table looking like
+    // copy, invite an author to write "None selected" in the `zero` slot,
+    // and then never render. (Which is exactly what happened here first
+    // time round — English kept printing "0 selected".) Pinning them equal
+    // to `other` says out loud that they are structural, not editorial.
+    const unreachableInEnglish = ['zero', 'two', 'few', 'many'];
+    final enBody = mapBody('en');
+    final drifted = <String>[];
+    for (final base in pluralBases.toList()..sort()) {
+      final other = _valueOf(enBody, '${base}_other')?.trim();
+      if (other == null) continue;
+      for (final c in unreachableInEnglish) {
+        final form = _valueOf(enBody, '${base}_$c')?.trim();
+        if (form != null && form != other) {
+          drifted.add('${base}_$c: $form  (≠ ${base}_other: $other)');
+        }
+      }
+    }
+    expect(
+      drifted,
+      isEmpty,
+      reason: 'These English plural forms differ from `_other` but English '
+          'can never select them, so the wording is dead on arrival. Either '
+          'copy `_other` into them, or — if the distinction is real — it '
+          'belongs somewhere a call site can actually reach:\n'
+          '${drifted.join('\n')}',
+    );
+  });
+
+  test('no plural family keeps a pre-plural key of the same name', () {
+    // Converting `foo` into `foo_one`/`foo_other`/… while leaving the old
+    // flat `foo` behind leaves a key that still resolves and still reads
+    // fine in review, but is now reachable only from a call site that was
+    // supposed to have been migrated. The stale copy then drifts from the
+    // six that are actually rendered.
+    final stale = pluralBases.where(enSet.contains).toList()..sort();
+    expect(
+      stale,
+      isEmpty,
+      reason: 'These keys exist both as a flat entry and as a plural family. '
+          'The flat one is leftover from before the conversion — delete it '
+          'and point its caller at the `_p` getter:\n${stale.join('\n')}',
+    );
+  });
+
+  test('Arabic copy writes its numbers in the same digits everywhere', () {
+    // Arabic has two digit sets — Western (0-9) and Arabic-Indic (٠-٩) — and
+    // both are correct Arabic. What is not correct is using both, because
+    // the app has a third source of digits it cannot restyle: the values
+    // `_f` interpolates. `{seconds}` is a Dart `int`, so it renders Western
+    // whatever the surrounding sentence does.
+    //
+    // Five auth strings had drifted to Arabic-Indic against 1,100+ Western
+    // ones, and the result was visible in a single glance on the OTP screen:
+    //
+    //     أرسلنا رمزًا من ٦ أرقام … تنتهي صلاحيته خلال ١٠ دقائق
+    //     إعادة الإرسال خلال 51 ث          ← `{seconds}`, Western
+    //
+    // The password field was worse — its placeholder read '٨ أحرف على الأقل'
+    // and its own validation error read 'كلمة المرور لازم تكون 8 أحرف على
+    // الأقل.' Two spellings of the same number, one above the other.
+    //
+    // Western is the side that wins because it is the side the interpolated
+    // values are already on; switching those instead would mean a digit
+    // conversion at every `_f` call in the app. If that conversion is ever
+    // written, this rule is what flips — deliberately, in one place.
+    final arBody = mapBody('ar');
+    final entry = RegExp(r"^\s*'([a-z0-9_]+)'\s*:\s*(.+)$", multiLine: true);
+    final easternDigit = RegExp(r'[٠-٩]');
+
+    final offenders = <String>[];
+    for (final m in entry.allMatches(arBody)) {
+      final key = m.group(1)!;
+      final value = _valueOf(arBody, key);
+      if (value == null) continue;
+      if (easternDigit.hasMatch(value)) offenders.add('$key — $value');
+    }
+
+    expect(
+      offenders,
+      isEmpty,
+      reason: 'These Arabic strings use Arabic-Indic digits (٠-٩) while the '
+          'rest of the table — and every number `_f` interpolates — uses '
+          'Western digits, so the two render side by side on one '
+          'screen:\n${offenders.join('\n')}',
     );
   });
 

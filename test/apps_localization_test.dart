@@ -131,10 +131,17 @@ void main() {
     // as broken rather than as partly done. If a package appears at all,
     // BOTH its keys must exist on both sides.
     const keys = [
+      'zatca',
       'zatca_e_invoicing',
+      'whatsapp',
       'whatsapp_integration',
+      'chart_of_accounts',
       'chart_of_accounts_builder',
       'bank_reconciliation',
+      'factory',
+      'your_factory',
+      'meetings',
+      'meeting_notetaker',
     ];
 
     test('each has a name and a tagline in en AND ar', () {
@@ -167,7 +174,7 @@ void main() {
     });
   });
 
-  group('the four live packages resolve by their real names', () {
+  group('the five live packages resolve by their real names', () {
     // The catalogue is server-owned and the slugs are not published to
     // mobile, so the name-normalized key is what actually matches today.
     // These are the exact `name` values the web renders.
@@ -176,6 +183,7 @@ void main() {
       'WhatsApp integration': 'تكامل واتساب',
       'Chart of Accounts builder': 'مُنشئ شجرة الحسابات',
       'Bank reconciliation': 'التسوية البنكية',
+      'Your factory': 'مصنعك',
     };
 
     test('each renders Arabic in Arabic whatever the slug is', () {
@@ -236,11 +244,111 @@ void main() {
     test('an unknown package renders the server strings, never blank', () {
       // The other half of "no filter": showing it is only safe if it is
       // legible. Untranslated falls through to the server's own English.
-      final app = _app(slug: 'brand-new', name: 'Meeting Notetaker');
+      //
+      // The example used to be "Meeting Notetaker" — which is now a
+      // translated package, so it stopped demonstrating the fallback and
+      // started asserting that a package we DO translate comes out English.
+      // The name here has to be one nothing could plausibly key on.
+      final app = _app(slug: 'brand-new', name: 'Warehouse Slotting Advisor');
 
-      expect(app.displayName(ar), 'Meeting Notetaker');
-      expect(app.displayName(en), 'Meeting Notetaker');
+      expect(app.displayName(ar), 'Warehouse Slotting Advisor');
+      expect(app.displayName(en), 'Warehouse Slotting Advisor');
       expect(app.displayTagline(ar), isNotEmpty);
+    });
+  });
+
+  group('the live slugs resolve — hyphens and all', () {
+    // docs/BACKEND_FIXES_RESPONSE.md §5 records what `/apps/` actually
+    // returns: `zatca · whatsapp · chart-of-accounts · bank-reconciliation`.
+    // Two of those four are HYPHENATED, and the key builder used to paste the
+    // raw slug onto the prefix — producing `app_name_chart-of-accounts`,
+    // which matches nothing in a table written entirely in snake_case.
+    //
+    // The bug was invisible because the display-name path happened to cover
+    // for it. That cover is exactly what makes it worth pinning: the day the
+    // backend rewords a card, the name key stops matching and the slug key
+    // is all that is left.
+    const bySlug = {
+      'zatca': 'الفوترة الإلكترونية (زاتكا)',
+      'whatsapp': 'تكامل واتساب',
+      'chart-of-accounts': 'مُنشئ شجرة الحسابات',
+      'bank-reconciliation': 'التسوية البنكية',
+      'factory': 'مصنعك',
+    };
+
+    test('each live slug translates with NO help from the display name', () {
+      bySlug.forEach((slug, arabicName) {
+        // A server name that keys nothing, so only the slug path can match.
+        final app = _app(slug: slug, name: 'Renamed By The Backend');
+
+        expect(app.displayName(ar), arabicName, reason: slug);
+        expect(
+          app.displayTagline(ar),
+          isNot('Server tagline'),
+          reason: '$slug tagline fell back to the server value',
+        );
+      });
+    });
+
+    test('and still reads English in English', () {
+      for (final slug in bySlug.keys) {
+        final app = _app(slug: slug, name: 'Renamed By The Backend');
+
+        expect(app.displayName(en), isNot(app.displayName(ar)), reason: slug);
+      }
+    });
+
+    test('the slug wins over the display name when both key something', () {
+      // Order matters: the slug is the stable id, the name is the guess.
+      final app = _app(slug: 'zatca', name: 'Bank reconciliation');
+
+      expect(app.displayName(ar), 'الفوترة الإلكترونية (زاتكا)');
+    });
+  });
+
+  group('the category chip translates word by word', () {
+    // `category` is a COMPOUND label the backend composes from a small
+    // vocabulary (`Compliance · KSA`). No `app_category_*` key existed at
+    // all before, so this chip was Latin text on every Arabic card whose
+    // package carried no group.
+    test('a two-word compound comes out fully Arabic', () {
+      final app = _app(slug: 'zatca', category: 'Compliance · KSA');
+
+      expect(app.displayCategory(ar), 'الالتزام · السعودية');
+      expect(app.displayCategory(en), 'Compliance · KSA');
+    });
+
+    test('a pairing nobody has shipped yet still translates', () {
+      // The whole point of translating tokens instead of whole strings: the
+      // vocabulary is closed, the pairings are not.
+      expect(ar.appCategory('Compliance · Egypt'), 'الالتزام · مصر');
+      expect(ar.appCategory('Banking · Automation'), 'المصرفية · الأتمتة');
+    });
+
+    test('words shared with the group taxonomy are not spelled twice', () {
+      // `app_category_finance` deliberately does not exist; the lookup falls
+      // through to `app_group_finance`.
+      expect(ar.appCategory('Finance'), 'المالية');
+      expect(ar.appCategory('Accounting · Setup'), 'المحاسبة · الإعداد');
+    });
+
+    test('an unknown word survives as itself, never as a key', () {
+      expect(ar.appCategory('Compliance · Neptune'), 'الالتزام · Neptune');
+      expect(ar.appCategory('Neptune'), 'Neptune');
+      for (final tr in [en, ar]) {
+        expect(tr.appCategory('Whatever'), isNot(contains('app_category_')));
+      }
+    });
+
+    test('other separators are accepted and normalized to ·', () {
+      expect(ar.appCategory('Compliance/KSA'), 'الالتزام · السعودية');
+      expect(ar.appCategory('Compliance, KSA'), 'الالتزام · السعودية');
+    });
+
+    test('empty and whitespace-only stay empty', () {
+      expect(ar.appCategory(''), isEmpty);
+      expect(ar.appCategory('   '), isEmpty);
+      expect(ar.appCategory('·'), '·');
     });
   });
 

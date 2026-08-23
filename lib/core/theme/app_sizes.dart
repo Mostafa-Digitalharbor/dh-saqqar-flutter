@@ -295,6 +295,17 @@ class AppControlSizes {
   /// [AppIconSizes.regular] glyph.
   static const double iconButton = 44;
 
+  /// Every `AppBar` in the app. Four dp taller than Material's default 56 so
+  /// an [iconButton]-sized action clears the bar's own padding without the
+  /// bar growing under it — at 56 the 44 dp target had 6 dp a side, which is
+  /// what made trailing actions look crowded against the title.
+  ///
+  /// Set once on the theme rather than per screen; it is named here because
+  /// it is the one control size that was still a literal, and a bar height
+  /// that drifts is a bar that stops lining up with the screens' own
+  /// leading padding.
+  static const double appBar = 60;
+
   /// The composer's send button.
   static const double sendButton = 42;
 
@@ -701,6 +712,41 @@ class AppShadowSizes {
   /// behind it by. Not a `BoxShadow` radius — this one blurs what is
   /// *underneath* the surface rather than casting a shadow from it.
   static const double glassBlurSigma = 14;
+
+  // ── Drop distance ──────────────────────────────────────────────────────
+  //
+  // How far below a surface its shadow falls — the `dy` of a `BoxShadow`'s
+  // `Offset`. This is shadow geometry exactly like `blurRadius` above, and it
+  // was the one part of it with no named scale: the guard that keeps shadows
+  // off bare numbers spells out `blurRadius`, `spreadRadius`, `sigmaX` and
+  // `sigmaY`, so `offset:` slipped past it and eleven call sites accumulated.
+  //
+  // These are a ladder of drops rather than one drop per `blur*` role,
+  // because the app does not actually pair them one-to-one: `blurModal`
+  // casts at both [dropFab] and [dropModal], and `blurCard` at both
+  // [dropCard] and [dropFab]. Naming them after the blur would have meant
+  // either a lie in the doc or a silent change to four surfaces' shadows, so
+  // they are named for the depth they read as. If the pairing is ever
+  // regularised, that is a design decision to make deliberately — not a
+  // side effect of giving these numbers names.
+
+  /// Barely displaced — an inner edge highlight sitting on its own surface.
+  static const double dropHairline = 1;
+
+  /// A small round control: the scroll-to-bottom button's shadow.
+  static const double dropControl = 6;
+
+  /// The most common drop — glass cards, toasts, raised sheets.
+  static const double dropCard = 8;
+
+  /// A floating surface: the new-conversation FAB, the home shell's nav bar.
+  static const double dropFab = 10;
+
+  /// The splash logo's halo.
+  static const double dropHalo = 14;
+
+  /// The deepest drop in the app — a full-screen modal over content.
+  static const double dropDeep = 16;
 
   /// Spread on a focus ring at rest.
   static const double spreadHairline = 0.5;
@@ -1621,4 +1667,61 @@ class AppFractions {
   /// The radius of the ambient background's radial gradient, as a fraction
   /// of the shorter side.
   static const double ambientGlowRadius = 0.7;
+}
+
+/// How far a widget travels as it animates into place.
+///
+/// Distance, not duration — `AppDurations` says how long a transition takes,
+/// this says how much ground it covers. Kept out of [AppSpacing] because a
+/// travel distance is not a gap: nothing is laid out at these values, they
+/// only exist between the first frame of an entrance and its last, and
+/// re-tuning one has no effect on the resting layout.
+///
+/// Small on purpose. Every entrance in this app is a *rise* — content slides
+/// up a few dp as it fades in — so the whole scale is a choice between
+/// "barely" and "noticeably", and a third value would be a distinction the
+/// eye cannot make.
+class AppMotionTravel {
+  AppMotionTravel._();
+
+  /// A card rising into a list it is joining mid-scroll — approval cards
+  /// arriving on a poll tick. Shorter than [rise] so a card that appears
+  /// beside settled content does not out-move it.
+  static const double riseTight = 6;
+
+  /// The default entrance travel: content rises into place rather than
+  /// leaping there.
+  static const double rise = 8;
+}
+
+/// How far a transition slides, as a fraction of the moving widget's own
+/// size.
+///
+/// Separate from [AppMotionTravel] because the unit is different, and the
+/// difference is the whole reason both exist: `SlideTransition` and
+/// `AnimatedSlide` multiply their `Offset` by the child's size, so `0.3` on a
+/// 44 dp button travels 13 dp while the same `0.3` on a full-screen route
+/// travels the height of the phone. Reading one of these as dp — or a dp
+/// value as one of these — is a silent 100× error, so they do not share a
+/// class and cannot be mixed up by autocomplete.
+///
+/// The values are small on purpose. Every one of them pairs with a fade, and
+/// a slide that runs alongside a fade only needs enough travel to give the
+/// fade a direction; more reads as the screen lurching.
+class AppSlideFractions {
+  AppSlideFractions._();
+
+  /// A tab swap inside the home shell — the shallowest motion in the app,
+  /// because the two screens are siblings and neither is "deeper".
+  static const double tabRise = 0.025;
+
+  /// A detail route pushing in from the trailing edge. Applied on the x
+  /// axis, and negated in RTL so "deeper in" is always the direction the
+  /// user reads towards.
+  static const double detailPush = 0.06;
+
+  /// The scroll-to-bottom button dropping out of view. Larger than the
+  /// route values because it is a single small control: the same fraction
+  /// that would throw a whole screen around barely moves a 44 dp circle.
+  static const double controlDrop = 0.3;
 }

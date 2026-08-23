@@ -57,7 +57,7 @@ import 'package:saqqar_app/features/chat/widgets/chat_artifact_tile.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_env_hint_banner.dart';
 import 'package:saqqar_app/features/chat/widgets/tool_activity_card.dart';
 import 'package:saqqar_app/features/conversations/widgets/conversations_empty_state.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 import 'package:saqqar_app/features/vault/data/project_models.dart';
 import 'package:saqqar_app/features/vault/widgets/project_card.dart';
 
@@ -174,7 +174,7 @@ const _longAr =
     'قم بتسوية دفتر الأستاذ بالريال السعودي للربع الثالث، ثم صدّر تقرير '
     'تقييم المخزون لكل مستودع وأرسله إلى فريق المالية قبل نهاية يوم الخميس.';
 
-DemoMessage _message(DemoMessageRole role, String content) => DemoMessage(
+ChatMessage _message(ChatMessageRole role, String content) => ChatMessage(
       id: 'm1',
       role: role,
       content: content,
@@ -184,16 +184,16 @@ DemoMessage _message(DemoMessageRole role, String content) => DemoMessage(
 
 /// A tool-result message. `ToolActivityCard` renders `toolName` as a header
 /// chip next to the timestamp, so the long name is the interesting case.
-DemoMessage _toolMessage(String toolName, String content) => DemoMessage(
+ChatMessage _toolMessage(String toolName, String content) => ChatMessage(
       id: 'm2',
-      role: DemoMessageRole.tool,
+      role: ChatMessageRole.tool,
       content: content,
       toolName: toolName,
       time: '10:24',
       createdAt: DateTime.utc(2026, 7, 25, 10, 24),
     );
 
-DemoArtifact _artifact(String name) => DemoArtifact(
+ChatArtifact _artifact(String name) => ChatArtifact(
       id: 'a1',
       name: name,
       kind: 'xlsx',
@@ -203,7 +203,7 @@ DemoArtifact _artifact(String name) => DemoArtifact(
       createdLabel: 'Jul 25',
     );
 
-DemoAttachment _attachment(String name) => DemoAttachment(
+ChatAttachment _attachment(String name) => ChatAttachment(
       name: name,
       kind: 'pdf',
       size: '12.4 MB',
@@ -226,13 +226,13 @@ Project _project(String name, List<Environment> environments) => Project(
       environments: environments,
     );
 
-DemoApproval _approval({int? grouped}) => DemoApproval(
+ChatApproval _approval({int? grouped}) => ChatApproval(
       id: 'a1',
       title: 'Update 42 manufacturing orders',
       prompt: _longEn,
       actionType: 'odoo_write',
       risk: 'high',
-      status: DemoApprovalStatus.pending,
+      status: ChatApprovalStatus.pending,
       payload: const {
         'model': 'mrp.production',
         'method': 'write',
@@ -276,7 +276,7 @@ void main() {
         () => Builder(
           builder: (context) => MessageRow(
             message: _message(
-              DemoMessageRole.user,
+              ChatMessageRole.user,
               Localizations.localeOf(context).languageCode == 'ar'
                   ? _longAr
                   : _longEn,
@@ -297,7 +297,7 @@ void main() {
         tester,
         () => MessageRow(
           message: _message(
-            DemoMessageRole.assistant,
+            ChatMessageRole.assistant,
             '**Done.** Here is the query I ran:\n\n'
             '```sql\n'
             'SELECT partner_id, SUM(amount_total) FROM account_move '

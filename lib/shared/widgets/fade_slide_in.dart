@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../core/theme/app_sizes.dart';
 
 /// Lightweight entrance motion for cards and list rows.
 ///
@@ -18,7 +19,7 @@ class FadeSlideIn extends StatefulWidget {
     super.key,
     required this.child,
     this.index = 0,
-    this.offset = const Offset(0, 8),
+    this.offset = const Offset(0, AppMotionTravel.rise),
     this.duration = const Duration(milliseconds: 260),
     this.staggerStep = const Duration(milliseconds: 28),
     this.maxStaggerSteps = 5,

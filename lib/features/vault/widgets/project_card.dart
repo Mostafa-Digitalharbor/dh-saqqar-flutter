@@ -318,8 +318,8 @@ class _StatusServerGlyph extends StatelessWidget {
           ),
           if (env.isLive)
             PositionedDirectional(
-              bottom: -2,
-              end: -2,
+              bottom: -AppSpacing.s2,
+              end: -AppSpacing.s2,
               child: Container(
                 width: AppBoxSizes.badge,
                 height: AppBoxSizes.badge,
@@ -332,8 +332,8 @@ class _StatusServerGlyph extends StatelessWidget {
             )
           else if (env.readOnly)
             PositionedDirectional(
-              bottom: -3,
-              end: -3,
+              bottom: -AppSpacing.s3,
+              end: -AppSpacing.s3,
               child: Container(
                 width: AppBoxSizes.glyphMini,
                 height: AppBoxSizes.glyphMini,

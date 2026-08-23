@@ -83,14 +83,14 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
           BoxShadow(
             color: AppColors.glassShadowDark,
             blurRadius: AppShadowSizes.blurSheet,
-            offset: Offset(0, 8),
+            offset: Offset(0, AppShadowSizes.dropCard),
           ),
         ]
       : const [
           BoxShadow(
             color: AppColors.glassShadowLight,
             blurRadius: AppShadowSizes.blurModal,
-            offset: Offset(0, 10),
+            offset: Offset(0, AppShadowSizes.dropFab),
           ),
         ];
 
@@ -106,14 +106,14 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
           BoxShadow(
             color: AppColors.modalShadowDark,
             blurRadius: AppShadowSizes.blurDeep,
-            offset: Offset(0, 16),
+            offset: Offset(0, AppShadowSizes.dropDeep),
           ),
         ]
       : const [
           BoxShadow(
             color: AppColors.modalShadowLight,
             blurRadius: AppShadowSizes.blurDeep,
-            offset: Offset(0, 16),
+            offset: Offset(0, AppShadowSizes.dropDeep),
           ),
         ];
 
@@ -122,7 +122,7 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
     BoxShadow(
       color: brandCyan.withValues(alpha: AppAlphas.a18),
       blurRadius: AppShadowSizes.blurModal,
-      offset: const Offset(0, 10),
+      offset: const Offset(0, AppShadowSizes.dropFab),
     ),
   ];
 

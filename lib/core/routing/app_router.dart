@@ -43,6 +43,7 @@ import '../constants/ui_strings.dart';
 import '../../navigation/home_shell.dart';
 import '../i18n/app_localizations.dart';
 import '../theme/app_radius.dart';
+import '../theme/app_sizes.dart';
 import 'route_names.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -415,12 +416,13 @@ CustomTransitionPage<void> _transitionPage({
       // flow, which reads as the route-reverse animation and breaks
       // the affordance "deeper in" = forward motion.
       final isRtl = Directionality.of(context) == TextDirection.rtl;
-      final detailOffset = isRtl ? const Offset(-0.06, 0) : const Offset(0.06, 0);
+      final detailOffset = isRtl ? const Offset(-AppSlideFractions.detailPush, 0)
+          : const Offset(AppSlideFractions.detailPush, 0);
       final beginOffset = switch (kind) {
         _RouteTransitionKind.detail => detailOffset,
         _RouteTransitionKind.fade => Offset.zero,
         _RouteTransitionKind.scale => Offset.zero,
-        _RouteTransitionKind.tab => const Offset(0, 0.025),
+        _RouteTransitionKind.tab => const Offset(0, AppSlideFractions.tabRise),
       };
 
       final faded = FadeTransition(opacity: curve, child: child);

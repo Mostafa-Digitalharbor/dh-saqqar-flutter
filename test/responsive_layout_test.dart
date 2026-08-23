@@ -21,7 +21,7 @@ import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_app_bar_title.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_thinking_pill.dart';
-import 'package:saqqar_app/features/demo/saqqar_demo_data.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 import 'package:saqqar_app/features/security/data/biometric_auth.dart';
 import 'package:saqqar_app/features/security/view/app_lock_screen.dart';
 import 'package:saqqar_app/features/security/view_model/app_lock_cubit.dart';
@@ -296,10 +296,10 @@ void main() {
     // Worth pinning at ar + 1.4× specifically: that combination is what
     // the earlier fixes in this file were all found by, and it is the one
     // an English-locale reviewer never reproduces.
-    List<DemoMessage> steps(int n) => List.generate(
+    List<ChatMessage> steps(int n) => List.generate(
           n,
-          (i) => DemoMessage(
-            role: DemoMessageRole.assistant,
+          (i) => ChatMessage(
+            role: ChatMessageRole.assistant,
             content: 'Intermediate reasoning step ${i + 1}',
             time: '11:4$i',
           ),

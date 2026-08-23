@@ -1,242 +1,215 @@
-// Where a chat lands when you open it.
+// Where a chat lands when you open it, and what keeps it there.
 //
-// The answer has to be "on the newest message", and getting there is not the
-// one-liner it looks like. `_ChatScreenState._restoreScrollIfNeeded` is a
-// one-shot `jumpTo(maxScrollExtent)` fired on the first frame that has content
-// dimensions. On a lazy list `maxScrollExtent` at that moment is an ESTIMATE —
-// built from the handful of rows laid out so far plus a guess for the rest —
-// and rows are still arriving behind it (the bounded initial fetch, then the
-// page-ahead). Jumping to an estimate that is about to grow lands short, and a
-// one-shot never corrects.
+// The answer has to be "on the newest message". Since the lane became a
+// `reverse: true` list that is where it RESTS — offset 0 — so most of what
+// this file used to hold is gone, and the reason it is gone is worth keeping:
 //
-// The user-visible result is a chat that opens on a message from a day earlier
-// with the newest content below the fold. It reads as "it didn't load", and
-// the natural response is a pull-to-refresh — which is how it was reported.
-// Reproduced by force-stopping the app: cold open landed on Jul 26 in a chat
-// whose newest message was Jul 27, while re-opening it warm (session cache
-// paints the full window, so the estimate is good) landed correctly. That
-// warm/cold split is why it looks intermittent.
+//   The forward list reached the newest message with a one-shot
+//   `jumpTo(maxScrollExtent)` on the first frame that had content
+//   dimensions. On a lazy list that extent is an ESTIMATE — the rows laid
+//   out so far, plus a guess for the rest — and rows were still arriving
+//   behind it (the bounded initial fetch, then the page-ahead). Jumping to
+//   an estimate that is about to grow lands short, and a one-shot never
+//   corrects.
 //
-// The fix re-pins to the bottom every frame until the user's first drag. These
-// tests hold both halves: that it lands on the newest row despite content
-// arriving late, and that it lets go the moment the user takes over — a pin
-// that outstayed its welcome would make the chat impossible to scroll back
-// through, which is a worse bug than the one being fixed.
+//   The user-visible result was a chat that opened on a message from a day
+//   earlier with the newest content below the fold. It read as "it didn't
+//   load", and the natural response was a pull-to-refresh — which is how it
+//   was reported. Reproduced by force-stopping the app: a cold open landed
+//   on Jul 26 in a chat whose newest message was Jul 27, while re-opening
+//   warm (the session cache paints the full window, so the estimate is
+//   good) landed correctly. That warm/cold split is why it looked
+//   intermittent.
+//
+// A reversed list has no estimate in the path: the resting offset is 0
+// whatever is or is not laid out, and rows arriving later append at the far
+// end. The tests below pin that — including under exactly the late-arrival
+// timing that broke the old approach — plus the one job still left for
+// `_pinToBottomIfUnscrolled`: snapping back a few stray pixels while the
+// user has not scrolled, and letting go the moment they do.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _rowHeight = 100.0;
-const _viewportHeight = 500.0;
+const _viewportHeight = 600.0;
 
-/// A lane that grows at the TAIL after the first frame, mirroring a chat whose
-/// rows are still landing when the open-scroll fires.
-class _ArrivingList extends StatefulWidget {
-  const _ArrivingList({
+/// A reversed lane whose rows arrive in stages, mirroring a chat opening:
+/// the cached window paints first, the bounded fetch lands next, the
+/// page-ahead after that.
+class _OpeningLane extends StatefulWidget {
+  const _OpeningLane({
     super.key,
     required this.controller,
     required this.initialRows,
-    required this.repin,
+    required this.userHasScrolled,
   });
 
   final ScrollController controller;
   final int initialRows;
 
-  /// False reproduces the one-shot restore that lands short.
-  final bool repin;
+  /// Mirrors `_ChatScreenState._userHasScrolled` — the pin lets go once the
+  /// user takes over.
+  final bool Function() userHasScrolled;
 
   @override
-  State<_ArrivingList> createState() => _ArrivingListState();
+  State<_OpeningLane> createState() => _OpeningLaneState();
 }
 
-class _ArrivingListState extends State<_ArrivingList> {
-  late int _rows = widget.initialRows;
-  bool _restored = false;
+class _OpeningLaneState extends State<_OpeningLane> {
+  late int _count = widget.initialRows;
 
-  /// Mirrors `_ChatScreenState._userHasScrolled`.
-  bool _userHasScrolled = false;
-
-  /// Every jump this harness performed, so a test can prove the pin stopped.
-  final List<double> jumps = [];
-
-  void addRows(int n) => setState(() => _rows += n);
-
-  /// Mirrors `_restoreScrollIfNeeded` — one-shot, fires once dimensions exist.
-  void _restoreOnce() {
-    if (_restored) return;
-    if (!widget.controller.hasClients) return;
-    final position = widget.controller.position;
-    if (!position.hasContentDimensions) return;
-    if (position.maxScrollExtent <= 0) {
-      _restored = true;
-      return;
-    }
-    _restored = true;
-    widget.controller.jumpTo(position.maxScrollExtent);
-    jumps.add(position.maxScrollExtent);
+  /// More history lands — the same shape as a page arriving after the first
+  /// paint.
+  void rowsArrive(int n) {
+    setState(() => _count += n);
+    // Mirrors the screen: the pin runs post-frame on every build until the
+    // user's first drag.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _pin());
   }
 
-  /// Mirrors `_pinToBottomIfUnscrolled`.
+  /// `_ChatScreenState._pinToBottomIfUnscrolled`, verbatim in shape.
   void _pin() {
-    if (_userHasScrolled) return;
-    if (!widget.controller.hasClients) return;
-    final position = widget.controller.position;
+    if (widget.userHasScrolled()) return;
+    final controller = widget.controller;
+    if (!controller.hasClients) return;
+    final position = controller.position;
     if (!position.hasContentDimensions) return;
-    final max = position.maxScrollExtent;
-    if (max <= 0) return;
-    if ((position.pixels - max).abs() < 1.0) return;
-    widget.controller.jumpTo(max);
-    jumps.add(max);
+    if (position.pixels.abs() < 1.0) return;
+    controller.jumpTo(0);
   }
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _restoreOnce();
-      if (widget.repin) _pin();
-    });
-
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Center(
-        child: SizedBox(
-          height: _viewportHeight,
-          child: NotificationListener<ScrollStartNotification>(
-            onNotification: (notification) {
-              // Drag details only — our own corrective `jumpTo` opens a scroll
-              // activity too, and treating that as the user taking over would
-              // hand control away on the very frame we opened.
-              if (notification.dragDetails != null) _userHasScrolled = true;
-              return false;
-            },
-            child: ListView.builder(
-              controller: widget.controller,
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              itemCount: _rows,
-              itemBuilder: (context, index) => SizedBox(
-                height: _rowHeight,
-                child: Text('row-$index'),
-              ),
-            ),
-          ),
-        ),
+    return ListView.builder(
+      controller: widget.controller,
+      reverse: true,
+      itemCount: _count,
+      itemBuilder: (context, index) => SizedBox(
+        height: _rowHeight,
+        child: Text('row-$index', textDirection: TextDirection.ltr),
       ),
     );
   }
 }
 
 void main() {
-  group('opening a chat lands on the newest message', () {
-    testWidgets('a one-shot restore lands short when rows arrive after it',
-        (tester) async {
-      final controller = ScrollController();
-      addTearDown(controller.dispose);
-      final key = GlobalKey<_ArrivingListState>();
-      await tester.pumpWidget(
-        _ArrivingList(
-          key: key,
-          controller: controller,
-          initialRows: 8,
-          repin: false,
+  Future<
+      ({
+        ScrollController controller,
+        GlobalKey<_OpeningLaneState> key,
+        void Function(bool) setScrolled,
+      })> pumpLane(
+    WidgetTester tester, {
+    int rows = 8,
+  }) async {
+    final controller = ScrollController();
+    final key = GlobalKey<_OpeningLaneState>();
+    var scrolled = false;
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(size: Size(400, _viewportHeight)),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox(
+            height: _viewportHeight,
+            child: _OpeningLane(
+              key: key,
+              controller: controller,
+              initialRows: rows,
+              userHasScrolled: () => scrolled,
+            ),
+          ),
         ),
-      );
-      await tester.pumpAndSettle();
-      expect(controller.position.pixels, controller.position.maxScrollExtent);
+      ),
+    );
+    return (
+      controller: controller,
+      key: key,
+      setScrolled: (bool v) => scrolled = v,
+    );
+  }
 
-      // The rest of the bounded fetch lands, then the page-ahead.
-      key.currentState!.addRows(12);
-      await tester.pumpAndSettle();
+  testWidgets('a chat opens on the newest message', (tester) async {
+    final lane = await pumpLane(tester);
 
-      expect(
-        controller.position.pixels,
-        lessThan(controller.position.maxScrollExtent),
-        reason: 'the regression: the newest rows are now below the fold and '
-            'nothing will ever scroll down to them',
-      );
-    });
+    expect(lane.controller.offset, 0);
+    expect(find.text('row-0'), findsOneWidget);
+  });
 
-    testWidgets('re-pinning holds the bottom as rows arrive', (tester) async {
-      final controller = ScrollController();
-      addTearDown(controller.dispose);
-      final key = GlobalKey<_ArrivingListState>();
-      await tester.pumpWidget(
-        _ArrivingList(
-          key: key,
-          controller: controller,
-          initialRows: 8,
-          repin: true,
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('it stays on the newest message when rows arrive late',
+      (tester) async {
+    // THE regression. This is the exact timing that broke the forward list:
+    // the lane paints with a short window, and the real history lands a
+    // frame or two later. There the estimate had already been jumped to and
+    // the one-shot never corrected, leaving the user a screenful short.
+    final lane = await pumpLane(tester, rows: 4);
+    expect(lane.controller.offset, 0);
 
-      key.currentState!.addRows(12);
-      await tester.pumpAndSettle();
+    lane.key.currentState!.rowsArrive(40);
+    await tester.pump();
+    lane.key.currentState!.rowsArrive(100);
+    await tester.pumpAndSettle();
 
-      expect(controller.position.pixels, controller.position.maxScrollExtent);
-      expect(find.text('row-19'), findsOneWidget);
-    });
+    expect(
+      lane.controller.offset,
+      0,
+      reason: 'history arriving after the first paint appends at the far end '
+          'of a reversed list, so the newest message stays exactly where it '
+          'was — with no extent estimate anywhere in the path.',
+    );
+    expect(find.text('row-0'), findsOneWidget);
+  });
 
-    testWidgets('the pin lets go on the first drag', (tester) async {
-      final controller = ScrollController();
-      addTearDown(controller.dispose);
-      final key = GlobalKey<_ArrivingListState>();
-      await tester.pumpWidget(
-        _ArrivingList(
-          key: key,
-          controller: controller,
-          initialRows: 20,
-          repin: true,
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(controller.position.pixels, controller.position.maxScrollExtent);
+  testWidgets('the pin snaps back a stray offset while the user has not '
+      'scrolled', (tester) async {
+    // The job `_pinToBottomIfUnscrolled` still has: a rebuild can leave the
+    // lane a few pixels off the newest message — a bounce settling, or a row
+    // resizing as its markdown finishes laying out.
+    final lane = await pumpLane(tester);
 
-      // The user scrolls back through history.
-      await tester.drag(find.byType(ListView), const Offset(0, 600));
-      await tester.pumpAndSettle();
+    lane.controller.jumpTo(12);
+    await tester.pump();
+    expect(lane.controller.offset, 12);
 
-      final afterDrag = controller.position.pixels;
-      expect(
-        afterDrag,
-        lessThan(controller.position.maxScrollExtent),
-        reason: 'the drag moved us up the transcript',
-      );
+    lane.key.currentState!.rowsArrive(5);
+    await tester.pumpAndSettle();
 
-      // A poll tick rebuilds, and more history lands above. Neither may yank
-      // the user back to the newest message.
-      key.currentState!.addRows(5);
-      await tester.pumpAndSettle();
+    expect(lane.controller.offset, 0,
+        reason: 'an unscrolled lane belongs on the newest message');
+  });
 
-      expect(
-        controller.position.pixels,
-        lessThan(controller.position.maxScrollExtent),
-        reason: 'a pin that outstayed its welcome would make scrolling back '
-            'impossible — worse than the bug it fixes',
-      );
-    });
+  testWidgets('the pin lets go on the first drag', (tester) async {
+    // Without this the lane would drag the user back to the newest message
+    // every time a poll rebuilt it — which is worse than opening in the
+    // wrong place, because it happens repeatedly and fights the user.
+    final lane = await pumpLane(tester, rows: 40);
 
-    testWidgets('a lane too short to scroll is left alone', (tester) async {
-      // Two rows in a 500px viewport: nothing to scroll, so there is no bottom
-      // to pin to. The viewport-fill path owns this case; jumping here would
-      // just churn.
-      final controller = ScrollController();
-      addTearDown(controller.dispose);
-      final key = GlobalKey<_ArrivingListState>();
-      await tester.pumpWidget(
-        _ArrivingList(
-          key: key,
-          controller: controller,
-          initialRows: 2,
-          repin: true,
-        ),
-      );
-      await tester.pumpAndSettle();
+    lane.setScrolled(true);
+    lane.controller.jumpTo(_rowHeight * 10);
+    await tester.pump();
 
-      expect(controller.position.maxScrollExtent, 0.0);
-      expect(key.currentState!.jumps, isEmpty);
-    });
+    lane.key.currentState!.rowsArrive(50);
+    await tester.pumpAndSettle();
+
+    expect(
+      lane.controller.offset,
+      _rowHeight * 10,
+      reason: 'once the user is driving, arriving rows must not move them',
+    );
+  });
+
+  testWidgets('a lane too short to scroll is left alone', (tester) async {
+    // Two messages on a tall phone: `maxScrollExtent` is 0 and there is
+    // nothing to pin to. The pin must not thrash.
+    final lane = await pumpLane(tester, rows: 2);
+    await tester.pumpAndSettle();
+
+    expect(lane.controller.offset, 0);
+    expect(lane.controller.position.maxScrollExtent, 0);
+    expect(find.text('row-0'), findsOneWidget);
+    expect(find.text('row-1'), findsOneWidget);
   });
 }

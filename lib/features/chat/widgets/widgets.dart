@@ -27,6 +27,8 @@ export 'chat_scroll_down_button.dart';
 export 'chat_thinking_pill.dart';
 export 'chat_send_button.dart';
 export 'chat_sheet.dart';
+export 'chat_search_sheet.dart';
+export 'chat_skeleton_list.dart';
 export 'chat_suggestion_strip.dart';
 export 'chat_typing_row.dart';
 export 'email_approval_preview.dart';

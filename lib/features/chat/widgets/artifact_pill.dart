@@ -6,7 +6,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import '../../../shared/widgets/tappable_surface.dart';
 
 /// Spec / web parity widget for agent-generated outputs that appear inline
@@ -24,7 +24,7 @@ class ArtifactPill extends StatelessWidget {
     required this.onOpen,
   });
 
-  final DemoAttachment attachment;
+  final ChatAttachment attachment;
   final VoidCallback onOpen;
 
   IconData get _icon {

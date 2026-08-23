@@ -7,7 +7,7 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/saqqar_theme_extension.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import '../../../core/theme/app_radius.dart';
 import 'pdf_thumbnail.dart';
 import '../../../shared/widgets/tappable_surface.dart';
@@ -25,7 +25,7 @@ import '../../../shared/widgets/tappable_surface.dart';
 ///     preview chip as eating the whole chat surface when 2+ images were
 ///     staged.
 ///
-/// When the attachment is an image and has an [DemoAttachment.imageUrl],
+/// When the attachment is an image and has an [ChatAttachment.imageUrl],
 /// renders an inline preview on top of the metadata footer. Non-image
 /// kinds fall back to a tight icon + name + meta row.
 ///
@@ -40,7 +40,7 @@ class AttachmentChip extends StatelessWidget {
     this.gallery = false,
   });
 
-  final DemoAttachment attachment;
+  final ChatAttachment attachment;
   final VoidCallback? onTap;
 
   /// When true, renders the tiny 72×72 staging variant instead of the
@@ -83,7 +83,7 @@ class AttachmentChip extends StatelessWidget {
 /// pixels; everything else gets a kind icon + filename badge so the
 /// user can still tell a PDF apart from a DOCX at a glance.
 ///
-/// [DemoAttachment.imageUrl] for staged composer attachments is the
+/// [ChatAttachment.imageUrl] for staged composer attachments is the
 /// local on-disk path (set by `_pickAttachment` / `_consumeShareIntake`
 /// — both stash `picked.path` / `f.path` there). `Image.file` reads it
 /// directly without a network round-trip; sent-bubble attachments hit
@@ -91,7 +91,7 @@ class AttachmentChip extends StatelessWidget {
 class _CompactAttachment extends StatelessWidget {
   const _CompactAttachment({required this.attachment});
 
-  final DemoAttachment attachment;
+  final ChatAttachment attachment;
 
   @override
   Widget build(BuildContext context) {
@@ -156,9 +156,9 @@ class _CompactAttachment extends StatelessWidget {
           ),
         ),
         Positioned(
-          left: 4,
-          right: 4,
-          bottom: 4,
+          left: AppSpacing.s4,
+          right: AppSpacing.s4,
+          bottom: AppSpacing.s4,
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s4,
@@ -190,10 +190,10 @@ class _CompactAttachment extends StatelessWidget {
 
 /// Path of a PDF that is already on this device, or null.
 ///
-/// Only staged attachments carry [DemoAttachment.localPath]; one that lives
+/// Only staged attachments carry [ChatAttachment.localPath]; one that lives
 /// on the server has nothing to render until it is downloaded, so those keep
 /// the glyph rather than triggering a fetch just to draw a thumbnail.
-String? _localPdfPath(DemoAttachment attachment) {
+String? _localPdfPath(ChatAttachment attachment) {
   final path = attachment.localPath;
   if (path == null || path.isEmpty) return null;
   if (!isPdfName(attachment.name)) return null;
@@ -205,7 +205,7 @@ String? _localPdfPath(DemoAttachment attachment) {
 /// The composer stages local file paths; sent-bubble attachments carry
 /// http(s) URLs. `Image.file` and `Image.network` are not interchangeable,
 /// so every thumbnail site has to make this call the same way.
-bool _isLocalImage(DemoAttachment attachment) {
+bool _isLocalImage(ChatAttachment attachment) {
   final url = attachment.imageUrl;
   if (url == null || url.isEmpty) return false;
   if (!attachment.isImage) return false;
@@ -218,7 +218,7 @@ bool _isLocalImage(DemoAttachment attachment) {
 class _GalleryAttachment extends StatelessWidget {
   const _GalleryAttachment({required this.attachment});
 
-  final DemoAttachment attachment;
+  final ChatAttachment attachment;
 
   static const double _thumbHeight = 104;
 
@@ -332,7 +332,7 @@ class _GalleryAttachment extends StatelessWidget {
 class _ImageAttachment extends StatelessWidget {
   const _ImageAttachment({required this.attachment});
 
-  final DemoAttachment attachment;
+  final ChatAttachment attachment;
 
   @override
   Widget build(BuildContext context) {
@@ -461,7 +461,7 @@ class _ImageAttachment extends StatelessWidget {
 class _FileAttachment extends StatelessWidget {
   const _FileAttachment({required this.attachment});
 
-  final DemoAttachment attachment;
+  final ChatAttachment attachment;
 
   @override
   Widget build(BuildContext context) {

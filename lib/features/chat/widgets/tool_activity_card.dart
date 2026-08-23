@@ -5,7 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/code_plate.dart';
-import '../../demo/saqqar_demo_data.dart';
+import '../data/chat_view_models.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/widgets/tappable_surface.dart';
 
@@ -15,7 +15,7 @@ import '../../../shared/widgets/tappable_surface.dart';
 class ToolActivityCard extends StatefulWidget {
   const ToolActivityCard({super.key, required this.message});
 
-  final DemoMessage message;
+  final ChatMessage message;
 
   @override
   State<ToolActivityCard> createState() => _ToolActivityCardState();
