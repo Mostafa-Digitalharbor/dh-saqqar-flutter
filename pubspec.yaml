@@ -222,8 +222,9 @@ flutter:
   assets:
     - assets/img/
 
-  # Bundled UI faces — Space Grotesk for Latin, IBM Plex Sans Arabic for
-  # Arabic (and as the Latin fallback), JetBrains Mono for code. See
+  # Bundled UI faces — Space Grotesk for Latin locales, Tajawal for Arabic
+  # (IBM Plex Sans Arabic behind both as a fallback), JetBrains Mono for
+  # code. See
   # `AppTypography`, which is the only thing that names them.
   #
   # Bundled, never fetched: the `google_fonts` CDN needs the network at first
@@ -231,18 +232,31 @@ flutter:
   # was dropped once the .ttf files landed — do not reintroduce it without a
   # deliberate discussion.
   #
-  # Tajawal used to sit here too, four weights and ~242 KB of binary, kept
-  # only so the UI face could be reverted by flipping one constant. That is
-  # what version control is for, so it no longer ships to users.
+  # The UI face is chosen per locale, not per glyph: `AppTypography` picks
+  # Tajawal for `ar` and Space Grotesk for everything else, with the other
+  # family behind it as a fallback so a stray glyph still resolves.
   fonts:
-    # Latin/English face — Space Grotesk (variable). Paired with IBM Plex
-    # Sans Arabic: Latin glyphs render in Space Grotesk, Arabic falls back to
-    # IBM Plex Sans Arabic (see AppTypography.fontFallback). One variable
-    # file — Flutter maps `fontWeight` onto its `wght` axis automatically.
+    # Latin/English face — Space Grotesk (variable), the primary family in
+    # every non-Arabic locale. One variable file — Flutter maps `fontWeight`
+    # onto its `wght` axis automatically.
     - family: SpaceGrotesk
       fonts:
         - asset: assets/fonts/SpaceGrotesk-Variable.ttf
-    # Arabic face — IBM Plex Sans Arabic (RTL-first), also the Latin fallback.
+    # Arabic face — Tajawal, the primary family whenever the locale is `ar`.
+    # No 600 face exists for this family; Flutter resolves w600 to the
+    # nearest bundled weight.
+    - family: Tajawal
+      fonts:
+        - asset: assets/fonts/Tajawal-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Tajawal-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Tajawal-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Tajawal-ExtraBold.ttf
+          weight: 800
+    # Secondary Arabic face — IBM Plex Sans Arabic, kept last in the fallback
+    # chain so Arabic glyphs Tajawal lacks still render.
     - family: IBMPlexSansArabic
       fonts:
         - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf

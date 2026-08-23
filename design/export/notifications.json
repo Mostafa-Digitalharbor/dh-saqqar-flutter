@@ -82,6 +82,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 12.0,
@@ -142,6 +143,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 12.0,
@@ -202,6 +204,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 12.0,
@@ -262,6 +265,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 12.0,
@@ -292,6 +296,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 12.0,
@@ -404,6 +409,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 14.0,
@@ -435,6 +441,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 11.0,
@@ -471,6 +478,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 13.0,
@@ -583,6 +591,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 14.0,
@@ -614,6 +623,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 11.0,
@@ -650,6 +660,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 13.0,
@@ -762,6 +773,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 14.0,
@@ -793,6 +805,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 11.0,
@@ -824,6 +837,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 13.0,
@@ -864,6 +878,7 @@
       "font": {
         "family": "SpaceGrotesk",
         "fallback": [
+          "Tajawal",
           "IBMPlexSansArabic"
         ],
         "size": 16.0,

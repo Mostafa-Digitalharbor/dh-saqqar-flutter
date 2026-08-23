@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../constants/ui_strings.dart';
 import 'app_sizes.dart';
 
 /// Typography scale from §2.2 of the spec.
@@ -11,11 +12,13 @@ import 'app_sizes.dart';
 /// it — do NOT re-enable the `google_fonts` runtime fetch (it crashed on
 /// offline / geo-blocked devices).
 ///
-/// **Latin + Arabic pairing:** [fontSans] (Space Grotesk) is the primary
-/// family, with [fontFallback] (IBM Plex Sans Arabic) behind it. Latin/English
-/// glyphs render in Space Grotesk; Arabic — which Space Grotesk doesn't
-/// contain — falls through to IBM Plex Sans Arabic per-glyph. Every text
-/// style must carry `fontFamilyFallback: fontFallback` for Arabic to resolve.
+/// **Latin + Arabic pairing:** the UI face is picked *per locale*, not per
+/// glyph — [familyFor] returns [fontArabic] (Tajawal) under `ar` and
+/// [fontSans] (Space Grotesk) everywhere else, so an Arabic screen is set
+/// entirely in Tajawal (its Latin glyphs and digits included) while English
+/// keeps Space Grotesk. [fallbackFor] puts the other family behind it so a
+/// stray glyph — Arabic in the English UI, or the reverse — still resolves.
+/// Every text style must carry both, or the fallback chain is lost.
 class AppTypography {
   AppTypography._();
 
@@ -23,13 +26,28 @@ class AppTypography {
   /// `fontWeight` onto its `wght` axis).
   static const String fontSans = 'SpaceGrotesk';
 
-  /// Arabic face + the Latin fallback. Any glyph missing from [fontSans]
-  /// (i.e. all Arabic) resolves here. Bundled weights: 400 / 500 / 600 / 700.
-  static const String fontArabic = 'IBMPlexSansArabic';
+  /// Primary Arabic face — Tajawal. Bundled weights: 400 / 500 / 700 / 800
+  /// (the family has no 600; Flutter resolves w600 to the nearest one).
+  static const String fontArabic = 'Tajawal';
 
-  /// Fallback chain applied to every UI text style so Arabic resolves to
-  /// [fontArabic] while Latin stays on [fontSans].
-  static const List<String> fontFallback = [fontArabic];
+  /// Last resort behind both faces — IBM Plex Sans Arabic covers Arabic
+  /// glyphs Tajawal lacks. Bundled weights: 400 / 500 / 600 / 700.
+  static const String fontArabicFallback = 'IBMPlexSansArabic';
+
+  /// True when [locale] should be typeset in [fontArabic].
+  static bool isArabic(Locale locale) =>
+      locale.languageCode == UiStrings.localeArabicCode;
+
+  /// The primary family for [locale] — Tajawal under `ar`, Space Grotesk
+  /// otherwise.
+  static String familyFor(Locale locale) =>
+      isArabic(locale) ? fontArabic : fontSans;
+
+  /// The fallback chain for [locale]: the *other* script's face first, then
+  /// IBM Plex Sans Arabic as the final Arabic backstop.
+  static List<String> fallbackFor(Locale locale) => isArabic(locale)
+      ? const [fontArabicFallback, fontSans]
+      : const [fontArabic, fontArabicFallback];
 
   /// Bundled monospace face for code blocks / inline code / hosts —
   /// mirrors the design system's `--font-mono: JetBrains Mono`.
@@ -42,8 +60,8 @@ class AppTypography {
   }) {
     final base = TextStyle(
       color: text,
-      fontFamily: fontSans,
-      fontFamilyFallback: fontFallback,
+      fontFamily: familyFor(locale),
+      fontFamilyFallback: fallbackFor(locale),
     );
 
     TextStyle styled(
@@ -104,8 +122,8 @@ class AppTypography {
   /// Spec §2.2: 11pt, weight 700, uppercase, +0.10em tracking.
   static TextStyle eyebrow({required Locale locale, required Color color}) {
     return TextStyle(
-      fontFamily: fontSans,
-      fontFamilyFallback: fontFallback,
+      fontFamily: familyFor(locale),
+      fontFamilyFallback: fallbackFor(locale),
       fontSize: AppFontSizes.caption,
       fontWeight: FontWeight.w700,
       letterSpacing: AppLetterSpacing.none,
@@ -116,8 +134,8 @@ class AppTypography {
   /// Status pill text — 10pt weight 700 uppercase +0.10em.
   static TextStyle statusPill({required Locale locale, required Color color}) {
     return TextStyle(
-      fontFamily: fontSans,
-      fontFamilyFallback: fontFallback,
+      fontFamily: familyFor(locale),
+      fontFamilyFallback: fallbackFor(locale),
       fontSize: AppFontSizes.chipLabel,
       fontWeight: FontWeight.w700,
       letterSpacing: AppLetterSpacing.none,

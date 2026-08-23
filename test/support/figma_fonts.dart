@@ -20,11 +20,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Family name → the asset paths that make it up.
 ///
-/// Weights are separate files for IBM Plex (four static faces) and a single
-/// variable file for Space Grotesk, exactly as `pubspec.yaml` declares them —
+/// Weights are separate files for Tajawal and IBM Plex (four static faces
+/// each) and a single variable file for Space Grotesk, exactly as
+/// `pubspec.yaml` declares them —
 /// `FontLoader` takes the same bytes either way and Flutter picks the axis.
 const _families = <String, List<String>>{
   'SpaceGrotesk': ['assets/fonts/SpaceGrotesk-Variable.ttf'],
+  'Tajawal': [
+    'assets/fonts/Tajawal-Regular.ttf',
+    'assets/fonts/Tajawal-Medium.ttf',
+    'assets/fonts/Tajawal-Bold.ttf',
+    'assets/fonts/Tajawal-ExtraBold.ttf',
+  ],
   'IBMPlexSansArabic': [
     'assets/fonts/IBMPlexSansArabic-Regular.ttf',
     'assets/fonts/IBMPlexSansArabic-Medium.ttf',
