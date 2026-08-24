@@ -42,6 +42,13 @@ env:
   # highest code already on Play (115, shipped from pubspec as 1.2.4+115).
   # If you ever DO rename this file, raise the offset past the last live
   # build code and never lower it.
+  #
+  # run_number alone is not enough, because it does NOT change when a failed
+  # run is re-run — only run_attempt does. Re-running the v1.2.18 release
+  # (which is the natural thing to click after a red X) rebuilt versionCode
+  # 215 a second time and Play rejected it as already uploaded. Hence the ×10:
+  # it leaves nine re-run slots per run and keeps the sequence monotonic.
+  # The step below applies both, so codes now climb in steps of ten.
   VERSION_CODE_OFFSET: 200
 
 jobs:
@@ -163,7 +170,9 @@ jobs:
             # Say so, because the version string will not.
             echo "- Manual run: version \`$BUILD_NAME\` from the newest tag, code from \`${GITHUB_SHA:0:7}\`" >> "$GITHUB_STEP_SUMMARY"
           fi
-          BUILD_NUMBER=$(( ${{ env.VERSION_CODE_OFFSET }} + GITHUB_RUN_NUMBER ))
+          # See VERSION_CODE_OFFSET: ×10 so a re-run of the same run gets its
+          # own code instead of colliding with the upload that already failed.
+          BUILD_NUMBER=$(( ${{ env.VERSION_CODE_OFFSET }} + GITHUB_RUN_NUMBER * 10 + GITHUB_RUN_ATTEMPT - 1 ))
           echo "build_name=$BUILD_NAME"     >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
           echo "### Release \`$BUILD_NAME+$BUILD_NUMBER\`" >> "$GITHUB_STEP_SUMMARY"
