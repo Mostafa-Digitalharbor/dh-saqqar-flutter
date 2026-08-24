@@ -76,7 +76,12 @@ jobs:
       has_android: ${{ steps.keys.outputs.has_android }}
       has_ios: ${{ steps.keys.outputs.has_ios }}
     steps:
+      # Tags, not just the tip commit: the manual-run branch of the version
+      # step reads the newest tag, and the default depth-1 checkout fetches
+      # none of them.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # A platform whose signing secrets are not configured yet must SKIP,
       # not fail. Android and iOS get set up weeks apart in practice, and a
@@ -139,8 +144,24 @@ jobs:
               exit 1
             fi
           else
-            # Manual run — fall back to whatever pubspec says, minus the +N.
-            BUILD_NAME="$(grep -m1 '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*([0-9.]+)\+.*/\1/')"
+            # Manual run — the newest tag, NOT pubspec.
+            #
+            # pubspec was the original fallback and it lies: nothing bumps it
+            # on a tagged release (the tag supplies the name, CI supplies the
+            # number), so it still read 1.2.7 while the shipped train was on
+            # 1.2.18. Re-running the iOS job alone — the exact reason this
+            # dispatch exists — would have put a build named 1.2.7 on
+            # TestFlight, behind everything already there.
+            # `|| true` because `pipefail` + `set -e` would kill the step on a
+            # repo with no tags, before the friendlier error below can fire.
+            BUILD_NAME="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)"
+            if [[ ! "$BUILD_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::No vMAJOR.MINOR.PATCH tag to take a version from — cut a tag, or run this from one" >&2
+              exit 1
+            fi
+            # The code is this branch's HEAD, which may be ahead of that tag.
+            # Say so, because the version string will not.
+            echo "- Manual run: version \`$BUILD_NAME\` from the newest tag, code from \`${GITHUB_SHA:0:7}\`" >> "$GITHUB_STEP_SUMMARY"
           fi
           BUILD_NUMBER=$(( ${{ env.VERSION_CODE_OFFSET }} + GITHUB_RUN_NUMBER ))
           echo "build_name=$BUILD_NAME"     >> "$GITHUB_OUTPUT"
@@ -405,6 +426,14 @@ jobs:
           # piece of signing state we carry. See ios/fastlane/Fastfile.
           IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
           IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          # The Apple DEVELOPMENT certificate, exported the same way. Not a
+          # duplicate of the one above and not optional in practice: automatic
+          # signing archives with a development identity and only re-signs for
+          # the store on export, so a runner without one has Xcode mint a
+          # throwaway certificate per build. Eleven of those in three days is
+          # what put the team over Apple's certificate cap and failed v1.2.17.
+          IOS_DEV_CERT_P12_BASE64: ${{ secrets.IOS_DEV_CERT_P12_BASE64 }}
+          IOS_DEV_CERT_PASSWORD: ${{ secrets.IOS_DEV_CERT_PASSWORD }}
           BUILD_NAME: ${{ needs.version.outputs.build_name }}
           BUILD_NUMBER: ${{ needs.version.outputs.build_number }}
           SAQQAR_SENTRY_DSN: ${{ secrets.SAQQAR_SENTRY_DSN }}

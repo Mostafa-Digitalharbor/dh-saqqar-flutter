@@ -23,19 +23,30 @@ default_platform(:ios)
 # the private key, so the next run would mint another and burn through the
 # team's three-certificate limit — hence importing a fixed one.
 #
-# The other half of that bargain lives in Runner.xcodeproj: every Release
-# configuration now pins `CODE_SIGN_IDENTITY = "Apple Distribution"`. Xcode's
-# default for an automatically-signed target is "Apple Development", and it
-# applies to the ARCHIVE as much as to a debug run — so the archive asked for
-# an *iOS App Development* profile, found no development certificate in the
-# runner's throwaway keychain, and had `-allowProvisioningUpdates` mint one.
-# A fresh VM every run means a fresh certificate every release: eleven of them
-# in three days, ending on v1.2.17 with
-#   "Your account has reached the maximum number of certificates"
-# and `** ARCHIVE FAILED **` (exit 65) across all four targets. With the
-# identity pinned, the archive signs with the .p12 imported above and CI never
-# asks Apple for a development certificate at all. Debug and Profile still say
-# "Apple Development" — that is what a developer on a real Mac signs with.
+# TWO certificates are imported, not one, and the second is the non-obvious
+# half. Under `CODE_SIGN_STYLE = Automatic` Xcode provisions the ARCHIVE for
+# *development* and only re-signs for the store during `-exportArchive` —
+# that is Apple's design, not a misconfiguration, and it cannot be overridden
+# from the build settings. Pinning
+# `CODE_SIGN_IDENTITY = "Apple Distribution"` on the Release configs was tried
+# in v1.2.18 and Xcode rejected it on all four targets:
+#   "Runner has conflicting provisioning settings. Runner is automatically
+#    signed for development, but a conflicting code signing identity Apple
+#    Distribution has been manually specified."
+# So a development certificate IS needed to archive. The only real choice is
+# whether it is a fixed one or a fresh one per run, and "fresh" is what broke
+# v1.2.17: the runner's keychain had no development identity,
+# `-allowProvisioningUpdates` minted one, the ephemeral VM threw the private
+# key away, and eleven dead certificates later the team hit
+#   "Your account has reached the maximum number of certificates".
+# Hence IOS_DEV_CERT_P12_BASE64 — the same trick already used for the
+# distribution certificate, applied to the one Xcode actually archives with.
+#
+# Getting off the development certificate entirely means manual signing:
+# fetch four App Store profiles with `sigh`, flip the targets to Manual for
+# the duration of the build, and map them in `export_options`. That is the
+# `fastlane match`-shaped cost this file was written to avoid; revisit it if
+# the dev certificate ever becomes a problem of its own.
 platform :ios do
   desc "Build a release IPA and upload it to TestFlight"
   lane :beta do
@@ -60,15 +71,43 @@ platform :ios do
     File.write(key_path, ENV.fetch("ASC_KEY_P8"))
     File.chmod(0600, key_path)
 
-    cert_path = File.expand_path("../../build/dist_cert.p12")
-    FileUtils.mkdir_p(File.dirname(cert_path))
-    File.binwrite(cert_path, Base64.decode64(ENV.fetch("IOS_DIST_CERT_P12_BASE64")))
-    import_certificate(
-      certificate_path: cert_path,
-      certificate_password: ENV.fetch("IOS_DIST_CERT_PASSWORD"),
-      keychain_name: "fastlane_tmp_keychain",
-      keychain_password: ""
+    import_p12 = lambda do |name, base64, password|
+      path = File.expand_path("../../build/#{name}.p12")
+      FileUtils.mkdir_p(File.dirname(path))
+      File.binwrite(path, Base64.decode64(base64))
+      import_certificate(
+        certificate_path: path,
+        certificate_password: password,
+        keychain_name: "fastlane_tmp_keychain",
+        keychain_password: ""
+      )
+    end
+
+    # Signs the exported .ipa.
+    import_p12.call(
+      "dist_cert",
+      ENV.fetch("IOS_DIST_CERT_P12_BASE64"),
+      ENV.fetch("IOS_DIST_CERT_PASSWORD")
     )
+
+    # Signs the archive. Optional so a run is still possible before the secret
+    # exists — but every run without it burns a certificate slot that nobody
+    # can ever use again, so the warning is loud. See the header comment.
+    dev_cert = ENV.fetch("IOS_DEV_CERT_P12_BASE64", "")
+    if dev_cert.empty?
+      UI.important(
+        "IOS_DEV_CERT_P12_BASE64 is not set. Xcode will mint a throwaway " +
+        "Apple Development certificate for this archive and the private key " +
+        "dies with the runner — see docs/RELEASE.md before the team hits the " +
+        "certificate limit again."
+      )
+    else
+      import_p12.call("dev_cert", dev_cert, ENV.fetch("IOS_DEV_CERT_PASSWORD", ""))
+    end
+
+    # Which identities codesign can actually see. Two lines in the log that
+    # turn the next signing failure from a guess into a lookup.
+    sh("security find-identity -v -p codesigning || true")
 
     # Flutter first, xcodebuild second. `flutter build ios --no-codesign`
     # runs the Dart AOT compile, bakes in the --dart-defines, runs

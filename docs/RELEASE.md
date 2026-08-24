@@ -113,6 +113,8 @@ The Play service account:
 | `APP_STORE_CONNECT_P8` | contents of the downloaded `AuthKey_XXXX.p8` (downloadable **once**) |
 | `IOS_DIST_CERT_P12_BASE64` | the Apple Distribution certificate + private key as a base64'd `.p12` — see below |
 | `IOS_DIST_CERT_PASSWORD` | the password you set on that export |
+| `IOS_DEV_CERT_P12_BASE64` | the Apple **Development** certificate + private key, same recipe — signs the archive, see below |
+| `IOS_DEV_CERT_PASSWORD` | the password you set on that export |
 
 The API key needs the **App Manager** role to upload builds. Note it is created
 on **appstoreconnect.apple.com** (Users and Access → Integrations), *not* on
@@ -154,6 +156,22 @@ openssl pkcs12 -in ios_dist.p12 -legacy -nodes -nocerts | grep -c "PRIVATE KEY"
 Keep `ios_dist.key` in the password manager. Losing it makes the certificate
 worthless and burns one of the team's three distribution-certificate slots.
 
+The development certificate is the same recipe with two words changed: pick
+**Apple Development** instead of Apple Distribution when uploading the CSR, and
+name the export accordingly.
+
+```bash
+openssl genrsa -out ios_dev.key 2048
+openssl req -new -key ios_dev.key -out ios_dev.csr   -subj "/emailAddress=you@example.com/CN=Your Name/C=SA"
+# upload ios_dev.csr at developer.apple.com → Certificates → + → Apple Development
+openssl x509 -in development.cer -inform DER -out ios_dev.pem -outform PEM
+openssl pkcs12 -export -legacy -inkey ios_dev.key -in ios_dev.pem   -out ios_dev.p12 -name "Apple Development"
+base64 -w0 ios_dev.p12           # → IOS_DEV_CERT_P12_BASE64
+```
+
+Make it **once** and leave it alone. Its whole purpose is that CI stops asking
+Apple for a new one on every build.
+
 Saqqar has four iOS targets — Runner, Share Extension, Watch App and the Watch
 Complication — all on `CODE_SIGN_STYLE = Automatic`. `ios/fastlane/Fastfile`
 keeps them that way and lets Xcode fetch all four provisioning profiles itself
@@ -164,21 +182,33 @@ carried is the one distribution certificate, because
 private key, so letting it do so would burn the team's three-certificate limit
 one CI run at a time.
 
-Automatic signing alone is not enough to hold that line. Xcode's default
-identity for an automatically-signed target is `Apple Development`, and it
-applies to the **archive**, not just to running on a device — so `xcodebuild
-archive` went looking for an *iOS App Development* profile, found no
-development certificate in the runner's throwaway keychain, and quietly had
-`-allowProvisioningUpdates` create one. Every release burned a fresh
-certificate on a fresh VM; eleven accumulated in three days and v1.2.17 died on
-"Your account has reached the maximum number of certificates" before it ever
-reached the upload. Every **Release** configuration in `Runner.xcodeproj`
-therefore pins `CODE_SIGN_IDENTITY = "Apple Distribution"`, so the archive
-signs with the `.p12` that is already imported. Debug and Profile keep
-`Apple Development`. If that pin is ever dropped, the failure comes back as an
-archive error listing all four targets, and the fix is to revoke the
-API-created development certificates at
-`developer.apple.com` → Certificates before re-running.
+Which is why **two** certificates are carried, not one. Automatic signing has a
+consequence that is easy to miss: Xcode provisions the **archive** with a
+*development* identity and only re-signs for the store during
+`-exportArchive`. That is Apple's design and it cannot be overridden from the
+build settings — pinning `CODE_SIGN_IDENTITY = "Apple Distribution"` on the
+Release configurations was tried in v1.2.18 and Xcode refused the build on all
+four targets:
+
+> Runner has conflicting provisioning settings. Runner is automatically signed
+> for development, but a conflicting code signing identity Apple Distribution
+> has been manually specified.
+
+So the archive needs a development certificate. Without
+`IOS_DEV_CERT_P12_BASE64` the runner's keychain has none,
+`-allowProvisioningUpdates` mints one, and the VM is destroyed with the private
+key still inside it — one dead certificate per release. Eleven piled up in
+three days and v1.2.17 failed on "Your account has reached the maximum number
+of certificates" before it reached the upload. If that recurs, revoke the
+`Created via API` development rows at developer.apple.com → Certificates; the
+two distribution rows and any real person's certificate stay.
+
+Getting off the development certificate altogether means manual signing:
+`sigh` for four App Store profiles, the targets flipped to Manual for the
+duration of the build, and a `provisioningProfiles` map in `export_options`.
+That is the `fastlane match`-shaped cost this pipeline was built to avoid, so
+it stays on the shelf unless the development certificate becomes a problem of
+its own.
 
 ### Shared
 
