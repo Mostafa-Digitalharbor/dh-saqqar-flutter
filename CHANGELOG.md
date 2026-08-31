@@ -6,6 +6,60 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed — 2026-08-31
+
+Reported by the team: Saqqar asks for permission to modify something and the
+approval card never appears — first as a general report, then narrowed to "it
+works on Android but not on iPhone". Four defects, none of them in the card
+itself, which was covered three times over and rendered correctly given the
+data. The path from `snapshot.approvals` to the screen was what had never been
+tested.
+
+- **A chat with no visible messages hid every pending approval.** The inline
+  approval cards live inside the message list, and the list is only built when
+  the transcript has something to show — an empty one renders suggestion chips
+  instead. `isVisibleMessage` drops every `tool` row and every empty-content
+  assistant row, which is most of what a run emits, so a turn that goes
+  straight to tool calls and stops at an approval gate had a decision waiting
+  and nothing visible to render it beside. The agent sat blocked with the one
+  control that releases it never drawn, under a screen inviting the user to
+  start a conversation that was already running. **This is almost certainly the
+  "iPhone" report**: whether a turn produced a visible row depends on the task,
+  not the device, so two testers doing different things see different results.
+  A sweep of `TargetPlatform.iOS` × Arabic × Reduce Motion × iPhone safe-area
+  insets × the smallest supported screen found no platform difference at all.
+- **One malformed row took the whole snapshot down.** The list decode claimed
+  in its own comment to skip a bad element and did not — `whereType` only
+  filters non-maps, so a row whose `id` is missing or numeric threw out of
+  `ConversationSnapshot.fromJson`. On the poll path that throw is caught and
+  logged as a warning nobody reads, so a single bad approval froze the entire
+  chat: no card, no new messages, no error, on every tick for as long as the
+  row was pending. Every list is now element-tolerant.
+- **A response that never mentioned approvals was read as "none pending".**
+  After the first tick every poll asks `?since=`, so a deployment whose delta
+  omits the key could raise an approval, land it in one snapshot, and have the
+  tick 1.5 s later erase it — permanently, since nothing asked for a full
+  snapshot again. Absent key and `approvals: []` are now distinguished; an
+  explicit empty list still clears the card immediately, so a decision made
+  here, on the web, or by a batch scope drops off exactly as fast as before.
+- **`ChatCubit.refresh()` fetched a delta.** Every caller is a user action that
+  changed something the message stream does not carry — an approval decided, an
+  environment bound — so it confirmed each one by asking the single question
+  none of them had. It now asks without `?since=`.
+- **An empty non-delta window erased the transcript.** `overlaps` evaluates to
+  `0 < 0` for a zero-message response, which fell through to "adopt verbatim"
+  and replaced a loaded conversation with an empty one.
+
+### Tests — 2026-08-31
+
+- `approval_delivery_test.dart` — the wire-to-state half: malformed rows,
+  absent vs. empty `approvals`, `refresh()`'s request shape, the empty-window
+  guard. Seven of its thirteen cases fail against the pre-fix code.
+- `approval_inline_render_test.dart` — the state-to-screen half, on the real
+  `ChatScreen`: the iPhone matrix above, the empty-transcript state, and the
+  Approve / Reject taps driven through to the decision POST and the card
+  leaving the screen.
+
 ### Fixed — 2026-08-12
 
 - **Flinging to the top of a long chat parked you against a dead edge.** The

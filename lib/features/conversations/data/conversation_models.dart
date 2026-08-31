@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../core/logging/app_logger.dart';
 import '../../billing/data/plan_models.dart';
 import '../../inbox/data/approval_models.dart';
 import '../../inbox/data/artifact_models.dart';
@@ -662,6 +663,7 @@ class ConversationSnapshot extends Equatable {
     this.disabledCredentials = const [],
     this.pendingActions = const [],
     this.quotaExceeded,
+    this.carriesApprovals = true,
   });
 
   final Conversation conversation;
@@ -705,6 +707,24 @@ class ConversationSnapshot extends Equatable {
   final List<String> disabledCredentials;
   final List<PendingAction> pendingActions;
 
+  /// Whether the payload this was decoded from actually CARRIED an
+  /// `approvals` key — as opposed to sending `approvals: []`.
+  ///
+  /// The two are wire-identical after decoding and mean opposite things. An
+  /// explicit empty list is the server saying "nothing is pending"; a missing
+  /// key is the server not talking about approvals on this response at all,
+  /// and [ChatCubit] must not read the second as the first. It did, and that
+  /// is a way for an approval card to be *unable* to appear: the poll loop
+  /// always asks with `?since=`, so if a delta response omits the key, every
+  /// tick after the approval is raised wipes it again 1.5 s later and the one
+  /// control that can unblock the run never survives long enough to be seen.
+  ///
+  /// Defaults to `true` so a hand-built snapshot (tests, the merge result)
+  /// carries an authoritative list, and is deliberately **not** in [props]:
+  /// it describes the transport, not the conversation, and the merge always
+  /// resolves it to `true`, so no two states can differ by it alone.
+  final bool carriesApprovals;
+
   factory ConversationSnapshot.fromJson(Map<String, dynamic> json) {
     // The `conversation` object is required. Guard it so a snapshot missing
     // the key surfaces a clear "couldn't load this conversation" failure
@@ -715,13 +735,18 @@ class ConversationSnapshot extends Equatable {
     }
     return ConversationSnapshot(
       conversation: Conversation.fromJson(conv),
-      // whereType (not cast) throughout: one malformed element (a bad
-      // message / approval / artifact / credential / action) is skipped
-      // rather than aborting the parse of the ENTIRE snapshot.
-      messages: (json['messages'] as List? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map(Message.fromJson)
-          .toList(),
+      // Every list below goes through [_parseRows], which skips a bad element
+      // instead of aborting the parse of the ENTIRE snapshot.
+      //
+      // This block used to claim that protection and not have it. `whereType`
+      // only filters elements that aren't maps; a row that IS a map but whose
+      // fields are the wrong shape — an `id` the server sent as a number, or
+      // omitted — throws out of `fromJson`, and the throw travels all the way
+      // up through `getSnapshot`. On the poll path `_pollOnce` catches that
+      // and logs a warning nobody sees, so ONE malformed approval row silently
+      // froze the whole chat: no approval card, no new messages, and no error
+      // to explain it, on every tick for as long as the row was pending.
+      messages: _parseRows(json['messages'], Message.fromJson, 'message'),
       cursor: _parseDate(json['cursor']),
       // Kept as a raw string, never parsed: it is an opaque
       // `<iso-timestamp>|<message-id>` pair that goes straight back to the
@@ -729,25 +754,23 @@ class ConversationSnapshot extends Equatable {
       oldestCursor: (json['oldest_cursor'] as String?)?.trim(),
       hasMoreBefore: json['has_more_before'] as bool? ?? false,
       delta: json['delta'] as bool? ?? false,
-      approvals: (json['approvals'] as List? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map(Approval.fromJson)
-          .toList(),
-      artifacts: (json['artifacts'] as List? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map(Artifact.fromJson)
-          .toList(),
-      availableCredentials: (json['available_credentials'] as List? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map(Credential.fromJson)
-          .toList(),
+      approvals: _parseRows(json['approvals'], Approval.fromJson, 'approval'),
+      // Absent key ≠ empty list. See [carriesApprovals].
+      carriesApprovals: json.containsKey('approvals'),
+      artifacts: _parseRows(json['artifacts'], Artifact.fromJson, 'artifact'),
+      availableCredentials: _parseRows(
+        json['available_credentials'],
+        Credential.fromJson,
+        'credential',
+      ),
       disabledCredentials: (json['disabled_credentials'] as List? ?? [])
           .map((e) => e.toString())
           .toList(),
-      pendingActions: (json['pending_actions'] as List? ?? [])
-          .whereType<Map<String, dynamic>>()
-          .map(PendingAction.fromJson)
-          .toList(),
+      pendingActions: _parseRows(
+        json['pending_actions'],
+        PendingAction.fromJson,
+        'pending action',
+      ),
       // Read from `conversation.quota.kind` FIRST, with the top-level
       // `quota_exceeded` kept only as a fallback.
       //
@@ -783,8 +806,10 @@ class ConversationSnapshot extends Equatable {
     List<String>? disabledCredentials,
     List<PendingAction>? pendingActions,
     QuotaWindow? quotaExceeded,
+    bool? carriesApprovals,
   }) {
     return ConversationSnapshot(
+      carriesApprovals: carriesApprovals ?? this.carriesApprovals,
       conversation: conversation ?? this.conversation,
       messages: messages ?? this.messages,
       cursor: cursor ?? this.cursor,
@@ -819,6 +844,40 @@ class ConversationSnapshot extends Equatable {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+
+/// Decodes one list field of a snapshot, dropping any element that fails.
+///
+/// The bad element is skipped and logged; the other rows — and the rest of
+/// the snapshot around them — survive. That is the whole point: a snapshot is
+/// the chat's ONLY source of messages, approvals and artifacts, and it is
+/// re-fetched on a timer, so a single unparseable row that aborts the parse
+/// does not degrade one row, it takes the conversation off the air for as
+/// long as the server keeps sending it.
+///
+/// [what] names the row type in the log so the warning identifies which feed
+/// is malformed without a stack trace.
+List<T> _parseRows<T>(
+  Object? raw,
+  T Function(Map<String, dynamic>) fromJson,
+  String what,
+) {
+  if (raw is! List || raw.isEmpty) return const [];
+  final rows = <T>[];
+  for (final element in raw) {
+    if (element is! Map) continue;
+    try {
+      rows.add(fromJson(element.cast<String, dynamic>()));
+    } catch (e, st) {
+      AppLogger.warn(
+        'ConversationSnapshot',
+        'dropped a malformed $what row',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+  return rows;
+}
 
 /// Pulls `conversation.quota.kind` out of a raw snapshot body, tolerating a
 /// missing `quota` object and a non-string `kind`.

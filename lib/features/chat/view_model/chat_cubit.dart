@@ -10,6 +10,7 @@ import '../../../core/state/data_state.dart';
 import '../../conversations/data/attachment_models.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../../conversations/data/conversations_repository.dart';
+import '../../inbox/data/approval_models.dart';
 import 'chat_state.dart';
 
 /// ViewModel for a single chat screen.
@@ -304,8 +305,19 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
           ? snapshot.hasMoreBefore
           : snapshot.messages.length >= _initialLimit;
 
-  /// Manual refresh — same code path as the polling tick.
-  Future<void> refresh() => _pollOnce();
+  /// Manual refresh — the polling tick's code path, asked WITHOUT `?since=`.
+  ///
+  /// Every caller is a user action that changed something the message stream
+  /// does not carry: an approval decided, an environment bound, a credential
+  /// toggled. A delta answers "what messages are newer than this cursor",
+  /// which is the one question none of them asked — so this used to confirm a
+  /// state change by fetching the feed least likely to describe it, and on a
+  /// deployment whose deltas travel light the approval card could still be on
+  /// screen after the user had already approved it.
+  ///
+  /// The result merges through [_mergeSnapshot] like any other full snapshot,
+  /// so a shorter window can't shrink the transcript the user has paged into.
+  Future<void> refresh() => _pollOnce(full: true);
 
   /// PATCH the per-conversation `auto_approve` flag on the server and
   /// reflect the new value in our snapshot optimistically. Same shape
@@ -415,13 +427,19 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
     _pollTimer = Timer(fast ? _runningInterval : _idleInterval, _pollOnce);
   }
 
-  Future<void> _pollOnce() async {
+  /// One snapshot fetch, merged into state.
+  ///
+  /// [full] drops `?since=` so the server answers with the whole newest
+  /// window rather than the rows after our cursor — what [refresh] wants, and
+  /// what the 1.5 s tick must never do.
+  Future<void> _pollOnce({bool full = false}) async {
     if (_paused || _disposed) return;
-    final cursor = state.data.dataOrNull?.cursor;
+    final cursor = full ? null : state.data.dataOrNull?.cursor;
     try {
       final snapshot = await _repo.getSnapshot(
         conversationId,
         since: cursor,
+        limit: full ? _initialLimit : null,
       );
       // No per-tick logging here. This runs every 1.5 s while the agent is
       // running; the interpolated message was being BUILT on every tick even
@@ -446,6 +464,9 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   ///   * Everything else (conversation flags, approvals, artifacts,
   ///     pending actions, available + disabled credentials, run
   ///     progress): always REPLACE in full — even on delta responses.
+  ///
+  /// "REPLACE in full" is conditioned on the response having actually
+  /// SPOKEN about the field — see [_approvalsFor].
   void _mergeSnapshot(ConversationSnapshot incoming) {
     final current = state.data.dataOrNull;
     if (current == null || !incoming.delta) {
@@ -458,6 +479,25 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       if (current != null &&
           !incoming.delta &&
           incoming.messages.length < current.messages.length) {
+        // A window with NO messages at all says nothing about the transcript,
+        // so it can't be the newest page and there is nothing to stitch. It
+        // reaches the `overlaps` test as `0 < 0` — false — and used to fall
+        // through to "adopt verbatim", replacing a loaded conversation with an
+        // empty one. Keep every row we hold and take the rest of the snapshot.
+        if (incoming.messages.isEmpty) {
+          final preserved = incoming.copyWith(
+            messages: current.messages,
+            approvals: _approvalsFor(incoming, current),
+            carriesApprovals: true,
+            cursor: current.cursor,
+            delta: false,
+            oldestCursor: current.oldestCursor,
+            hasMoreBefore: current.hasMoreBefore,
+          );
+          emit(state.copyWith(data: DataSuccess(preserved)));
+          _repo.cacheSnapshot(conversationId, preserved);
+          return;
+        }
         final held = {
           for (final m in current.messages)
             if (m.id.isNotEmpty) m.id,
@@ -490,6 +530,8 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
           final preserved = incoming.copyWith(
             messages:
                 fresh.isEmpty ? current.messages : [...current.messages, ...fresh],
+            approvals: _approvalsFor(incoming, current),
+            carriesApprovals: true,
             // Deliberately the OLD cursor even when rows were stitched in: it
             // is the low-water mark of what we've definitely seen, so the next
             // delta re-delivers anything the window missed. Duplicates are
@@ -511,11 +553,17 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       // First snapshot or full refresh — adopt verbatim, and reset the paging
       // position with it: this IS the newest window now.
       _oldestCursor = incoming.oldestCursor;
+      final adopted = incoming.carriesApprovals || current == null
+          ? incoming
+          : incoming.copyWith(
+              approvals: current.approvals,
+              carriesApprovals: true,
+            );
       emit(state.copyWith(
-        data: DataSuccess(incoming),
-        hasMoreOlder: _hasMoreFrom(incoming),
+        data: DataSuccess(adopted),
+        hasMoreOlder: _hasMoreFrom(adopted),
       ));
-      _repo.cacheSnapshot(conversationId, incoming);
+      _repo.cacheSnapshot(conversationId, adopted);
       return;
     }
     // Append new messages to the existing list, skipping any row whose id
@@ -548,6 +596,8 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
       messages: appended.isEmpty
           ? current.messages
           : [...current.messages, ...appended],
+      approvals: _approvalsFor(incoming, current),
+      carriesApprovals: true,
       cursor: incoming.cursor ?? current.cursor,
       delta: false,
       // Same reasoning as the `preserved` branch: a delta poll describes the
@@ -560,6 +610,33 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
     // rows too, not just the first page from initial load.
     _repo.cacheSnapshot(conversationId, merged);
   }
+
+  /// The approvals a merge result should carry.
+  ///
+  /// §4.3 says every non-message list is REPLACED on every response, delta
+  /// included, and that is still what happens whenever the response contains
+  /// an `approvals` key — an explicit `[]` clears the card the instant the
+  /// server says nothing is pending, so a decision made here, on the web, or
+  /// by a batch scope drops off exactly as fast as it did before.
+  ///
+  /// The one case that changes is the response that never mentions approvals
+  /// at all. Replacing there is not honouring the contract, it is inventing an
+  /// answer the server did not give — and the answer it invents is "nothing is
+  /// pending", which is the one that hides the card.
+  ///
+  /// That distinction is load-bearing rather than theoretical, because of how
+  /// this screen polls. Every tick after the first asks with `?since=`, so a
+  /// deployment whose delta response omits the key can raise an approval, have
+  /// it land in one snapshot, and have the next tick 1.5 s later wipe it —
+  /// forever, since the poll never asks for a full snapshot again. From the
+  /// user's side the agent stops with no explanation and the approval card
+  /// never appears; pull-to-refresh ([load]) is the only thing that shows it,
+  /// and only until the next tick.
+  List<Approval> _approvalsFor(
+    ConversationSnapshot incoming,
+    ConversationSnapshot current,
+  ) =>
+      incoming.carriesApprovals ? incoming.approvals : current.approvals;
 
   /// Fetches ONE page of older messages via `?before=<oldestCursor>` and
   /// PREPENDS it to the transcript we already hold.

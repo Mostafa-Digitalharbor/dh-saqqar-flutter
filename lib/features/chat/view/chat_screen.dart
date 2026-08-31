@@ -2684,7 +2684,24 @@ class _ChatScreenState extends State<ChatScreen>
                 children: [
                   if (_loadingMessages)
                     const ChatSkeletonList()
-                  else if (_effectiveMessages.isEmpty)
+                  // `&& pendingForChat == 0`: the inline approval cards live
+                  // INSIDE the message list, so an empty transcript used to
+                  // take the list — and every pending approval with it — off
+                  // the screen, replacing them with suggestion chips.
+                  //
+                  // That is not an exotic state. `isVisibleMessage` drops
+                  // every `tool` row and every empty-content assistant row,
+                  // which is most of what a run emits, so a turn that goes
+                  // straight to tool calls and stops at an approval gate has a
+                  // decision waiting and nothing visible to render it beside.
+                  // The agent then sits blocked with the one control that
+                  // could release it never drawn, and the chat inviting the
+                  // user to start a conversation that is already running.
+                  //
+                  // Whether a given turn produced a visible row depends on
+                  // the task, not the device — which is what makes this look
+                  // like it works on one phone and not another.
+                  else if (_effectiveMessages.isEmpty && pendingForChat == 0)
                     EmptyChatSuggestions(onSuggestionTap: _seedSuggestion)
                   else
                     // Pull-down on the message list triggers a fresh
