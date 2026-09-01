@@ -666,10 +666,16 @@ class _SchemaField extends StatelessWidget {
           : null;
       field = DropdownButtonFormField<String>(
         initialValue: current,
+        // Database names run long (`tenant-project-live-1234567`); without
+        // this the closed field sizes to the text and overflows.
+        isExpanded: true,
         decoration: InputDecoration(labelText: label),
         items: [
           for (final db in dbs)
-            DropdownMenuItem(value: db, child: Text(db)),
+            DropdownMenuItem(
+              value: db,
+              child: Text(db, overflow: TextOverflow.ellipsis),
+            ),
         ],
         onChanged: (value) {
           if (value != null) controller.text = value;
@@ -740,12 +746,16 @@ class _SchemaField extends StatelessWidget {
                 : null);
         return DropdownButtonFormField<String>(
           initialValue: current,
+          isExpanded: true,
           decoration: InputDecoration(labelText: label),
           items: [
             for (final option in options)
               DropdownMenuItem(
                 value: option,
-                child: Text(_resolveOption(context, option)),
+                child: Text(
+                  _resolveOption(context, option),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
           ],
           onChanged: (value) {
