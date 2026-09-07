@@ -253,8 +253,6 @@ class _ChatScreenState extends State<ChatScreen>
   ///
   /// Lives in `data/message_visibility.dart` so it is testable without
   /// pumping the screen — see the note there.
-  bool _isVisibleMessage(api.Message m) => isVisibleMessage(m);
-
   /// Count of currently-LOADED visible messages (whole loaded snapshot, not
   /// the rendered window). Uses `context.read` so it's safe to call from
   /// event handlers like [_loadEarlier].
@@ -271,7 +269,10 @@ class _ChatScreenState extends State<ChatScreen>
     if (identical(_visibleMemoSnapshot, snapshot) && _visibleMemo != null) {
       return _visibleMemo!.length;
     }
-    return snapshot.messages.where(_isVisibleMessage).length;
+    final running = snapshot.conversation.isRunning;
+    return snapshot.messages
+        .where((m) => isVisibleMessage(m, isRunning: running))
+        .length;
   }
 
   // Memo for [_allVisibleMessages]. The adaptation (filter + map to
@@ -306,8 +307,9 @@ class _ChatScreenState extends State<ChatScreen>
     }
     // Closure capture: pass `context` into the adapter so the timestamp
     // resolves through the current locale.
+    final running = snapshot.conversation.isRunning;
     final adapted = snapshot.messages
-        .where(_isVisibleMessage)
+        .where((m) => isVisibleMessage(m, isRunning: running))
         .map((m) => _adaptApiMessage(m, context))
         .toList();
     _visibleMemoSnapshot = snapshot;
@@ -1581,9 +1583,12 @@ class _ChatScreenState extends State<ChatScreen>
           : pendingText;
       final newId = await repo.create(title: title);
       if (!mounted) return;
-      // 2) Bind the picked environment. Nothing else to persist here:
-      //    task prep travels on the message body (step 3), not on the
-      //    conversation row, so a new chat needs no extra flag write.
+      // 2) Bind the picked environment and persist auto-approve. Task
+      //    prep travels on the message body (step 3), not on the
+      //    conversation row, but auto_approve has no such channel — it's
+      //    PATCH-only, so a toggle flipped before the first send must be
+      //    written here or the server processes that first turn (and any
+      //    approval it raises) with the default auto_approve=false.
       await repo.patch(
         id: newId,
         environmentId: env.id,
@@ -1591,6 +1596,7 @@ class _ChatScreenState extends State<ChatScreen>
         // primary in the header pill; null (single-env path) leaves just
         // env.id bound, matching the prior behavior.
         environmentIds: _environmentIds.length > 1 ? _environmentIds : null,
+        autoApprove: _autoApprove,
       );
       if (!mounted) return;
       // 2.5) Upload any deferred attachment now that we have a
@@ -2563,7 +2569,9 @@ class _ChatScreenState extends State<ChatScreen>
     // dropped explicitly (different slide curve + scrim treatment).
     final anyDrawerOpen = _sidebarOpen || _railOpen;
     final screenW = MediaQuery.sizeOf(context).width;
-    final drawerWidth = screenW * 0.86 > 320.0 ? 320.0 : screenW * 0.86;
+    final drawerWidth = screenW * AppFractions.drawer > AppLayoutWidths.drawerCap
+        ? AppLayoutWidths.drawerCap
+        : screenW * AppFractions.drawer;
 
     return Scaffold(
       appBar: AppBar(
@@ -2752,6 +2760,17 @@ class _ChatScreenState extends State<ChatScreen>
                   ChatEnvHintBanner(
                     busy: _bindingDefaultEnv,
                     onUseMyDatabase: _useMyDatabase,
+                  ),
+                // Resume banner (Task 2) — a run that stopped without
+                // finishing and with nothing else waiting on the user. The
+                // server has already excluded every legitimate pause, so no
+                // extra client-side condition is added here on purpose.
+                if (!_isNewChat &&
+                    (snapshotConv?.needsResume ?? false) &&
+                    !(snapshotConv?.isRunning ?? false))
+                  ChatResumeBanner(
+                    busy: context.watch<ChatCubit>().state.isResuming,
+                    onResume: _resumeRun,
                   ),
                 // Plan/quota banner (Gap A near-limit + Gap B exceeded). Sits
                 // directly above the composer so the upgrade CTA is next to
@@ -2953,7 +2972,7 @@ class _ChatScreenState extends State<ChatScreen>
     // a single collapsed "Saqqar thinking · N steps · Xs" pill instead
     // of N separate intermediate bubbles. Final reply in each turn
     // stays expanded as a normal message. Web parity per user request.
-    final timeline = _buildTimeline(messages);
+    final timeline = _buildTimeline(messages, isRunning: hasThinking);
 
     // Retry header — the FIRST list item, and shown ONLY when an automatic
     // page has actually failed.
@@ -3286,6 +3305,7 @@ class _ChatScreenState extends State<ChatScreen>
           message: message,
           isFirstOfGroup: isFirstOfGroup,
           isLastOfGroup: true,
+          isRunning: _effectiveIsThinking,
           onCardSend: _sendComposed,
           onCardSeed: _seedFromCard,
           entityLoader: _loadReportEntities,
@@ -3310,6 +3330,7 @@ class _ChatScreenState extends State<ChatScreen>
           message: finalReply,
           isFirstOfGroup: true,
           isLastOfGroup: true,
+          isRunning: _effectiveIsThinking,
           // `_buildTimeline` never folds a card into an agent turn, so this
           // reply cannot be one today. Wired anyway: if that ever changes,
           // the failure would be a silently inert card, not a crash.
@@ -3336,8 +3357,11 @@ class _ChatScreenState extends State<ChatScreen>
   /// Lives in `data/chat_timeline.dart` so the grouping — including the rule
   /// that keeps interactive cards out of the collapsed thinking pill — is
   /// testable without pumping the screen.
-  List<TimelineEntry> _buildTimeline(List<ChatMessage> messages) =>
-      buildChatTimeline(messages);
+  List<TimelineEntry> _buildTimeline(
+    List<ChatMessage> messages, {
+    required bool isRunning,
+  }) =>
+      buildChatTimeline(messages, isRunning: isRunning);
 
   // -------- Sheets --------
 
@@ -3446,7 +3470,11 @@ class _ChatScreenState extends State<ChatScreen>
       ChatAction.toggleCredential =>
         tr.chatActionCredentialFailed,
       ChatAction.dismissPendingAction => tr.chatActionDismissFailed,
-      ChatAction.load || ChatAction.patch => tr.defaultApiError,
+      // `resume` never actually reaches this switch — the Resume banner
+      // deliberately surfaces no toast on failure (spec: the user can just
+      // tap again) — but the switch must stay exhaustive over ChatAction.
+      ChatAction.load || ChatAction.patch || ChatAction.resume =>
+        tr.defaultApiError,
     };
   }
 
@@ -3497,6 +3525,15 @@ class _ChatScreenState extends State<ChatScreen>
     } finally {
       if (mounted) setState(() => _bindingDefaultEnv = false);
     }
+  }
+
+  /// Task 2 — restarts a run stuck at `needs_resume`. No toast either way:
+  /// success is self-evident (new messages arrive), and a failure just
+  /// re-enables the button for another tap, per the web behaviour this
+  /// mirrors — the user can just tap again, no error copy needed.
+  void _resumeRun() {
+    if (_isNewChat) return;
+    unawaited(context.read<ChatCubit>().resumeRun());
   }
 
   /// "Sent · N file(s) attached". Lives next to [_toast] so both `_send` and

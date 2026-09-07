@@ -142,6 +142,14 @@ void main() {
       'your_factory',
       'meetings',
       'meeting_notetaker',
+      // Task 3 (MOBILE_TASKS_2026-09.md) — six packages that had no Arabic
+      // copy on mobile even though `/apps/` already returns them.
+      'finance_pulse',
+      'purchase_pulse',
+      'quality_guard',
+      'smart_inventory',
+      'accountant',
+      'hr_assistant',
     ];
 
     test('each has a name and a tagline in en AND ar', () {
@@ -274,6 +282,13 @@ void main() {
       'chart-of-accounts': 'مُنشئ شجرة الحسابات',
       'bank-reconciliation': 'التسوية البنكية',
       'factory': 'مصنعك',
+      // Task 3 (MOBILE_TASKS_2026-09.md).
+      'finance-pulse': 'فلوسك',
+      'purchase-pulse': 'مشترياتك',
+      'quality-guard': 'حارس الجودة',
+      'smart-inventory': 'مخزونك',
+      'accountant': 'مدير حساباتك',
+      'hr-assistant': 'مدير التوظيف',
     };
 
     test('each live slug translates with NO help from the display name', () {

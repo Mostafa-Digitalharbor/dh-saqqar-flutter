@@ -577,6 +577,16 @@ class _SchemaField extends StatelessWidget {
         return 'authPassword';
       case 'token':
         return 'credToken';
+      case 'imap_host':
+        return 'credImapHost';
+      case 'imap_port':
+        return 'credImapPort';
+      case 'smtp_host':
+        return 'credSmtpHost';
+      case 'smtp_port':
+        return 'credSmtpPort';
+      case 'smtp_security':
+        return 'credSmtpSecurity';
       default:
         return null;
     }
@@ -606,15 +616,23 @@ class _SchemaField extends StatelessWidget {
     return field.help;
   }
 
-  /// Localized option label for a select. Currently special-cases the
-  /// two known auth-type values (`api_key`, `password`) because the
-  /// server didn't ship per-option i18n keys for those — they share
-  /// the keys with the secret field's dynamic label.
+  /// Localized option label for a select. Special-cases the known
+  /// auth/security option values because the server doesn't ship
+  /// per-option i18n keys for them — `api_key`/`password` share the
+  /// keys with the secret field's dynamic label; the email kind's
+  /// `oauth2`/`ssl`/`starttls` are protocol names kept as their
+  /// standard technical spelling in both locales (same convention as
+  /// keeping "PostgreSQL"/"GitHub" untranslated).
   String _resolveOption(BuildContext context, String option) {
     final tr = context.tr;
     if (option == 'api_key') return tr.lookup('authApiKey', fallback: option);
     if (option == 'password') {
       return tr.lookup('authPassword', fallback: option);
+    }
+    if (option == 'oauth2') return tr.lookup('credOptionOauth2', fallback: option);
+    if (option == 'ssl') return tr.lookup('credOptionSsl', fallback: option);
+    if (option == 'starttls') {
+      return tr.lookup('credOptionStarttls', fallback: option);
     }
     return option;
   }

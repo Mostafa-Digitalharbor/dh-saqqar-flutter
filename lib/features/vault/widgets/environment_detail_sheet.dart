@@ -49,7 +49,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
 
   /// Audience mode (web parity). Defaults to the simple "I'm a user" view,
   /// which exposes only the Odoo connection; "I'm a developer" reveals the
-  /// technical kinds (PostgreSQL / Server shell / GitHub).
+  /// technical kinds (PostgreSQL / Server shell / GitHub / Email).
   bool _developerMode = false;
 
   static const _kinds = CredentialKind.values;
@@ -222,8 +222,8 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                 ),
                 const SizedBox(height: AppSpacing.s14),
                 // Per-kind credential tabs — XML-RPC / PostgreSQL /
-                // Server shell / GitHub. Each tab's form is schema-driven
-                // from the loaded credential schemas.
+                // Server shell / GitHub / Email (IMAP/SMTP). Each tab's
+                // form is schema-driven from the loaded credential schemas.
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: s.surface2.withValues(
@@ -284,6 +284,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
       CredentialKind.postgres => 'credKindPostgres',
       CredentialKind.serverShell => 'credKindServerShell',
       CredentialKind.github => 'credKindGithub',
+      CredentialKind.email => 'credKindEmail',
     };
     return context.tr.lookup(key, fallback: serverLabel);
   }

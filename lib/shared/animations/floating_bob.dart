@@ -1,3 +1,5 @@
+import 'dart:math' show pi;
+
 import 'package:flutter/material.dart';
 
 /// Gentle vertical "bob" — translates a child by ±[amplitude] px on a slow
@@ -98,7 +100,7 @@ class _FloatingBobState extends State<FloatingBob>
       builder: (context, child) {
         // Map _ctrl.value [0,1] onto sin(2πt) ∈ [-1, 1], then scale by
         // amplitude. Smooth, never reaches a sharp peak.
-        final radians = _ctrl.value * 2 * 3.141592653589793;
+        final radians = _ctrl.value * 2 * pi;
         final offset = (_sin(radians)) * widget.amplitude;
         return Transform.translate(
           offset: Offset(0, offset),
@@ -109,11 +111,11 @@ class _FloatingBobState extends State<FloatingBob>
     );
   }
 
-  // Small inline sine to avoid pulling in dart:math just for one call.
+  // Small inline sine (Taylor approx, normalized to [-π, π]) — good enough
+  // for animation work without pulling in the full dart:math sin().
   double _sin(double x) {
-    // Taylor approx good enough for animation work, normalized to [-π, π].
-    var t = x % (2 * 3.141592653589793);
-    if (t > 3.141592653589793) t -= 2 * 3.141592653589793;
+    var t = x % (2 * pi);
+    if (t > pi) t -= 2 * pi;
     final t2 = t * t;
     return t * (1 - t2 / 6 + t2 * t2 / 120);
   }

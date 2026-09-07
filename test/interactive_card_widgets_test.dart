@@ -53,6 +53,7 @@ Future<void> _pumpRow(
             message: message,
             isFirstOfGroup: true,
             isLastOfGroup: true,
+            isRunning: false,
             onCardSend: onSend,
             onCardSeed: onSeed,
             entityLoader: entityLoader,

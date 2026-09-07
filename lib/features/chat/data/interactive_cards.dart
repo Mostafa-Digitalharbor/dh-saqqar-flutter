@@ -2,6 +2,18 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/i18n/app_strings.dart';
+import 'app_pulse_payloads.dart'
+    show
+        AccountantPulsePayload,
+        FactoryPulsePayload,
+        HrPulsePayload,
+        InventoryPulsePayload,
+        PurchasingPulsePayload,
+        QualityGuardPulsePayload,
+        FinancePulsePayload;
+import 'interactive_card_kind.dart';
+
+export 'interactive_card_kind.dart';
 
 /// Interactive cards Saqqar can post **inside** the conversation, where the
 /// user picks options / edits text right in the stream and that composes the
@@ -14,27 +26,11 @@ import '../../../core/i18n/app_strings.dart';
 /// Every parser here is deliberately forgiving: a malformed card must render
 /// as an ordinary message, never throw and take the whole chat list down with
 /// it. `null` from a `parse` is the signal to fall through.
-enum InteractiveCardKind {
-  promptClarify('prompt_clarify'),
-  reportBuilder('report_builder'),
-  promptSuggestion('prompt_suggestion');
-
-  const InteractiveCardKind(this.wire);
-  final String wire;
-
-  static InteractiveCardKind? fromWire(Object? value) {
-    if (value is! String || value.isEmpty) return null;
-    for (final k in InteractiveCardKind.values) {
-      if (k.wire == value) return k;
-    }
-    return null;
-  }
-}
-
-/// The `kind` of an interactive card carried by [payload], or null when the
-/// payload is absent / carries no recognised kind.
-InteractiveCardKind? interactiveCardKind(Map<String, dynamic>? payload) =>
-    payload == null ? null : InteractiveCardKind.fromWire(payload['kind']);
+///
+/// [InteractiveCardKind] and [interactiveCardKind] live in
+/// `interactive_card_kind.dart` (re-exported above) and are shared with the
+/// read-only "pulse" card family in `app_pulse_payloads.dart` — neither file
+/// owns the enum, so it sits where both can import it without a cycle.
 
 /// Whether [payload] parses into a card the user can actually act on.
 ///
@@ -52,6 +48,17 @@ bool hasRenderableInteractiveCard(Map<String, dynamic>? payload) {
       ReportBuilderPayload.parse(payload) != null,
     InteractiveCardKind.promptSuggestion =>
       PromptSuggestionPayload.parse(payload) != null,
+    InteractiveCardKind.factory => FactoryPulsePayload.parse(payload) != null,
+    InteractiveCardKind.inventory =>
+      InventoryPulsePayload.parse(payload) != null,
+    InteractiveCardKind.finance => FinancePulsePayload.parse(payload) != null,
+    InteractiveCardKind.purchasing =>
+      PurchasingPulsePayload.parse(payload) != null,
+    InteractiveCardKind.accountant =>
+      AccountantPulsePayload.parse(payload) != null,
+    InteractiveCardKind.hr => HrPulsePayload.parse(payload) != null,
+    InteractiveCardKind.qualityGuard =>
+      QualityGuardPulsePayload.parse(payload) != null,
     null => false,
   };
 }

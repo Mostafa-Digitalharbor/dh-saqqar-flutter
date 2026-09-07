@@ -44,11 +44,10 @@ void main() {
       // The rule above this one drops every tool row. A card riding on one
       // would never have reached the screen.
       expect(
-        isVisibleMessage(_message(
-          role: MessageRole.tool,
-          content: '',
-          toolPayload: _clarify,
-        )),
+        isVisibleMessage(
+          _message(role: MessageRole.tool, content: '', toolPayload: _clarify),
+          isRunning: false,
+        ),
         isTrue,
       );
     });
@@ -57,11 +56,14 @@ void main() {
       // The payload IS the content for these rows — the empty-assistant rule
       // is the second way the card vanished.
       expect(
-        isVisibleMessage(_message(
-          role: MessageRole.assistant,
-          content: '',
-          toolPayload: _clarify,
-        )),
+        isVisibleMessage(
+          _message(
+            role: MessageRole.assistant,
+            content: '',
+            toolPayload: _clarify,
+          ),
+          isRunning: false,
+        ),
         isTrue,
       );
     });
@@ -80,10 +82,10 @@ void main() {
 
       for (final payload in payloads) {
         expect(
-          isVisibleMessage(_message(
-            role: MessageRole.tool,
-            toolPayload: payload,
-          )),
+          isVisibleMessage(
+            _message(role: MessageRole.tool, toolPayload: payload),
+            isRunning: false,
+          ),
           isTrue,
           reason: '${payload['kind']} must reach the stream',
         );
@@ -96,29 +98,38 @@ void main() {
       // Letting this through would put an empty bubble in the conversation.
       // The filter must key off "does it render", not "does it claim a kind".
       expect(
-        isVisibleMessage(_message(
-          role: MessageRole.assistant,
-          content: '',
-          toolPayload: {'kind': 'prompt_clarify', 'questions': <Object>[]},
-        )),
+        isVisibleMessage(
+          _message(
+            role: MessageRole.assistant,
+            content: '',
+            toolPayload: {'kind': 'prompt_clarify', 'questions': <Object>[]},
+          ),
+          isRunning: false,
+        ),
         isFalse,
       );
       expect(
-        isVisibleMessage(_message(
-          role: MessageRole.tool,
-          toolPayload: {'kind': 'prompt_suggestion', 'improved': '  '},
-        )),
+        isVisibleMessage(
+          _message(
+            role: MessageRole.tool,
+            toolPayload: {'kind': 'prompt_suggestion', 'improved': '  '},
+          ),
+          isRunning: false,
+        ),
         isFalse,
       );
     });
 
     test('an ordinary tool_calls payload → dropped', () {
       expect(
-        isVisibleMessage(_message(
-          role: MessageRole.tool,
-          content: '{"rows": 42}',
-          toolPayload: {'tool_calls': <String>[]},
-        )),
+        isVisibleMessage(
+          _message(
+            role: MessageRole.tool,
+            content: '{"rows": 42}',
+            toolPayload: {'tool_calls': <String>[]},
+          ),
+          isRunning: false,
+        ),
         isFalse,
       );
     });
@@ -127,11 +138,17 @@ void main() {
   group('the pre-existing rules are unchanged', () {
     test('tool output and empty assistant rows stay hidden', () {
       expect(
-        isVisibleMessage(_message(role: MessageRole.tool, content: 'rows: 42')),
+        isVisibleMessage(
+          _message(role: MessageRole.tool, content: 'rows: 42'),
+          isRunning: false,
+        ),
         isFalse,
       );
       expect(
-        isVisibleMessage(_message(role: MessageRole.assistant, content: '  ')),
+        isVisibleMessage(
+          _message(role: MessageRole.assistant, content: '  '),
+          isRunning: false,
+        ),
         isFalse,
       );
     });
@@ -140,6 +157,7 @@ void main() {
       expect(
         isVisibleMessage(
           _message(role: MessageRole.assistant, content: 'Here you go.'),
+          isRunning: false,
         ),
         isTrue,
       );
@@ -148,7 +166,10 @@ void main() {
     test('system-injected user payloads stay hidden', () {
       for (final content in ['approve', 'REJECTED', '{"a":1}', '[1,2]', '']) {
         expect(
-          isVisibleMessage(_message(role: MessageRole.user, content: content)),
+          isVisibleMessage(
+            _message(role: MessageRole.user, content: content),
+            isRunning: false,
+          ),
           isFalse,
           reason: '"$content"',
         );
@@ -158,7 +179,10 @@ void main() {
     test('short real replies are NOT mistaken for acks', () {
       for (final content in ['تمام', 'yes', 'ok']) {
         expect(
-          isVisibleMessage(_message(role: MessageRole.user, content: content)),
+          isVisibleMessage(
+            _message(role: MessageRole.user, content: content),
+            isRunning: false,
+          ),
           isTrue,
           reason: '"$content"',
         );
@@ -167,19 +191,85 @@ void main() {
 
     test('agent-control directives stay hidden', () {
       expect(
-        isVisibleMessage(_message(
-          role: MessageRole.user,
-          content: '[agent-control] proceed',
-        )),
+        isVisibleMessage(
+          _message(role: MessageRole.user, content: '[agent-control] proceed'),
+          isRunning: false,
+        ),
         isFalse,
       );
       expect(
-        isVisibleMessage(_message(
-          role: MessageRole.user,
-          content: "Approval 'abc' is approved, continue.",
-        )),
+        isVisibleMessage(
+          _message(
+            role: MessageRole.user,
+            content: "Approval 'abc' is approved, continue.",
+          ),
+          isRunning: false,
+        ),
         isFalse,
       );
+    });
+  });
+
+  // WEB_TO_MOBILE_PARITY_AND_DELETE_FIX.md §B.1 — web only promotes a
+  // `tool_payload.kind` message to a card once the run has gone idle;
+  // mid-run the exact same payload is just another step. The carve-out at
+  // the top of `isVisibleMessage` is what force-keeps an otherwise-filtered
+  // card row visible, so gating it on `!isRunning` is what makes the whole
+  // rule take effect: mid-run, a card message reverts to whatever the
+  // ordinary tool/empty-content rules would have done with it anyway.
+  group('idle-only gate (§B.1) — mid-run, a card is just another step', () {
+    test('tool-role card message reverts to hidden while running', () {
+      expect(
+        isVisibleMessage(
+          _message(role: MessageRole.tool, content: '', toolPayload: _clarify),
+          isRunning: true,
+        ),
+        isFalse,
+        reason: 'mid-run this is ordinary tool plumbing, not a card',
+      );
+    });
+
+    test('empty-content assistant card message reverts to hidden while '
+        'running', () {
+      expect(
+        isVisibleMessage(
+          _message(
+            role: MessageRole.assistant,
+            content: '',
+            toolPayload: _clarify,
+          ),
+          isRunning: true,
+        ),
+        isFalse,
+        reason: 'mid-run this is the ordinary empty-assistant rule',
+      );
+    });
+
+    test('a card message WITH real prose content stays visible while '
+        'running — as prose, not because of the card carve-out', () {
+      expect(
+        isVisibleMessage(
+          _message(
+            role: MessageRole.assistant,
+            content: 'Before I start, a couple of questions:',
+            toolPayload: _clarify,
+          ),
+          isRunning: true,
+        ),
+        isTrue,
+        reason: 'non-empty assistant content is visible on its own merits',
+      );
+    });
+
+    test('the exact same message becomes visible the moment the run goes '
+        'idle', () {
+      final message = _message(
+        role: MessageRole.tool,
+        content: '',
+        toolPayload: _clarify,
+      );
+      expect(isVisibleMessage(message, isRunning: true), isFalse);
+      expect(isVisibleMessage(message, isRunning: false), isTrue);
     });
   });
 }

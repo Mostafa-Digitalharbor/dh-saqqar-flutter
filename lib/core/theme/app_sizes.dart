@@ -312,6 +312,14 @@ class AppControlSizes {
   /// `ColoredIconBox`'s default square.
   static const double iconBox = 38;
 
+  /// One metric tile in an app-pulse card's `Wrap` (Task 1,
+  /// MOBILE_TASKS_2026-09.md) — wide enough for a 3-digit `StatTile` value
+  /// and its two-line label without `Expanded`, which a `Wrap` cannot give
+  /// it: unlike the fixed-column stat rows elsewhere (`stats_line.dart`,
+  /// billing), a pulse card's tile count varies per kind and must wrap to a
+  /// second line on a narrow phone instead of squeezing every tile into one.
+  static const double pulseStatTile = 84;
+
   // ── Progress spinners ──────────────────────────────────────────────────
   //
   // A `CircularProgressIndicator` has no intrinsic size — it fills whatever
@@ -1318,6 +1326,11 @@ class AppLayoutWidths {
   /// Deliberately wider than [chatColumn] so the composer and the header
   /// frame the message column rather than lining up flush with it.
   static const double chatShell = 980;
+
+  /// The sidebar/rail drawer's absolute width cap — paired with
+  /// [AppFractions.drawer] (a `min(86% of screen, this)` cap) so the drawer
+  /// reads as a slide-in panel on a tablet instead of covering the screen.
+  static const double drawerCap = 320;
 }
 
 /// Square surfaces that are not tap targets and not avatars.
@@ -1645,6 +1658,10 @@ class AppFractions {
   static const double searchSheetMin = 0.4;
   static const double searchSheetMax = 0.92;
 
+  /// The sidebar/rail drawer's share of screen width, before
+  /// [AppLayoutWidths.drawerCap] clamps it on a wide screen.
+  static const double drawer = 0.86;
+
   /// A `TitleTrailingRow`'s default trailing share — just under half, so a
   /// title always keeps the larger half of the row.
   static const double trailingHalf = 0.45;
@@ -1724,4 +1741,57 @@ class AppSlideFractions {
   /// route values because it is a single small control: the same fraction
   /// that would throw a whole screen around barely moves a 44 dp circle.
   static const double controlDrop = 0.3;
+}
+
+/// `ScaleTransition`/`Transform.scale` start values, as a fraction of the
+/// widget's resting size. Grouped the same way [AppSlideFractions] groups
+/// its axis — one class per animation currency, so a scale ratio and a slide
+/// fraction can never be swapped by autocomplete.
+class AppScaleFractions {
+  AppScaleFractions._();
+
+  /// A pushed route's start scale in the shared scale+fade page transition —
+  /// close enough to 1 that it reads as "arriving", not as a zoom.
+  static const double routePush = 0.98;
+}
+
+/// Tuning specific to [LaunchSplashScreen]'s one-off entrance sequence.
+///
+/// Kept separate from [AppMotionTravel]/[AppScaleFractions] (which are
+/// reused across many entrances) because these values belong to a single,
+/// bespoke, once-per-launch animation rather than a shared motion currency —
+/// a future second caller should get its own named value here rather than
+/// bending the splash's own tuning to fit.
+class AppSplashMotion {
+  AppSplashMotion._();
+
+  /// The wordmark's zoom-in start scale — "tiny → full size" per the
+  /// screen's own doc comment.
+  static const double logoScaleStart = 0.25;
+
+  /// The framing card's gentler settle-in start scale — barely off 1 so the
+  /// card never "pops" the way the logo deliberately does.
+  static const double cardScaleStart = 0.94;
+
+  /// End point (on the entrance timeline) of the wordmark's fade-in curve —
+  /// it finishes fading in well before the scale/slide settle.
+  static const double fadeIntervalEnd = 0.35;
+
+  /// Start point (on the entrance timeline) of the wordmark's slide-in
+  /// curve — begins after the fade so the slide reads as a second beat.
+  static const double slideIntervalStart = 0.55;
+}
+
+/// [TypingDots] tuning, expressed relative to its own `dotSize` rather than
+/// as absolute dp — the indicator is reused at more than one [dotSize], so
+/// the gap and the bounce height need to scale with it rather than being
+/// pinned to whichever size the first caller happened to use.
+class AppTypingDotsMotion {
+  AppTypingDotsMotion._();
+
+  /// Gap between dots, as a fraction of `dotSize`.
+  static const double gapRatio = 0.7;
+
+  /// Peak hop height in `bounce` mode, as a fraction of `dotSize`.
+  static const double bounceRatio = 0.8;
 }

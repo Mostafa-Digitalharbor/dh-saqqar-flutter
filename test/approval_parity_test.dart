@@ -17,13 +17,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
+import 'package:saqqar_app/features/chat/data/approval_adapter.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_approval_card.dart';
 import 'package:saqqar_app/features/chat/widgets/email_approval_preview.dart';
-import 'package:saqqar_app/features/inbox/data/approval_models.dart' show kDeleteOperation;
+import 'package:saqqar_app/features/inbox/data/approval_models.dart'
+    show Approval, ApprovalActionType, ApprovalStatus, kDeleteOperation;
 import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
 ChatApproval _approval({
   required Map<String, String> payload,
+  String actionType = 'odoo_write',
   int? recordCount,
   String? confirmPhrase,
   bool batchScoped = false,
@@ -32,7 +35,7 @@ ChatApproval _approval({
       id: 'a1',
       title: 'Delete 6× Sales Order',
       prompt: 'Saqqar wants to delete records.',
-      actionType: 'odoo_write',
+      actionType: actionType,
       risk: 'high',
       status: ChatApprovalStatus.pending,
       payload: payload,
@@ -40,6 +43,13 @@ ChatApproval _approval({
       confirmPhrase: confirmPhrase,
       batchScoped: batchScoped,
     );
+
+/// The email-approval variant of [_approval] — `action_type` is what
+/// `ChatApprovalCard` now gates the rich preview on (Task 4), so every §9
+/// fixture must actually be a `send_email` approval, not an `odoo_write` one
+/// that merely happens to carry email-shaped keys.
+ChatApproval _emailApproval({required Map<String, String> payload}) =>
+    _approval(payload: payload, actionType: 'send_email');
 
 Future<List<String>> _pumpCard(
   WidgetTester tester,
@@ -167,13 +177,80 @@ void main() {
       expect(preview.bcc, 'silent@third.party');
     });
 
-    test('a non-email payload is left on the ordinary chip rendering', () {
+    test('a payload with no recipient is left on the ordinary chip rendering',
+        () {
       // `title` alone is shared by half the approval types — treating those
       // as emails would hide their real payloads behind an email layout.
+      // `to` is now the ONLY thing `of()` itself requires (Task 4 loosened
+      // subject/body to optional, since they may legitimately be empty) —
+      // `ChatApprovalCard` is what actually decides "is this an email" now,
+      // off `action_type == 'send_email'`, so this guard only has to reject
+      // a payload with nothing to send to at all.
       expect(EmailApprovalPreview.of({'title': 'Something'}), isNull);
       expect(EmailApprovalPreview.of({'command': 'ls -la'}), isNull);
-      expect(EmailApprovalPreview.of({'to': 'x@y.z'}), isNull);
       expect(EmailApprovalPreview.of(const {}), isNull);
+    });
+
+    test('subject and body are optional — `to` alone is still an email', () {
+      final preview = EmailApprovalPreview.of({'to': 'x@y.z'})!;
+      expect(preview.subject, isEmpty);
+      expect(preview.body, isEmpty);
+    });
+
+    testWidgets('an empty subject and body show placeholders, not blanks',
+        (tester) async {
+      await _pumpCard(
+        tester,
+        _emailApproval(payload: {'to': 'ops@acme.test'}),
+      );
+
+      expect(find.text(en.emailPreviewEmptySubject), findsOneWidget);
+      expect(find.text(en.emailPreviewEmptyBody), findsOneWidget);
+    });
+
+    testWidgets('a list-valued `to`/`cc` renders joined, not as [a, b]',
+        (tester) async {
+      // The tool schema allows `to`/`cc`/`bcc` as either one comma-separated
+      // string or a JSON array — `approval_adapter.dart` joins a list before
+      // it ever reaches this widget, so this exercises the whole path from
+      // the server's `Approval.payload` rather than just the widget's own
+      // parsing.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en'), Locale('ar')],
+          theme: AppTheme.light(const Locale('en')),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ChatApprovalCard(
+                approval: adaptApiApproval(
+                  const Approval(
+                    id: 'a1',
+                    actionType: ApprovalActionType.sendEmail,
+                    status: ApprovalStatus.pending,
+                    prompt: 'Send the statement.',
+                    payload: {
+                      'to': ['ops@acme.test', 'ap@acme.test'],
+                    },
+                  ),
+                  AppStrings(const Locale('en')),
+                ),
+                onApprove: () {},
+                onReject: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('ops@acme.test, ap@acme.test'), findsOneWidget);
+      expect(find.textContaining('['), findsNothing);
     });
 
     testWidgets('renders inside the approval card, in both locales',
@@ -184,7 +261,7 @@ void main() {
       ]) {
         await _pumpCard(
           tester,
-          _approval(payload: {
+          _emailApproval(payload: {
             'to': 'ops@acme.test',
             'subject': 'June statement',
             'body': 'Attached is your statement.',
@@ -201,7 +278,7 @@ void main() {
     testWidgets('bcc and the reply badge render on the card', (tester) async {
       await _pumpCard(
         tester,
-        _approval(payload: {
+        _emailApproval(payload: {
           'to': 'ops@acme.test',
           'bcc': 'silent@third.party',
           'subject': 'June statement',

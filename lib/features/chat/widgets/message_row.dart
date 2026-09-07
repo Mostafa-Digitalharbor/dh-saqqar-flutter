@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/responsive_breakpoints.dart';
+import '../data/app_pulse_payloads.dart';
 import '../data/chat_view_models.dart';
 import '../data/interactive_cards.dart';
+import 'app_pulse/accountant_pulse_card.dart';
+import 'app_pulse/factory_pulse_card.dart';
+import 'app_pulse/finance_pulse_card.dart';
+import 'app_pulse/hr_pulse_card.dart';
+import 'app_pulse/inventory_pulse_card.dart';
+import 'app_pulse/purchasing_pulse_card.dart';
+import 'app_pulse/quality_guard_pulse_card.dart';
 import 'message_bubble.dart';
 import 'prompt_clarify_card.dart';
 import 'prompt_suggestion_card.dart';
@@ -28,6 +36,7 @@ class MessageRow extends StatelessWidget {
     required this.message,
     required this.isFirstOfGroup,
     required this.isLastOfGroup,
+    required this.isRunning,
     this.onCardSend,
     this.onCardSeed,
     this.entityLoader,
@@ -36,6 +45,14 @@ class MessageRow extends StatelessWidget {
   final ChatMessage message;
   final bool isFirstOfGroup;
   final bool isLastOfGroup;
+
+  /// Web parity (idle-only cards): while the run is still live, the three
+  /// "compose a follow-up" kinds (`promptClarify`/`reportBuilder`/
+  /// `promptSuggestion`) fall through to ordinary rendering instead of a
+  /// card — mid-run they are just another step, not something to act on
+  /// yet. The read-only app-pulse dashboards are unaffected: those come
+  /// from a different doc (MOBILE_TASKS_2026-09.md) with no such rule.
+  final bool isRunning;
 
   /// An interactive card composed a follow-up and wants it SENT.
   final ValueChanged<String>? onCardSend;
@@ -115,13 +132,20 @@ class MessageRow extends StatelessWidget {
   ///
   /// Returns null — falling through to the ordinary message paths — whenever
   /// the payload can't actually be answered (no questions, no suggestion text,
-  /// no report types) or when the screen wired no send handler. A card the
-  /// user cannot act on is worse than a plain message.
+  /// no report types) or, for the three "compose a follow-up" kinds, when the
+  /// screen wired no send handler. A card the user cannot act on is worse
+  /// than a plain message.
+  ///
+  /// The app-pulse kinds (Task 1, MOBILE_TASKS_2026-09.md) are read-only
+  /// dashboards — nothing they render composes a message — so they need no
+  /// `onCardSend` and render even on a surface that never wires one (e.g. the
+  /// shared read-only transcript view).
   Widget? _buildInteractiveCard(BuildContext context) {
-    final send = onCardSend;
-    if (send == null) return null;
     switch (interactiveCardKind(message.toolPayload)) {
       case InteractiveCardKind.promptClarify:
+        if (isRunning) return null;
+        final send = onCardSend;
+        if (send == null) return null;
         final payload = PromptClarifyPayload.parse(message.toolPayload);
         if (payload == null) return null;
         return PromptClarifyCard(
@@ -130,6 +154,9 @@ class MessageRow extends StatelessWidget {
           onSeed: onCardSeed ?? send,
         );
       case InteractiveCardKind.reportBuilder:
+        if (isRunning) return null;
+        final send = onCardSend;
+        if (send == null) return null;
         final payload = ReportBuilderPayload.parse(message.toolPayload);
         if (payload == null) return null;
         return ReportBuilderCard(
@@ -138,9 +165,33 @@ class MessageRow extends StatelessWidget {
           entityLoader: entityLoader,
         );
       case InteractiveCardKind.promptSuggestion:
+        if (isRunning) return null;
+        final send = onCardSend;
+        if (send == null) return null;
         final payload = PromptSuggestionPayload.parse(message.toolPayload);
         if (payload == null) return null;
         return PromptSuggestionCard(payload: payload, onSend: send);
+      case InteractiveCardKind.factory:
+        final payload = FactoryPulsePayload.parse(message.toolPayload);
+        return payload == null ? null : FactoryPulseCard(payload: payload);
+      case InteractiveCardKind.inventory:
+        final payload = InventoryPulsePayload.parse(message.toolPayload);
+        return payload == null ? null : InventoryPulseCard(payload: payload);
+      case InteractiveCardKind.finance:
+        final payload = FinancePulsePayload.parse(message.toolPayload);
+        return payload == null ? null : FinancePulseCard(payload: payload);
+      case InteractiveCardKind.purchasing:
+        final payload = PurchasingPulsePayload.parse(message.toolPayload);
+        return payload == null ? null : PurchasingPulseCard(payload: payload);
+      case InteractiveCardKind.accountant:
+        final payload = AccountantPulsePayload.parse(message.toolPayload);
+        return payload == null ? null : AccountantPulseCard(payload: payload);
+      case InteractiveCardKind.hr:
+        final payload = HrPulsePayload.parse(message.toolPayload);
+        return payload == null ? null : HrPulseCard(payload: payload);
+      case InteractiveCardKind.qualityGuard:
+        final payload = QualityGuardPulsePayload.parse(message.toolPayload);
+        return payload == null ? null : QualityGuardPulseCard(payload: payload);
       case null:
         return null;
     }

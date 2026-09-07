@@ -14,7 +14,7 @@ class AccentBanner extends StatelessWidget {
     required this.color,
     required this.icon,
     required this.title,
-    required this.body,
+    this.body,
     this.action,
   });
 
@@ -24,7 +24,11 @@ class AccentBanner extends StatelessWidget {
   final Color color;
   final IconData icon;
   final String title;
-  final String body;
+
+  /// Second line under [title]. Null/empty for a banner whose title already
+  /// says the whole thing (e.g. the Resume banner's one sentence from web) —
+  /// the gap and the line both drop rather than reserving space for nothing.
+  final String? body;
 
   /// Optional CTA rendered start-aligned beneath the text (e.g. an upgrade
   /// or "use my database" button). Omitted → the banner is text-only.
@@ -65,11 +69,14 @@ class AccentBanner extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      body,
-                      style: context.text.bodySmall?.copyWith(color: s.text),
-                    ),
+                    if (body != null && body!.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.s2),
+                      Text(
+                        body!,
+                        style:
+                            context.text.bodySmall?.copyWith(color: s.text),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/format/compact_number.dart';
+import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_error_mapper.dart';
@@ -374,7 +375,7 @@ class _PaymentRowCard extends StatelessWidget {
     final parts = <String>[];
     final when = row.when;
     if (when != null) {
-      parts.add('${when.year}-${_two(when.month)}-${_two(when.day)}');
+      parts.add(AppDateFormat.date(context, when));
     }
     // Tokens granted, localized compact ("+250 م" / "+250M").
     if (row.tokens > 0) parts.add('+${compactCount(row.tokens, context.tr)}');
@@ -404,5 +405,3 @@ class _StatusChip extends StatelessWidget {
     return StatusPill(label: label, variant: variant);
   }
 }
-
-String _two(int n) => n < 10 ? '0$n' : '$n';

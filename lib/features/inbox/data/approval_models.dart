@@ -17,16 +17,17 @@ import '../../../core/constants/ui_strings.dart';
 /// it. See `docs/updates/WEB_TO_MOBILE_PARITY_AND_DELETE_FIX.md` §A.3.
 const kDeleteOperation = 'delete';
 
-/// The five `action_type` values the backend emits per
-/// SAQQAR_MOBILE_API.md §3 / §8. `unknown` is the safe fallback for
-/// forward-compat (so a new server-side action_type doesn't crash the
-/// mobile client).
+/// The `action_type` values the backend emits per SAQQAR_MOBILE_API.md §3 /
+/// §8, plus `send_email` (Task 4, MOBILE_TASKS_2026-09.md). `unknown` is the
+/// safe fallback for forward-compat (so a new server-side action_type
+/// doesn't crash the mobile client).
 enum ApprovalActionType {
   credentialStorage('credential_storage'),
   credentialUsage('credential_usage'),
   serverCommand('server_command'),
   odooWrite('odoo_write'),
   reportExport('report_export'),
+  sendEmail('send_email'),
   unknown('');
 
   const ApprovalActionType(this.wire);

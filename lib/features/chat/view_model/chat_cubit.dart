@@ -870,6 +870,46 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
     }
   }
 
+  /// Restarts a run stuck at `conversation.needs_resume == true &&
+  /// !is_running` — a genuine dead end the server has already confirmed has
+  /// nothing else waiting on the user. POSTs an empty body, then merges the
+  /// full snapshot it returns exactly like a poll response — the server's
+  /// tool state, approvals and messages all come back fresh, so a plain
+  /// `emit(DataSuccess(...))` would risk dropping whatever `_mergeSnapshot`
+  /// otherwise reconciles.
+  ///
+  /// No success/failure toast by design (unlike [stopGeneration]): a failed
+  /// resume just re-enables the button for another tap, silently — the web
+  /// behaviour this mirrors.
+  Future<bool> resumeRun() async {
+    if (state.isResuming) return false;
+    emit(state.copyWith(isResuming: true, clearActionFailure: true));
+    try {
+      final snapshot = await _repo.resume(conversationId);
+      if (_disposed) return false;
+      _mergeSnapshot(snapshot);
+      emit(state.copyWith(isResuming: false));
+      // Same reasoning as `sendMessage`: the run has restarted server-side
+      // even though this snapshot may still read `is_running: false` for a
+      // beat, so force the fast poll cadence rather than waiting for the
+      // next idle-interval tick to notice.
+      _replyGraceLeft = _replyGraceTicks;
+      _schedulePoll();
+      return true;
+    } catch (e, st) {
+      AppLogger.warn(_tag, 'resumeRun failed', error: e, stackTrace: st);
+      if (_disposed) return false;
+      emit(state.copyWith(
+        isResuming: false,
+        actionFailure: ChatActionFailure(
+          action: ChatAction.resume,
+          failure: ApiErrorMapper.toFailure(e),
+        ),
+      ));
+      return false;
+    }
+  }
+
   // ── Attachments ─────────────────────────────────────────────────────
 
   /// Uploads files via multipart, stages them on the cubit state, and

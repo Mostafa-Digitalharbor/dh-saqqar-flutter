@@ -5,6 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/auto_direction_text.dart';
 
 /// §9 — preview of an email an approval is about to send.
 ///
@@ -64,20 +65,21 @@ class EmailApprovalPreview extends StatelessWidget {
   /// Reads an email preview out of [payload], or null when the payload isn't
   /// an email.
   ///
-  /// Requires BOTH a recipient and a subject. The server marks `to`, `subject`
-  /// and `body` required in the tool schema, so this now essentially always
-  /// takes the rich path — it stays as a guard because a payload missing them
-  /// is not an email, and falling back to chips shows the raw truth rather
-  /// than an email card with blank fields.
+  /// Requires only a recipient. `subject` and `body` may legitimately be
+  /// empty (Task 4, MOBILE_TASKS_2026-09.md — the card shows a placeholder
+  /// rather than hiding the row), so they can no longer gate whether this is
+  /// an email at all. The caller ([ChatApprovalCard]) is what actually
+  /// decides that now, off `approval.actionType == 'send_email'` — this
+  /// guard is only the fallback for a payload reached with no action-type
+  /// context (e.g. a unit test constructing one directly).
   static EmailApprovalPreview? of(Map<String, String> payload) {
     String read(String key) => payload[key]?.trim() ?? '';
 
     final to = read(kTo);
-    final subject = read(kSubject);
-    if (to.isEmpty || subject.isEmpty) return null;
+    if (to.isEmpty) return null;
     return EmailApprovalPreview(
       to: to,
-      subject: subject,
+      subject: read(kSubject),
       body: read(kBody),
       cc: read(kCc),
       bcc: read(kBcc),
@@ -89,6 +91,12 @@ class EmailApprovalPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final tr = context.tr;
     final s = context.saqqar;
+    // Subject and body are legitimately empty (the tool schema allows it) —
+    // a placeholder says so rather than leaving a blank header or silently
+    // dropping the "Message" row entirely.
+    final displaySubject =
+        subject.isEmpty ? tr.emailPreviewEmptySubject : subject;
+    final displayBody = body.isEmpty ? tr.emailPreviewEmptyBody : body;
     return Container(
       margin: const EdgeInsets.only(top: AppSpacing.s10),
       padding: const EdgeInsets.all(AppSpacing.s12),
@@ -105,16 +113,20 @@ class EmailApprovalPreview extends StatelessWidget {
               Icon(AppIcons.mail, size: AppIconSizes.compact, color: s.brandCyan),
               const SizedBox(width: AppSpacing.s8),
               Expanded(
-                child: Text(
-                  subject,
+                child: AutoDirectionText(
+                  displaySubject,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: context.text.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: s.text,
+                    color: subject.isEmpty ? s.muted : s.text,
                   ),
                 ),
               ),
+              // The value itself — an opaque Message-ID header — is never
+              // printed; only its PRESENCE is shown, as a badge rather than
+              // a plain-text row, because the id is not something a user
+              // could ever act on.
               if (isReply) ...[
                 const SizedBox(width: AppSpacing.s6),
                 Container(
@@ -138,21 +150,20 @@ class EmailApprovalPreview extends StatelessWidget {
           _Line(label: tr.emailPreviewTo, value: to),
           if (cc.isNotEmpty) _Line(label: tr.emailPreviewCc, value: cc),
           if (bcc.isNotEmpty) _Line(label: tr.emailPreviewBcc, value: bcc),
-          if (body.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.s8),
-            Text(
-              body,
-              // Long enough to judge the message, short enough that the card
-              // stays a card. The full text is still one tap away under
-              // "Show details".
-              maxLines: 8,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.bodySmall?.copyWith(
-                color: s.muted,
-                height: AppLineHeights.body,
-              ),
+          const SizedBox(height: AppSpacing.s8),
+          AutoDirectionText(
+            displayBody,
+            // Long enough to judge the message, short enough that the card
+            // stays a card. The full text is still one tap away under
+            // "Show details".
+            maxLines: 8,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodySmall?.copyWith(
+              color: s.muted,
+              height: AppLineHeights.body,
+              fontStyle: body.isEmpty ? FontStyle.italic : FontStyle.normal,
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -182,7 +193,7 @@ class _Line extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.s6),
           Expanded(
-            child: Text(
+            child: AutoDirectionText(
               value,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

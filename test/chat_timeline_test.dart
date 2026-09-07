@@ -64,12 +64,18 @@ List<String> _ids(TimelineEntry entry) => switch (entry) {
         ],
     };
 
+/// Every test in this file exercises the idle-conversation grouping — the
+/// §B.1 idle-only gate (mid-run, a card never stands alone) has its own
+/// dedicated group at the bottom.
+List<TimelineEntry> _idle(List<ChatMessage> messages) =>
+    buildChatTimeline(messages, isRunning: false);
+
 void main() {
   group('a card is never folded into a thinking pill', () {
     test('a card between two agent steps splits the run', () {
       // The exact shape that buries it: the card is mid-run, so the old
       // grouping made it a "thinking step" — collapsed and untappable.
-      final timeline = buildChatTimeline([
+      final timeline = _idle([
         _user('u1'),
         _agent('a1'),
         _card('c1'),
@@ -86,7 +92,7 @@ void main() {
     });
 
     test('a card at the END of a run of agent steps stands alone', () {
-      final timeline = buildChatTimeline([
+      final timeline = _idle([
         _agent('a1'),
         _agent('a2'),
         _card('c1'),
@@ -101,7 +107,7 @@ void main() {
     });
 
     test('a card at the START of a run stands alone', () {
-      final timeline = buildChatTimeline([
+      final timeline = _idle([
         _card('c1'),
         _agent('a1'),
         _agent('a2'),
@@ -114,7 +120,7 @@ void main() {
     });
 
     test('back-to-back cards each get their own slot', () {
-      final timeline = buildChatTimeline([
+      final timeline = _idle([
         _card('c1'),
         _card('c2', _report),
       ]);
@@ -133,7 +139,7 @@ void main() {
         _report,
         const {'kind': 'prompt_suggestion', 'improved': 'Clearer'},
       ]) {
-        final timeline = buildChatTimeline([
+        final timeline = _idle([
           _agent('a1'),
           _card('c1', payload),
           _agent('a2'),
@@ -153,7 +159,7 @@ void main() {
 
     test('a run with a card in the middle splits into three slots', () {
       // The long-transcript shape: two thinking steps, a card, two more.
-      final timeline = buildChatTimeline([
+      final timeline = _idle([
         _agent('a1'),
         _agent('a2'),
         _card('c1'),
@@ -170,17 +176,17 @@ void main() {
 
   group('ordinary grouping is unchanged', () {
     test('an empty transcript yields no entries', () {
-      expect(buildChatTimeline(const []), isEmpty);
+      expect(_idle(const []), isEmpty);
     });
 
     test('a lone agent reply is a single bubble, not a turn', () {
-      final timeline = buildChatTimeline([_user('u1'), _agent('a1')]);
+      final timeline = _idle([_user('u1'), _agent('a1')]);
 
       expect(timeline.every((e) => e is SingleMessageEntry), isTrue);
     });
 
     test('2+ agent messages collapse, last one is the reply', () {
-      final timeline = buildChatTimeline([
+      final timeline = _idle([
         _user('u1'),
         _agent('a1'),
         _agent('a2'),
@@ -194,7 +200,7 @@ void main() {
     });
 
     test('a user message never joins a run', () {
-      final timeline = buildChatTimeline([
+      final timeline = _idle([
         _agent('a1'),
         _user('u1'),
         _agent('a2'),
@@ -210,7 +216,7 @@ void main() {
     test('an ordinary tool_calls payload does NOT split a run', () {
       // Only interactive kinds stand alone. An assistant message that merely
       // carries `tool_calls` is still a thinking step.
-      final timeline = buildChatTimeline([
+      final timeline = _idle([
         _agent('a1'),
         _msg(
           'a2',
@@ -239,7 +245,7 @@ void main() {
         _agent('a5'),
       ];
 
-      final flattened = buildChatTimeline(input).expand(_ids).toList();
+      final flattened = _idle(input).expand(_ids).toList();
 
       expect(flattened, input.map((m) => m.id).toList());
     });
@@ -247,7 +253,7 @@ void main() {
 
   group('turn duration', () {
     test('measures first thinking step → final reply', () {
-      final turn = buildChatTimeline([
+      final turn = _idle([
         _msg('a1', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0)),
         _msg('a2', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 5)),
         _msg('a3', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 14)),
@@ -257,8 +263,8 @@ void main() {
     });
 
     test('is null without timestamps, so the pill hides the segment', () {
-      final turn = buildChatTimeline([_agent('a1'), _agent('a2')]).single
-          as AgentTurnEntry;
+      final turn =
+          _idle([_agent('a1'), _agent('a2')]).single as AgentTurnEntry;
 
       expect(turn.duration, isNull);
     });
@@ -266,7 +272,7 @@ void main() {
     test('is null rather than negative on out-of-order timestamps', () {
       // Clock skew between the server and a cached row would otherwise
       // render "· -3s".
-      final turn = buildChatTimeline([
+      final turn = _idle([
         _msg('a1', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0, 9)),
         _msg('a2', ChatMessageRole.assistant, at: DateTime(2026, 8, 4, 10, 0)),
       ]).single as AgentTurnEntry;
@@ -277,14 +283,14 @@ void main() {
 
   group('anchors used by the date separator', () {
     test('a turn anchors on its first step and its final reply', () {
-      final turn = buildChatTimeline([_agent('a1'), _agent('a2')]).single;
+      final turn = _idle([_agent('a1'), _agent('a2')]).single;
 
       expect(turn.firstMessage.id, 'a1');
       expect(turn.lastMessage.id, 'a2');
     });
 
     test('a single entry anchors on itself both ways', () {
-      final entry = buildChatTimeline([_card('c1')]).single;
+      final entry = _idle([_card('c1')]).single;
 
       expect(entry.firstMessage.id, 'c1');
       expect(entry.lastMessage.id, 'c1');
@@ -301,7 +307,7 @@ void main() {
   // assistant message" can be from yesterday.
   group('a long pause ends the turn', () {
     test('a report posted hours later is its own entry', () {
-      final entries = buildChatTimeline([
+      final entries = _idle([
         _msg('a1', ChatMessageRole.assistant, at: DateTime(2026, 8, 9, 11, 3)),
         // Health Radar, run by the user this evening.
         _msg('a2', ChatMessageRole.assistant, at: DateTime(2026, 8, 9, 22, 27)),
@@ -318,7 +324,7 @@ void main() {
     test('a real chain of tool calls still groups', () {
       // The behaviour the pill exists for must survive the fix: seconds
       // apart is one turn.
-      final entries = buildChatTimeline([
+      final entries = _idle([
         _msg('a1', ChatMessageRole.assistant, at: DateTime(2026, 8, 9, 10, 0)),
         _msg('a2', ChatMessageRole.assistant,
             at: DateTime(2026, 8, 9, 10, 0, 6)),
@@ -333,9 +339,83 @@ void main() {
     test('messages with no timestamps group as before', () {
       // Nothing to measure — falling back to the old behaviour beats
       // splitting every turn in a transcript the server timestamps sparsely.
-      final entries = buildChatTimeline([_agent('a1'), _agent('a2')]);
+      final entries = _idle([_agent('a1'), _agent('a2')]);
 
       expect(entries, hasLength(1));
+    });
+  });
+
+  // WEB_TO_MOBILE_PARITY_AND_DELETE_FIX.md §B.1 — the web only ever pulls a
+  // `tool_payload.kind` message out to stand alone once the run has gone
+  // idle. Every group above proves the idle grouping; this one proves the
+  // mid-run behaviour reverts to ordinary role-based grouping instead.
+  group('idle-only gate (§B.1) — mid-run, a card never stands alone', () {
+    test('a card mid-run folds into the surrounding turn like any other '
+        'step', () {
+      final timeline = buildChatTimeline(
+        [_agent('a1'), _card('c1'), _agent('a2')],
+        isRunning: true,
+      );
+
+      expect(timeline, hasLength(1), reason: 'one collapsed turn, no split');
+      final turn = timeline.single as AgentTurnEntry;
+      expect(turn.thinkingSteps.map((m) => m.id), ['a1', 'c1']);
+      expect(turn.finalReply.id, 'a2');
+    });
+
+    test('a card as the sole message is still just a solo bubble, not '
+        'forced into AgentTurnEntry shape', () {
+      // A run of length 1 never becomes an AgentTurnEntry regardless of the
+      // card rule — this pins that the mid-run gate doesn't change that.
+      final timeline = buildChatTimeline([_card('c1')], isRunning: true);
+
+      expect(timeline.single, isA<SingleMessageEntry>());
+    });
+
+    test('every card kind folds the same way while running', () {
+      for (final payload in [
+        _clarify,
+        _report,
+        const {'kind': 'prompt_suggestion', 'improved': 'Clearer'},
+      ]) {
+        final timeline = buildChatTimeline(
+          [_agent('a1'), _card('c1', payload), _agent('a2')],
+          isRunning: true,
+        );
+
+        expect(timeline, hasLength(1), reason: '${payload['kind']}');
+        expect(_ids(timeline.single), ['a1', 'c1', 'a2'],
+            reason: '${payload['kind']}');
+      }
+    });
+
+    test('the exact same transcript splits once idle', () {
+      final messages = [_agent('a1'), _card('c1'), _agent('a2')];
+
+      final running = buildChatTimeline(messages, isRunning: true);
+      expect(running, hasLength(1));
+
+      final idle = buildChatTimeline(messages, isRunning: false);
+      expect(idle, hasLength(3));
+      expect(idle[1], isA<SingleMessageEntry>());
+    });
+
+    test('no message is dropped or duplicated while running either', () {
+      final input = [
+        _user('u1'),
+        _agent('a1'),
+        _card('c1'),
+        _user('u2'),
+        _agent('a3'),
+        _card('c2', _report),
+        _agent('a4'),
+      ];
+
+      final flattened = buildChatTimeline(input, isRunning: true)
+          .expand(_ids)
+          .toList();
+
+      expect(flattened, input.map((m) => m.id).toList());
     });
   });
 }

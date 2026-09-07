@@ -78,9 +78,19 @@ ChatApproval adaptApiApproval(Approval approval, AppStrings tr) {
     // rendered "Cc: null", "Bcc: null", and a Reply badge on every single
     // mail, because "null" is a non-empty string. An absent field must read
     // as absent.
+    //
+    // A LIST is joined, not `.toString()`-ed. Task 4's `to`/`cc`/`bcc` may
+    // arrive as a JSON array of addresses rather than one comma-separated
+    // string — the tool schema documents both shapes. `.toString()` on a
+    // `List` renders Dart's own `[a, b]` syntax, which is not what the
+    // recipient list looks like anywhere else in the product. Every other
+    // approval field that happens to be a list benefits from the same fix.
     payload: {
       for (final entry in approval.payload.entries)
-        if (entry.value != null) entry.key: entry.value.toString(),
+        if (entry.value != null)
+          entry.key: entry.value is List
+              ? (entry.value as List).join(', ')
+              : entry.value.toString(),
     },
     recordCount: approval.recordCount,
     // The delete type-to-confirm gate lives on the card, so every surface

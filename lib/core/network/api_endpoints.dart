@@ -99,6 +99,13 @@ class ApiEndpoints {
   static String conversationStop(String id) =>
       '/api/v1/conversations/$id/stop/';
 
+  /// Restarts a run that stopped without finishing and without anything
+  /// waiting on the user (`conversation.needs_resume == true`). Returns a
+  /// full snapshot, merged the same way a poll response is. The server owns
+  /// the retry rate limit — no client-side counter.
+  static String conversationResume(String id) =>
+      '/api/v1/conversations/$id/resume/';
+
   static String conversationShare(String id) =>
       '/api/v1/conversations/$id/share/';
 

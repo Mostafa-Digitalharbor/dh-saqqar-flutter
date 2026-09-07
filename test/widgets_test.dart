@@ -128,6 +128,9 @@ class _StubConversationsRepository implements ConversationsRepository {
       (isRunning: false, stopRequested: false);
 
   @override
+  Future<ConversationSnapshot> resume(String id) => throw UnimplementedError();
+
+  @override
   Future<({String token, String url, String path})> share(String id) async =>
       (token: '', url: '', path: '');
 

@@ -67,19 +67,23 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
 
     // Big zoom-in: tiny → full size with a smooth ease so the wordmark
     // appears to "expand into focus" instead of popping in.
-    _scale = Tween<double>(begin: 0.25, end: 1.0).animate(
+    _scale = Tween<double>(begin: AppSplashMotion.logoScaleStart, end: 1.0)
+        .animate(
       CurvedAnimation(parent: _entrance, curve: Curves.easeOutCubic),
     );
     _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _entrance,
-        curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
+        curve: const Interval(0.0, AppSplashMotion.fadeIntervalEnd,
+            curve: Curves.easeOut),
       ),
     );
-    _wordmarkSlide = Tween<double>(begin: 12, end: 0).animate(
+    _wordmarkSlide =
+        Tween<double>(begin: AppMotionTravel.rise, end: 0).animate(
       CurvedAnimation(
         parent: _entrance,
-        curve: const Interval(0.55, 1.0, curve: Curves.easeOutCubic),
+        curve: const Interval(AppSplashMotion.slideIntervalStart, 1.0,
+            curve: Curves.easeOutCubic),
       ),
     );
 
@@ -176,7 +180,8 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
                 final cardT = reduceMotion
                     ? 1.0
                     : Curves.easeOut.transform(_entrance.value);
-                final cardScale = 0.94 + 0.06 * cardT;
+                final cardScale = AppSplashMotion.cardScaleStart +
+                    (1.0 - AppSplashMotion.cardScaleStart) * cardT;
                 return Opacity(
                   opacity: fade,
                   child: Transform.scale(

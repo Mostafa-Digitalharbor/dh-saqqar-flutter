@@ -8,12 +8,14 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/auto_direction_text.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/chat_view_models.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../inbox/data/approval_models.dart' show kDeleteOperation;
+import '../../inbox/data/approval_models.dart'
+    show ApprovalActionType, kDeleteOperation;
 import 'accent_card_chrome.dart';
 import 'email_approval_preview.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
@@ -83,7 +85,12 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final approval = widget.approval;
-    final email = EmailApprovalPreview.of(approval.payload);
+    // Task 4 — gated on the server's own `action_type` now that it declares
+    // `send_email` explicitly, rather than inferring "this looks like an
+    // email" purely from which payload keys happen to be present.
+    final email = approval.actionType == ApprovalActionType.sendEmail.wire
+        ? EmailApprovalPreview.of(approval.payload)
+        : null;
     return AccentCardChrome(
       accent: s.warning,
       child: Column(
@@ -100,8 +107,10 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
               ),
               const SizedBox(width: AppSpacing.s12),
               Expanded(
-                child: Text(
+                child: AutoDirectionText(
                   approval.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: context.text.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: s.text,
@@ -119,8 +128,10 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
             ],
           ),
           const SizedBox(height: AppSpacing.s10),
-          Text(
+          AutoDirectionText(
             approval.prompt,
+            maxLines: 8,
+            overflow: TextOverflow.ellipsis,
             style: context.text.bodyMedium?.copyWith(
               color: s.muted,
               height: AppLineHeights.body,

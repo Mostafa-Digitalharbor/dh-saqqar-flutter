@@ -133,6 +133,14 @@ class AppIcons {
   static const IconData devices = LucideIcons.monitorSmartphone;
   static const IconData apple = LucideIcons.apple;
 
+  // In-chat app-pulse cards (Task 1, MOBILE_TASKS_2026-09.md) — one icon per
+  // guided app, distinct from the coarser group glyphs `apps_screen.dart`
+  // uses for the gallery grid.
+  static const IconData factory = LucideIcons.factory;
+  static const IconData warehouse = LucideIcons.warehouse;
+  static const IconData purchasing = LucideIcons.shoppingCart;
+  static const IconData hr = LucideIcons.users;
+
   /// Biometric unlock. **Material on purpose** — Lucide ships no fingerprint
   /// glyph (only `scanFace`, which names one modality), and the app gates on
   /// whichever of Face ID or fingerprint the device offers. The Material

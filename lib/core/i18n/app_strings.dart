@@ -215,10 +215,11 @@ class AppStrings {
   /// numeric variants. Reserves the special "no environments" copy for
   /// the empty case only.
   String environmentCount(int n) {
-    if (_isArabic) {
-      return n == 0 ? 'لا توجد بيئات' : '$n بيئة';
-    }
-    return n == 0 ? 'no environments' : '$n environment${n == 1 ? '' : 's'}';
+    if (n == 0) return _t('environment_count_zero');
+    return _f(
+      n == 1 ? 'environment_count_single' : 'environment_count_multi',
+      {'n': n},
+    );
   }
   String get addProjectHint => _t('add_project_hint');
   String get manageProjects => _t('manage_projects');
@@ -274,14 +275,13 @@ class AppStrings {
   /// Same `N word` rendering as [environmentCount] — keep the two count
   /// helpers shaped identically so the vault rows scan as a single
   /// vertical column of `N · label` pairs.
-  String credentialCount(int n) {
-    if (_isArabic) return '$n بيانات وصول';
-    return n == 1 ? '1 credential' : '$n credentials';
-  }
+  String credentialCount(int n) => _f(
+        n == 1 ? 'credential_count_single' : 'credential_count_multi',
+        {'n': n},
+      );
   String get markEnvLiveTitle => _t('mark_env_live_title');
-  String markEnvLiveBody(String envName) => _isArabic
-      ? 'تفعيل "$envName" كبيئة مباشرة سيُشغّل تأكيد التحذير قبل أول رسالة في كل محادثة جديدة. هل تريد المتابعة؟'
-      : 'Marking "$envName" as LIVE turns on the warning gate before the first send in every new conversation. Continue?';
+  String markEnvLiveBody(String envName) =>
+      _f('mark_env_live_body', {'envName': envName});
   String get markAsLive => _t('mark_as_live');
   String get envSearchHint => _t('env_search_hint');
 
@@ -522,6 +522,9 @@ class AppStrings {
   String get emailPreviewCc => _t('email_preview_cc');
   String get emailPreviewBcc => _t('email_preview_bcc');
   String get emailPreviewReply => _t('email_preview_reply');
+  // Task 4 (MOBILE_TASKS_2026-09.md) — subject/body may arrive empty.
+  String get emailPreviewEmptySubject => _t('email_preview_empty_subject');
+  String get emailPreviewEmptyBody => _t('email_preview_empty_body');
   // Destructive-delete type-to-confirm (web parity — `renderDeleteApproval`).
   /// The red button on a destructive-delete approval card — "Delete 12" /
   /// "حذف 12".
@@ -922,16 +925,18 @@ class AppStrings {
   /// (pluralized for EN, RTL-natural for AR). Segments after the count are
   /// dropped when zero.
   String projectStats(int envs, int live, int connected) {
-    if (_isArabic) {
-      final b = StringBuffer('$envs بيئة');
-      if (live > 0) b.write(' · $live مباشرة');
-      if (connected > 0) b.write(' · $connected بيانات اعتماد');
-      return b.toString();
-    }
-    final b = StringBuffer('$envs ${envs == 1 ? 'environment' : 'environments'}');
-    if (live > 0) b.write(' · $live live');
+    final b = StringBuffer(_f(
+      envs == 1 ? 'project_stats_envs_single' : 'project_stats_envs_multi',
+      {'n': envs},
+    ));
+    if (live > 0) b.write(' · ${_f('project_stats_live', {'n': live})}');
     if (connected > 0) {
-      b.write(' · $connected ${connected == 1 ? 'credential' : 'credentials'}');
+      b.write(' · ${_f(
+        connected == 1
+            ? 'project_stats_connected_single'
+            : 'project_stats_connected_multi',
+        {'n': connected},
+      )}');
     }
     return b.toString();
   }
@@ -1425,6 +1430,96 @@ class AppStrings {
   String get envHintNeedsCredentials => _t('env_hint_needs_credentials');
   String get envHintFailed => _t('env_hint_failed');
 
+  // Resume banner — a run stopped without finishing and with nothing else
+  // waiting on the user (`conversation.needs_resume`). Copied verbatim from
+  // the live web client (MOBILE_TASKS_2026-09.md Task 2).
+  String get chatResumeBannerText => _t('chat_resume_banner_text');
+  String get chatResumeButton => _t('chat_resume_button');
+  String get chatResumeButtonWorking => _t('chat_resume_button_working');
+
+  // App-pulse cards (Task 1, MOBILE_TASKS_2026-09.md) — the seven read-only
+  // guided-app dashboards rendered inside their own chat. Titles reuse the
+  // `app_name_<slug>` keys Task 3 added; these are the card's own chrome and
+  // per-metric tile labels.
+  String get pulseUnavailable => _t('pulse_unavailable');
+  String pulseAsOf(String date) => _f('pulse_as_of', {'date': date});
+  String get pulseNotesTitle => _t('pulse_notes_title');
+  String get pulsePrioritiesTitle => _t('pulse_priorities_title');
+  String get pulseTopRisksTitle => _t('pulse_top_risks_title');
+  // Factory
+  String get pulseFactoryMoRunning => _t('pulse_factory_mo_running');
+  String get pulseFactoryMoLate => _t('pulse_factory_mo_late');
+  String get pulseFactoryMoDoneToday => _t('pulse_factory_mo_done_today');
+  String get pulseFactoryPoLate => _t('pulse_factory_po_late');
+  String get pulseFactoryOrdersAtRisk => _t('pulse_factory_orders_at_risk');
+  String get pulseFactoryRiskMissingLines =>
+      _t('pulse_factory_risk_missing_lines');
+  String get pulseFactoryRiskLeadDays => _t('pulse_factory_risk_lead_days');
+  // Inventory
+  String get pulseInventorySalesDays => _t('pulse_inventory_sales_days');
+  String get pulseInventoryProductCount =>
+      _t('pulse_inventory_product_count');
+  String get pulseInventoryValue => _t('pulse_inventory_value');
+  String get pulseInventoryLowStock => _t('pulse_inventory_low_stock');
+  String get pulseInventoryDemandShortage =>
+      _t('pulse_inventory_demand_shortage');
+  String get pulseInventoryStagnantStock =>
+      _t('pulse_inventory_stagnant_stock');
+  String get pulseInventoryOverstock => _t('pulse_inventory_overstock');
+  String get pulseInventoryFastReorder => _t('pulse_inventory_fast_reorder');
+  String get pulseInventoryMissingData => _t('pulse_inventory_missing_data');
+  // Shared by the counter-driven cards (accountant, HR)
+  String get pulseCountersTitle => _t('pulse_counters_title');
+  // Finance
+  String get pulseFinanceCashBalance => _t('pulse_finance_cash_balance');
+  String get pulseFinanceReceivablesOverdue =>
+      _t('pulse_finance_receivables_overdue');
+  String get pulseFinanceReceivablesDueSoon =>
+      _t('pulse_finance_receivables_due_soon');
+  String get pulseFinancePayablesOverdue =>
+      _t('pulse_finance_payables_overdue');
+  String get pulseFinancePayablesDueSoon =>
+      _t('pulse_finance_payables_due_soon');
+  String get pulseFinanceDraftVendorBills =>
+      _t('pulse_finance_draft_vendor_bills');
+  String get pulseFinanceDraftCustomerInvoices =>
+      _t('pulse_finance_draft_customer_invoices');
+  String get pulseFinanceBankReconciliation =>
+      _t('pulse_finance_bank_reconciliation');
+  String get pulseFinanceLiquidityStatus =>
+      _t('pulse_finance_liquidity_status');
+  // Purchasing
+  String get pulsePurchasingOpenRfqs => _t('pulse_purchasing_open_rfqs');
+  String get pulsePurchasingAwaitingApproval =>
+      _t('pulse_purchasing_awaiting_approval');
+  String get pulsePurchasingLateOrders => _t('pulse_purchasing_late_orders');
+  String get pulsePurchasingLateReceipts =>
+      _t('pulse_purchasing_late_receipts');
+  String get pulsePurchasingToBill => _t('pulse_purchasing_to_bill');
+  String get pulsePurchasingVendorBills =>
+      _t('pulse_purchasing_vendor_bills');
+  String get pulsePurchasingVendorDelays =>
+      _t('pulse_purchasing_vendor_delays');
+  // HR
+  String get pulseHrActiveEmployees => _t('pulse_hr_active_employees');
+  String get pulseHrMissingManagers => _t('pulse_hr_missing_managers');
+  String get pulseHrMissingWorkEmail => _t('pulse_hr_missing_work_email');
+  String get pulseHrOperationsTitle => _t('pulse_hr_operations_title');
+  // Accountant
+  String pulseAccountantMonth(String month) =>
+      _f('pulse_accountant_month', {'month': month});
+  // Quality Guard
+  String get pulseQualityOutOfSpec => _t('pulse_quality_out_of_spec');
+  String get pulseQualityFailedChecks => _t('pulse_quality_failed_checks');
+  String get pulseQualityPendingChecks => _t('pulse_quality_pending_checks');
+  String get pulseQualityAlerts => _t('pulse_quality_alerts');
+  String get pulseQualityMissingSpecs => _t('pulse_quality_missing_specs');
+  String get pulseQualityReviewCases => _t('pulse_quality_review_cases');
+  String get pulseQualityInvoiceSwaps => _t('pulse_quality_invoice_swaps');
+  String get pulseQualityDeliverySwaps => _t('pulse_quality_delivery_swaps');
+  String get pulseQualityHighRiskCases => _t('pulse_quality_high_risk_cases');
+  String get pulseQualityCostSaving => _t('pulse_quality_cost_saving');
+
   // Email-OTP auth flow (Gap D)
   String get authSignUpEmailTitle => _t('auth_signup_email_title');
   String get authSignUpEmailSubtitle => _t('auth_signup_email_subtitle');
@@ -1503,6 +1598,7 @@ class AppStrings {
         'server_command' => _t('approval_title_server_cmd'),
         'odoo_write' => _t('approval_title_odoo_write'),
         'report_export' => _t('approval_title_report_export'),
+        'send_email' => _t('approval_title_send_email'),
         _ => _t('approval_title_generic'),
       };
 
@@ -1517,9 +1613,8 @@ class AppStrings {
 
   /// Kind-aware "file too large" notice (Gap F). [capMb] is 500 for
   /// archives, 25 otherwise.
-  String attachmentTooLarge(String name, int capMb) => _isArabic
-      ? '«$name» يتجاوز حد $capMb ميجابايت.'
-      : '"$name" is over the $capMb MB limit.';
+  String attachmentTooLarge(String name, int capMb) =>
+      _f('attachment_too_large', {'name': name, 'capMb': capMb});
 
   /// "Create 6 × Manufacturing Order" — verb + optional record count + model.
   String approvalModelTitle(String verb, int? count, String label) {
@@ -1568,26 +1663,19 @@ class AppStrings {
   String planUsageLine(String used, String cap) => '$used / $cap';
 
   /// Near-limit banner body, e.g. "You've used 85% of your daily limit."
-  String planNearLimitBody(String window, int pct) => _isArabic
-      ? 'استخدمت $pct٪ من حدّك $window.'
-      : "You've used $pct% of your $window limit.";
+  String planNearLimitBody(String window, int pct) =>
+      _f('plan_near_limit_body', {'window': window, 'pct': pct});
 
   /// Composer tooltip + quota card body when a window is exhausted.
-  String quotaExceededBody(String window) => _isArabic
-      ? 'لقد بلغت حدّ الاستخدام $window. ستُعاد التهيئة عند انتهاء الفترة، أو رقِّ خطتك.'
-      : "You've reached your $window usage limit. It resets when the window rolls over, or upgrade your plan.";
+  String quotaExceededBody(String window) =>
+      _f('quota_exceeded_body', {'window': window});
 
   /// [quotaExceededBody] minus the upgrade nudge — used where paid-plan upsell
   /// is suppressed, which is currently everywhere: sales are web-only, so
   /// "upgrade your plan" would point at a door the app doesn't have. Callers
   /// pick via `showPaidUpsell`.
-  String quotaExceededBodyPlain(String window) => _isArabic
-      ? 'لقد بلغت حدّ الاستخدام $window. ستُعاد التهيئة عند انتهاء الفترة.'
-      : "You've reached your $window usage limit. It resets when the window rolls over.";
-
-  String sendBlockedTooltip(String window) => _isArabic
-      ? 'تم بلوغ الحد $window'
-      : '$window limit reached';
+  String quotaExceededBodyPlain(String window) =>
+      _f('quota_exceeded_body_plain', {'window': window});
 
   // Storybook
   String get storybook => _t('storybook');
@@ -1808,9 +1896,8 @@ class AppStrings {
   String itemCount(int visible, int total, String label) =>
       _f('item_count', {'visible': visible, 'total': total, 'label': label});
 
-  String pageCount(int pageNumber, int totalPages) => _isArabic
-      ? '${_t('page')} $pageNumber ${_t('of')} $totalPages'
-      : '${_t('page')} $pageNumber ${_t('of')} $totalPages';
+  String pageCount(int pageNumber, int totalPages) =>
+      '${_t('page')} $pageNumber ${_t('of')} $totalPages';
 
   String pendingCount(int count) => '$count ${_t('pending')}';
   String openCount(int count) => '$count ${_t('open_count_suffix')}';
@@ -2014,7 +2101,13 @@ const Map<String, String> _en = {
   'email_preview_to': 'To:',
   'email_preview_cc': 'Cc:',
   'email_preview_bcc': 'Bcc:',
-  'email_preview_reply': 'Reply',
+  // "In reply to" (MOBILE_TASKS_2026-09.md Task 4) — rendered as a badge next
+  // to the subject rather than as its own row printing the raw Message-ID,
+  // which is opaque and not something a user could act on; only the fact of
+  // a reply matters here, not the id.
+  'email_preview_reply': 'In reply to',
+  'email_preview_empty_subject': '(no subject)',
+  'email_preview_empty_body': '(empty message)',
   'delete_approval_action': 'Delete {count}',
   'delete_approval_records_header': 'These {count} records will be deleted',
   'task_prep': 'Task prep',
@@ -2106,6 +2199,37 @@ const Map<String, String> _en = {
   'app_tagline_meeting_notetaker':
       'Record, transcribe, and summarize meetings, then file the actions '
           'back into Odoo.',
+
+  // Task 3 (MOBILE_TASKS_2026-09.md) — six of the eleven packages `/apps/`
+  // returns had no Arabic copy on the mobile side. EN values are the
+  // server's own names, kept here too so the table stays symmetric with
+  // `_ar` and `apps_localization_test.dart`'s completeness guard can pin
+  // both sides. `accountant` / `hr_assistant` copy the names the agent
+  // already uses for those two apps in its own prompts; the other four AR
+  // strings are PROPOSED pending product sign-off — see the doc.
+  'app_name_finance_pulse': 'Your money',
+  'app_tagline_finance_pulse':
+      'Collect, pay, reconcile, and close your day straight from your '
+          'Odoo financial data.',
+  'app_name_purchase_pulse': 'Your purchasing',
+  'app_tagline_purchase_pulse':
+      'Purchase orders, late receipts, vendor bills, and risk — from Odoo.',
+  'app_name_quality_guard': 'Quality Guard',
+  'app_tagline_quality_guard':
+      'Watches specs, failed checks, product swaps, and cheaper '
+          'substitutes.',
+  'app_name_smart_inventory': 'Your inventory',
+  'app_tagline_smart_inventory':
+      'The stock that needs attention: shortages, stagnant stock, '
+          'overstock, missing data, and reorder signals.',
+  'app_name_accountant': 'Your accounts manager',
+  'app_tagline_accountant':
+      'Reviews entries, the invoice chain, the bank, tax, and month-end '
+          'close — straight from Odoo.',
+  'app_name_hr_assistant': 'Recruitment Manager',
+  'app_tagline_hr_assistant':
+      'Screens applicants and reviews employees, contracts, payroll, '
+          'time off, and attendance from Odoo.',
 
   // Group taxonomy — shown as the card chip and as the filter pills.
   // `app_group_all` is the client-side "no filter" pill.
@@ -2641,12 +2765,38 @@ const Map<String, String> _en = {
   'credHost': 'Host',
   'credPort': 'Port',
   'credToken': 'Token',
+  'credImapHost': 'IMAP Host',
+  'credImapPort': 'IMAP Port',
+  'credSmtpHost': 'SMTP Host',
+  'credSmtpPort': 'SMTP Port',
+  'credSmtpSecurity': 'SMTP Security',
+  // Select-option display text the server doesn't ship per-option i18n
+  // keys for — protocol names, kept as their standard technical spelling
+  // in both locales (same convention as "PostgreSQL"/"GitHub").
+  'credOptionOauth2': 'OAuth2',
+  'credOptionSsl': 'SSL',
+  'credOptionStarttls': 'STARTTLS',
   // Credential kind / tab labels — proper nouns (PostgreSQL, GitHub,
   // XML-RPC) stay verbatim; only the descriptive part localizes.
   'credKindXmlrpc': 'Odoo Connection',
   'credKindPostgres': 'PostgreSQL',
   'credKindServerShell': 'Server Shell',
   'credKindGithub': 'GitHub',
+  'credKindEmail': 'Email (IMAP/SMTP)',
+  // Email (IMAP/SMTP) credential kind — field labels the server ships a
+  // `label_key` for, plus help text for every field (SAQQAR_MOBILE_API §7).
+  'fieldEmailAddress': 'Email Address',
+  'fieldEmailPassword': 'Password / App-password',
+  'help_email_address': 'The mailbox Saqqar reads from and sends as.',
+  'help_email_auth_type': 'How Saqqar signs in to this mailbox.',
+  'help_email_password':
+      'Some providers (Gmail, Outlook) require an app-specific password '
+          'instead of your regular one.',
+  'help_email_imap_host': "Your mail provider's incoming (IMAP) server address.",
+  'help_email_imap_port': 'Defaults to 993 (IMAP over SSL).',
+  'help_email_smtp_host': "Your mail provider's outgoing (SMTP) server address.",
+  'help_email_smtp_port': 'Defaults to 465 (SMTP over SSL).',
+  'help_email_smtp_security': 'How the connection to the SMTP server is encrypted.',
   // Test-connection error mapping — common server messages localized so
   // the badge reads in the active locale. Unknown errors fall back to the
   // raw server text.
@@ -2775,6 +2925,63 @@ const Map<String, String> _en = {
   'env_hint_needs_credentials':
       'Add your Odoo credentials to this environment to connect.',
   'env_hint_failed': 'Could not set up your database. Try again.',
+  'chat_resume_banner_text':
+      'This chat stopped before the task was finished.',
+  'chat_resume_button': 'Resume',
+  'chat_resume_button_working': 'Resuming…',
+  'pulse_unavailable': 'Unavailable',
+  'pulse_as_of': 'As of {date}',
+  'pulse_notes_title': 'Notes',
+  'pulse_priorities_title': 'Priorities',
+  'pulse_top_risks_title': 'Top risks',
+  'pulse_factory_mo_running': 'Orders in production',
+  'pulse_factory_mo_late': 'Late orders',
+  'pulse_factory_mo_done_today': 'Finished today',
+  'pulse_factory_po_late': 'Late purchase orders',
+  'pulse_factory_orders_at_risk': 'Orders at risk',
+  'pulse_factory_risk_missing_lines': 'Missing lines',
+  'pulse_factory_risk_lead_days': 'Lead time (days)',
+  'pulse_inventory_sales_days': 'Sales window (days)',
+  'pulse_inventory_product_count': 'Products',
+  'pulse_inventory_value': 'Inventory value',
+  'pulse_inventory_low_stock': 'Low stock',
+  'pulse_inventory_demand_shortage': 'Demand shortage',
+  'pulse_inventory_stagnant_stock': 'Stagnant stock',
+  'pulse_inventory_overstock': 'Overstock',
+  'pulse_inventory_fast_reorder': 'Fast reorder',
+  'pulse_inventory_missing_data': 'Missing data',
+  'pulse_counters_title': 'To review',
+  'pulse_finance_cash_balance': 'Cash balance',
+  'pulse_finance_receivables_overdue': 'Receivables overdue',
+  'pulse_finance_receivables_due_soon': 'Receivables due soon',
+  'pulse_finance_payables_overdue': 'Payables overdue',
+  'pulse_finance_payables_due_soon': 'Payables due soon',
+  'pulse_finance_draft_vendor_bills': 'Draft vendor bills',
+  'pulse_finance_draft_customer_invoices': 'Draft customer invoices',
+  'pulse_finance_bank_reconciliation': 'Bank items to match',
+  'pulse_finance_liquidity_status': '7-day liquidity',
+  'pulse_purchasing_open_rfqs': 'Open RFQs',
+  'pulse_purchasing_awaiting_approval': 'Awaiting approval',
+  'pulse_purchasing_late_orders': 'Late purchase orders',
+  'pulse_purchasing_late_receipts': 'Late incoming receipts',
+  'pulse_purchasing_to_bill': 'To bill',
+  'pulse_purchasing_vendor_bills': 'Vendor bills',
+  'pulse_purchasing_vendor_delays': 'Vendors with delays',
+  'pulse_hr_active_employees': 'Active employees',
+  'pulse_hr_missing_managers': 'Missing a manager',
+  'pulse_hr_missing_work_email': 'Missing work email',
+  'pulse_hr_operations_title': 'Flagged employees',
+  'pulse_accountant_month': 'Month {month}',
+  'pulse_quality_out_of_spec': 'Out of spec',
+  'pulse_quality_failed_checks': 'Failed checks',
+  'pulse_quality_pending_checks': 'Pending checks',
+  'pulse_quality_alerts': 'Quality alerts',
+  'pulse_quality_missing_specs': 'Missing numeric specs',
+  'pulse_quality_review_cases': 'Review cases',
+  'pulse_quality_invoice_swaps': 'Invoice product swaps',
+  'pulse_quality_delivery_swaps': 'Delivery product swaps',
+  'pulse_quality_high_risk_cases': 'High-risk cases',
+  'pulse_quality_cost_saving': 'Potential savings',
   'addon_hint': 'Saqqar can read, edit, and rebuild this Odoo addon.',
   // Names no tier and sells nothing — the same copy ships on iOS, where
   // naming a paid plan would be an App Store 3.1.1 upsell.
@@ -2843,6 +3050,7 @@ const Map<String, String> _en = {
   'approval_title_server_cmd': 'Server command',
   'approval_title_odoo_write': 'Odoo write',
   'approval_title_report_export': 'Report export',
+  'approval_title_send_email': 'Send email',
   'approval_title_generic': 'Approval',
   'approval_op_create': 'Create',
   'approval_op_write': 'Update',
@@ -3013,8 +3221,23 @@ const Map<String, String> _en = {
   'flag_read_only': 'Read-only',
   'flag_auto_approve': 'Auto-approve',
   'mark_env_live_title': 'Mark as LIVE environment?',
+  'mark_env_live_body':
+      'Marking "{envName}" as LIVE turns on the warning gate before the first send in every new conversation. Continue?',
   'mark_as_live': 'Mark as LIVE',
   'env_search_hint': 'Search environments…',
+
+  'environment_count_zero': 'no environments',
+  'environment_count_single': '{n} environment',
+  'environment_count_multi': '{n} environments',
+
+  'credential_count_single': '{n} credential',
+  'credential_count_multi': '{n} credentials',
+
+  'project_stats_envs_single': '{n} environment',
+  'project_stats_envs_multi': '{n} environments',
+  'project_stats_live': '{n} live',
+  'project_stats_connected_single': '{n} credential',
+  'project_stats_connected_multi': '{n} credentials',
 
   // Company / Environment
   'pick_environment': 'Pick an environment',
@@ -3126,6 +3349,12 @@ const Map<String, String> _en = {
   'auth_resend_in': 'Resend in {seconds} s',
   'plan_pct_used': '{pct}% used',
   'item_count': '{visible} of {total} {label}',
+  'attachment_too_large': '"{name}" is over the {capMb} MB limit.',
+  'plan_near_limit_body': "You've used {pct}% of your {window} limit.",
+  'quota_exceeded_body':
+      "You've reached your {window} usage limit. It resets when the window rolls over, or upgrade your plan.",
+  'quota_exceeded_body_plain':
+      "You've reached your {window} usage limit. It resets when the window rolls over.",
 
   // Units. Digits stay Western in both locales (see `AppDateFormat`), but
   // the unit *word* localizes — `2.4 MB` / `2.4 م.ب`.
@@ -3441,7 +3670,9 @@ const Map<String, String> _ar = {
   'email_preview_to': 'إلى:',
   'email_preview_cc': 'نسخة إلى:',
   'email_preview_bcc': 'نسخة مخفية إلى:',
-  'email_preview_reply': 'رد',
+  'email_preview_reply': 'رداً على',
+  'email_preview_empty_subject': '(بدون موضوع)',
+  'email_preview_empty_body': '(رسالة فارغة)',
   'delete_approval_action': 'حذف {count}',
   'delete_approval_records_header': 'سيتم حذف هذه السجلات ({count})',
   'task_prep': 'تجهيز المهمة',
@@ -3501,6 +3732,32 @@ const Map<String, String> _ar = {
       'سجّل الاجتماعات وفرّغها ولخّصها، ثم أدرج المهام الناتجة في أودو.',
   'app_tagline_meeting_notetaker':
       'سجّل الاجتماعات وفرّغها ولخّصها، ثم أدرج المهام الناتجة في أودو.',
+
+  // Task 3 (MOBILE_TASKS_2026-09.md). `accountant` / `hr_assistant` are
+  // settled (the agent already uses these names in its own prompts); the
+  // other four are PROPOSED copy pending product sign-off — see the doc.
+  'app_name_finance_pulse': 'فلوسك',
+  'app_tagline_finance_pulse':
+      'حصّل وادفع وسوّي وقفل يومك من بيانات أودو المالية مباشرة.',
+  'app_name_purchase_pulse': 'مشترياتك',
+  'app_tagline_purchase_pulse':
+      'طلبات الشراء والاستلامات المتأخرة وفواتير الموردين والمخاطر، من '
+          'أودو.',
+  'app_name_quality_guard': 'حارس الجودة',
+  'app_tagline_quality_guard':
+      'يراقب القياسات والفحوصات الراسبة وتبديل المنتجات والبدائل الأرخص.',
+  'app_name_smart_inventory': 'مخزونك',
+  'app_tagline_smart_inventory':
+      'المخزون اللي محتاج تحرّك: نقص، وراكد، وزيادة، وبيانات ناقصة، '
+          'وإشارات إعادة طلب.',
+  'app_name_accountant': 'مدير حساباتك',
+  'app_tagline_accountant':
+      'يراجع القيود وسلسلة الفواتير والبنك والضريبة وقفل الشهر — من أودو '
+          'مباشرة.',
+  'app_name_hr_assistant': 'مدير التوظيف',
+  'app_tagline_hr_assistant':
+      'يفرز المتقدمين ويراجع الموظفين والعقود والرواتب والإجازات والحضور '
+          'من أودو.',
 
   'app_group_all': 'الكل',
   'app_group_accounting': 'المحاسبة',
@@ -3973,12 +4230,38 @@ const Map<String, String> _ar = {
   'credHost': 'المضيف',
   'credPort': 'المنفذ',
   'credToken': 'الرمز',
+  'credImapHost': 'مضيف IMAP',
+  'credImapPort': 'منفذ IMAP',
+  'credSmtpHost': 'مضيف SMTP',
+  'credSmtpPort': 'منفذ SMTP',
+  'credSmtpSecurity': 'تأمين SMTP',
+  // نصوص خيارات القوائم المنسدلة اللي السيرفر مبعتش لها مفتاح ترجمة —
+  // أسماء بروتوكولات تقنية، تفضل بصيغتها التقنية القياسية في اللغتين
+  // (نفس مبدأ الإبقاء على "PostgreSQL"/"GitHub" كما هما).
+  'credOptionOauth2': 'OAuth2',
+  'credOptionSsl': 'SSL',
+  'credOptionStarttls': 'STARTTLS',
   // مسميات أنواع الاعتماد / التبويبات — الأسماء التقنية (PostgreSQL،
   // GitHub، XML-RPC) تبقى كما هي، ويُترجَم الجزء الوصفي فقط.
   'credKindXmlrpc': 'اتصال أودو',
   'credKindPostgres': 'PostgreSQL',
   'credKindServerShell': 'طرفية الخادم',
   'credKindGithub': 'GitHub',
+  'credKindEmail': 'البريد الإلكتروني (IMAP/SMTP)',
+  // نوع بيانات اعتماد البريد الإلكتروني (IMAP/SMTP) — مسميات الحقول اللي
+  // السيرفر بيبعت لها مفتاح ترجمة صريح، ونص مساعد لكل حقل.
+  'fieldEmailAddress': 'عنوان البريد الإلكتروني',
+  'fieldEmailPassword': 'كلمة المرور / كلمة مرور التطبيق',
+  'help_email_address': 'صندوق البريد الذي سيقرأ منه صقّار ويرسل باسمه.',
+  'help_email_auth_type': 'طريقة تسجيل دخول صقّار إلى هذا البريد.',
+  'help_email_password':
+      'بعض مزودي البريد (مثل Gmail وOutlook) يطلبون كلمة مرور خاصة '
+          'بالتطبيقات بدلاً من كلمة المرور المعتادة.',
+  'help_email_imap_host': 'عنوان خادم الاستقبال (IMAP) الخاص بمزود بريدك.',
+  'help_email_imap_port': 'القيمة الافتراضية 993 (IMAP عبر SSL).',
+  'help_email_smtp_host': 'عنوان خادم الإرسال (SMTP) الخاص بمزود بريدك.',
+  'help_email_smtp_port': 'القيمة الافتراضية 465 (SMTP عبر SSL).',
+  'help_email_smtp_security': 'طريقة تشفير الاتصال بخادم SMTP.',
   // ترجمة أخطاء اختبار الاتصال — رسائل السيرفر الشائعة تُترجَم لتظهر
   // بلغة الواجهة. الأخطاء غير المعروفة تعود لنص السيرفر الأصلي.
   'testErrAuthFailed':
@@ -4092,6 +4375,62 @@ const Map<String, String> _ar = {
   'env_hint_needs_credentials':
       'أضِف بيانات اعتماد Odoo لهذه البيئة للاتصال.',
   'env_hint_failed': 'تعذّر إعداد قاعدة بياناتك. حاول مرة أخرى.',
+  'chat_resume_banner_text': 'توقفت المحادثة قبل إكمال المهمة.',
+  'chat_resume_button': 'استئناف',
+  'chat_resume_button_working': 'جارٍ الاستئناف…',
+  'pulse_unavailable': 'غير متاح',
+  'pulse_as_of': 'حتى {date}',
+  'pulse_notes_title': 'ملاحظات',
+  'pulse_priorities_title': 'أولويات',
+  'pulse_top_risks_title': 'أهم المخاطر',
+  'pulse_factory_mo_running': 'أوامر إنتاج جارية',
+  'pulse_factory_mo_late': 'أوامر متأخرة',
+  'pulse_factory_mo_done_today': 'اكتمل اليوم',
+  'pulse_factory_po_late': 'أوامر شراء متأخرة',
+  'pulse_factory_orders_at_risk': 'طلبات في خطر',
+  'pulse_factory_risk_missing_lines': 'بنود ناقصة',
+  'pulse_factory_risk_lead_days': 'مدة التوريد (أيام)',
+  'pulse_inventory_sales_days': 'نافذة المبيعات (أيام)',
+  'pulse_inventory_product_count': 'المنتجات',
+  'pulse_inventory_value': 'قيمة المخزون',
+  'pulse_inventory_low_stock': 'مخزون منخفض',
+  'pulse_inventory_demand_shortage': 'نقص في الطلب',
+  'pulse_inventory_stagnant_stock': 'مخزون راكد',
+  'pulse_inventory_overstock': 'فائض مخزون',
+  'pulse_inventory_fast_reorder': 'إعادة طلب سريعة',
+  'pulse_inventory_missing_data': 'بيانات ناقصة',
+  'pulse_counters_title': 'للمراجعة',
+  'pulse_finance_cash_balance': 'رصيد النقدية',
+  'pulse_finance_receivables_overdue': 'مستحقات عملاء متأخرة',
+  'pulse_finance_receivables_due_soon': 'مستحقات عملاء قريبة',
+  'pulse_finance_payables_overdue': 'مستحقات موردين متأخرة',
+  'pulse_finance_payables_due_soon': 'مستحقات موردين قريبة',
+  'pulse_finance_draft_vendor_bills': 'فواتير موردين مسودة',
+  'pulse_finance_draft_customer_invoices': 'فواتير عملاء مسودة',
+  'pulse_finance_bank_reconciliation': 'بنود بنكية للمطابقة',
+  'pulse_finance_liquidity_status': 'السيولة خلال 7 أيام',
+  'pulse_purchasing_open_rfqs': 'طلبات عروض أسعار مفتوحة',
+  'pulse_purchasing_awaiting_approval': 'بانتظار الموافقة',
+  'pulse_purchasing_late_orders': 'أوامر شراء متأخرة',
+  'pulse_purchasing_late_receipts': 'استلامات متأخرة',
+  'pulse_purchasing_to_bill': 'بانتظار الفوترة',
+  'pulse_purchasing_vendor_bills': 'فواتير موردين',
+  'pulse_purchasing_vendor_delays': 'موردون لديهم تأخير',
+  'pulse_hr_active_employees': 'موظفون نشطون',
+  'pulse_hr_missing_managers': 'بلا مدير محدد',
+  'pulse_hr_missing_work_email': 'بلا بريد عمل',
+  'pulse_hr_operations_title': 'موظفون بحاجة لمراجعة',
+  'pulse_accountant_month': 'شهر {month}',
+  'pulse_quality_out_of_spec': 'خارج المواصفة',
+  'pulse_quality_failed_checks': 'فحوصات فاشلة',
+  'pulse_quality_pending_checks': 'فحوصات معلّقة',
+  'pulse_quality_alerts': 'تنبيهات جودة',
+  'pulse_quality_missing_specs': 'مواصفات رقمية ناقصة',
+  'pulse_quality_review_cases': 'حالات للمراجعة',
+  'pulse_quality_invoice_swaps': 'استبدال منتج في الفاتورة',
+  'pulse_quality_delivery_swaps': 'استبدال منتج في التسليم',
+  'pulse_quality_high_risk_cases': 'حالات عالية الخطورة',
+  'pulse_quality_cost_saving': 'توفير محتمل',
   'addon_hint': 'يستطيع صقّار قراءة وتعديل وإعادة بناء إضافة Odoo هذه.',
   'voice_locked_pro': 'الإدخال الصوتي غير متاح في حسابك.',
   // تدفّق التسجيل عبر رمز البريد (Gap D)
@@ -4158,6 +4497,7 @@ const Map<String, String> _ar = {
   'approval_title_server_cmd': 'أمر خادم',
   'approval_title_odoo_write': 'كتابة في أودو',
   'approval_title_report_export': 'تصدير تقرير',
+  'approval_title_send_email': 'إرسال بريد إلكتروني',
   'approval_title_generic': 'موافقة',
   'approval_op_create': 'إنشاء',
   'approval_op_write': 'تعديل',
@@ -4323,8 +4663,23 @@ const Map<String, String> _ar = {
   'flag_read_only': 'قراءة فقط',
   'flag_auto_approve': 'موافقة تلقائية',
   'mark_env_live_title': 'تفعيل البيئة كمباشرة؟',
+  'mark_env_live_body':
+      'تفعيل "{envName}" كبيئة مباشرة سيُشغّل تأكيد التحذير قبل أول رسالة في كل محادثة جديدة. هل تريد المتابعة؟',
   'mark_as_live': 'تفعيل كمباشرة',
   'env_search_hint': 'ابحث في البيئات…',
+
+  'environment_count_zero': 'لا توجد بيئات',
+  'environment_count_single': '{n} بيئة',
+  'environment_count_multi': '{n} بيئة',
+
+  'credential_count_single': '{n} بيانات وصول',
+  'credential_count_multi': '{n} بيانات وصول',
+
+  'project_stats_envs_single': '{n} بيئة',
+  'project_stats_envs_multi': '{n} بيئة',
+  'project_stats_live': '{n} مباشرة',
+  'project_stats_connected_single': '{n} بيانات اعتماد',
+  'project_stats_connected_multi': '{n} بيانات اعتماد',
 
   // Company / Environment
   'pick_environment': 'اختر بيئة',
@@ -4431,6 +4786,12 @@ const Map<String, String> _ar = {
   'auth_resend_in': 'إعادة الإرسال خلال {seconds} ث',
   'plan_pct_used': 'مُستخدَم {pct}٪',
   'item_count': '{visible} من {total} {label}',
+  'attachment_too_large': '«{name}» يتجاوز حد {capMb} ميجابايت.',
+  'plan_near_limit_body': 'استخدمت {pct}٪ من حدّك {window}.',
+  'quota_exceeded_body':
+      'لقد بلغت حدّ الاستخدام {window}. ستُعاد التهيئة عند انتهاء الفترة، أو رقِّ خطتك.',
+  'quota_exceeded_body_plain':
+      'لقد بلغت حدّ الاستخدام {window}. ستُعاد التهيئة عند انتهاء الفترة.',
 
   // الوحدات — الأرقام تبقى غربية في اللغتين، والكلمة وحدها تُترجم.
   'unit_bytes': 'بايت',

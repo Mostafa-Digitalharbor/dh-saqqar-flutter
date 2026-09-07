@@ -116,13 +116,22 @@ bool _startsNewTurn(ChatMessage prev, ChatMessage next) {
   return b.difference(a).abs() >= _turnGap;
 }
 
-List<TimelineEntry> buildChatTimeline(List<ChatMessage> messages) {
+/// [isRunning] mirrors the web's idle-only rule: while the run is still
+/// live, a card message is not pulled out to stand alone — it folds into
+/// the ordinary consecutive-assistant grouping like any other thinking
+/// step, and only gets promoted to its own slot once the run goes idle.
+List<TimelineEntry> buildChatTimeline(
+  List<ChatMessage> messages, {
+  required bool isRunning,
+}) {
   final out = <TimelineEntry>[];
   var i = 0;
   while (i < messages.length) {
     final m = messages[i];
-    // A card always stands alone — see the library note above.
-    if (m.role != ChatMessageRole.assistant || isInteractiveCardMessage(m)) {
+    // A card always stands alone — see the library note above — but only
+    // once idle; mid-run it is treated as an ordinary assistant message.
+    final isCard = !isRunning && isInteractiveCardMessage(m);
+    if (m.role != ChatMessageRole.assistant || isCard) {
       out.add(SingleMessageEntry(m));
       i++;
       continue;
@@ -133,7 +142,7 @@ List<TimelineEntry> buildChatTimeline(List<ChatMessage> messages) {
     var j = i;
     while (j < messages.length &&
         messages[j].role == ChatMessageRole.assistant &&
-        !isInteractiveCardMessage(messages[j]) &&
+        !(!isRunning && isInteractiveCardMessage(messages[j])) &&
         (j == i || !_startsNewTurn(messages[j - 1], messages[j]))) {
       j++;
     }

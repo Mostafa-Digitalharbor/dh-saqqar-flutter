@@ -1,12 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
-/// The four credential kinds the backend currently supports. Mobile API §7.
+/// The five credential kinds the backend currently supports. Mobile API §7.
 enum CredentialKind {
   xmlrpc('xmlrpc'),
   postgres('postgres'),
   serverShell('server_shell'),
-  github('github');
+  github('github'),
+  email('email');
 
   const CredentialKind(this.wire);
 

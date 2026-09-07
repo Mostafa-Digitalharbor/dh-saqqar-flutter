@@ -14,6 +14,7 @@
 // Mirrors the "5 hostile responses" convention the other API clients follow.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:saqqar_app/features/chat/data/app_pulse_payloads.dart';
 import 'package:saqqar_app/features/chat/data/interactive_cards.dart';
 
 /// Every payload here must be survivable by every parser.
@@ -125,6 +126,85 @@ const _hostile = <String, Object?>{
     'periods': {'this_month': 'This month'},
     'formats': 12,
   },
+  // Task 1 (MOBILE_TASKS_2026-09.md) — the seven app-pulse dashboards.
+  'factory: everything is the wrong type': {
+    'kind': 'factory',
+    'status': 42,
+    'mo_running': 'twelve',
+    'mo_late': <Object?>[],
+    'top_risks': 'nope',
+    'notes': 'not a list',
+  },
+  'factory: top_risks entries are junk': {
+    'kind': 'factory',
+    'top_risks': <Object?>[null, 5, 'x', <String, dynamic>{}],
+  },
+  'factory: top_risks is a map': {
+    'kind': 'factory',
+    'top_risks': {'a': 1},
+  },
+  'inventory: buckets are the wrong type': {
+    'kind': 'inventory',
+    'sales_days': 'ninety',
+    'inventory_value': 'nope',
+    'low_stock': <Object?>['not', 'a', 'map'],
+    'missing_data': 42,
+    'priorities': {'a': 1},
+  },
+  'inventory: bucket available is a string': {
+    'kind': 'inventory',
+    'low_stock': {'available': 'yes', 'count': 'twelve', 'items': 'nope'},
+  },
+  'inventory: bucket total is a list': {
+    'kind': 'inventory',
+    'stagnant_stock': {'available': true, 'total': <Object?>[]},
+  },
+  'finance: cash and buckets are the wrong type': {
+    'kind': 'finance',
+    'cash': 'nope',
+    'receivables': 'nope',
+    'payables': <Object?>[],
+    'drafts': 42,
+    'liquidity_7d': 'covered',
+    'priorities': {'a': 1},
+  },
+  'finance: cash journals is a map': {
+    'kind': 'finance',
+    'cash': {'available': true, 'journals': {'a': 1}},
+  },
+  'purchasing: buckets are the wrong type': {
+    'kind': 'purchasing',
+    'open_rfqs': 'nope',
+    'vendor_bills': <Object?>[],
+    'vendor_delay_summary': 'not a list',
+  },
+  'hr: counters and operations are the wrong type': {
+    'kind': 'hr',
+    'window_days': 'ninety',
+    'counters': 'nope',
+    'operations': <Object?>['not', 'a', 'map'],
+  },
+  'hr: counter entries and operation items are junk': {
+    'kind': 'hr',
+    'counters': <Object?>[null, 5, 'x', <String, dynamic>{}],
+    'operations': {
+      'available': true,
+      'items': <Object?>[null, 5, 'x', <String, dynamic>{}],
+    },
+  },
+  'accountant: month, window_days and counters are the wrong type': {
+    'kind': 'accountant',
+    'month': <Object?>[],
+    'window_days': 'a year',
+    'counters': {'a': 1},
+    'blocks': 'nope',
+  },
+  'quality_guard: quality_stats and spec_stats are the wrong type': {
+    'kind': 'quality_guard',
+    'quality_stats': 'nope',
+    'spec_stats': <Object?>[],
+    'priorities': {'a': 1},
+  },
 };
 
 Map<String, dynamic>? _payload(Object? raw) =>
@@ -141,6 +221,16 @@ void main() {
         expect(() => PromptClarifyPayload.parse(payload), returnsNormally);
         expect(() => PromptSuggestionPayload.parse(payload), returnsNormally);
         expect(() => ReportBuilderPayload.parse(payload), returnsNormally);
+        expect(() => FactoryPulsePayload.parse(payload), returnsNormally);
+        expect(() => InventoryPulsePayload.parse(payload), returnsNormally);
+        expect(() => FinancePulsePayload.parse(payload), returnsNormally);
+        expect(() => PurchasingPulsePayload.parse(payload), returnsNormally);
+        expect(() => HrPulsePayload.parse(payload), returnsNormally);
+        expect(() => AccountantPulsePayload.parse(payload), returnsNormally);
+        expect(
+          () => QualityGuardPulsePayload.parse(payload),
+          returnsNormally,
+        );
         expect(
           () => hasRenderableInteractiveCard(payload),
           returnsNormally,
@@ -159,7 +249,14 @@ void main() {
         final renderable = hasRenderableInteractiveCard(payload);
         final parsed = PromptClarifyPayload.parse(payload) ??
             PromptSuggestionPayload.parse(payload) ??
-            ReportBuilderPayload.parse(payload);
+            ReportBuilderPayload.parse(payload) ??
+            FactoryPulsePayload.parse(payload) ??
+            InventoryPulsePayload.parse(payload) ??
+            FinancePulsePayload.parse(payload) ??
+            PurchasingPulsePayload.parse(payload) ??
+            HrPulsePayload.parse(payload) ??
+            AccountantPulsePayload.parse(payload) ??
+            QualityGuardPulsePayload.parse(payload);
 
         expect(
           renderable,

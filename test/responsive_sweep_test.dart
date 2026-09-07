@@ -55,6 +55,7 @@ import 'package:saqqar_app/shared/widgets/pagination_bar.dart';
 import 'package:saqqar_app/shared/widgets/save_status_hint.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_artifact_tile.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_env_hint_banner.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_resume_banner.dart';
 import 'package:saqqar_app/features/chat/widgets/tool_activity_card.dart';
 import 'package:saqqar_app/features/conversations/widgets/conversations_empty_state.dart';
 import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
@@ -283,6 +284,7 @@ void main() {
             ),
             isFirstOfGroup: true,
             isLastOfGroup: true,
+            isRunning: false,
           ),
         ),
       );
@@ -307,6 +309,7 @@ void main() {
           ),
           isFirstOfGroup: true,
           isLastOfGroup: true,
+          isRunning: false,
         ),
       );
     });
@@ -580,6 +583,14 @@ void main() {
       await _sweep(
         tester,
         () => ChatEnvHintBanner(onUseMyDatabase: () {}, busy: true),
+      );
+    });
+
+    testWidgets('resume banner, idle and busy', (tester) async {
+      await _sweep(tester, () => ChatResumeBanner(onResume: () {}));
+      await _sweep(
+        tester,
+        () => ChatResumeBanner(onResume: () {}, busy: true),
       );
     });
 

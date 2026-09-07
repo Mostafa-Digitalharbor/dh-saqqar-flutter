@@ -34,7 +34,16 @@ const _approvalKeywords = {
 ///
 /// Shared by the render path and the paging math so the two can never
 /// disagree about what counts as a visible message.
-bool isVisibleMessage(Message m) {
+///
+/// [isRunning] mirrors the web's idle-only rule for interactive cards
+/// (`prompt_clarify` / `prompt_suggestion` / `report_builder`): the web only
+/// promotes a `tool_payload.kind` message to a card once the run has gone
+/// idle — mid-run it is just another step. Passing `isRunning: true` here
+/// stops the card carve-out below from force-keeping an otherwise-empty
+/// tool/assistant row visible, so it instead falls through to the ordinary
+/// empty-content rule and collapses into the ordinary "thinking" grouping,
+/// exactly like any other intermediate step.
+bool isVisibleMessage(Message m, {required bool isRunning}) {
   // An interactive card IS the message — it outranks every rule below.
   //
   // Both of the next two rules would otherwise eat it: the payload rides on
@@ -42,7 +51,7 @@ bool isVisibleMessage(Message m) {
   // is empty in others (the payload is the content). `hasRenderable…` rather
   // than a bare `kind` check, so a malformed card still gets dropped instead
   // of rendering as an empty bubble.
-  if (hasRenderableInteractiveCard(m.toolPayload)) return true;
+  if (!isRunning && hasRenderableInteractiveCard(m.toolPayload)) return true;
 
   if (m.role == MessageRole.tool) return false;
   if (m.role == MessageRole.assistant && m.content.trim().isEmpty) {

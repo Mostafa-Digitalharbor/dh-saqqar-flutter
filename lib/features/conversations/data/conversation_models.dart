@@ -425,6 +425,7 @@ class Conversation extends Equatable {
     this.isArchived = false,
     this.plan,
     this.needsEnvironment = false,
+    this.needsResume = false,
   });
 
   final String id;
@@ -508,6 +509,15 @@ class Conversation extends Equatable {
   /// "Use My Database" env-hint banner (Gap H).
   final bool needsEnvironment;
 
+  /// `true` when a run ended without finishing and without anything waiting
+  /// on the user — the server has already excluded every legitimate pause
+  /// (a pending approval, an open question, a credential request, a quota
+  /// stop), so this is only ever true for a genuine dead end. Drives the
+  /// Resume banner. The server also owns the rate limit on how many times a
+  /// conversation may be resumed and flips this back to `false` once the cap
+  /// is reached — the client adds no counter of its own.
+  final bool needsResume;
+
   factory Conversation.fromJson(Map<String, dynamic> json) {
     final env = json['environment'];
     final proj = json['project'];
@@ -559,6 +569,7 @@ class Conversation extends Equatable {
           ? PlanSnapshot.fromJson(json['plan'] as Map<String, dynamic>)
           : null,
       needsEnvironment: json['needs_environment'] as bool? ?? false,
+      needsResume: json['needs_resume'] as bool? ?? false,
     );
   }
 
@@ -583,6 +594,7 @@ class Conversation extends Equatable {
     Project? project,
     PlanSnapshot? plan,
     bool? needsEnvironment,
+    bool? needsResume,
   }) {
     return Conversation(
       id: id,
@@ -605,6 +617,7 @@ class Conversation extends Equatable {
       project: project ?? this.project,
       plan: plan ?? this.plan,
       needsEnvironment: needsEnvironment ?? this.needsEnvironment,
+      needsResume: needsResume ?? this.needsResume,
     );
   }
 
@@ -629,6 +642,7 @@ class Conversation extends Equatable {
         project,
         plan,
         needsEnvironment,
+        needsResume,
       ];
 }
 

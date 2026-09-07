@@ -34,6 +34,7 @@ import 'package:saqqar_app/shared/widgets/app_error_state.dart';
 import 'package:saqqar_app/shared/widgets/app_icon_button.dart';
 import 'package:saqqar_app/shared/widgets/app_loading_state.dart';
 import 'package:saqqar_app/shared/widgets/app_text_field.dart';
+import 'package:saqqar_app/shared/widgets/auto_direction_text.dart';
 import 'package:saqqar_app/shared/widgets/code_plate.dart';
 import 'package:saqqar_app/shared/widgets/colored_icon_box.dart';
 import 'package:saqqar_app/shared/widgets/dialog_actions.dart';
@@ -139,6 +140,8 @@ void main() {
     'GlassCard blurred': () =>
         const GlassCard(blur: true, child: Text(kUnbreakable)),
     'LabeledDivider': () => const LabeledDivider(label: kLongArabic),
+    'AutoDirectionText': () => const AutoDirectionText(kLongArabic),
+    'AutoDirectionText LTR': () => const AutoDirectionText(kLongEnglish),
     'MiniChip': () => const MiniChip(kLongEnglish),
     'MiniChip coloured': () =>
         const MiniChip(kLongArabic, color: AppColors.warning),
@@ -671,6 +674,66 @@ void main() {
         ),
       );
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('AutoDirectionText', () {
+    testWidgets('an Arabic string renders right-to-left', (tester) async {
+      // The whole reason this widget exists: server-authored Arabic must
+      // read RTL even inside an English-locale screen (Task 1/4,
+      // MOBILE_TASKS_2026-09.md) — the ambient Directionality is English
+      // here, so a passing result proves the widget overrides it per-string
+      // rather than inheriting the screen's.
+      const arabic = 'توقفت المحادثة قبل إكمال المهمة.';
+      await tester.pumpWidget(
+        conformanceHarness(
+          const AutoDirectionText(arabic),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      // The NEAREST Directionality above the text — the ambient screen's own
+      // (English, LTR) is further up the tree and must not be what this
+      // reads, or the test would pass even if the widget did nothing at all.
+      final dir = tester.widget<Directionality>(
+        find.ancestor(of: find.text(arabic), matching: find.byType(Directionality)).first,
+      );
+      expect(dir.textDirection, TextDirection.rtl);
+    });
+
+    testWidgets('an English string renders left-to-right inside an Arabic '
+        'screen', (tester) async {
+      const english = 'This chat stopped before the task was finished.';
+      await tester.pumpWidget(
+        conformanceHarness(
+          const AutoDirectionText(english),
+          locale: const Locale('ar'),
+          scale: 1.0,
+        ),
+      );
+      final dir = tester.widget<Directionality>(
+        find.ancestor(of: find.text(english), matching: find.byType(Directionality)).first,
+      );
+      expect(dir.textDirection, TextDirection.ltr);
+    });
+
+    testWidgets('forwards style, maxLines and overflow to Text', (tester) async {
+      await tester.pumpWidget(
+        conformanceHarness(
+          const AutoDirectionText(
+            kUnbreakable,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: AppColors.warning),
+          ),
+          locale: const Locale('en'),
+          scale: 1.0,
+        ),
+      );
+      final text = tester.widget<Text>(find.text(kUnbreakable));
+      expect(text.maxLines, 1);
+      expect(text.overflow, TextOverflow.ellipsis);
+      expect(text.style?.color, AppColors.warning);
     });
   });
 

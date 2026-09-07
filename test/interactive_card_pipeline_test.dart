@@ -75,10 +75,16 @@ Map<String, dynamic> _snapshotWithCard({
     };
 
 /// Runs stages 1–3 and returns what the chat list would be handed.
+///
+/// Filters against the snapshot's OWN `conversation.isRunning` — realistic,
+/// since that's exactly what `chat_screen.dart` does — rather than a
+/// separate parameter, so every existing fixture (`is_running: false`)
+/// keeps its original meaning unchanged.
 List<ChatMessage> _pipeline(Map<String, dynamic> body) {
   final snapshot = ConversationSnapshot.fromJson(body);
+  final running = snapshot.conversation.isRunning;
   return snapshot.messages
-      .where(isVisibleMessage)
+      .where((m) => isVisibleMessage(m, isRunning: running))
       .map((m) => adaptApiMessage(m, time: '10:00'))
       .toList();
 }
@@ -88,8 +94,9 @@ Future<void> _pumpTimeline(
   List<ChatMessage> messages, {
   Locale locale = const Locale('en'),
   required ValueChanged<String> onSend,
+  bool isRunning = false,
 }) async {
-  final timeline = buildChatTimeline(messages);
+  final timeline = buildChatTimeline(messages, isRunning: isRunning);
   await tester.pumpWidget(
     MaterialApp(
       locale: locale,
@@ -113,6 +120,7 @@ Future<void> _pumpTimeline(
                     message: entry.message,
                     isFirstOfGroup: true,
                     isLastOfGroup: true,
+                    isRunning: isRunning,
                     onCardSend: onSend,
                   )
                 else
@@ -120,6 +128,7 @@ Future<void> _pumpTimeline(
                     message: (entry as AgentTurnEntry).finalReply,
                     isFirstOfGroup: true,
                     isLastOfGroup: true,
+                    isRunning: isRunning,
                     onCardSend: onSend,
                   ),
             ],
@@ -269,7 +278,8 @@ void main() {
         };
 
     test('gets its own timeline slot', () {
-      final timeline = buildChatTimeline(_pipeline(midRunSnapshot()));
+      final timeline =
+          buildChatTimeline(_pipeline(midRunSnapshot()), isRunning: false);
 
       final cardEntries = timeline
           .whereType<SingleMessageEntry>()
@@ -409,5 +419,83 @@ void main() {
     expect(find.text(ar.clarifyBuildSend), findsOneWidget);
     // The server's own option strings pass through untranslated, as they must.
     expect(find.text('This quarter'), findsOneWidget);
+  });
+
+  // WEB_TO_MOBILE_PARITY_AND_DELETE_FIX.md §B.1's other precondition: web
+  // renders a `kind` card only for the run's final message once `is_running`
+  // is false. All four stages, on a snapshot whose `conversation` really is
+  // `is_running: true` — the shape every other test in this file deliberately
+  // is NOT (they all set it false), so this is the one place the whole chain
+  // is proven end to end for the live-run case.
+  group('§B.1 idle-only — a running conversation never shows the card', () {
+    Map<String, dynamic> runningSnapshot({
+      required String role,
+      required String content,
+    }) =>
+        {
+          'conversation': {
+            'id': 'c1',
+            'title': 'Reports',
+            'auto_approve': false,
+            'is_running': true,
+            'stop_requested': false,
+          },
+          'messages': [
+            {'id': 'm1', 'role': 'user', 'content': 'build me a report'},
+            {
+              'id': 'm2',
+              'role': role,
+              'content': content,
+              'tool_payload': _clarifyPayload,
+            },
+          ],
+        };
+
+    test('empty-content card message never reaches the chat list while '
+        'running', () {
+      final messages =
+          _pipeline(runningSnapshot(role: 'tool', content: ''));
+
+      expect(messages.map((m) => m.id), ['m1'],
+          reason: 'mid-run this is ordinary tool plumbing');
+    });
+
+    testWidgets('a card message with prose reaches the screen as prose, '
+        'not a tappable card, while running', (tester) async {
+      final sent = <String>[];
+      await _pumpTimeline(
+        tester,
+        _pipeline(runningSnapshot(
+          role: 'assistant',
+          content: 'Before I start, a couple of questions:',
+        )),
+        onSend: sent.add,
+        isRunning: true,
+      );
+
+      expect(find.text(en.clarifyTitle), findsNothing,
+          reason: 'no card chrome while the run is live');
+      expect(find.text('Before I start, a couple of questions:'),
+          findsOneWidget);
+    });
+
+    testWidgets('the identical payload promotes to a real tappable card '
+        'the moment the run goes idle', (tester) async {
+      final sent = <String>[];
+      await _pumpTimeline(
+        tester,
+        _pipeline(_snapshotWithCard(
+          role: 'assistant',
+          content: 'Before I start, a couple of questions:',
+        )),
+        onSend: sent.add,
+        isRunning: false,
+      );
+
+      expect(find.text(en.clarifyTitle), findsOneWidget);
+      await tester.tap(find.text(en.clarifyBuildSend));
+      await tester.pumpAndSettle();
+      expect(sent, hasLength(1));
+    });
   });
 }

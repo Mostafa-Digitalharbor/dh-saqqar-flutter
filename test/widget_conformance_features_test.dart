@@ -27,8 +27,19 @@ import 'package:saqqar_app/core/theme/view_model/theme_cubit.dart';
 import 'package:saqqar_app/features/account/widgets/account_card_header.dart';
 import 'package:saqqar_app/features/auth/widgets/auth_header_actions.dart';
 import 'package:saqqar_app/features/billing/widgets/plan_feature_line.dart';
+import 'package:saqqar_app/features/chat/data/app_pulse_payloads.dart';
 import 'package:saqqar_app/features/chat/data/interactive_cards.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 import 'package:saqqar_app/features/chat/widgets/accent_card_chrome.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/accountant_pulse_card.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/factory_pulse_card.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/finance_pulse_card.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/hr_pulse_card.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/inventory_pulse_card.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_counter_list.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/purchasing_pulse_card.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/quality_guard_pulse_card.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_approval_card.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_bottom_chrome.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_date_separator.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_header_controls.dart';
@@ -296,6 +307,174 @@ void main() {
     // comment, which is precisely how it read as covered.
     'PlanBadge': () => const PlanBadge(name: kLongArabic),
     'PlanBadge dense': () => const PlanBadge(name: kLongEnglish, dense: true),
+    // Task 1 (MOBILE_TASKS_2026-09.md) — the two fully-specified app-pulse
+    // cards. Long Arabic customer/product names and an unbreakable order
+    // number, because a real Odoo database is exactly where those come from.
+    'FactoryPulseCard': () => FactoryPulseCard(
+          payload: FactoryPulsePayload.parse({
+            'kind': 'factory',
+            'status': 'ok',
+            'as_of': '2026-09-05',
+            'mo_running': 12,
+            'mo_late': 3,
+            'mo_done_today': 5,
+            'po_late': 2,
+            'orders_at_risk': 4,
+            'top_risks': [
+              {
+                'order': kUnbreakable,
+                'customer': kLongArabic,
+                'missing_lines': 3,
+                'lead_days': 21,
+                'worst_product': kLongEnglish,
+              },
+            ],
+            'notes': [kLongArabic],
+          })!,
+        ),
+    'FactoryPulseCard error': () => FactoryPulseCard(
+          payload: FactoryPulsePayload.parse({
+            'kind': 'factory',
+            'status': 'error',
+            'error': kLongArabic,
+          })!,
+        ),
+    'InventoryPulseCard': () => InventoryPulseCard(
+          payload: InventoryPulsePayload.parse({
+            'kind': 'inventory',
+            'status': 'ok',
+            'as_of': '2026-09-05',
+            'sales_days': 90,
+            'product_count': 1840,
+            'inventory_value': {'available': true, 'total': 984000.0},
+            'low_stock': {'available': false},
+            'demand_shortage': {'available': true, 'count': 4},
+            'stagnant_stock': {'available': true, 'count': 31, 'total': 120400.0},
+            'overstock': {'available': true, 'count': 8, 'total': 65000.0},
+            'fast_reorder': {'available': true, 'count': 6},
+            'missing_data': {'available': true, 'count': 22},
+            'notes': [kLongArabic],
+            'priorities': [kLongEnglish, kUnbreakable],
+          })!,
+        ),
+    // The five kinds built from a live payload (doc: "read the live payload
+    // ... that is the authoritative shape") rather than the doc's own
+    // top-level key list — see `app_pulse_payloads.dart`'s doc comments on
+    // each parser for why. Same hostile-content treatment as factory/
+    // inventory above.
+    'FinancePulseCard': () => FinancePulseCard(
+          payload: FinancePulsePayload.parse({
+            'kind': 'finance',
+            'status': 'ok',
+            'as_of': '2026-09-06',
+            'cash': {
+              'balance': 12500.0,
+              'journals': [kUnbreakable],
+              'available': true,
+            },
+            'receivables': {
+              'overdue': {'count': 3, 'total': 4200.0, 'available': true},
+            },
+            'payables': {
+              'due_soon': {'count': 1, 'total': 900.0, 'available': true},
+            },
+            'drafts': {
+              'vendor_bills': {'count': 0, 'available': true},
+              'customer_invoices': {'count': 2, 'available': true},
+            },
+            'bank_reconciliation': {'count': 0, 'available': false},
+            'liquidity_7d': {'status': 'covered', 'available': true},
+            'priorities': [kLongArabic],
+          })!,
+        ),
+    'PurchasingPulseCard': () => PurchasingPulseCard(
+          payload: PurchasingPulsePayload.parse({
+            'kind': 'purchasing',
+            'status': 'ok',
+            'open_rfqs': {'count': 4, 'available': true},
+            'awaiting_approval': {'count': 0, 'available': false},
+            'late_purchase_orders': {'count': 2, 'available': true},
+            'late_incoming_receipts': {'count': 1, 'available': true},
+            'to_bill': {'count': 0, 'available': true},
+            'vendor_bills': {'count': 3, 'available': true},
+            'vendor_delay_summary': [
+              {'vendor': kUnbreakable},
+            ],
+            'priorities': [kLongArabic],
+          })!,
+        ),
+    'HrPulseCard': () => HrPulseCard(
+          payload: HrPulsePayload.parse({
+            'kind': 'hr',
+            'status': 'ok',
+            'as_of': '2026-09-06',
+            'window_days': 90,
+            'counters': [
+              {
+                'key': 'contracts',
+                'label': kLongArabic,
+                'value': 1,
+                'action': kLongArabic,
+              },
+            ],
+            'operations': {
+              'available': true,
+              'active_employees': 9,
+              'missing_managers': 9,
+              'missing_work_email': 1,
+              'items': [
+                {'employee': kUnbreakable, 'reason': kLongArabic},
+              ],
+            },
+          })!,
+        ),
+    'AccountantPulseCard': () => AccountantPulseCard(
+          payload: AccountantPulsePayload.parse({
+            'kind': 'accountant',
+            'status': 'ok',
+            'month': '2026-08',
+            'window_days': 365,
+            'counters': [
+              {
+                'key': 'tax',
+                'label': kLongArabic,
+                'value': 1,
+                'action': kLongEnglish,
+              },
+            ],
+          })!,
+        ),
+    'QualityGuardPulseCard': () => QualityGuardPulseCard(
+          payload: QualityGuardPulsePayload.parse({
+            'kind': 'quality_guard',
+            'status': 'ok',
+            'as_of': '2026-09-06',
+            'priorities': [kLongArabic],
+            'quality_stats': {
+              'out_of_spec': 2,
+              'failed_checks': 1,
+              'pending_checks': 0,
+              'quality_alerts': 3,
+              'missing_numeric_specs': 0,
+            },
+            'spec_stats': {
+              'review_cases': 1,
+              'invoice_swaps': 0,
+              'delivery_swaps': 2,
+              'high_risk_cases': 1,
+              'cost_saving_total': 450.0,
+            },
+          })!,
+        ),
+    'PulseCounterList': () => const PulseCounterList(counters: [
+          PulseCounter(
+            key: 'a',
+            label: kLongArabic,
+            value: 1,
+            action: kLongEnglish,
+          ),
+          PulseCounter(key: 'b', label: kUnbreakable, value: null),
+        ]),
     // Watches AuthCubit and PlanCubit off the tree, so it needs both. The
     // plan is left at its `null` default deliberately — that is what the
     // hero renders during the first paint after sign-in, before
@@ -307,6 +486,26 @@ void main() {
             BlocProvider<PlanCubit>(create: (_) => PlanCubit()),
           ],
           child: const ProfileHero(),
+        ),
+    // Title/prompt are agent-generated and can contain a single unbroken
+    // token (a filename, a dotted method path) — see the responsiveness
+    // audit finding this covers.
+    'ChatApprovalCard': () => ChatApprovalCard(
+          approval: const ChatApproval(
+            id: 'a1',
+            title: kUnbreakable,
+            prompt: '$kLongArabic $kUnbreakable $kLongEnglish',
+            actionType: 'odoo_write',
+            risk: 'high',
+            status: ChatApprovalStatus.pending,
+            payload: {
+              'model': 'mrp.production',
+              'method': 'write',
+              'record_count': '42',
+            },
+          ),
+          onApprove: () {},
+          onReject: () {},
         ),
   };
 

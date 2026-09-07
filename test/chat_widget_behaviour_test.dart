@@ -9,6 +9,7 @@ import 'package:saqqar_app/features/chat/widgets/artifact_pill.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_app_bar_title.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_artifact_tile.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_env_hint_banner.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_resume_banner.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_suggestion_strip.dart';
 import 'package:saqqar_app/features/chat/widgets/empty_chat_suggestions.dart';
 import 'package:saqqar_app/features/chat/widgets/prompt_clarify_card.dart';
@@ -132,6 +133,41 @@ void main() {
       await tester.tap(find.byType(PrimaryButton), warnIfMissed: false);
       await tester.pump();
       expect(taps, 0, reason: 'The banner fired its action while busy.');
+    });
+  });
+
+  group('ChatResumeBanner', () {
+    testWidgets('invokes its action once when idle', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(host(ChatResumeBanner(onResume: () => taps++)));
+      await tester.tap(find.byType(PrimaryButton));
+      await tester.pump();
+      expect(taps, 1);
+    });
+
+    testWidgets('is inert while busy', (tester) async {
+      // Same contract as ChatEnvHintBanner: the in-flight flag must disable
+      // the button, or a slow network round-trip lets a second tap fire a
+      // second resume request.
+      var taps = 0;
+      await tester.pumpWidget(
+        host(ChatResumeBanner(busy: true, onResume: () => taps++)),
+      );
+      await tester.tap(find.byType(PrimaryButton), warnIfMissed: false);
+      await tester.pump();
+      expect(taps, 0, reason: 'The banner fired its action while busy.');
+    });
+
+    testWidgets('relabels to the working string while busy', (tester) async {
+      await tester.pumpWidget(host(ChatResumeBanner(onResume: () {})));
+      expect(find.text(en.chatResumeButton), findsOneWidget);
+      expect(find.text(en.chatResumeButtonWorking), findsNothing);
+
+      await tester.pumpWidget(
+        host(ChatResumeBanner(busy: true, onResume: () {})),
+      );
+      expect(find.text(en.chatResumeButton), findsNothing);
+      expect(find.text(en.chatResumeButtonWorking), findsOneWidget);
     });
   });
 

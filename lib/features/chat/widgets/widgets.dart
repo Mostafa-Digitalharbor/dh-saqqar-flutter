@@ -21,6 +21,7 @@ export 'chat_env_hint_banner.dart';
 export 'chat_markdown.dart';
 export 'chat_plan_banner.dart';
 export 'chat_rail_drawer.dart';
+export 'chat_resume_banner.dart';
 export 'chat_run_progress_card.dart';
 export 'chat_sidebar_drawer.dart';
 export 'chat_scroll_down_button.dart';

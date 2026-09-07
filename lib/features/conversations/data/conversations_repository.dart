@@ -528,6 +528,13 @@ class ConversationsRepository {
     );
   }
 
+  /// Restarts a run stuck at `needs_resume: true`. Returns the fresh
+  /// snapshot; the caller merges it exactly like a poll response.
+  Future<ConversationSnapshot> resume(String conversationId) async {
+    AppLogger.info(_tag, 'resume(conv=$conversationId)');
+    return _api.resume(conversationId);
+  }
+
   // ── Messages + attachments ──────────────────────────────────────────
 
   Future<ConversationSnapshot> sendMessage({

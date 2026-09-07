@@ -429,7 +429,8 @@ CustomTransitionPage<void> _transitionPage({
 
       if (kind == _RouteTransitionKind.scale) {
         return ScaleTransition(
-          scale: Tween<double>(begin: 0.98, end: 1).animate(curve),
+          scale: Tween<double>(begin: AppScaleFractions.routePush, end: 1)
+              .animate(curve),
           child: faded,
         );
       }

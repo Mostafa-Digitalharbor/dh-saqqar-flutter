@@ -12,6 +12,7 @@ enum ChatAction {
   load,
   send,
   stop,
+  resume,
   uploadAttachment,
   dismissPendingAction,
   setActiveCredential,
@@ -48,8 +49,8 @@ class ChatActionFailure extends Equatable {
 /// [stagedAttachments] are uploaded but NOT yet attached to a sent
 /// message; they ride along on the next [ChatCubit.sendMessage].
 ///
-/// [isSending] / [isStopping] / [isUploading] disable composer
-/// controls during the matching in-flight action.
+/// [isSending] / [isStopping] / [isUploading] / [isResuming] disable
+/// composer controls during the matching in-flight action.
 ///
 /// [actionFailure] / [actionToast] are one-shot signals consumed by the
 /// view's BlocListener.
@@ -59,6 +60,7 @@ class ChatState extends Equatable {
     this.stagedAttachments = const [],
     this.isSending = false,
     this.isStopping = false,
+    this.isResuming = false,
     this.isUploading = false,
     this.isLoadingOlder = false,
     this.hasMoreOlder = true,
@@ -78,6 +80,7 @@ class ChatState extends Equatable {
 
   final bool isSending;
   final bool isStopping;
+  final bool isResuming;
   final bool isUploading;
 
   /// True while a backward page (`?before=`) is in flight — drives the
@@ -112,6 +115,7 @@ class ChatState extends Equatable {
     List<Attachment>? stagedAttachments,
     bool? isSending,
     bool? isStopping,
+    bool? isResuming,
     bool? isUploading,
     bool? isLoadingOlder,
     bool? hasMoreOlder,
@@ -130,6 +134,7 @@ class ChatState extends Equatable {
           : (stagedAttachments ?? this.stagedAttachments),
       isSending: isSending ?? this.isSending,
       isStopping: isStopping ?? this.isStopping,
+      isResuming: isResuming ?? this.isResuming,
       isUploading: isUploading ?? this.isUploading,
       isLoadingOlder: isLoadingOlder ?? this.isLoadingOlder,
       hasMoreOlder: hasMoreOlder ?? this.hasMoreOlder,
@@ -148,6 +153,7 @@ class ChatState extends Equatable {
         stagedAttachments,
         isSending,
         isStopping,
+        isResuming,
         isUploading,
         isLoadingOlder,
         hasMoreOlder,

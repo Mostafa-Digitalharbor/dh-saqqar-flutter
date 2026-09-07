@@ -329,6 +329,17 @@ class ConversationsApi {
     return ConversationSnapshot.fromJson(res.data!);
   }
 
+  /// `POST /api/v1/conversations/<id>/resume/` — restarts a run that stopped
+  /// without finishing and without anything waiting on the user. Empty body;
+  /// returns a full snapshot, same shape as [getSnapshot].
+  Future<ConversationSnapshot> resume(String conversationId) async {
+    final body = await _dio.postJson(
+      ApiEndpoints.conversationResume(conversationId),
+      data: const <String, dynamic>{},
+    );
+    return ConversationSnapshot.fromJson(body);
+  }
+
   // ── Messages ────────────────────────────────────────────────────────
 
   /// `POST /api/v1/conversations/<id>/messages/` — sends the user's turn.

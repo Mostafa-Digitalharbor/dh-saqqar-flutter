@@ -64,9 +64,9 @@ class _TypingDotsState extends State<TypingDots>
         mainAxisSize: MainAxisSize.min,
         children: [
           _dot(),
-          SizedBox(width: widget.dotSize * 0.7),
+          SizedBox(width: widget.dotSize * AppTypingDotsMotion.gapRatio),
           _dot(),
-          SizedBox(width: widget.dotSize * 0.7),
+          SizedBox(width: widget.dotSize * AppTypingDotsMotion.gapRatio),
           _dot(),
         ],
       );
@@ -83,9 +83,9 @@ class _TypingDotsState extends State<TypingDots>
             mainAxisSize: MainAxisSize.min,
             children: [
               _animatedDot(0),
-              SizedBox(width: widget.dotSize * 0.7),
+              SizedBox(width: widget.dotSize * AppTypingDotsMotion.gapRatio),
               _animatedDot(0.18),
-              SizedBox(width: widget.dotSize * 0.7),
+              SizedBox(width: widget.dotSize * AppTypingDotsMotion.gapRatio),
               _animatedDot(0.36),
             ],
           );
@@ -105,7 +105,7 @@ class _TypingDotsState extends State<TypingDots>
     if (widget.bounce) {
       // Hop up (negative dy) at the peak, back to baseline at the troughs.
       return Transform.translate(
-        offset: Offset(0, -eased * widget.dotSize * 0.8),
+        offset: Offset(0, -eased * widget.dotSize * AppTypingDotsMotion.bounceRatio),
         child: _dot(),
       );
     }

@@ -105,12 +105,21 @@ class ApprovalsCubit extends Cubit<ApprovalsState> {
     required bool approved,
     bool batchScope = false,
   }) async {
-    await _api.decide(
-      id: approvalId,
-      approved: approved,
-      batchScope: batchScope,
-    );
-    await load();
+    try {
+      await _api.decide(
+        id: approvalId,
+        approved: approved,
+        batchScope: batchScope,
+      );
+      await load();
+    } catch (e) {
+      emit(state.copyWith(
+        approvals: DataFailure(
+          error: ApiErrorMapper.toFailure(e),
+          previous: state.approvals.dataOrNull,
+        ),
+      ));
+    }
   }
 
   /// Clear on sign-out / account switch.
