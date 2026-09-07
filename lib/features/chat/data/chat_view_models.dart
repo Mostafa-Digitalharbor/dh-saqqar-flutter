@@ -156,7 +156,6 @@ class ChatApproval {
     required this.risk,
     required this.status,
     required this.payload,
-    this.groupedCount,
     this.sharedShape,
     this.conversationId,
     this.recordCount,
@@ -172,17 +171,6 @@ class ChatApproval {
   final String risk;
   final ChatApprovalStatus status;
   final Map<String, String> payload;
-
-  /// Number of sibling approvals sharing this shape.
-  ///
-  /// **Demo data only.** The backend confirmed on 2026-08-06 that no
-  /// `grouped_count` field exists anywhere — grouping is resolved by POSTing
-  /// `scope: "batch"`, and the count of what that cleared comes back in the
-  /// RESPONSE (`batch.resolved_count`), not on the incoming card. So a real
-  /// approval can never know its group size up front, and no server-fed card
-  /// sets this. It survives to keep the demo screenshots rendering; nothing
-  /// on the live path may key a label off it.
-  final int? groupedCount;
 
   /// Composite key the agent uses to pre-approve future writes of the same
   /// shape in this conversation. Format used by the web is
@@ -216,8 +204,6 @@ class ChatApproval {
   /// `payload.batch_scope` — already auto-approved by a scope the user
   /// granted earlier, so offering to batch it again is offering a no-op.
   final bool batchScoped;
-
-  bool get isGrouped => (groupedCount ?? 1) > 1;
 
   /// Wire value of the action type the backend describes batching for.
   static const kOdooWrite = 'odoo_write';

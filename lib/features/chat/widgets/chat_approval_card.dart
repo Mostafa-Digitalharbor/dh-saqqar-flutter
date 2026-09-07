@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 
-import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -118,12 +117,6 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                   ),
                 ),
               ),
-              if (approval.isGrouped) ...[
-                MiniChip(
-                    '${UiStrings.timesSign}${approval.groupedCount ?? 1}',
-                    color: s.warning),
-                const SizedBox(width: AppSpacing.s6),
-              ],
               MiniChip(approval.risk, color: s.warning),
             ],
           ),

@@ -75,9 +75,4 @@ class UiStrings {
   /// matching the real length would leak how long the secret is, and the
   /// row's width would twitch as the value loads.
   static const secretMask = '••••••••••';
-
-  /// Multiplication sign prefixed to a grouped-approval count ("×3"). U+00D7,
-  /// not the Latin letter "x" — and not translated: the glyph is a numeric
-  /// operator that reads the same in Arabic.
-  static const timesSign = '×';
 }

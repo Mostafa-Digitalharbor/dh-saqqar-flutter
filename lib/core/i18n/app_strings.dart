@@ -336,8 +336,6 @@ class AppStrings {
   String get approveAllSimilar => _t('approve_all_similar');
   String approvalBatchResolved(int count) =>
       _p('approval_batch_resolved', count);
-  String get showIndividualRecords => _t('show_individual_records');
-  String get hideIndividualRecords => _t('hide_individual_records');
   String approvalGrantedWithPreapproval(int count) =>
       _f('approval_granted_with_preapproval', {'count': count});
 
@@ -3267,8 +3265,6 @@ const Map<String, String> _en = {
   // Grouped approvals
   'pre_approval_tip':
       "Tip: clicking 'Approve all' also pre-approves every future write of the same shape in this conversation.",
-  'show_individual_records': 'Show individual records',
-  'hide_individual_records': 'Hide individual records',
 
   // Artifacts
   'artifact_ready': 'Artifact ready',
@@ -4706,8 +4702,6 @@ const Map<String, String> _ar = {
   // Grouped approvals
   'pre_approval_tip':
       'تنبيه: الضغط على "وافق على الكل" يوافق مسبقاً على أي كتابة لاحقة لها نفس الشكل في هذه المحادثة.',
-  'show_individual_records': 'عرض السجلات الفردية',
-  'hide_individual_records': 'إخفاء السجلات الفردية',
 
   // Artifacts
   'artifact_ready': 'الملف جاهز',

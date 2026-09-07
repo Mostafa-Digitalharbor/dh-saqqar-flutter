@@ -227,19 +227,18 @@ Project _project(String name, List<Environment> environments) => Project(
       environments: environments,
     );
 
-ChatApproval _approval({int? grouped}) => ChatApproval(
+ChatApproval _approval() => const ChatApproval(
       id: 'a1',
       title: 'Update 42 manufacturing orders',
       prompt: _longEn,
       actionType: 'odoo_write',
       risk: 'high',
       status: ChatApprovalStatus.pending,
-      payload: const {
+      payload: {
         'model': 'mrp.production',
         'method': 'write',
         'record_count': '42',
       },
-      groupedCount: grouped,
     );
 
 PlanSnapshot _plan({int pct = 92}) => PlanSnapshot(
@@ -314,19 +313,11 @@ void main() {
       );
     });
 
-    testWidgets('approval card, single and grouped', (tester) async {
+    testWidgets('approval card', (tester) async {
       await _sweep(
         tester,
         () => ChatApprovalCard(
           approval: _approval(),
-          onApprove: () {},
-          onReject: () {},
-        ),
-      );
-      await _sweep(
-        tester,
-        () => ChatApprovalCard(
-          approval: _approval(grouped: 42),
           onApprove: () {},
           onReject: () {},
         ),
