@@ -766,13 +766,26 @@ void main() {
   // this needs a real file rather than the pure-in-memory stub the others use.
   // Worth the extra setup: the multipart path is the one place a client can
   // fail before the interceptor ever sees the response.
+  // Unique per run: the name used to be fixed, so a leftover file from an
+  // interrupted run — or a second copy of this suite — met a path that was
+  // already there.
   final audio = File(
-    '${Directory.systemTemp.path}/saqqar_hostile_probe.m4a',
+    '${Directory.systemTemp.path}/saqqar_hostile_probe_'
+    '${DateTime.now().microsecondsSinceEpoch}.m4a',
   )..writeAsBytesSync(const [0, 0, 0, 32, 102, 116, 121, 112]);
   // `tearDownAll`, not `addTearDown`: the latter is only legal inside a
   // running test, and this file is one long declaration block.
   tearDownAll(() {
-    if (audio.existsSync()) audio.deleteSync();
+    // Best effort. `MultipartFile.fromFile` opens the file to stream it, and
+    // on Windows a handle that has not closed yet makes the delete throw —
+    // which failed the whole suite from the cleanup step of a run whose
+    // every assertion had passed. A stray byte in the temp directory is not
+    // worth a red release gate.
+    try {
+      if (audio.existsSync()) audio.deleteSync();
+    } on FileSystemException catch (_) {
+      // Left for the OS to reap.
+    }
   });
   contractFor(
     'TranscribeApi.transcribe',
