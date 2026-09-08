@@ -11,6 +11,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/i18n/app_strings.dart';
+import 'package:saqqar_app/core/theme/app_colors.dart';
+import 'package:saqqar_app/core/theme/app_sizes.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/data/app_pulse_payloads.dart';
 import 'package:saqqar_app/features/chat/data/interactive_card_kind.dart';
@@ -23,6 +25,7 @@ import 'package:saqqar_app/features/chat/widgets/app_pulse/hr_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/inventory_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_bands_list.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_card_shell.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_helpers.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_counter_list.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_raw_items.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/purchasing_pulse_card.dart';
@@ -257,6 +260,105 @@ void main() {
         Directionality.of(tester.element(find.text(cause))),
         TextDirection.rtl,
       );
+    });
+
+    // The web paints a stat amber or red when it is not zero
+    // (`tp.mo_late ? "warn" : ""`). Side by side the app's all-white row was
+    // the other half of "الشكل مش موحد".
+    testWidgets('a late order is amber and an at-risk one red; zero is neither',
+        (tester) async {
+      const payload = {
+        'kind': 'factory',
+        'mo_running': 13,
+        'mo_late': 13,
+        'orders_at_risk': 8,
+        'mo_done_today': 0,
+      };
+      await _pump(
+        tester,
+        FactoryPulseCard(payload: FactoryPulsePayload.parse(payload)!),
+      );
+
+      // By label, not by value: two of these tiles read 13, which is exactly
+      // the case a tone has to tell apart.
+      Color? toneOf(String label) => tester
+          .widgetList<PulseStatTile>(find.byType(PulseStatTile))
+          .firstWhere((t) => t.label == label)
+          .color;
+
+      expect(toneOf(en.pulseFactoryMoLate), AppColors.warning);
+      expect(toneOf(en.pulseFactoryOrdersAtRisk), AppColors.danger);
+      // Same number, no tone on the measurement — the web never colours
+      // "MOs running" however high it climbs.
+      expect(toneOf(en.pulseFactoryMoRunning), isNull);
+      // A zero is good news, not an amber warning.
+      expect(toneOf(en.pulseFactoryMoDoneToday), isNull);
+    });
+
+    testWidgets('an absent or unanswerable reading is never a tone',
+        (tester) async {
+      // `mo_late` is null (the app is not installed) and `low_stock` says the
+      // database cannot answer. Painting either amber would read as a
+      // problem that has not been measured.
+      await _pump(
+        tester,
+        InventoryPulseCard(
+          payload: InventoryPulsePayload.parse(const {
+            'kind': 'inventory',
+            'low_stock': {'available': false},
+            'stagnant_stock': {'available': true, 'count': 0},
+          })!,
+        ),
+      );
+
+      final tiles = tester
+          .widgetList<PulseStatTile>(find.byType(PulseStatTile))
+          .toList();
+
+      // `low_stock` is a danger tile that cannot answer; `stagnant_stock` is
+      // a warn tile reading zero. Neither may be painted.
+      for (final label in [
+        en.pulseInventoryLowStock,
+        en.pulseInventoryStagnantStock,
+      ]) {
+        final tile = tiles.firstWhere((t) => t.label == label);
+        expect(tile.color, isNot(AppColors.warning), reason: label);
+        expect(tile.color, isNot(AppColors.danger), reason: label);
+      }
+      // And the unanswerable one still says so rather than showing a zero.
+      expect(
+        tiles.firstWhere((t) => t.label == en.pulseInventoryLowStock).value,
+        en.pulseUnavailable,
+      );
+    });
+
+    testWidgets('the tiles share the row evenly, as the web grid does',
+        (tester) async {
+      await _pump(
+        tester,
+        FactoryPulseCard(
+          payload: FactoryPulsePayload.parse(
+              const {'kind': 'factory', 'mo_running': 1, 'mo_late': 2})!,
+        ),
+      );
+
+      final tiles = find.byType(PulseStatTile);
+      final sizes = [
+        for (var i = 0; i < tiles.evaluate().length; i++)
+          tester.getSize(tiles.at(i)),
+      ];
+
+      expect(sizes.map((s) => s.width).toSet(), hasLength(1),
+          reason: 'every tile in a grid row is the same width');
+      expect(
+        sizes.first.width,
+        greaterThanOrEqualTo(AppControlSizes.pulseStatTileMin),
+      );
+      // And the same height: one tile's label wraps to two lines here
+      // («أوامر تصنيع شغالة» does on a phone column) and the box beside it
+      // must not stop short.
+      expect(sizes.map((s) => s.height).toSet(), hasLength(1),
+          reason: 'boxes in one row are stretched to a shared height');
     });
 
     testWidgets('each button sends its own prompt', (tester) async {

@@ -312,13 +312,16 @@ class AppControlSizes {
   /// `ColoredIconBox`'s default square.
   static const double iconBox = 38;
 
-  /// One metric tile in an app-pulse card's `Wrap` (Task 1,
-  /// MOBILE_TASKS_2026-09.md) — wide enough for a 3-digit `StatTile` value
-  /// and its two-line label without `Expanded`, which a `Wrap` cannot give
-  /// it: unlike the fixed-column stat rows elsewhere (`stats_line.dart`,
-  /// billing), a pulse card's tile count varies per kind and must wrap to a
-  /// second line on a narrow phone instead of squeezing every tile into one.
-  static const double pulseStatTile = 84;
+  /// The narrowest an app-pulse metric tile may be before `PulseStatGrid`
+  /// drops a column. It is the web's own `minmax(124px, 1fr)` floor scaled
+  /// to a phone: the tiles are boxes now, so a label pays for two 10 dp
+  /// paddings and a border before it gets any width, and «أوامر تصنيع
+  /// شغالة» needs what is left.
+  ///
+  /// A floor, not a width — the grid divides the row evenly among however
+  /// many columns clear it, exactly as `1fr` does. Only the fallback for an
+  /// unbounded parent (a measuring pass) uses it as a literal width.
+  static const double pulseStatTileMin = 96;
 
   // ── Progress spinners ──────────────────────────────────────────────────
   //

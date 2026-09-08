@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/format/compact_number.dart';
 import '../../../../core/i18n/app_localizations.dart';
-import '../../../../core/theme/app_sizes.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../data/app_pulse_payloads.dart';
 import '../../data/interactive_card_kind.dart';
@@ -45,20 +44,26 @@ class FinancePulseCard extends StatelessWidget {
       onSend: onSend,
       priorities: payload.priorities,
       stats: [
-        Wrap(
-          spacing: AppSpacing.s16,
-          runSpacing: AppSpacing.s12,
-          children: [
+        PulseStatGrid(
+          tiles: [
+            // Overdue money is red on the web ("تحصيل متأخر"), money merely
+            // coming due is amber ("سداد 7 أيام"). This card splits both
+            // sides into overdue and due-soon rather than netting them, so
+            // each half takes the tone the web gives its own reading.
             _moneyTile(context, payload.cash.available, payload.cash.balance,
                 tr.pulseFinanceCashBalance),
             pulseBucketStatTile(context, payload.receivablesOverdue,
-                tr.pulseFinanceReceivablesOverdue),
+                tr.pulseFinanceReceivablesOverdue,
+                tone: PulseTone.danger),
             pulseBucketStatTile(context, payload.receivablesDueSoon,
-                tr.pulseFinanceReceivablesDueSoon),
+                tr.pulseFinanceReceivablesDueSoon,
+                tone: PulseTone.warn),
             pulseBucketStatTile(context, payload.payablesOverdue,
-                tr.pulseFinancePayablesOverdue),
+                tr.pulseFinancePayablesOverdue,
+                tone: PulseTone.danger),
             pulseBucketStatTile(context, payload.payablesDueSoon,
-                tr.pulseFinancePayablesDueSoon),
+                tr.pulseFinancePayablesDueSoon,
+                tone: PulseTone.warn),
             pulseBucketStatTile(context, payload.draftVendorBills,
                 tr.pulseFinanceDraftVendorBills),
             pulseBucketStatTile(context, payload.draftCustomerInvoices,

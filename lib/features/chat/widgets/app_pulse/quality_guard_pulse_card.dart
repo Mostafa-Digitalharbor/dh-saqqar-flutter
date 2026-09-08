@@ -42,30 +42,41 @@ class QualityGuardPulseCard extends StatelessWidget {
       onSend: onSend,
       priorities: payload.priorities,
       stats: [
-        Wrap(
-          spacing: AppSpacing.s16,
-          runSpacing: AppSpacing.s12,
-          children: [
+        // Tones only where the measurement names its own severity — a
+        // rejected reading and a high-risk case are red, something waiting
+        // or unmeasured is amber. The web collapses this card to two tiles
+        // and cannot be copied number-for-number, so the rest stay neutral
+        // rather than being coloured on a guess.
+        PulseStatGrid(
+          tiles: [
             pulseScalarStatTile(
-                context, payload.outOfSpec, tr.pulseQualityOutOfSpec),
+                context, payload.outOfSpec, tr.pulseQualityOutOfSpec,
+                tone: PulseTone.danger),
             pulseScalarStatTile(
-                context, payload.failedChecks, tr.pulseQualityFailedChecks),
+                context, payload.failedChecks, tr.pulseQualityFailedChecks,
+                tone: PulseTone.danger),
             pulseScalarStatTile(
-                context, payload.pendingChecks, tr.pulseQualityPendingChecks),
+                context, payload.pendingChecks, tr.pulseQualityPendingChecks,
+                tone: PulseTone.warn),
             pulseScalarStatTile(
-                context, payload.qualityAlerts, tr.pulseQualityAlerts),
+                context, payload.qualityAlerts, tr.pulseQualityAlerts,
+                tone: PulseTone.warn),
             pulseScalarStatTile(context, payload.missingNumericSpecs,
-                tr.pulseQualityMissingSpecs),
+                tr.pulseQualityMissingSpecs,
+                tone: PulseTone.warn),
             pulseScalarStatTile(
-                context, payload.reviewCases, tr.pulseQualityReviewCases),
+                context, payload.reviewCases, tr.pulseQualityReviewCases,
+                tone: PulseTone.warn),
             pulseScalarStatTile(
                 context, payload.invoiceSwaps, tr.pulseQualityInvoiceSwaps),
             pulseScalarStatTile(
                 context, payload.deliverySwaps, tr.pulseQualityDeliverySwaps),
             pulseScalarStatTile(
-                context, payload.highRiskCases, tr.pulseQualityHighRiskCases),
+                context, payload.highRiskCases, tr.pulseQualityHighRiskCases,
+                tone: PulseTone.danger),
             pulseScalarStatTile(
-                context, payload.deepDiscounts, tr.pulseQualityDeepDiscounts),
+                context, payload.deepDiscounts, tr.pulseQualityDeepDiscounts,
+                tone: PulseTone.warn),
             pulseScalarStatTile(context, payload.lowerCostSubstitutes,
                 tr.pulseQualityLowerCostSubstitutes),
             // Documented vs. undocumented is the pair the app exists to
@@ -73,7 +84,8 @@ class QualityGuardPulseCard extends StatelessWidget {
             pulseScalarStatTile(context, payload.documentedSubstitutes,
                 tr.pulseQualityDocumentedSubstitutes),
             pulseScalarStatTile(context, payload.undocumentedSubstitutes,
-                tr.pulseQualityUndocumentedSubstitutes),
+                tr.pulseQualityUndocumentedSubstitutes,
+                tone: PulseTone.danger),
             if (payload.costSavingTotal != null && payload.costSavingTotal! > 0)
               pulseStatTile(
                 compactCount(payload.costSavingTotal!.round(), tr),

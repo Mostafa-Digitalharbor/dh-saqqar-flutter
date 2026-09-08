@@ -39,6 +39,7 @@ import 'package:saqqar_app/features/chat/widgets/app_pulse/inventory_pulse_card.
 import 'package:saqqar_app/features/chat/data/pulse_actions.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_action_list.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_bands_list.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_helpers.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_counter_list.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_raw_items.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/purchasing_pulse_card.dart';
@@ -642,6 +643,27 @@ void main() {
     'PulseBandsList unavailable': () => const PulseBandsList(
           title: kLongEnglish,
           bands: PulseBands(available: false),
+        ),
+    // The boxed metric and the row it lays out. The value is the widest a
+    // real card produces — an ungrouped seven-figure inventory total — and
+    // the labels are the longest the web's own wording reaches, so the box
+    // is measured against what actually goes in it rather than "12 / OK".
+    'PulseStatTile': () => const PulseStatTile(
+          value: '1,215,654.84',
+          label: kLongArabic,
+        ),
+    'PulseStatTile unavailable': () => const PulseStatTile(
+          value: kUnbreakable,
+          label: kLongEnglish,
+          color: Color(0xFFEF4444),
+        ),
+    'PulseStatGrid': () => const PulseStatGrid(
+          tiles: [
+            PulseStatTile(value: '1019', label: kLongArabic),
+            PulseStatTile(value: '—', label: kLongEnglish),
+            PulseStatTile(value: '0', label: kUnbreakable),
+            PulseStatTile(value: '2,096', label: kLongArabic),
+          ],
         ),
     // The web-parity action rows. Fed the longest copy the real cards can
     // carry — an Arabic title over an unbreakable order number over a

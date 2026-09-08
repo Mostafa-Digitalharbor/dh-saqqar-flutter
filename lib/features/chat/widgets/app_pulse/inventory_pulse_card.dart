@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/format/compact_number.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/i18n/app_strings.dart';
-import '../../../../core/theme/app_sizes.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../data/app_pulse_payloads.dart';
 import '../../data/interactive_card_kind.dart';
@@ -56,28 +55,32 @@ class InventoryPulseCard extends StatelessWidget {
       toolsFirst: true,
       priorities: payload.priorities,
       stats: [
-        Wrap(
-          spacing: AppSpacing.s16,
-          runSpacing: AppSpacing.s12,
-          children: [
-            pulseScalarStatTile(
-                context, payload.salesDays, tr.pulseInventorySalesDays),
+        // The web's six tiles, in its order and with its tones, then the
+        // three this client shows and the web does not.
+        PulseStatGrid(
+          tiles: [
             pulseScalarStatTile(
                 context, payload.productCount, tr.pulseInventoryProductCount),
-            _totalTile(
-                context, payload.inventoryValue, tr.pulseInventoryValue),
+            _totalTile(context, payload.inventoryValue, tr.pulseInventoryValue),
             pulseBucketStatTile(
-                context, payload.lowStock, tr.pulseInventoryLowStock),
+                context, payload.lowStock, tr.pulseInventoryLowStock,
+                tone: PulseTone.danger),
             pulseBucketStatTile(context, payload.demandShortage,
-                tr.pulseInventoryDemandShortage),
+                tr.pulseInventoryDemandShortage,
+                tone: PulseTone.danger),
             pulseBucketStatTile(context, payload.stagnantStock,
-                tr.pulseInventoryStagnantStock),
+                tr.pulseInventoryStagnantStock,
+                tone: PulseTone.warn),
             pulseBucketStatTile(
-                context, payload.overstock, tr.pulseInventoryOverstock),
+                context, payload.missingData, tr.pulseInventoryMissingData,
+                tone: PulseTone.warn),
+            pulseBucketStatTile(
+                context, payload.overstock, tr.pulseInventoryOverstock,
+                tone: PulseTone.warn),
             pulseBucketStatTile(
                 context, payload.fastReorder, tr.pulseInventoryFastReorder),
-            pulseBucketStatTile(
-                context, payload.missingData, tr.pulseInventoryMissingData),
+            pulseScalarStatTile(
+                context, payload.salesDays, tr.pulseInventorySalesDays),
           ],
         ),
       ],

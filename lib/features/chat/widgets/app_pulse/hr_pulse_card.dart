@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/i18n/app_strings.dart';
-import '../../../../core/theme/app_sizes.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/auto_direction_text.dart';
 import '../../data/app_pulse_payloads.dart';
@@ -46,10 +45,8 @@ class HrPulseCard extends StatelessWidget {
       deepActions: deepActions,
       onSend: onSend,
       stats: [
-        Wrap(
-          spacing: AppSpacing.s16,
-          runSpacing: AppSpacing.s12,
-          children: [
+        PulseStatGrid(
+          tiles: [
             // Rule 1: a database that can't answer says so. Hiding these
             // three tiles when `operations.available` is false left the card
             // looking like an employee list with nothing on it.

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
-import '../../../../core/theme/app_sizes.dart';
 import '../../data/app_pulse_payloads.dart';
 import '../../data/interactive_card_kind.dart';
 import '../../data/pulse_actions.dart';
@@ -40,22 +39,28 @@ class PurchasingPulseCard extends StatelessWidget {
       onSend: onSend,
       priorities: payload.priorities,
       stats: [
-        Wrap(
-          spacing: AppSpacing.s16,
-          runSpacing: AppSpacing.s12,
-          children: [
+        // The web's tones. It merges late receipts and late POs into one
+        // "Late receipts/POs" tile; this card keeps them apart — the two are
+        // different phone calls — so the danger tone applies to both.
+        PulseStatGrid(
+          tiles: [
             pulseBucketStatTile(
-                context, payload.openRfqs, tr.pulsePurchasingOpenRfqs),
+                context, payload.openRfqs, tr.pulsePurchasingOpenRfqs,
+                tone: PulseTone.warn),
             pulseBucketStatTile(context, payload.awaitingApproval,
-                tr.pulsePurchasingAwaitingApproval),
+                tr.pulsePurchasingAwaitingApproval,
+                tone: PulseTone.warn),
             pulseBucketStatTile(context, payload.latePurchaseOrders,
-                tr.pulsePurchasingLateOrders),
+                tr.pulsePurchasingLateOrders,
+                tone: PulseTone.danger),
             pulseBucketStatTile(context, payload.lateIncomingReceipts,
-                tr.pulsePurchasingLateReceipts),
+                tr.pulsePurchasingLateReceipts,
+                tone: PulseTone.danger),
             pulseBucketStatTile(
                 context, payload.toBill, tr.pulsePurchasingToBill),
             pulseBucketStatTile(
-                context, payload.vendorBills, tr.pulsePurchasingVendorBills),
+                context, payload.vendorBills, tr.pulsePurchasingVendorBills,
+                tone: PulseTone.warn),
           ],
         ),
       ],

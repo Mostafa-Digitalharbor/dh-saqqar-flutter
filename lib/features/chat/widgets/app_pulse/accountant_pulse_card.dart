@@ -58,10 +58,8 @@ class AccountantPulseCard extends StatelessWidget {
         // own keys. A server that rolls them into `counters` instead sends
         // none of these and the list below carries the card on its own.
         if (payload.checks.isNotEmpty)
-          Wrap(
-            spacing: AppSpacing.s16,
-            runSpacing: AppSpacing.s12,
-            children: [
+          PulseStatGrid(
+            tiles: [
               for (final key in AccountantPulsePayload.checkKeys)
                 if (payload.checks[key] case final bucket?)
                   pulseBucketStatTile(

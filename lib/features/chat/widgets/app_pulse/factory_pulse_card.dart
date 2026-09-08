@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
-import '../../../../core/theme/app_sizes.dart';
 import '../../data/app_pulse_payloads.dart';
 import '../../data/interactive_card_kind.dart';
 import '../../data/pulse_actions.dart';
@@ -44,17 +43,21 @@ class FactoryPulseCard extends StatelessWidget {
       deepActions: deepActions,
       onSend: onSend,
       stats: [
-        Wrap(
-          spacing: AppSpacing.s16,
-          runSpacing: AppSpacing.s12,
-          children: [
-            pulseScalarStatTile(context, payload.moRunning, tr.pulseFactoryMoRunning),
-            pulseScalarStatTile(context, payload.moLate, tr.pulseFactoryMoLate),
+        // The web's four tiles, in the web's order and with the web's tones,
+        // then the one this client shows and the web does not.
+        PulseStatGrid(
+          tiles: [
+            pulseScalarStatTile(
+                context, payload.moRunning, tr.pulseFactoryMoRunning),
+            pulseScalarStatTile(context, payload.moLate, tr.pulseFactoryMoLate,
+                tone: PulseTone.warn),
+            pulseScalarStatTile(context, payload.poLate, tr.pulseFactoryPoLate,
+                tone: PulseTone.warn),
+            pulseScalarStatTile(
+                context, payload.ordersAtRisk, tr.pulseFactoryOrdersAtRisk,
+                tone: PulseTone.danger),
             pulseScalarStatTile(
                 context, payload.moDoneToday, tr.pulseFactoryMoDoneToday),
-            pulseScalarStatTile(context, payload.poLate, tr.pulseFactoryPoLate),
-            pulseScalarStatTile(
-                context, payload.ordersAtRisk, tr.pulseFactoryOrdersAtRisk),
           ],
         ),
       ],
