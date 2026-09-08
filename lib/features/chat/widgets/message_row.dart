@@ -235,6 +235,8 @@ class MessageRow extends StatelessWidget {
             : InventoryPulseCard(
                 payload: payload,
                 actions: _actions(context, InteractiveCardKind.inventory),
+                deepActions:
+                    _deepActions(context, InteractiveCardKind.inventory),
                 onSend: onCardSend,
               );
       case InteractiveCardKind.finance:
@@ -295,7 +297,8 @@ class MessageRow extends StatelessWidget {
   List<PulseAction> _actions(BuildContext context, InteractiveCardKind kind) =>
       pulseActions(kind, message.toolPayload, context.tr);
 
-  /// The accountant / HR chip row — standing questions with no number.
+  /// The accountant / HR / inventory chip row — standing questions with no
+  /// number.
   List<PulseAction> _deepActions(
     BuildContext context,
     InteractiveCardKind kind,

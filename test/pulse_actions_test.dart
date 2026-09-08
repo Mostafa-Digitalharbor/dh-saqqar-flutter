@@ -162,13 +162,39 @@ void main() {
         en,
       );
 
-      expect(actions.map((a) => a.label), ['Delivery date', 'Cover shortage']);
+      // ONE row, TWO buttons — the web's `.fc-risk` shape. Emitting two rows
+      // printed the order, the customer and the cause twice each.
+      expect(actions, hasLength(1));
+      expect(
+        actions.single.buttons.map((b) => b.label),
+        ['Delivery date', 'Cover shortage'],
+      );
       // The order number is interpolated into both prompts — a button that
       // asked about "the order" without naming it would start the agent on
       // the wrong one.
-      expect(actions.first.prompt, contains('SO/0042'));
-      expect(actions.last.prompt, contains('SO/0042'));
+      for (final button in actions.single.buttons) {
+        expect(button.prompt, contains('SO/0042'));
+      }
+      // Cover shortage is the filled one, as on the web.
+      expect(actions.single.buttons.map((b) => b.primary), [false, true]);
       expect(actions.first.cause, '21 days waiting on "Steel bracket"');
+    });
+
+    test('two at-risk orders are two rows, not four', () {
+      final actions = pulseActions(
+        InteractiveCardKind.factory,
+        const {
+          'kind': 'factory',
+          'top_risks': [
+            {'order': 'SO/0042', 'customer': 'Acme', 'lead_days': 21},
+            {'order': 'SO/0043', 'customer': 'Globex', 'lead_days': 3},
+          ],
+        },
+        en,
+      );
+
+      expect(actions.map((a) => a.title), ['SO/0042', 'SO/0043']);
+      expect(actions.map((a) => a.main), ['Acme', 'Globex']);
     });
 
     test('a risk row with no order number is skipped', () {
@@ -333,10 +359,90 @@ void main() {
       expect(actions.single.prompt, contains('Odoo Recruitment'));
     });
 
-    test('the free-text action exists only on the two counter cards', () {
+    test('the free-text action exists on exactly three cards', () {
       expect(pulseFreeTextAction(InteractiveCardKind.accountant), isNotNull);
       expect(pulseFreeTextAction(InteractiveCardKind.hr), isNotNull);
+      expect(pulseFreeTextAction(InteractiveCardKind.inventory), isNotNull);
       expect(pulseFreeTextAction(InteractiveCardKind.finance), isNull);
+      expect(pulseFreeTextAction(InteractiveCardKind.factory), isNull);
+      expect(pulseFreeTextAction(InteractiveCardKind.purchasing), isNull);
+      expect(pulseFreeTextAction(InteractiveCardKind.qualityGuard), isNull);
+    });
+  });
+
+  // The web's `EXTRA` array and `.ac-explain` box, which the phone never
+  // had. Reported from a live database: "في الكارت ناقص بانر السيرش التتبع".
+  group('the inventory chips and tracking box', () {
+    test('four chips, in the web\'s order, the first one filled', () {
+      final chips = pulseDeepActions(
+        InteractiveCardKind.inventory,
+        const {'kind': 'inventory'},
+        en,
+      );
+
+      expect(
+        chips.map((c) => c.label),
+        ['Track shipments', 'Stalled transfers', 'Stock accuracy',
+          'Locate a product'],
+      );
+      expect(chips.map((c) => c.primary), [true, false, false, false]);
+      for (final chip in chips) {
+        expect(chip.prompt, isNotEmpty);
+        expect(chip.prompt, isNot(startsWith('pulse_act_')));
+      }
+    });
+
+    test('a chip whose label is already a bucket button is dropped', () {
+      // Same rule as the accountant's `dropChipsAlreadyOnTiles`. None of the
+      // four overlaps today; this pins that it would be caught if one did.
+      const busy = {
+        'kind': 'inventory',
+        'low_stock': {'available': true, 'count': 4},
+        'stagnant_stock': {'available': true, 'count': 2},
+      };
+      final chips = pulseDeepActions(InteractiveCardKind.inventory, busy, en)
+          .map((c) => c.label)
+          .toSet();
+      final buttons = pulseActions(InteractiveCardKind.inventory, busy, en)
+          .map((a) => a.label)
+          .toSet();
+
+      expect(chips.intersection(buttons), isEmpty);
+    });
+
+    test('the tracker names the reference; an empty one asks for everything',
+        () {
+      final spec = pulseFreeTextAction(InteractiveCardKind.inventory)!;
+
+      expect(en.format(spec.promptKey, {'ref': 'WH/OUT/00042'}),
+          contains('WH/OUT/00042'));
+      // An empty box is not silence here: it sends the same prompt the
+      // Track-shipments chip does, which is the web's behaviour.
+      expect(spec.emptyPromptKey, 'pulse_act_inventory_deep_track_prompt');
+      expect(en.lookup(spec.emptyPromptKey!), isNotEmpty);
+      // The other two have no such fallback — "explain ''" is not a question.
+      expect(pulseFreeTextAction(InteractiveCardKind.accountant)!.emptyPromptKey,
+          isNull);
+      expect(pulseFreeTextAction(InteractiveCardKind.hr)!.emptyPromptKey,
+          isNull);
+    });
+
+    test('every chip and the tracker resolve in Arabic too', () {
+      final chips = pulseDeepActions(
+        InteractiveCardKind.inventory,
+        const {'kind': 'inventory'},
+        ar,
+      );
+      expect(chips, hasLength(4));
+      for (final chip in chips) {
+        expect(chip.label, matches(RegExp(r'[؀-ۿ]')));
+        expect(chip.prompt, matches(RegExp(r'[؀-ۿ]')));
+      }
+
+      final spec = pulseFreeTextAction(InteractiveCardKind.inventory)!;
+      expect(ar.lookup(spec.hint), isNotEmpty);
+      expect(ar.lookup(spec.label), isNotEmpty);
+      expect(ar.format(spec.promptKey, {'ref': 'ورق'}), contains('ورق'));
     });
   });
 

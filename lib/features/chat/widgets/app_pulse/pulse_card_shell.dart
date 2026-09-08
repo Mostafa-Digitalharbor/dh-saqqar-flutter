@@ -39,6 +39,7 @@ class PulseCardShell extends StatelessWidget {
     this.actions = const [],
     this.deepActions = const [],
     this.onSend,
+    this.toolsFirst = false,
   });
 
   final InteractiveCardKind kind;
@@ -71,6 +72,24 @@ class PulseCardShell extends StatelessWidget {
   /// from [envelope.notes] because a payload can carry both, each under its
   /// own heading.
   final List<String> priorities;
+
+  /// Puts the chip row and the free-text box directly under the numbers,
+  /// above the action rows.
+  ///
+  /// The counter-driven cards leave it false: on the web their chips sit
+  /// under the counter tiles, and each tile carries its own button, so the
+  /// buttons genuinely come first. The inventory card sets it true, which is
+  /// where the web puts its tracking banner — and where the review looked
+  /// for it, above a bucket list that runs to six sections.
+  final bool toolsFirst;
+
+  /// The chip row and the free-text box, in that order — one block, so
+  /// [toolsFirst] can move both without the two ever separating.
+  List<Widget> get _tools => [
+        PulseDeepActionChips(actions: deepActions, onSend: onSend),
+        if (pulseFreeTextAction(kind) != null)
+          PulseFreeTextAction(kind: kind, onSend: onSend),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -116,14 +135,13 @@ class PulseCardShell extends StatelessWidget {
             // Web parity: the numbers, then what to do about them. Kept
             // above the notes for the same reason the web keeps them there
             // — the notes explain the reading, the buttons continue it.
+            if (toolsFirst) ..._tools,
             PulseActionList(
               actions: actions,
               onSend: onSend,
               emptyState: pulseEmptyStateText(kind, tr),
             ),
-            PulseDeepActionChips(actions: deepActions, onSend: onSend),
-            if (pulseFreeTextAction(kind) != null)
-              PulseFreeTextAction(kind: kind, onSend: onSend),
+            if (!toolsFirst) ..._tools,
             ...details,
           ],
           if (envelope.notes.isNotEmpty)

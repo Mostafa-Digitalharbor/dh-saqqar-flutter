@@ -64,6 +64,17 @@ enum PulseStatus {
       value == 'error' ? PulseStatus.error : PulseStatus.ok;
 }
 
+/// The one note the server sends that no card shows: a standing disclaimer
+/// that the reading came from a stock Odoo install. It says nothing about
+/// THIS database, and it arrives on every card of every app, so the web
+/// drops it (`renderCardNotes`) and so does this.
+///
+/// A wire literal, not UI copy: it is matched against what the server
+/// writes, never rendered, so it belongs with the parser rather than in
+/// `AppStrings`. A substring match, because the sentence continues
+/// differently per app.
+const _boilerplateNote = 'القراءة الحالية مبنية على Standard Odoo';
+
 /// Common envelope every pulse payload shares: `status`, `as_of`, `error`,
 /// `notes`. Each typed payload below embeds one rather than extending it —
 /// Dart has no multiple inheritance and these are `Equatable` value types,
@@ -94,7 +105,10 @@ class PulseEnvelope extends Equatable {
         status: PulseStatus.fromWire(json['status']),
         asOf: _str(json['as_of']).isEmpty ? null : _str(json['as_of']),
         error: _str(json['error']),
-        notes: _list(json['notes']).map(_str).where((s) => s.isNotEmpty).toList(),
+        notes: _list(json['notes'])
+            .map(_str)
+            .where((s) => s.isNotEmpty && !s.contains(_boilerplateNote))
+            .toList(),
       );
 
   @override

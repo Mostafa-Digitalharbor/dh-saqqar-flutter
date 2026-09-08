@@ -168,16 +168,119 @@ void main() {
 
     testWidgets('renders every tile value and the risk row', (tester) async {
       final payload = FactoryPulsePayload.parse(fullPayload)!;
-      await _pump(tester, FactoryPulseCard(payload: payload));
+      await _pump(
+        tester,
+        FactoryPulseCard(
+          payload: payload,
+          actions:
+              pulseActions(InteractiveCardKind.factory, fullPayload, en),
+          onSend: (_) {},
+        ),
+      );
 
       expect(find.text('12'), findsOneWidget);
-      expect(find.text('3'), findsWidgets); // mo_late AND missing_lines
+      expect(find.text('3'), findsOneWidget); // mo_late
       expect(find.text('5'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
       expect(find.text('4'), findsOneWidget);
+      // The order appears ONCE, not once per button and once again in a
+      // ranked list above them.
       expect(find.textContaining('SO/0042'), findsOneWidget);
-      expect(find.text('Steel bracket 40mm'), findsOneWidget);
-      expect(find.text(en.pulseTopRisksTitle), findsOneWidget);
+      expect(find.textContaining('Steel bracket 40mm'), findsOneWidget);
+      // Both of the web's buttons, on that one row.
+      expect(
+        find.text(en.lookup('pulse_act_factory_promise_label')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(en.lookup('pulse_act_factory_cover_label')),
+        findsOneWidget,
+      );
+    });
+
+    // Seen on an English phone against a live Arabic database: the cause
+    // line rendered as `"مكتمل — FIBC كيس جامبو" days waiting on 7`. The row
+    // used per-string direction detection, and a sentence that is English
+    // copy wrapped around an Arabic product name detects as Arabic. The web
+    // sets one direction per card from the UI language; so does this now.
+    testWidgets('a row mixing English copy with Arabic data still reads '
+        'left to right', (tester) async {
+      const payload = {
+        'kind': 'factory',
+        'top_risks': [
+          {
+            'order': 'S00024',
+            'customer': 'AAS MOHMMAD',
+            'lead_days': 7,
+            'worst_product': 'كيس جامبو FIBC — مكتمل',
+          },
+        ],
+      };
+      await _pump(
+        tester,
+        FactoryPulseCard(
+          payload: FactoryPulsePayload.parse(payload)!,
+          actions: pulseActions(InteractiveCardKind.factory, payload, en),
+          onSend: (_) {},
+        ),
+      );
+
+      final cause = en.format('pulse_act_factory_risk_cause',
+          {'days': '7', 'product': 'كيس جامبو FIBC — مكتمل'});
+      expect(
+        Directionality.of(tester.element(find.text(cause))),
+        TextDirection.ltr,
+      );
+    });
+
+    testWidgets('and the same row reads right to left on an Arabic phone',
+        (tester) async {
+      const payload = {
+        'kind': 'factory',
+        'top_risks': [
+          {'order': 'S00024', 'lead_days': 7, 'worst_product': 'FIBC bag'},
+        ],
+      };
+      await _pump(
+        tester,
+        FactoryPulseCard(
+          payload: FactoryPulsePayload.parse(payload)!,
+          actions: pulseActions(InteractiveCardKind.factory, payload, ar),
+          onSend: (_) {},
+        ),
+        locale: const Locale('ar'),
+      );
+
+      final cause = ar.format('pulse_act_factory_risk_cause',
+          {'days': '7', 'product': 'FIBC bag'});
+      expect(
+        Directionality.of(tester.element(find.text(cause))),
+        TextDirection.rtl,
+      );
+    });
+
+    testWidgets('each button sends its own prompt', (tester) async {
+      final sent = <String>[];
+      await _pump(
+        tester,
+        FactoryPulseCard(
+          payload: FactoryPulsePayload.parse(fullPayload)!,
+          actions:
+              pulseActions(InteractiveCardKind.factory, fullPayload, en),
+          onSend: sent.add,
+        ),
+      );
+
+      await tester.tap(find.text(en.lookup('pulse_act_factory_cover_label')));
+      await tester.tap(find.text(en.lookup('pulse_act_factory_promise_label')));
+      await tester.pump();
+
+      expect(sent, hasLength(2));
+      expect(sent.first, contains('NET shortage'));
+      expect(sent.last, contains('delivery promise'));
+      for (final prompt in sent) {
+        expect(prompt, contains('SO/0042'));
+      }
     });
 
     testWidgets('null scalars (app not installed) show — not 0 — rule 2',
@@ -587,6 +690,11 @@ void main() {
               PulseBand(label: 'not due', amount: 0),
               PulseBand(label: 'due today', amount: 0),
               PulseBand(label: '0–30', amount: 0),
+              // The inventory card's own bands, seen live on ZAD Staging as
+              // three English chips under an Arabic card.
+              PulseBand(label: 'missing cost', count: 1027),
+              PulseBand(label: 'missing barcode', count: 1055),
+              PulseBand(label: 'missing code', count: 14),
               // A band nobody has seen before keeps the server's word.
               PulseBand(label: 'some new band', amount: 0),
             ],
@@ -598,8 +706,12 @@ void main() {
       expect(find.text('غير مستحقة'), findsOneWidget);
       expect(find.text('مستحقة اليوم'), findsOneWidget);
       expect(find.text('0–30'), findsOneWidget);
+      expect(find.text('بدون تكلفة'), findsOneWidget);
+      expect(find.text('بدون باركود'), findsOneWidget);
+      expect(find.text('بدون كود داخلي'), findsOneWidget);
       expect(find.text('some new band'), findsOneWidget);
       expect(find.text('not due'), findsNothing);
+      expect(find.text('missing cost'), findsNothing);
     });
 
     testWidgets('unavailable says so — rule 1, never an empty row of zeroes',
@@ -677,6 +789,12 @@ void main() {
       expect(find.text('Start collection'), findsNothing);
       // The numbers are still worth reading.
       expect(find.text('13'), findsOneWidget);
+      // And so is the row itself: its heading and reading render, only the
+      // button it would have ended in does not.
+      expect(
+        find.text(en.lookup('pulse_act_finance_collect_title')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the rows read right in Arabic', (tester) async {
@@ -731,6 +849,83 @@ void main() {
       await tester.pumpAndSettle();
       expect(sent.single, contains('INV/2026/0031'));
       expect(sent.single, contains('walk the chain'));
+    });
+
+    // The gap the review found on a live database: "في الكارت ناقص بانر
+    // السيرش التتبع". The web's inventory card carries four chips and a
+    // tracking box under its numbers; the phone had neither.
+    testWidgets('the inventory card carries its chips and its tracking box',
+        (tester) async {
+      const payload = {
+        'kind': 'inventory',
+        'product_count': 1055,
+        'low_stock': {'available': true, 'count': 1019},
+      };
+      final sent = <String>[];
+      await _pump(
+        tester,
+        InventoryPulseCard(
+          payload: InventoryPulsePayload.parse(payload)!,
+          actions: pulseActions(InteractiveCardKind.inventory, payload, en),
+          deepActions:
+              pulseDeepActions(InteractiveCardKind.inventory, payload, en),
+          onSend: sent.add,
+        ),
+      );
+
+      for (final key in const [
+        'pulse_act_inventory_deep_track_label',
+        'pulse_act_inventory_deep_stalled_label',
+        'pulse_act_inventory_deep_accuracy_label',
+        'pulse_act_inventory_deep_locate_label',
+      ]) {
+        expect(find.text(en.lookup(key)), findsOneWidget, reason: key);
+      }
+
+      await tester.tap(find.text(en.lookup('pulse_act_inventory_deep_locate_label')));
+      await tester.pumpAndSettle();
+      expect(sent.single, contains('balance per location'));
+      sent.clear();
+
+      // An empty tracker is still a question — "everything on the move" —
+      // which is what the web sends. The accountant's box, which needs a
+      // document number, stays silent instead.
+      await tester.tap(find.text(en.lookup('pulse_act_inventory_track_label')));
+      await tester.pumpAndSettle();
+      expect(sent.single, en.lookup('pulse_act_inventory_deep_track_prompt'));
+      sent.clear();
+
+      await tester.enterText(find.byType(TextField), 'WH/OUT/00042');
+      await tester.tap(find.text(en.lookup('pulse_act_inventory_track_label')));
+      await tester.pumpAndSettle();
+      expect(sent.single, contains('WH/OUT/00042'));
+      expect(sent.single, contains('how late they are'));
+    });
+
+    testWidgets('the tracking box reads and sends in Arabic', (tester) async {
+      const payload = {'kind': 'inventory', 'product_count': 12};
+      final sent = <String>[];
+      await _pump(
+        tester,
+        InventoryPulseCard(
+          payload: InventoryPulsePayload.parse(payload)!,
+          actions: pulseActions(InteractiveCardKind.inventory, payload, ar),
+          deepActions:
+              pulseDeepActions(InteractiveCardKind.inventory, payload, ar),
+          onSend: sent.add,
+        ),
+        locale: const Locale('ar'),
+      );
+
+      expect(find.text(ar.lookup('pulse_act_inventory_track_label')),
+          findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'ورق حراري');
+      await tester.tap(find.text(ar.lookup('pulse_act_inventory_track_label')));
+      await tester.pumpAndSettle();
+
+      expect(sent.single, contains('ورق حراري'));
+      expect(sent.single, contains('تتبّع شحنات'));
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('a payload with nothing to act on shows no button row',

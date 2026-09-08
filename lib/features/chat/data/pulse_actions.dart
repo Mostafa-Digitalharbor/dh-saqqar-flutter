@@ -25,6 +25,42 @@ import 'interactive_card_kind.dart';
 /// Numbers are formatted the way the web formats them (`formatPulseNumber`:
 /// grouped thousands, at most two decimals, an em dash for null) so a row
 /// reads identically on both surfaces.
+/// One button on an action row.
+///
+/// Most rows carry exactly one, and [PulseAction.label] / [PulseAction.prompt]
+/// are it. The factory's at-risk orders carry two — "Delivery date" and
+/// "Cover shortage" — which the web renders side by side under a single
+/// heading (`data-fc-promise` and `data-fc-cover` inside one `.fc-risk`).
+/// Emitting them as two [PulseAction]s instead printed the order, the
+/// customer and the cause twice, which is how it looked on the phone: four
+/// at-risk orders read as eight rows.
+@immutable
+class PulseActionButton {
+  const PulseActionButton({
+    required this.label,
+    required this.prompt,
+    this.primary = false,
+  });
+
+  final String label;
+
+  /// What the button sends to the agent, in the UI language.
+  final String prompt;
+
+  /// Filled rather than ghost.
+  final bool primary;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PulseActionButton &&
+      other.label == label &&
+      other.prompt == prompt &&
+      other.primary == primary;
+
+  @override
+  int get hashCode => Object.hash(label, prompt, primary);
+}
+
 @immutable
 class PulseAction {
   const PulseAction({
@@ -34,6 +70,7 @@ class PulseAction {
     required this.prompt,
     this.cause = '',
     this.primary = false,
+    this.extraButtons = const [],
   });
 
   /// Row heading — "Customer collection".
@@ -56,6 +93,16 @@ class PulseAction {
   /// The first actionable row gets the filled button; the rest are ghosts.
   final bool primary;
 
+  /// Further buttons on the same row, after this one. Empty for every card
+  /// but the factory — see [PulseActionButton].
+  final List<PulseActionButton> extraButtons;
+
+  /// Every button on the row, this one first — the order the web renders.
+  List<PulseActionButton> get buttons => [
+        PulseActionButton(label: label, prompt: prompt, primary: primary),
+        ...extraButtons,
+      ];
+
   @override
   bool operator ==(Object other) =>
       other is PulseAction &&
@@ -64,10 +111,12 @@ class PulseAction {
       other.cause == cause &&
       other.label == label &&
       other.prompt == prompt &&
-      other.primary == primary;
+      other.primary == primary &&
+      listEquals(other.extraButtons, extraButtons);
 
   @override
-  int get hashCode => Object.hash(title, main, cause, label, prompt, primary);
+  int get hashCode => Object.hash(title, main, cause, label, prompt, primary,
+      Object.hashAll(extraButtons));
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -184,9 +233,10 @@ String _k(String kind, String row, String part) =>
 
 // ── factory ──────────────────────────────────────────────────────────────
 //
-// Two buttons per at-risk order, both continuing the conversation rather
-// than acting: the agent reads the order, and any document it then wants to
-// write still goes through the approval card.
+// ONE row per at-risk order carrying TWO buttons, which is the web's shape:
+// "Delivery date" then "Cover shortage", the second filled. Both continue
+// the conversation rather than acting — the agent reads the order, and any
+// document it then wants to write still goes through the approval card.
 List<PulseAction> _factory(Map<String, dynamic> payload, AppStrings tr) {
   final out = <PulseAction>[];
   for (final raw in _list(payload['top_risks'])) {
@@ -199,23 +249,19 @@ List<PulseAction> _factory(Map<String, dynamic> payload, AppStrings tr) {
       'days': formatPulseNumber(risk['lead_days']),
       'product': _str(risk['worst_product']),
     };
-    final title = order;
-    final main = _str(risk['customer']);
-    final cause = tr.format(_k('factory', 'risk', 'cause'), vars);
     out.add(PulseAction(
-      title: title,
-      main: main,
-      cause: cause,
+      title: order,
+      main: _str(risk['customer']),
+      cause: tr.format(_k('factory', 'risk', 'cause'), vars),
       label: tr.lookup(_k('factory', 'promise', 'label')),
       prompt: tr.format(_k('factory', 'promise', 'prompt'), vars),
-    ));
-    out.add(PulseAction(
-      title: title,
-      main: main,
-      cause: cause,
-      label: tr.lookup(_k('factory', 'cover', 'label')),
-      prompt: tr.format(_k('factory', 'cover', 'prompt'), vars),
-      primary: true,
+      extraButtons: [
+        PulseActionButton(
+          label: tr.lookup(_k('factory', 'cover', 'label')),
+          prompt: tr.format(_k('factory', 'cover', 'prompt'), vars),
+          primary: true,
+        ),
+      ],
     ));
   }
   return out;
@@ -759,13 +805,23 @@ const _accountantDeep = [
 
 const _hrDeep = ['rank', 'interview', 'ops', 'payroll', 'timeoff'];
 
+/// The chips under the inventory card — the web's `EXTRA` array, in its
+/// order. These are questions the six stock buckets do not answer on their
+/// own (where a shipment is, which transfers are stuck, whether the balances
+/// can be trusted, where one product sits), so none of them duplicates a
+/// bucket's own button.
+const _inventoryDeep = ['track', 'stalled', 'accuracy', 'locate'];
+
 /// The counter keys each counter-driven card knows an action for.
 List<String> pulseCounterActionKeys(String kind) =>
     kind == 'hr' ? _hrKeys : _accountantKeys;
 
-/// The deep-dive chip keys for a counter-driven card.
-List<String> pulseDeepActionKeys(String kind) =>
-    kind == 'hr' ? _hrDeep : _accountantDeep;
+/// The deep-dive chip keys for a card that has any.
+List<String> pulseDeepActionKeys(String kind) => switch (kind) {
+      'hr' => _hrDeep,
+      'inventory' => _inventoryDeep,
+      _ => _accountantDeep,
+    };
 
 List<PulseAction> _counterDriven(
   Map<String, dynamic> payload,
@@ -802,12 +858,12 @@ List<PulseAction> _counterDriven(
   return rows;
 }
 
-/// The chip row under an accountant / HR card.
+/// The chip row under an accountant / HR / inventory card.
 ///
 /// Split from [pulseActions] because these are not readings with a number
 /// attached — they are standing questions the card can always ask, so they
 /// render as a wrap of chips rather than as rows. A chip whose label already
-/// appears on one of the counter buttons is dropped, matching the web's
+/// appears on one of the row buttons is dropped, matching the web's
 /// `dropChipsAlreadyOnTiles`: the same words twice on one card is noise.
 List<PulseAction> pulseDeepActions(
   InteractiveCardKind kind,
@@ -817,6 +873,7 @@ List<PulseAction> pulseDeepActions(
   final name = switch (kind) {
     InteractiveCardKind.accountant => 'accountant',
     InteractiveCardKind.hr => 'hr',
+    InteractiveCardKind.inventory => 'inventory',
     _ => '',
   };
   if (name.isEmpty) return const [];
@@ -857,22 +914,36 @@ String pulseEmptyStateText(InteractiveCardKind kind, AppStrings tr) {
   return key.isEmpty ? '' : tr.lookup('pulse_act_empty_$key');
 }
 
-/// The free-text row both counter-driven cards carry: the accountant's
-/// "explain this document number", HR's "shortlist for this job title".
-/// Returns null for every other kind.
-({String hint, String label, String promptKey})? pulseFreeTextAction(
+/// The free-text row three cards carry: the accountant's "explain this
+/// document number", HR's "shortlist for this job title", and the
+/// inventory's "track this shipment". Returns null for every other kind.
+///
+/// [emptyPromptKey] is what an empty box sends. The accountant and HR boxes
+/// have none — "explain ''" is not a question, so the web focuses the input
+/// instead — while the inventory tracker reads an empty box as "everything
+/// on the move", the same prompt its Track-shipments chip sends.
+({String hint, String label, String promptKey, String? emptyPromptKey})?
+    pulseFreeTextAction(
   InteractiveCardKind kind,
 ) =>
-    switch (kind) {
-      InteractiveCardKind.accountant => (
-          hint: 'pulse_act_accountant_explain_hint',
-          label: 'pulse_act_accountant_explain_label',
-          promptKey: 'pulse_act_accountant_explain_prompt',
-        ),
-      InteractiveCardKind.hr => (
-          hint: 'pulse_act_hr_explain_hint',
-          label: 'pulse_act_hr_explain_label',
-          promptKey: 'pulse_act_hr_explain_prompt',
-        ),
-      _ => null,
-    };
+        switch (kind) {
+          InteractiveCardKind.accountant => (
+              hint: 'pulse_act_accountant_explain_hint',
+              label: 'pulse_act_accountant_explain_label',
+              promptKey: 'pulse_act_accountant_explain_prompt',
+              emptyPromptKey: null,
+            ),
+          InteractiveCardKind.hr => (
+              hint: 'pulse_act_hr_explain_hint',
+              label: 'pulse_act_hr_explain_label',
+              promptKey: 'pulse_act_hr_explain_prompt',
+              emptyPromptKey: null,
+            ),
+          InteractiveCardKind.inventory => (
+              hint: 'pulse_act_inventory_track_hint',
+              label: 'pulse_act_inventory_track_label',
+              promptKey: 'pulse_act_inventory_track_prompt',
+              emptyPromptKey: 'pulse_act_inventory_deep_track_prompt',
+            ),
+          _ => null,
+        };

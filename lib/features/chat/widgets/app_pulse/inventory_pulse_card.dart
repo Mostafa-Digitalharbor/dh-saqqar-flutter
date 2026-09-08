@@ -50,6 +50,10 @@ class InventoryPulseCard extends StatelessWidget {
       actions: actions,
       deepActions: deepActions,
       onSend: onSend,
+      // Chips and the tracking box go under the numbers, above the buckets
+      // — the web's order, and the only place they stay reachable on a
+      // phone once six bucket lists sit below them.
+      toolsFirst: true,
       priorities: payload.priorities,
       stats: [
         Wrap(

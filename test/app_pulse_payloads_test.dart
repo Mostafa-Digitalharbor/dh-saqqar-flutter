@@ -194,6 +194,23 @@ void main() {
       expect(parsed.priorities, ['priority A']);
     });
 
+    test('the standing "Standard Odoo" disclaimer is dropped, as on the web',
+        () {
+      // It arrives on every card of every app and says nothing about this
+      // database, so the web filters it out of `renderCardNotes`. Keeping it
+      // put a line of boilerplate under each of the seven cards.
+      final parsed = InventoryPulsePayload.parse(const {
+        'kind': 'inventory',
+        'notes': [
+          'القراءة الحالية مبنية على Standard Odoo: مخزون ومبيعات.',
+          'تطبيق المشتريات غير مثبت في قاعدة البيانات هذه.',
+        ],
+      })!;
+
+      expect(parsed.envelope.notes,
+          ['تطبيق المشتريات غير مثبت في قاعدة البيانات هذه.']);
+    });
+
     test('the wrong kind does not parse', () {
       expect(InventoryPulsePayload.parse(const {'kind': 'factory'}), isNull);
     });
