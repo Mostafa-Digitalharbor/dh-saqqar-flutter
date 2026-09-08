@@ -169,6 +169,28 @@ void main() {
       expect(find.text(en.chatResumeButton), findsNothing);
       expect(find.text(en.chatResumeButtonWorking), findsOneWidget);
     });
+
+    testWidgets('shows the last failure reason inline, not as a toast',
+        (tester) async {
+      // A failed Resume deliberately raises no toast (the spec: the user
+      // can just tap again) — but that must not mean the user sees nothing
+      // at all. The reason belongs on the banner itself, where it stays
+      // visible until the next attempt clears it.
+      await tester.pumpWidget(host(ChatResumeBanner(
+        onResume: () {},
+        failureMessage: 'No internet connection',
+      )));
+      expect(find.text('No internet connection'), findsOneWidget);
+    });
+
+    testWidgets('shows no failure line when nothing has failed yet',
+        (tester) async {
+      await tester.pumpWidget(host(ChatResumeBanner(onResume: () {})));
+      expect(find.text(en.chatResumeBannerText), findsOneWidget);
+      // No second line of body text under the title — AccentBanner drops
+      // the row entirely rather than reserving blank space for it.
+      expect(find.textContaining('internet'), findsNothing);
+    });
   });
 
   group('ArtifactPill', () {

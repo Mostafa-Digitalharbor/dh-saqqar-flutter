@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_sizes.dart';
-import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/widgets/blocking_wall.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../../shared/widgets/saqqar_logo.dart';
 import 'update_action.dart';
 
 /// The wall shown when this build is below the backend's supported floor.
@@ -36,78 +33,21 @@ class UpdateRequiredScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
     final tr = context.tr;
-    return Material(
-      color: s.bg,
-      child: AmbientBackground(
-        child: SafeArea(
-          // Same scroll-only-when-it-has-to treatment the lock screen needed:
-          // this column is tall enough to overflow a landscape phone and a
-          // 1.4× text scale, and nothing pins the app to portrait.
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s28),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SaqqarLogo(height: AppLogoSizes.screen),
-                    const SizedBox(height: AppSpacing.s36),
-                    Container(
-                      width: AppBoxSizes.hero,
-                      height: AppBoxSizes.hero,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: s.brandCyan.withValues(alpha: AppAlphas.a12),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: s.brandCyan.withValues(alpha: AppAlphas.a30),
-                        ),
-                      ),
-                      child: Icon(
-                        AppIcons.download,
-                        size: AppIconSizes.emptyState,
-                        color: s.brandCyan,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s24),
-                    Text(
-                      tr.updateRequiredTitle,
-                      style: context.text.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.s8),
-                    Text(
-                      tr.updateRequiredBody,
-                      style: context.text.bodyMedium?.copyWith(color: s.muted),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (latestVersion.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.s6),
-                      Text(
-                        tr.updateNewVersion(latestVersion),
-                        style: context.text.labelSmall?.copyWith(color: s.muted),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.s32),
-                    PrimaryButton(
-                      label: tr.updateAction,
-                      icon: AppIcons.download,
-                      expand: true,
-                      onPressed: () =>
-                          runUpdateAction(context, storeUrl: storeUrl),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+    return BlockingWall(
+      icon: AppIcons.download,
+      title: tr.updateRequiredTitle,
+      body: tr.updateRequiredBody,
+      footnote:
+          latestVersion.isEmpty ? null : tr.updateNewVersion(latestVersion),
+      actions: [
+        PrimaryButton(
+          label: tr.updateAction,
+          icon: AppIcons.download,
+          expand: true,
+          onPressed: () => runUpdateAction(context, storeUrl: storeUrl),
         ),
-      ),
+      ],
     );
   }
 }

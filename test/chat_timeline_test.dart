@@ -39,6 +39,7 @@ ChatMessage _msg(
   String content = 'text',
   Map<String, dynamic>? payload,
   DateTime? at,
+  bool isAgentStep = false,
 }) =>
     ChatMessage(
       id: id,
@@ -47,12 +48,23 @@ ChatMessage _msg(
       time: '10:00',
       toolPayload: payload,
       createdAt: at,
+      isAgentStep: isAgentStep,
     );
 
 ChatMessage _user(String id) => _msg(id, ChatMessageRole.user);
 ChatMessage _agent(String id) => _msg(id, ChatMessageRole.assistant);
 ChatMessage _card(String id, [Map<String, dynamic> payload = _clarify]) =>
     _msg(id, ChatMessageRole.assistant, content: '', payload: payload);
+
+/// A row recording something the agent DID — a tool result, already
+/// relabelled by the adapter into a readable line.
+ChatMessage _step(String id, {DateTime? at}) => _msg(
+      id,
+      ChatMessageRole.assistant,
+      content: 'Applying a change in Odoo',
+      at: at,
+      isAgentStep: true,
+    );
 
 /// The ids in an entry, in render order — the shape a test actually cares
 /// about, without matching on widget internals.
@@ -71,6 +83,60 @@ List<TimelineEntry> _idle(List<ChatMessage> messages) =>
     buildChatTimeline(messages, isRunning: false);
 
 void main() {
+  group('an agent step is folded, never mistaken for the answer', () {
+    test('steps before a reply become the pill, the reply stays the reply',
+        () {
+      // The shape a real write produces: two tool results, then the sentence
+      // the user reads.
+      final timeline = _idle([
+        _user('u1'),
+        _step('s1'),
+        _step('s2'),
+        _agent('a1'),
+      ]);
+
+      expect(timeline, hasLength(2));
+      final turn = timeline.last as AgentTurnEntry;
+      expect(turn.thinkingSteps.map((m) => m.id), ['s1', 's2']);
+      expect(turn.finalReply.id, 'a1');
+    });
+
+    test('a trailing step is not promoted to the answer', () {
+      // Mid-run the newest row is a step. Promoting it would print
+      // "Applying a change in Odoo" as though the agent had said it — and
+      // the typing row is already reporting exactly that.
+      final timeline = _idle([_user('u1'), _agent('a1'), _step('s1')]);
+
+      expect(timeline.map(_ids), [
+        ['u1'],
+        ['a1'],
+      ]);
+    });
+
+    test('a run of nothing but steps renders nothing', () {
+      final timeline = _idle([_user('u1'), _step('s1'), _step('s2')]);
+
+      expect(timeline.map(_ids), [
+        ['u1'],
+      ]);
+    });
+
+    test('a lone step before a reply still leaves one turn', () {
+      final timeline = _idle([_user('u1'), _step('s1'), _agent('a1')]);
+
+      expect(timeline, hasLength(2));
+      expect(timeline.first, isA<SingleMessageEntry>());
+      expect(timeline.last, isA<AgentTurnEntry>());
+      expect(_ids(timeline.last), ['s1', 'a1']);
+    });
+
+    test('an ordinary reply with no steps is untouched', () {
+      final timeline = _idle([_user('u1'), _agent('a1')]);
+
+      expect(timeline.every((e) => e is SingleMessageEntry), isTrue);
+    });
+  });
+
   group('a card is never folded into a thinking pill', () {
     test('a card between two agent steps splits the run', () {
       // The exact shape that buries it: the card is mid-run, so the old

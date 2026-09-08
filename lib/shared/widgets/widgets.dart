@@ -11,6 +11,7 @@ library;
 
 export 'accent_banner.dart';
 export 'ambient_background.dart';
+export 'blocking_wall.dart';
 export 'app_card_dialog.dart';
 export 'app_dialog_shell.dart';
 export 'app_error_screen.dart';
@@ -23,6 +24,7 @@ export 'async_submit_button.dart';
 export 'auto_direction_text.dart';
 export 'blocking_progress_dialog.dart';
 export 'chip_strip.dart';
+export 'compact_search_field.dart';
 export 'code_plate.dart';
 export 'colored_icon_box.dart';
 export 'confirm_dialog.dart';

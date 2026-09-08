@@ -14,13 +14,17 @@ import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/data/app_pulse_payloads.dart';
 import 'package:saqqar_app/features/chat/data/interactive_card_kind.dart';
+import 'package:saqqar_app/features/chat/data/pulse_actions.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_action_list.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/accountant_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/factory_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/finance_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/hr_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/inventory_pulse_card.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_bands_list.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_card_shell.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_counter_list.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_raw_items.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/purchasing_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/quality_guard_pulse_card.dart';
 
@@ -57,7 +61,7 @@ void main() {
         const PulseCardShell(
           kind: InteractiveCardKind.factory,
           envelope: PulseEnvelope(status: PulseStatus.ok, asOf: '2026-09-05'),
-          children: [],
+          stats: [],
         ),
       );
       expect(find.text(en.lookup('app_name_factory')), findsOneWidget);
@@ -75,7 +79,7 @@ void main() {
             status: PulseStatus.error,
             error: 'تعذّر الاتصال بقاعدة بيانات أودو.',
           ),
-          children: [
+          stats: [
             Builder(builder: (context) {
               builtChild = true;
               return const SizedBox();
@@ -99,7 +103,7 @@ void main() {
         const PulseCardShell(
           kind: InteractiveCardKind.factory,
           envelope: PulseEnvelope(status: PulseStatus.error),
-          children: [],
+          stats: [],
         ),
       );
       expect(find.text(en.defaultApiError), findsOneWidget);
@@ -113,7 +117,7 @@ void main() {
         const PulseCardShell(
           kind: InteractiveCardKind.factory,
           envelope: PulseEnvelope(status: PulseStatus.ok, notes: [note]),
-          children: [],
+          stats: [],
         ),
         // English screen locale — the note must still show up in Arabic,
         // unchanged, because rule 4 says the server writes it in Arabic
@@ -131,7 +135,7 @@ void main() {
           kind: InteractiveCardKind.inventory,
           envelope: PulseEnvelope(status: PulseStatus.ok, notes: ['note A']),
           priorities: ['priority A'],
-          children: [],
+          stats: [],
         ),
       );
       expect(find.text(en.pulseNotesTitle), findsOneWidget);
@@ -308,20 +312,23 @@ void main() {
   });
 
   group('PurchasingPulseCard', () {
-    testWidgets('renders bucket counts and the vendor delay tile',
+    testWidgets('renders bucket counts and names the delayed vendors',
         (tester) async {
       final payload = PurchasingPulsePayload.parse(const {
         'kind': 'purchasing',
         'open_rfqs': {'count': 4, 'items': <Object?>[], 'available': true},
         'vendor_delay_summary': [
-          {'vendor': 'Acme'},
+          {'vendor': 'Acme', 'avg_delay_days': 6},
         ],
       })!;
       await _pump(tester, PurchasingPulseCard(payload: payload));
 
       expect(find.text('4'), findsOneWidget);
-      expect(find.text('1'), findsOneWidget);
+      // The vendor is named, not just counted — the count alone can't start
+      // a phone call.
       expect(find.text(en.pulsePurchasingVendorDelays), findsOneWidget);
+      expect(find.text('Acme'), findsOneWidget);
+      expect(find.textContaining('avg_delay_days: 6'), findsOneWidget);
     });
 
     testWidgets('a payload with nothing usable still renders, never throws',
@@ -444,6 +451,487 @@ void main() {
     testWidgets('an empty list renders nothing, not an empty section',
         (tester) async {
       await _pump(tester, const PulseCounterList(counters: []));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a counter with a trail hides it until it is asked for',
+        (tester) async {
+      await _pump(
+        tester,
+        PulseCounterList(
+          counters: const [
+            PulseCounter(key: 'no_reference', label: 'قيود بدون مرجع', value: 2),
+          ],
+          detailsFor: (key) => const [
+            {'move': 'INV/2026/0031', 'amount': 1250.0},
+          ],
+        ),
+      );
+
+      expect(find.text('INV/2026/0031'), findsNothing);
+      await tester.tap(find.text(en.showDetails));
+      await tester.pumpAndSettle();
+      expect(find.text('INV/2026/0031'), findsOneWidget);
+      expect(find.textContaining('amount: 1.3K'), findsOneWidget);
+    });
+  });
+
+  // ── What the doc's undocumented arrays actually render ─────────────────
+
+  group('PulseRawItemsList', () {
+    testWidgets('names each row and shows its numbers first', (tester) async {
+      await _pump(
+        tester,
+        const PulseRawItemsList(
+          title: 'Low stock',
+          items: [
+            {
+              'product': 'Steel bracket 40mm',
+              'qty_on_hand': 0,
+              'state': 'confirmed',
+            },
+          ],
+        ),
+      );
+
+      expect(find.text('Low stock'), findsOneWidget);
+      expect(find.text('Steel bracket 40mm'), findsOneWidget);
+      // Numbers lead; the row's own name is never repeated as a fact.
+      expect(find.textContaining('qty_on_hand: 0'), findsOneWidget);
+      expect(find.textContaining('product:'), findsNothing);
+    });
+
+    testWidgets('a row with no name, and a row that is not a map, both print',
+        (tester) async {
+      await _pump(
+        tester,
+        const PulseRawItemsList(
+          title: 'Anything',
+          items: [
+            {'qty': 4},
+            'a bare string row',
+            42,
+          ],
+        ),
+      );
+
+      expect(find.text('a bare string row'), findsOneWidget);
+      expect(find.text('42'), findsOneWidget);
+      // A row that names nothing is led by its first fact — never by Dart's
+      // own `{qty: 4}` map syntax, which is not something to show a user.
+      expect(find.text('qty: 4'), findsOneWidget);
+      expect(find.textContaining('{'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('an Odoo many2one [id, name] pair reads as the name',
+        (tester) async {
+      await _pump(
+        tester,
+        const PulseRawItemsList(
+          title: 'Vendors',
+          items: [
+            {
+              'partner': <Object?>[7, 'Acme Supplies'],
+              'avg_delay_days': 9,
+            },
+          ],
+        ),
+      );
+      expect(find.text('Acme Supplies'), findsOneWidget);
+    });
+
+    testWidgets('no items renders nothing at all — not an empty heading',
+        (tester) async {
+      await _pump(
+        tester,
+        const PulseRawItemsList(title: 'Low stock', items: []),
+      );
+      expect(find.text('Low stock'), findsNothing);
+    });
+  });
+
+  group('PulseBandsList', () {
+    testWidgets('renders each band with its amount and invoice count',
+        (tester) async {
+      await _pump(
+        tester,
+        const PulseBandsList(
+          title: 'Collection aging',
+          bands: PulseBands(
+            available: true,
+            bands: [
+              PulseBand(label: '0–30', amount: 84000, count: 12),
+              PulseBand(label: '90+', amount: 3100),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Collection aging'), findsOneWidget);
+      expect(find.text('0–30'), findsOneWidget);
+      expect(find.text('84K'), findsOneWidget);
+      expect(find.text(en.pulseBandInvoices(12)), findsOneWidget);
+      expect(find.text('3.1K'), findsOneWidget);
+    });
+
+    testWidgets('a named band is translated; a numeric one is left alone',
+        (tester) async {
+      await _pump(
+        tester,
+        const PulseBandsList(
+          title: 'أعمار الديون',
+          bands: PulseBands(
+            available: true,
+            bands: [
+              PulseBand(label: 'not due', amount: 0),
+              PulseBand(label: 'due today', amount: 0),
+              PulseBand(label: '0–30', amount: 0),
+              // A band nobody has seen before keeps the server's word.
+              PulseBand(label: 'some new band', amount: 0),
+            ],
+          ),
+        ),
+        locale: const Locale('ar'),
+      );
+
+      expect(find.text('غير مستحقة'), findsOneWidget);
+      expect(find.text('مستحقة اليوم'), findsOneWidget);
+      expect(find.text('0–30'), findsOneWidget);
+      expect(find.text('some new band'), findsOneWidget);
+      expect(find.text('not due'), findsNothing);
+    });
+
+    testWidgets('unavailable says so — rule 1, never an empty row of zeroes',
+        (tester) async {
+      await _pump(
+        tester,
+        const PulseBandsList(
+          title: 'Collection aging',
+          bands: PulseBands(available: false),
+        ),
+      );
+
+      expect(find.text(en.pulseUnavailable), findsOneWidget);
+      expect(find.text('0'), findsNothing);
+    });
+
+    testWidgets('available with nothing in it renders nothing', (tester) async {
+      await _pump(
+        tester,
+        const PulseBandsList(
+          title: 'Collection aging',
+          bands: PulseBands(available: true),
+        ),
+      );
+      expect(find.text('Collection aging'), findsNothing);
+    });
+  });
+
+  // ── The buttons the phone was missing ─────────────────────────────────
+
+  group('action rows', () {
+    const financePayload = {
+      'kind': 'finance',
+      'receivables': {
+        'overdue': {'available': true, 'count': 13, 'total': 303194.0},
+      },
+      'bank_reconciliation': {'available': true, 'count': 21},
+    };
+
+    testWidgets('a card with a composer behind it shows the web\'s buttons',
+        (tester) async {
+      final sent = <String>[];
+      final actions =
+          pulseActions(InteractiveCardKind.finance, financePayload, en);
+      await _pump(
+        tester,
+        FinancePulseCard(
+          payload: FinancePulsePayload.parse(financePayload)!,
+          actions: actions,
+          onSend: sent.add,
+        ),
+      );
+
+      expect(find.text('Start collection'), findsOneWidget);
+      expect(find.text('Reconcile bank'), findsOneWidget);
+
+      await tester.tap(find.text('Start collection'));
+      await tester.pumpAndSettle();
+
+      expect(sent.single, actions.first.prompt);
+      expect(sent.single, contains('receivables aging'));
+    });
+
+    testWidgets('a read-only surface shows the card without dead buttons',
+        (tester) async {
+      await _pump(
+        tester,
+        FinancePulseCard(
+          payload: FinancePulsePayload.parse(financePayload)!,
+          actions: pulseActions(InteractiveCardKind.finance, financePayload, en),
+          // No composer here — the shared transcript view.
+        ),
+      );
+
+      expect(find.text('Start collection'), findsNothing);
+      // The numbers are still worth reading.
+      expect(find.text('13'), findsOneWidget);
+    });
+
+    testWidgets('the rows read right in Arabic', (tester) async {
+      final sent = <String>[];
+      await _pump(
+        tester,
+        FinancePulseCard(
+          payload: FinancePulsePayload.parse(financePayload)!,
+          actions: pulseActions(InteractiveCardKind.finance, financePayload, ar),
+          onSend: sent.add,
+        ),
+        locale: const Locale('ar'),
+      );
+
+      expect(find.text('ابدأ التحصيل'), findsOneWidget);
+      await tester.tap(find.text('ابدأ التحصيل'));
+      await tester.pumpAndSettle();
+      expect(sent.single, startsWith('اعرض أعمار مديونيات العملاء'));
+    });
+
+    testWidgets('the accountant card carries its chips and its free-text ask',
+        (tester) async {
+      const payload = {
+        'kind': 'accountant',
+        'counters': [
+          {'key': 'journal', 'label': 'Entries to review', 'value': 4},
+        ],
+      };
+      final sent = <String>[];
+      await _pump(
+        tester,
+        AccountantPulseCard(
+          payload: AccountantPulsePayload.parse(payload)!,
+          actions: pulseActions(InteractiveCardKind.accountant, payload, en),
+          deepActions:
+              pulseDeepActions(InteractiveCardKind.accountant, payload, en),
+          onSend: sent.add,
+        ),
+      );
+
+      expect(find.text('Review entries'), findsOneWidget);
+      expect(find.text('The opinion'), findsOneWidget);
+
+      // The free-text row: an empty box sends nothing, a filled one sends
+      // the document number inside the prompt.
+      await tester.tap(find.text('Explain'));
+      await tester.pumpAndSettle();
+      expect(sent, isEmpty);
+
+      await tester.enterText(find.byType(TextField), 'INV/2026/0031');
+      await tester.tap(find.text('Explain'));
+      await tester.pumpAndSettle();
+      expect(sent.single, contains('INV/2026/0031'));
+      expect(sent.single, contains('walk the chain'));
+    });
+
+    testWidgets('a payload with nothing to act on shows no button row',
+        (tester) async {
+      const quiet = {'kind': 'finance'};
+      await _pump(
+        tester,
+        FinancePulseCard(
+          payload: FinancePulsePayload.parse(quiet)!,
+          actions: pulseActions(InteractiveCardKind.finance, quiet, en),
+          onSend: (_) {},
+        ),
+      );
+      expect(find.byType(PulseActionList), findsOneWidget);
+      expect(find.text('Start collection'), findsNothing);
+    });
+  });
+
+  group('the sections that used to be dropped', () {
+    testWidgets('inventory names the products behind a bucket count',
+        (tester) async {
+      final payload = InventoryPulsePayload.parse(const {
+        'kind': 'inventory',
+        'demand_shortage': {
+          'available': true,
+          'count': 2,
+          'items': [
+            {'product': 'Steel bracket 40mm', 'qty_needed': 1450},
+            {'product': 'Copper wire 2.5mm', 'qty_needed': 300},
+          ],
+        },
+      })!;
+      await _pump(tester, InventoryPulseCard(payload: payload));
+
+      expect(find.text('Steel bracket 40mm'), findsOneWidget);
+      expect(find.text('Copper wire 2.5mm'), findsOneWidget);
+      // Compacted the way the rest of the app writes four-digit numbers.
+      expect(find.textContaining('qty_needed: 1.4K'), findsOneWidget);
+    });
+
+    testWidgets('inventory says WHY data is missing, not just how much',
+        (tester) async {
+      final payload = InventoryPulsePayload.parse(const {
+        'kind': 'inventory',
+        'missing_data': {
+          'available': true,
+          'count': 22,
+          'counts': {'no_cost': 8, 'no_lead_time': 14},
+        },
+      })!;
+      await _pump(tester, InventoryPulseCard(payload: payload));
+
+      expect(find.text(en.pulseInventoryMissingDataReasons), findsOneWidget);
+      expect(find.text('no cost'), findsOneWidget);
+      expect(find.text('14'), findsOneWidget);
+    });
+
+    testWidgets('finance renders both aging breakdowns', (tester) async {
+      // Every other bucket is answerable, so the only "Unavailable" on this
+      // card is the horizon's — which is the point of the assertion.
+      final payload = FinancePulsePayload.parse(const {
+        'kind': 'finance',
+        'cash': {'available': true, 'balance': 12500.0},
+        'receivables': {
+          'overdue': {'available': true, 'count': 3},
+          'due_soon': {'available': true, 'count': 1},
+        },
+        'payables': {
+          'overdue': {'available': true, 'count': 2},
+          'due_soon': {'available': true, 'count': 4},
+        },
+        'drafts': {
+          'vendor_bills': {'available': true, 'count': 5},
+          'customer_invoices': {'available': true, 'count': 6},
+        },
+        'bank_reconciliation': {'available': true, 'count': 7},
+        'collection_aging': {
+          'available': true,
+          'd0_30': 84000.0,
+          'over_90': 3100.0,
+        },
+        'payment_horizon': {'available': false},
+      })!;
+      await _pump(tester, FinancePulseCard(payload: payload));
+
+      expect(find.text(en.pulseFinanceCollectionAging), findsOneWidget);
+      expect(find.text('0–30'), findsOneWidget);
+      expect(find.text('84K'), findsOneWidget);
+      expect(find.text('90+'), findsOneWidget);
+      expect(find.text(en.pulseFinancePaymentHorizon), findsOneWidget);
+      expect(find.text(en.pulseUnavailable), findsOneWidget);
+    });
+
+    testWidgets('the accountant tiles the five checks and names them',
+        (tester) async {
+      final payload = AccountantPulsePayload.parse(const {
+        'kind': 'accountant',
+        'no_reference': {'available': true, 'count': 4},
+        'manual_on_control': 7,
+        'edited_after_post': {'available': false},
+      })!;
+      await _pump(tester, AccountantPulseCard(payload: payload));
+
+      expect(find.text(en.pulseAccountantCheck('no_reference')), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+      // The check the database can't answer says so instead of showing 0.
+      expect(find.text(en.pulseUnavailable), findsOneWidget);
+      expect(find.text('0'), findsNothing);
+    });
+
+    testWidgets('HR states an unavailable operations section, never hides it',
+        (tester) async {
+      final payload = HrPulsePayload.parse(const {
+        'kind': 'hr',
+        'operations': {'available': false},
+        'recruitment': {
+          'available': true,
+          'count': 6,
+          'items': [
+            {'name': 'Sara Ali', 'stage': 'interview'},
+          ],
+        },
+        'payroll': {'available': false},
+      })!;
+      await _pump(tester, HrPulseCard(payload: payload));
+
+      // Operations and payroll both unavailable — two statements, not two
+      // blanks.
+      expect(find.text(en.pulseUnavailable), findsNWidgets(2));
+      expect(find.text(en.pulseHrRecruitment), findsWidgets);
+      expect(find.text('6'), findsOneWidget);
+      expect(find.text('Sara Ali'), findsOneWidget);
+      // `time_off` was never sent, so it gets no tile at all.
+      expect(find.text(en.pulseHrTimeOff), findsNothing);
+    });
+
+    testWidgets('quality guard reads the doc\'s flat keys and the live shape '
+        'identically', (tester) async {
+      const flat = {
+        'kind': 'quality_guard',
+        'deep_discounts': 5,
+        'lower_cost_substitutes': 2,
+        'documented_substitutes': 1,
+        'undocumented_substitutes': 4,
+        'discount_value_estimate': 18400.0,
+        'standard_odoo_only': true,
+      };
+      const nested = {
+        'kind': 'quality_guard',
+        'spec_stats': {
+          'deep_discounts': 5,
+          'lower_cost_substitutes': 2,
+          'documented_substitutes': 1,
+          'undocumented_substitutes': 4,
+          'discount_value_estimate': 18400.0,
+        },
+        'standard_odoo_only': true,
+      };
+
+      for (final payload in [flat, nested]) {
+        await _pump(
+          tester,
+          QualityGuardPulseCard(
+            payload: QualityGuardPulsePayload.parse(payload)!,
+          ),
+        );
+
+        expect(find.text(en.pulseQualityDeepDiscounts), findsOneWidget);
+        expect(find.text('5'), findsOneWidget);
+        expect(find.text(en.pulseQualityUndocumentedSubstitutes),
+            findsOneWidget);
+        expect(find.text('4'), findsOneWidget);
+        expect(find.text('18.4K'), findsOneWidget);
+        expect(find.text(en.pulseQualityStandardOdooOnly), findsOneWidget);
+      }
+    });
+
+    testWidgets('every new section renders in Arabic without throwing',
+        (tester) async {
+      final finance = FinancePulsePayload.parse(const {
+        'kind': 'finance',
+        'collection_aging': {'available': true, 'd0_30': 84000.0},
+        'payment_horizon': {'available': false},
+      })!;
+      await _pump(tester, FinancePulseCard(payload: finance),
+          locale: const Locale('ar'));
+      expect(find.text(ar.pulseFinanceCollectionAging), findsOneWidget);
+      expect(find.text(ar.pulseFinancePaymentHorizon), findsOneWidget);
+      // Bands are digits, so they read the same in both locales; the
+      // heading and the unavailable state are what localize.
+      expect(find.text('0–30'), findsOneWidget);
+      expect(find.text(ar.pulseUnavailable), findsWidgets);
+
+      final hr = HrPulsePayload.parse(const {
+        'kind': 'hr',
+        'operations': {'available': false},
+        'time_off': {'available': true, 'count': 3},
+      })!;
+      await _pump(tester, HrPulseCard(payload: hr), locale: const Locale('ar'));
+      expect(find.text(ar.pulseHrTimeOff), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/format/file_kind.dart';
+import '../../conversations/data/conversation_models.dart'
+    show MessageTokens;
 import '../../inbox/data/approval_models.dart' show kDeleteOperation;
 
 /// View models for the chat surface — the shapes its widgets render.
@@ -41,6 +43,8 @@ class ChatMessage {
     this.toolPayload,
     this.attachments = const [],
     this.createdAt,
+    this.isAgentStep = false,
+    this.tokens,
   });
 
   /// Server message id (empty for locally-authored demo/optimistic rows).
@@ -68,6 +72,24 @@ class ChatMessage {
   /// each new day. Optional so existing demo data without timestamps keeps
   /// working — the API impl will always populate it.
   final DateTime? createdAt;
+
+  /// This row records an action the agent took, not a reply it wrote.
+  ///
+  /// Set by the adapter for the `tool` rows the backend narrates a run with.
+  /// [content] is then a short human label ("Applying a change in Odoo"),
+  /// never the tool's raw JSON result — the transcript is not a log file.
+  ///
+  /// The timeline folds these into the thinking pill and, critically, never
+  /// promotes one to a turn's final reply: a run whose last row is a step has
+  /// not answered yet, and printing "Applying a change in Odoo" as the answer
+  /// would be a sentence the agent never said.
+  final bool isAgentStep;
+
+  /// What this reply cost, when the server metered it. Rendered as a small
+  /// chip beside the timestamp, the way the web does — a user paying per
+  /// token can see which answer was the expensive one without leaving the
+  /// conversation.
+  final MessageTokens? tokens;
 }
 
 /// Where an attachment came from. Used by the chat bubble to decide whether

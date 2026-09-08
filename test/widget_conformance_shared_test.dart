@@ -27,6 +27,8 @@ import 'package:saqqar_app/core/theme/app_gradients.dart';
 import 'package:saqqar_app/core/theme/app_icons.dart';
 import 'package:saqqar_app/core/theme/app_sizes.dart';
 import 'package:saqqar_app/shared/widgets/accent_banner.dart';
+import 'package:saqqar_app/shared/widgets/blocking_wall.dart';
+import 'package:saqqar_app/shared/widgets/compact_search_field.dart';
 import 'package:saqqar_app/shared/widgets/ambient_background.dart';
 import 'package:saqqar_app/shared/widgets/app_card_dialog.dart';
 import 'package:saqqar_app/shared/widgets/app_dialog_shell.dart';
@@ -35,8 +37,10 @@ import 'package:saqqar_app/shared/widgets/app_icon_button.dart';
 import 'package:saqqar_app/shared/widgets/app_loading_state.dart';
 import 'package:saqqar_app/shared/widgets/app_text_field.dart';
 import 'package:saqqar_app/shared/widgets/auto_direction_text.dart';
+import 'package:saqqar_app/shared/widgets/capped_scroll_list.dart';
 import 'package:saqqar_app/shared/widgets/code_plate.dart';
 import 'package:saqqar_app/shared/widgets/colored_icon_box.dart';
+import 'package:saqqar_app/shared/widgets/danger_callout.dart';
 import 'package:saqqar_app/shared/widgets/dialog_actions.dart';
 import 'package:saqqar_app/shared/widgets/empty_state.dart';
 import 'package:saqqar_app/shared/widgets/eyebrow_label.dart';
@@ -88,9 +92,36 @@ void main() {
           body: kLongEnglish,
           action: GhostButton(label: kLongEnglish, onPressed: () {}),
         ),
+    // The compact in-sheet search box. Seeded with text so the clear button
+    // — the affordance one of the two copies it replaced was missing — is
+    // actually in the tree being measured.
+    'CompactSearchField': () => CompactSearchField(
+          controller: TextEditingController(text: kLongArabic),
+          hintText: kLongEnglish,
+          onChanged: (_) {},
+        ),
+    'CompactSearchField empty': () => CompactSearchField(
+          controller: TextEditingController(),
+          hintText: kLongArabic,
+          onChanged: (_) {},
+        ),
     'AmbientBackground': () => const AmbientBackground(
           withBlobs: true,
           child: SizedBox(height: 200, width: double.infinity),
+        ),
+    // The wall the app lock and the forced-update screen both are. Fed the
+    // long strings on purpose: this layout exists because the short version
+    // overflowed a landscape phone at 1.4x text, and two actions is the
+    // taller of the two real uses.
+    'BlockingWall': () => BlockingWall(
+          icon: AppIcons.lock,
+          title: kLongArabic,
+          body: kLongEnglish,
+          footnote: kUnbreakable,
+          actions: [
+            PrimaryButton(label: kLongArabic, expand: true, onPressed: () {}),
+            GhostButton(label: kLongEnglish, expand: true, onPressed: () {}),
+          ],
         ),
     'AppDialogShell': () => const AppDialogShell(
           accent: AppGradients.primaryCta,
@@ -127,6 +158,18 @@ void main() {
           accent: AppColors.warning,
           maxLines: 2,
         ),
+    'CappedScrollList': () => CappedScrollList(
+          maxHeight: 80,
+          itemCount: 8,
+          itemBuilder: (context, i) => Text('$i · $kLongArabic'),
+        ),
+    'CappedScrollList separated': () => CappedScrollList(
+          maxHeight: 80,
+          itemCount: 8,
+          separatorBuilder: (context, _) => const Divider(height: 1),
+          itemBuilder: (context, i) => Text('$i · $kUnbreakable'),
+        ),
+    'DangerCallout': () => const DangerCallout(child: Text(kLongArabic)),
     'DialogActions': () => DialogActions(
           cancel: GhostButton(label: kLongArabic, onPressed: () {}),
           confirm: PrimaryButton(label: kLongEnglish, onPressed: () {}),

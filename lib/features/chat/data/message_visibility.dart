@@ -53,6 +53,13 @@ bool isVisibleMessage(Message m, {required bool isRunning}) {
   // of rendering as an empty bubble.
   if (!isRunning && hasRenderableInteractiveCard(m.toolPayload)) return true;
 
+  // An agent STEP is kept, but it is not a bubble — see [isAgentStepMessage].
+  // The timeline folds it into the "Saqqar thinking · N steps" pill, which is
+  // where the web puts the same rows. Dropping it here is what made a write
+  // vanish without trace: the transcript read "add a product" → "done", with
+  // no sign that an approval had been granted or that anything had run.
+  if (isAgentStepMessage(m)) return true;
+
   if (m.role == MessageRole.tool) return false;
   if (m.role == MessageRole.assistant && m.content.trim().isEmpty) {
     return false;
@@ -97,3 +104,18 @@ bool isAgentControlPayload(String content) {
   }
   return false;
 }
+
+/// A row that records something the agent DID, rather than something it said.
+///
+/// The backend narrates a run as pairs: an assistant row carrying
+/// `tool_payload.tool_calls` and no text, then a `tool` row with the call's
+/// result. Only the second is kept. The pair describes one action, so keeping
+/// both would print every step twice; and the assistant half has no content
+/// at all, which is why the web — which does keep both — renders a blank line
+/// above each of its steps.
+///
+/// A `tool_name` is required, not incidental: it is what the label is looked
+/// up from, so a tool row without one has nothing readable to become and is
+/// still dropped rather than shown as raw JSON.
+bool isAgentStepMessage(Message m) =>
+    m.role == MessageRole.tool && (m.toolName ?? '').trim().isNotEmpty;

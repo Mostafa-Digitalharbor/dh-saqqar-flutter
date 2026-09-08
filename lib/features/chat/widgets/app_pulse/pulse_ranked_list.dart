@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_sizes.dart';
 import '../../../../shared/extensions/context_extensions.dart';
+import '../../../../shared/widgets/capped_scroll_list.dart';
 
 /// A capped, scrollable list of ranked rows — factory's `top_risks` today,
 /// and the shape any future kind's ranked array reaches for.
 ///
-/// Generalizes `chat_approval_card.dart`'s `_DeleteRecordList`: same
-/// height-capped-not-count-capped reasoning (a card must not push its own
-/// content off-screen, and truncating a risk list silently would hide the
-/// exact rows the user opened the card to see), but takes a row WIDGET per
-/// item rather than a single string — these cards' rows carry several
-/// fields each, not one line.
+/// Adds a title and an optional row separator on top of the shared
+/// [CappedScrollList] primitive — `chat_approval_card.dart`'s
+/// `_DeleteRecordList` wants the same height-capped-not-count-capped
+/// scrolling but neither a title nor separators, which is why the capping
+/// itself lives one level down rather than here.
 ///
 /// Deliberately generic over [T] rather than tied to any one kind's payload
 /// type: the doc's own warning is that these seven payloads are "not the
@@ -46,22 +46,14 @@ class PulseRankedList<T> extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.s6),
-          ConstrainedBox(
-            constraints:
-                const BoxConstraints(maxHeight: AppSheetHeights.approvalPayloadMax),
-            child: Scrollbar(
-              child: ListView.separated(
-                shrinkWrap: true,
-                padding: EdgeInsets.zero,
-                itemCount: items.length,
-                separatorBuilder: (context, _) => Container(
-                  height: 1,
-                  margin: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
-                  color: s.border,
-                ),
-                itemBuilder: (context, i) => itemBuilder(context, items[i]),
-              ),
+          CappedScrollList(
+            itemCount: items.length,
+            separatorBuilder: (context, _) => Container(
+              height: AppBorderWidths.hairline,
+              margin: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
+              color: s.border,
             ),
+            itemBuilder: (context, i) => itemBuilder(context, items[i]),
           ),
         ],
       ),

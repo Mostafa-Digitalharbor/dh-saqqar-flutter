@@ -12,6 +12,7 @@ import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/credential_models.dart';
 import '../data/project_models.dart';
+import '../data/vault_persona_service.dart';
 import '../view_model/vault_cubit.dart';
 import 'credential_form.dart';
 
@@ -27,6 +28,19 @@ class EnvironmentDetailSheet extends StatefulWidget {
   const EnvironmentDetailSheet({super.key, required this.environmentId});
 
   final String environmentId;
+
+  /// Every credential kind, shown under "I'm a developer".
+  static const developerKinds = CredentialKind.values;
+
+  /// What "I'm a user" shows. Email belongs here: connecting a mailbox is an
+  /// end-user task, not a developer one, and the web lists exactly
+  /// `["xmlrpc", "email"]` for this persona. Leaving it out meant someone in
+  /// the default view had no way to reach the Email form at all — the kind
+  /// shipped and nothing led to it.
+  ///
+  /// Public so the parity test can assert the list itself rather than a copy
+  /// of it; a test that restates the constant passes after a revert.
+  static const userKinds = [CredentialKind.xmlrpc, CredentialKind.email];
 
   static Future<void> show(
     BuildContext context, {
@@ -47,18 +61,21 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
   late final TextEditingController _name;
   bool _initialised = false;
 
-  /// Audience mode (web parity). Defaults to the simple "I'm a user" view,
-  /// which exposes only the Odoo connection; "I'm a developer" reveals the
-  /// technical kinds (PostgreSQL / Server shell / GitHub / Email).
+  /// Audience mode (web parity). Defaults to the simple "I'm a user" view;
+  /// "I'm a developer" reveals the technical kinds (PostgreSQL / Server
+  /// shell / GitHub). Restored per environment on open, like the web.
   bool _developerMode = false;
 
-  static const _kinds = CredentialKind.values;
-  static const _userKinds = [CredentialKind.xmlrpc];
 
   @override
   void initState() {
     super.initState();
     _name = TextEditingController();
+    // Restore the audience chosen for THIS environment last time. Read
+    // synchronously in initState so the first build already has the right
+    // tab count — deciding it a frame later would rebuild the TabController.
+    _developerMode =
+        context.read<VaultPersonaService>().isDeveloper(widget.environmentId);
     // Lazy-fetch the env's credentials — the projects-list endpoint
     // doesn't include them so the credential forms would otherwise
     // render against an empty cache. Safe to call multiple times.
@@ -125,7 +142,9 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
     // User mode shows only the Odoo connection; developer mode reveals all
     // kinds. Keyed below so the TabController remounts with the right length
     // when the mode flips (avoids an index-out-of-range on 4→1 tabs).
-    final visibleKinds = _developerMode ? _kinds : _userKinds;
+    final visibleKinds = _developerMode
+        ? EnvironmentDetailSheet.developerKinds
+        : EnvironmentDetailSheet.userKinds;
 
     return DefaultTabController(
       key: ValueKey(_developerMode),
@@ -218,6 +237,10 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                   onChanged: (dev) {
                     if (dev == _developerMode) return;
                     setState(() => _developerMode = dev);
+                    context.read<VaultPersonaService>().setDeveloper(
+                          widget.environmentId,
+                          developer: dev,
+                        );
                   },
                 ),
                 const SizedBox(height: AppSpacing.s14),
@@ -272,6 +295,12 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
     CredentialKind kind,
     List<CredentialSchema> schemas,
   ) {
+    // In the user view the Odoo tab is an invitation, not a protocol name:
+    // the web renames it to "Connect Odoo" there and keeps "XML-RPC" for
+    // developers, who are the only ones who benefit from the distinction.
+    if (!_developerMode && kind == CredentialKind.xmlrpc) {
+      return context.tr.connectOdoo;
+    }
     String serverLabel = kind.name;
     for (final s in schemas) {
       if (s.kind == kind) {

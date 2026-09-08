@@ -19,6 +19,7 @@ Message _message({
   required MessageRole role,
   String content = '',
   Map<String, dynamic>? toolPayload,
+  String? toolName,
 }) =>
     Message(
       id: 'm1',
@@ -26,6 +27,7 @@ Message _message({
       content: content,
       createdAt: DateTime(2026, 8, 4),
       toolPayload: toolPayload,
+      toolName: toolName,
     );
 
 const _clarify = {
@@ -132,6 +134,68 @@ void main() {
         ),
         isFalse,
       );
+    });
+  });
+
+  group('agent steps are kept, so a run leaves a trace', () {
+    // Found by replaying a real write: the user asked Saqqar to create a
+    // product, granted the approval, and the mobile transcript read "add a
+    // product" → "done" with nothing in between. The four rows recording the
+    // approval and the write were all dropped here. The web keeps them and
+    // folds them into "Saqqar thinking · N steps".
+    test('a tool result with a tool_name is a step, not plumbing', () {
+      final step = _message(
+        role: MessageRole.tool,
+        content: '{"status": "ok", "record_id": 3}',
+        toolName: 'create_odoo_record',
+      );
+
+      expect(isAgentStepMessage(step), isTrue);
+      expect(isVisibleMessage(step, isRunning: false), isTrue);
+    });
+
+    test('and while the run is still live, too', () {
+      // Unlike an interactive card, a step is not idle-gated: the web shows
+      // its live fold open precisely so the user can watch progress.
+      final step = _message(
+        role: MessageRole.tool,
+        content: '{"status": "ok"}',
+        toolName: 'search_odoo_records',
+      );
+
+      expect(isVisibleMessage(step, isRunning: true), isTrue);
+    });
+
+    test('a tool row with no tool_name has nothing readable to become', () {
+      // The label is looked up from the tool name. Without one the only
+      // thing left to show is the raw JSON, which is worse than silence.
+      for (final name in [null, '', '   ']) {
+        final row = _message(
+          role: MessageRole.tool,
+          content: '{"rows": 42}',
+          toolName: name,
+        );
+        expect(isAgentStepMessage(row), isFalse, reason: 'toolName=$name');
+        expect(isVisibleMessage(row, isRunning: false), isFalse);
+      }
+    });
+
+    test('the assistant half of a tool call stays dropped', () {
+      // The backend narrates one action as a pair — an empty assistant row
+      // carrying `tool_calls`, then the tool result. Keeping both would print
+      // every step twice.
+      final half = _message(
+        role: MessageRole.assistant,
+        content: '',
+        toolPayload: const {
+          'tool_calls': [
+            {'function': {'name': 'create_odoo_record'}},
+          ],
+        },
+      );
+
+      expect(isAgentStepMessage(half), isFalse);
+      expect(isVisibleMessage(half, isRunning: false), isFalse);
     });
   });
 

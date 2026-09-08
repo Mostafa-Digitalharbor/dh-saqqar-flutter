@@ -183,6 +183,16 @@ class ApiEndpoints {
   static const String whatIfIntro = '/api/v1/whatif/intro/';
   static const String whatIfRun = '/api/v1/whatif/run/';
 
+  /// `GET /api/v1/prompt-memory/` — the saved-task catalogue behind "Task
+  /// wording", already `/api/v1/` on the web (it is the one route both
+  /// clients call by the same path).
+  ///
+  /// Query: `limit`, `lang`, optional `q` (the rough task) and
+  /// `conversation_id`. Returns `{prompts: [...], draft: {...}|null,
+  /// total_saved}` — `prompts` are the user's own past tasks and `draft` is
+  /// the structured rewrite of `q`.
+  static const String promptMemory = '/api/v1/prompt-memory/';
+
   // ── Voice support (§8) ───────────────────────────────────────────────
   //
   // NOT telephony. A self-service support workspace: describe a problem in

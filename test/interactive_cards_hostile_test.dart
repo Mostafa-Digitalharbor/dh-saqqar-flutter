@@ -205,6 +205,50 @@ const _hostile = <String, Object?>{
     'spec_stats': <Object?>[],
     'priorities': {'a': 1},
   },
+  // ── The keys added once the doc's "read the live payload" arrays and
+  // breakdowns started rendering. Undocumented shapes are exactly where a
+  // partial backend rollout sends something nobody planned for.
+  'finance: aging breakdowns are the wrong type': {
+    'kind': 'finance',
+    'collection_aging': 'not a breakdown',
+    'payment_horizon': 42,
+  },
+  'finance: aging bands are junk rows': {
+    'kind': 'finance',
+    'collection_aging': {
+      'available': true,
+      'buckets': <Object?>[null, 5, 'x', <String, dynamic>{}],
+    },
+    'payment_horizon': {
+      'available': 'yes',
+      'bands': {'d0_30': 'a lot', 'over_90': <Object?>[]},
+    },
+  },
+  'purchasing: vendor delay rows are junk': {
+    'kind': 'purchasing',
+    'vendor_delay_summary': <Object?>[null, 5, 'x', <String, dynamic>{}],
+  },
+  'accountant: checks and blocks are the wrong type': {
+    'kind': 'accountant',
+    'no_reference': 'four',
+    'manual_on_control': <Object?>[],
+    'self_cancelling': {'available': 'yes', 'items': 'nope'},
+    'blocks': {'no_reference': 'not a list', 'multi_company': 7},
+  },
+  'hr: recruitment, payroll and time_off are the wrong type': {
+    'kind': 'hr',
+    'recruitment': 'nope',
+    'payroll': <Object?>['not', 'a', 'map'],
+    'time_off': {'available': 'yes', 'count': 'four', 'items': 42},
+  },
+  'quality_guard: the flat keys are junk': {
+    'kind': 'quality_guard',
+    'deep_discounts': 'five',
+    'lower_cost_substitutes': <Object?>[],
+    'documented_substitutes': {'a': 1},
+    'discount_value_estimate': 'a lot',
+    'standard_odoo_only': 'yes',
+  },
 };
 
 Map<String, dynamic>? _payload(Object? raw) =>

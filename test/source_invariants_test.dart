@@ -1939,6 +1939,94 @@ void main() {
     });
   });
 
+  group('Every runtime lookup key exists', () {
+    test('no literal `lookup(...)` key resolves to nothing', () {
+      // `AppStrings.lookup` returns its fallback — the empty string by
+      // default — for a key that is not in the table. So a typo here does not
+      // throw and does not print the key: it renders a BLANK label, on a
+      // card that otherwise looks finished. The pulse rows compose their keys
+      // and have their own coverage; these are the ones written out by hand,
+      // where a rename in the table leaves the call site behind.
+      final en = AppStrings(const Locale('en'));
+      final ar = AppStrings(const Locale('ar'));
+
+      final missing = <String>[];
+      final pattern = RegExp(r'''\.lookup\(\s*['"]([a-zA-Z0-9_.]+)['"]''');
+      for (final line in lib) {
+        for (final m in pattern.allMatches(line.text)) {
+          final key = m.group(1)!;
+          // A call that passes its own fallback is deliberately tolerant of
+          // an absent key — that is the forward-compat path for options the
+          // backend has not taught this build about yet.
+          if (line.text.contains('fallback:')) continue;
+          if (en.lookup(key).isEmpty || ar.lookup(key).isEmpty) {
+            missing.add('${line.path}:${line.number} -> $key');
+          }
+        }
+      }
+
+      expect(
+        missing,
+        isEmpty,
+        reason: 'These lookup keys are absent from one or both tables, so '
+            'they render as an empty string rather than failing:\n  '
+            '${missing.join('\n  ')}\n\n'
+            'Fix: add the key to BOTH `_en` and `_ar` in '
+            'lib/core/i18n/app_strings.dart, or pass a `fallback:` if the '
+            'key is genuinely optional.',
+      );
+    });
+  });
+
+  group('Screen-relative sizes are named, not typed', () {
+    test('no MediaQuery size is multiplied by a bare number', () {
+      // Every "take 85% of the height" decision in this app already reads
+      // `AppFractions.<name>`, and this rule is what keeps the next one from
+      // being written as `* 0.85`.
+      //
+      // A bare fraction is not a style problem. It is invisible to the
+      // responsive sweep, which pumps the device matrix and asks whether
+      // anything overflowed: a named fraction can be read, compared against
+      // its siblings and changed in one place when a sheet grows a row,
+      // while an inline 0.85 in one file and 0.86 in another are two
+      // different sheets that were meant to be the same one.
+      final hits = lib
+          .where((l) => !l.path.endsWith('core/theme/app_sizes.dart'))
+          .where((l) => RegExp(
+                r'(?:sizeOf\(context\)|MediaQuery\.of\(context\)\.size)'
+                r'(?:\.width|\.height|\.shortestSide|\.longestSide)?'
+                r'\s*\*\s*[0-9.]',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare fraction of a screen dimension',
+          hits,
+          'name it in `AppFractions` (lib/core/theme/app_sizes.dart) and '
+              'read it from there, the way every sheet, drawer and splash '
+              'element in this app already does.',
+        ),
+      );
+    });
+
+    test('AppFractions is where those live', () {
+      // Guards the rule above against passing vacuously if someone deletes
+      // the class and spreads the numbers back out.
+      final src = File('lib/core/theme/app_sizes.dart').readAsStringSync();
+      expect(src, contains('class AppFractions'));
+      for (final name in ['sheet', 'sheetTall', 'drawer']) {
+        expect(
+          src,
+          contains('static const double $name ='),
+          reason: 'AppFractions.$name is missing.',
+        );
+      }
+    });
+  });
+
   group('A test that models a screen says so', () {
     // Three chat scroll tests build a REPLICA of the lane — a synthetic
     // `ListView` with known row heights — rather than pumping `ChatScreen`,

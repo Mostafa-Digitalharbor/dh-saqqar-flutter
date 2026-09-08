@@ -27,6 +27,8 @@ import 'package:saqqar_app/features/chat/view_model/chat_cubit.dart';
 import 'package:saqqar_app/features/chat/view_model/chat_state.dart';
 import 'package:saqqar_app/features/chat/view_model/task_prep_cubit.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_approval_card.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_grouped_approval_card.dart';
+import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_typing_row.dart';
 import 'package:saqqar_app/features/conversations/data/attachment_models.dart';
 import 'package:saqqar_app/features/conversations/data/conversation_models.dart';
@@ -202,6 +204,10 @@ ConversationSnapshot _snapshotWithApproval({
   String operation = 'write',
   int messages = 1,
   int approvals = 1,
+  // One model per approval by default would be untrue to the wire — a burst
+  // of writes is the SAME model repeated. Callers that want N separate cards
+  // rather than one grouped card pass `distinctShapes: true`.
+  bool distinctShapes = false,
 }) =>
     ConversationSnapshot.fromJson(<String, dynamic>{
       'conversation': <String, dynamic>{
@@ -229,7 +235,10 @@ ConversationSnapshot _snapshotWithApproval({
             'prompt': 'Saqqar wants to modify 1 record.',
             'record_count': 1,
             'model_label': const {'en': 'Sales Order', 'ar': 'Sales Order AR'},
-            'payload': {'operation': operation, 'model': 'sale.order'},
+            'payload': {
+              'operation': operation,
+              'model': distinctShapes ? 'model.$i' : 'sale.order',
+            },
           },
       ],
     });
@@ -471,11 +480,11 @@ void main() {
       expect(find.byType(ChatTypingRow), findsOneWidget);
     });
 
-    testWidgets('three approvals and nothing else render all three',
+    testWidgets('three approvals of three shapes render all three',
         (tester) async {
       await pumpChat(
         tester,
-        _snapshotWithApproval(messages: 0, approvals: 3),
+        _snapshotWithApproval(messages: 0, approvals: 3, distinctShapes: true),
         platform: TargetPlatform.iOS,
         // Tall enough for all three at once. On a phone-sized viewport the
         // list lazily builds only what fits, and a count assertion would be
@@ -484,6 +493,70 @@ void main() {
       );
 
       expect(find.byType(ChatApprovalCard), findsNWidgets(3));
+    });
+
+    testWidgets('three approvals of ONE shape render one grouped card',
+        (tester) async {
+      // The wire shape of a burst: the agent writing three sales orders
+      // raises three approvals that differ only in their record ids. The web
+      // collapses that to a single "3 similar requests" card, and so does
+      // this — six taps for one decision was the gap.
+      await pumpChat(
+        tester,
+        _snapshotWithApproval(messages: 0, approvals: 3),
+        platform: TargetPlatform.iOS,
+        size: const Size(430, 1600),
+      );
+
+      expect(find.byType(ChatGroupedApprovalCard), findsOneWidget);
+      expect(find.byType(ChatApprovalCard), findsNothing);
+      expect(
+        find.text(AppStrings(const Locale('en')).similarRequestsCount(3)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a grouped Approve all posts one batch decision',
+        (tester) async {
+      // One POST with `scope: "batch"`, not three bare approves — the server
+      // resolves the siblings, which is the only thing that makes the count
+      // on the button true.
+      final ctx = await pumpChat(
+        tester,
+        _snapshotWithApproval(messages: 0, approvals: 3),
+        platform: TargetPlatform.iOS,
+        size: const Size(430, 1600),
+      );
+
+      await tester.tap(
+        find.text(AppStrings(const Locale('en')).approveAllN(3)),
+      );
+      await _settleDecision(tester);
+
+      expect(ctx.api.decisions, hasLength(1));
+      expect(ctx.api.decisions.single.approved, isTrue);
+      expect(ctx.api.decisions.single.batch, isTrue);
+    });
+
+    testWidgets('a grouped Reject all posts one batch rejection',
+        (tester) async {
+      // The app had no way to do this at all before — the API has accepted a
+      // batch-scoped reject the whole time.
+      final ctx = await pumpChat(
+        tester,
+        _snapshotWithApproval(messages: 0, approvals: 3),
+        platform: TargetPlatform.iOS,
+        size: const Size(430, 1600),
+      );
+
+      await tester.tap(
+        find.text(AppStrings(const Locale('en')).rejectAllN(3)),
+      );
+      await _settleDecision(tester);
+
+      expect(ctx.api.decisions, hasLength(1));
+      expect(ctx.api.decisions.single.approved, isFalse);
+      expect(ctx.api.decisions.single.batch, isTrue);
     });
 
     testWidgets('and in Arabic', (tester) async {

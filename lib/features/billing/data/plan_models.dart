@@ -214,11 +214,19 @@ class PlanSnapshot extends Equatable {
       ];
 }
 
-/// Identifies which usage window was exceeded on a blocked send.
+/// Why a send is blocked: a usage window that will roll over, or a token
+/// balance that will not.
+///
+/// [balance] is not a window at all, which is exactly why it was missing.
+/// `fromWire` returned null for it, so a user who had simply run out of
+/// tokens got no banner and a live composer — they typed, sent, and watched
+/// it fail, with nothing on screen saying why. The web has always named this
+/// case ("You're out of tokens.") and locked the composer for it.
 enum QuotaWindow {
   day('day'),
   week('week'),
-  month('month');
+  month('month'),
+  balance('balance');
 
   const QuotaWindow(this.wire);
   final String wire;

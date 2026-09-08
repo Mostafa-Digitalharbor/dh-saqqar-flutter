@@ -32,7 +32,196 @@ Widget _harness(Widget child, Locale locale) => MaterialApp(
       home: Scaffold(body: child),
     );
 
+/// Pumps [body] with a live BuildContext so the localised labels resolve.
+Future<String> _label(
+  WidgetTester tester, {
+  required Locale locale,
+  String? toolName,
+  String resultJson = '',
+}) async {
+  late String out;
+  await tester.pumpWidget(_harness(
+    Builder(builder: (context) {
+      out = completedStepLabel(
+        context,
+        toolName: toolName,
+        resultJson: resultJson,
+      );
+      return const SizedBox();
+    }),
+    locale,
+  ));
+  return out;
+}
+
 void main() {
+  group('every tool the server actually runs has a sentence', () {
+    // The list comes off the wire, not off a spec: a sweep of two long real
+    // conversations found these nine names in `tool_name` and neither client
+    // knew any of them. `query_attachment` alone appeared 37 times.
+    //
+    // The assertion is deliberately "not the fallback" rather than a fixed
+    // string: the wording can change, but a step that spent a minute
+    // importing 700 rows must never read "Finishing response".
+    const observedOnTheWire = [
+      ToolNames.queryAttachment,
+      ToolNames.analyzeImage,
+      ToolNames.importRecordsFromAttachment,
+      ToolNames.recallHistory,
+      ToolNames.askTaskQuestions,
+      ToolNames.createManyOdooRecords,
+      ToolNames.grepOdooSource,
+      ToolNames.readOdooSource,
+      ToolNames.readAddonTree,
+    ];
+
+    testWidgets('none of them falls through to the generic label',
+        (tester) async {
+      for (final locale in [const Locale('en'), const Locale('ar')]) {
+        final tr = AppStrings(locale);
+        for (final tool in observedOnTheWire) {
+          final label = await _label(
+            tester,
+            locale: locale,
+            toolName: tool,
+            resultJson: '{"status": "ok"}',
+          );
+          expect(label, isNot(tr.activityFinishingResponse),
+              reason: '$tool in $locale');
+          expect(label, isNotEmpty);
+        }
+      }
+    });
+
+    testWidgets('a bulk create is named as the write it is', (tester) async {
+      // Not "finishing" — this one changes the database.
+      final label = await _label(
+        tester,
+        locale: const Locale('ar'),
+        toolName: ToolNames.createManyOdooRecords,
+        resultJson: '{"status": "ok"}',
+      );
+
+      expect(label, AppStrings(const Locale('ar')).activityApplyingOdooChange);
+    });
+
+    testWidgets('and it still pauses correctly for an approval',
+        (tester) async {
+      // The status branch has to win over the tool branch for the new tools
+      // too, or a bulk create that stopped for consent would claim it ran.
+      final label = await _label(
+        tester,
+        locale: const Locale('ar'),
+        toolName: ToolNames.importRecordsFromAttachment,
+        resultJson: '{"status": "approval_required"}',
+      );
+
+      expect(
+        label,
+        AppStrings(const Locale('ar')).activityStepAwaitedApproval,
+      );
+    });
+
+    testWidgets('a genuinely unknown tool still gets the safe fallback',
+        (tester) async {
+      // The fallback stays — it is right for a tool this build has never
+      // heard of, and wrong only for one it should have known.
+      final label = await _label(
+        tester,
+        locale: const Locale('en'),
+        toolName: 'tool_invented_next_year',
+        resultJson: '{"status": "ok"}',
+      );
+
+      expect(label, AppStrings(const Locale('en')).activityFinishingResponse);
+    });
+  });
+
+  group('completedStepLabel — what a finished step says', () {
+    // The web prints the tool's raw JSON result into its thinking fold. On a
+    // phone that is a wall of braces, so the same row is named with the label
+    // the typing row already uses, and only the two outcomes worth spotting
+    // are called out.
+    testWidgets('an approval pause is named as one, not as the write',
+        (tester) async {
+      // The critical case. `create_odoo_record` returning `approval_required`
+      // means the write did NOT happen — labelling it "Applying a change in
+      // Odoo" would tell the user the opposite of the truth.
+      for (final locale in [const Locale('en'), const Locale('ar')]) {
+        final tr = AppStrings(locale);
+        final label = await _label(
+          tester,
+          locale: locale,
+          toolName: ToolNames.createOdooRecord,
+          resultJson: '{"status": "approval_required", "approval_id": "a1"}',
+        );
+
+        expect(label, tr.activityStepAwaitedApproval);
+        expect(label, isNot(tr.activityApplyingOdooChange));
+      }
+    });
+
+    testWidgets('a successful step reads as the tool it ran', (tester) async {
+      final label = await _label(
+        tester,
+        locale: const Locale('ar'),
+        toolName: ToolNames.createOdooRecord,
+        resultJson: '{"status": "ok", "record_id": 3}',
+      );
+
+      expect(label, AppStrings(const Locale('ar')).activityApplyingOdooChange);
+    });
+
+    testWidgets('a failure says so, in both languages', (tester) async {
+      for (final locale in [const Locale('en'), const Locale('ar')]) {
+        final tr = AppStrings(locale);
+        for (final status in ['error', 'failed', 'ERROR']) {
+          final label = await _label(
+            tester,
+            locale: locale,
+            toolName: ToolNames.runReadonlySql,
+            resultJson: '{"status": "$status"}',
+          );
+
+          expect(
+            label,
+            tr.activityStepFailed(tr.activityRunningQuery),
+            reason: '$locale / $status',
+          );
+        }
+      }
+    });
+
+    testWidgets('a body that is not JSON falls back to the tool label',
+        (tester) async {
+      // A backend that starts sending prose here must not surface a parse
+      // failure to the user.
+      final tr = AppStrings(const Locale('en'));
+      for (final body in ['', 'rows: 42', '{not json', '[1,2]', '{}']) {
+        final label = await _label(
+          tester,
+          locale: const Locale('en'),
+          toolName: ToolNames.searchOdooRecords,
+          resultJson: body,
+        );
+
+        expect(label, tr.activityCheckingOdoo, reason: 'body=$body');
+      }
+    });
+
+    testWidgets('an unknown tool still gets a sentence', (tester) async {
+      final label = await _label(
+        tester,
+        locale: const Locale('ar'),
+        toolName: 'some_tool_shipped_after_this_build',
+        resultJson: '{"status": "ok"}',
+      );
+
+      expect(label, AppStrings(const Locale('ar')).activityFinishingResponse);
+      expect(label, isNotEmpty);
+    });
+  });
+
   group('guessToolFromPrompt keyword table', () {
     test('matches each tool from its own keywords', () {
       expect(guessToolFromPrompt('build me an xlsx'),

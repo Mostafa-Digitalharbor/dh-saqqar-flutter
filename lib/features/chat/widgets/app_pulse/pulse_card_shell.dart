@@ -3,19 +3,20 @@ import 'package:flutter/material.dart';
 import '../../../../core/i18n/app_date_format.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/theme/app_icons.dart';
-import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_sizes.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/auto_direction_text.dart';
-import '../../../../shared/widgets/colored_icon_box.dart';
+import '../../../../shared/widgets/danger_callout.dart';
 import '../../data/app_pulse_payloads.dart';
 import '../../data/interactive_card_kind.dart';
+import '../../data/pulse_actions.dart';
 import '../accent_card_chrome.dart';
+import 'pulse_action_list.dart';
 import 'pulse_helpers.dart';
 
 /// Shared chrome for the seven read-only "app pulse" cards (Task 1,
 /// MOBILE_TASKS_2026-09.md): icon + app title + `as_of` date, then either
-/// [children] or — when [envelope] reports `status: "error"` — the server's
+/// [stats] or — when [envelope] reports `status: "error"` — the server's
 /// own error text instead of any tile (rule 3: render the error, not an
 /// empty card). [notes] render below everything, verbatim and direction-
 /// detected (rule 4: already in Arabic from the server, never translated).
@@ -32,13 +33,39 @@ class PulseCardShell extends StatelessWidget {
     super.key,
     required this.kind,
     required this.envelope,
-    required this.children,
+    required this.stats,
+    this.details = const [],
     this.priorities = const [],
+    this.actions = const [],
+    this.deepActions = const [],
+    this.onSend,
   });
 
   final InteractiveCardKind kind;
   final PulseEnvelope envelope;
-  final List<Widget> children;
+
+  /// The card's headline numbers. Kept directly above the action rows,
+  /// which is the order the web reads in: what is true, then what to do.
+  final List<Widget> stats;
+
+  /// The rows behind the numbers — a bucket's products, a check's audit
+  /// trail. Below the buttons on purpose: these lists run to dozens of
+  /// lines on a real database, and burying the actions under them turned a
+  /// one-tap card into a scrolling exercise.
+  final List<Widget> details;
+
+  /// The web-parity action rows — "Customer collection · 13 invoices ·
+  /// [Start collection]". Empty when the payload gives the card nothing to
+  /// act on, which is also the web's empty state.
+  final List<PulseAction> actions;
+
+  /// Standing questions with no number of their own (accountant / HR).
+  final List<PulseAction> deepActions;
+
+  /// Sends a row's prompt as the next user message. Null on a read-only
+  /// surface — the rows then render without buttons rather than with dead
+  /// ones.
+  final ValueChanged<String>? onSend;
 
   /// Already-Arabic priority lines (inventory/finance/etc.) — kept separate
   /// from [envelope.notes] because a payload can carry both, each under its
@@ -64,27 +91,10 @@ class PulseCardShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              ColoredIconBox(
-                icon: _iconFor(kind),
-                color: s.brandCyan,
-                size: AppIconSizes.cardHeader,
-                radius: AppRadius.small,
-                iconSize: AppIconSizes.boxGlyphCard,
-              ),
-              const SizedBox(width: AppSpacing.s12),
-              Expanded(
-                child: Text(
-                  pulseAppTitle(tr, kind),
-                  style: context.text.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: s.text,
-                    letterSpacing: AppLetterSpacing.title,
-                  ),
-                ),
-              ),
-            ],
+          CardHeaderRow(
+            icon: _iconFor(kind),
+            title: pulseAppTitle(tr, kind),
+            accent: s.brandCyan,
           ),
           if (asOf != null) ...[
             const SizedBox(height: AppSpacing.s2),
@@ -101,8 +111,21 @@ class PulseCardShell extends StatelessWidget {
           const SizedBox(height: AppSpacing.s12),
           if (envelope.status == PulseStatus.error)
             _PulseError(message: envelope.error)
-          else
-            ...children,
+          else ...[
+            ...stats,
+            // Web parity: the numbers, then what to do about them. Kept
+            // above the notes for the same reason the web keeps them there
+            // — the notes explain the reading, the buttons continue it.
+            PulseActionList(
+              actions: actions,
+              onSend: onSend,
+              emptyState: pulseEmptyStateText(kind, tr),
+            ),
+            PulseDeepActionChips(actions: deepActions, onSend: onSend),
+            if (pulseFreeTextAction(kind) != null)
+              PulseFreeTextAction(kind: kind, onSend: onSend),
+            ...details,
+          ],
           if (envelope.notes.isNotEmpty)
             _PulseTextSection(title: tr.pulseNotesTitle, lines: envelope.notes),
           if (priorities.isNotEmpty)
@@ -138,17 +161,7 @@ class _PulseError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s12,
-        vertical: AppSpacing.s10,
-      ),
-      decoration: BoxDecoration(
-        color: s.danger.withValues(alpha: AppAlphas.a06),
-        borderRadius: AppRadius.smallR,
-        border: Border.all(color: s.danger.withValues(alpha: AppAlphas.a22)),
-      ),
+    return DangerCallout(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

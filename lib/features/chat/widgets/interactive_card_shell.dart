@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/colored_icon_box.dart';
 import 'accent_card_chrome.dart';
 import '../../../shared/widgets/tappable_surface.dart';
 
@@ -35,28 +34,7 @@ class InteractiveCardShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              ColoredIconBox(
-                icon: icon,
-                color: s.brandCyan,
-                size: AppIconSizes.cardHeader,
-                radius: AppRadius.small,
-                iconSize: AppIconSizes.boxGlyphCard,
-              ),
-              const SizedBox(width: AppSpacing.s12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: context.text.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: s.text,
-                    letterSpacing: AppLetterSpacing.title,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          CardHeaderRow(icon: icon, title: title, accent: s.brandCyan),
           const SizedBox(height: AppSpacing.s12),
           ...children,
         ],

@@ -1,7 +1,12 @@
-// Task 1 (MOBILE_TASKS_2026-09.md) — parsing the two fully-specified app-pulse
-// payloads (factory, inventory). The other five kinds are documented only by
-// their top-level keys and are built from a live payload once captured, per
-// the doc's own instruction — nothing to pin here yet.
+// Task 1 (MOBILE_TASKS_2026-09.md) — parsing all seven app-pulse payloads.
+//
+// Factory and inventory are pinned against the shapes the doc writes out in
+// full. The other five are documented only by their top-level key list, and
+// the arrays and breakdowns hanging off those keys are documented not at
+// all, so their parsers accept every plausible encoding and the tests here
+// pin the promise rather than one shape: a recognised encoding yields real
+// numbers, an unrecognised one yields nothing, and neither ever yields a
+// zero the server never sent.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/features/chat/data/app_pulse_payloads.dart';
@@ -431,6 +436,301 @@ void main() {
         QualityGuardPulsePayload.parse(const {'kind': 'factory'}),
         isNull,
       );
+    });
+  });
+
+  // ── The keys the doc names but never shows a shape for ────────────────
+  //
+  // Every parser below is deliberately shape-tolerant, so what these pin is
+  // not one encoding but the promise the card depends on: a recognised
+  // shape yields numbers, an unrecognised one yields nothing, and neither
+  // ever yields a made-up zero.
+
+  group('finance aging bands', () {
+    test('reads a flat {band: amount} map', () {
+      final parsed = FinancePulsePayload.parse(const {
+        'kind': 'finance',
+        'collection_aging': {
+          'available': true,
+          'd0_30': 84000.0,
+          '31_60': 12500.0,
+          'over_90': 3100.0,
+        },
+      })!;
+      final bands = parsed.collectionAging!;
+
+      expect(bands.available, isTrue);
+      expect(bands.bands.map((b) => b.label), ['0–30', '31–60', '90+']);
+      expect(bands.bands.first.amount, 84000.0);
+    });
+
+    test('reads a wrapper whose bands are rows', () {
+      final parsed = FinancePulsePayload.parse(const {
+        'kind': 'finance',
+        'payment_horizon': {
+          'available': true,
+          'buckets': [
+            {'label': 'due_7', 'amount': 4200.0, 'count': 12},
+            {'bucket': 'later', 'total': 900.0},
+            // Neither an amount nor a count: not a band.
+            {'label': 'empty'},
+          ],
+        },
+      })!;
+      final bands = parsed.paymentHorizon!.bands;
+
+      expect(bands, hasLength(2));
+      expect(bands.first.label, 'due 7');
+      expect(bands.first.count, 12);
+      expect(bands.last.amount, 900.0);
+    });
+
+    test('an aggregate total is not a band', () {
+      // The live `collection_aging` carries `total_overdue` beside the day
+      // buckets. It belongs in the row sentence, not in the band strip —
+      // rendering it as one put an untranslated "total overdue" chip next
+      // to "1-30" on an Arabic card.
+      final parsed = FinancePulsePayload.parse(const {
+        'kind': 'finance',
+        'collection_aging': {
+          'available': true,
+          'total_overdue': 303194.0,
+          'days_1_30': {'available': true, 'count': 5, 'total': 95250.0},
+        },
+      })!;
+
+      expect(parsed.collectionAging!.bands.map((b) => b.label), ['1–30']);
+    });
+
+    test('`available: false` survives as a state, not as empty bands', () {
+      final parsed = FinancePulsePayload.parse(const {
+        'kind': 'finance',
+        'collection_aging': {'available': false},
+      })!;
+      expect(parsed.collectionAging!.available, isFalse);
+      expect(parsed.collectionAging!.bands, isEmpty);
+    });
+
+    test('an absent key is null — distinct from an unavailable one', () {
+      final parsed = FinancePulsePayload.parse(const {'kind': 'finance'})!;
+      expect(parsed.collectionAging, isNull);
+      expect(parsed.paymentHorizon, isNull);
+    });
+
+    test('a shape nobody recognises yields no bands rather than junk', () {
+      final parsed = FinancePulsePayload.parse(const {
+        'kind': 'finance',
+        'collection_aging': 'not a breakdown',
+      })!;
+      expect(parsed.collectionAging!.bands, isEmpty);
+    });
+
+    test('band keys read as ranges in either notation', () {
+      expect(pulseBandLabel('d0_30'), '0–30');
+      expect(pulseBandLabel('31_60'), '31–60');
+      expect(pulseBandLabel('over_90'), '90+');
+      expect(pulseBandLabel('90_plus'), '90+');
+      expect(pulseBandLabel('under_30'), '<30');
+      expect(pulseBandLabel('not_due'), 'not due');
+      // Already human — left exactly as the server wrote it.
+      expect(pulseBandLabel('0-30 days'), '0-30 days');
+    });
+  });
+
+  group('inventory missing_data.counts', () {
+    test('reads the reason breakdown the doc shows empty', () {
+      final parsed = InventoryPulsePayload.parse(const {
+        'kind': 'inventory',
+        'missing_data': {
+          'available': true,
+          'count': 22,
+          'counts': {'no_cost': 8, 'no_lead_time': 14},
+        },
+      })!;
+
+      expect(parsed.missingData.count, 22);
+      expect(
+        parsed.missingDataReasons!.bands.map((b) => b.label),
+        ['no cost', 'no lead time'],
+      );
+      expect(parsed.missingDataReasons!.bands.first.amount, 8);
+    });
+
+    test('an absent or empty counts map adds no section', () {
+      final absent = InventoryPulsePayload.parse(const {
+        'kind': 'inventory',
+        'missing_data': {'available': true, 'count': 22},
+      })!;
+      expect(absent.missingDataReasons, isNull);
+
+      // The doc's own example sends `counts: {}` — a key with nothing in it
+      // must not become an empty heading on the card.
+      final empty = InventoryPulsePayload.parse(const {
+        'kind': 'inventory',
+        'missing_data': {'available': true, 'counts': <String, dynamic>{}},
+      })!;
+      expect(empty.missingDataReasons!.bands, isEmpty);
+    });
+  });
+
+  group('purchasing vendor delays', () {
+    test('keeps the rows, and counts them', () {
+      final parsed = PurchasingPulsePayload.parse(const {
+        'kind': 'purchasing',
+        'vendor_delay_summary': [
+          {'vendor': 'Acme', 'avg_delay_days': 9},
+          {'vendor': 'Globex'},
+        ],
+      })!;
+      expect(parsed.vendorDelays, hasLength(2));
+      expect(parsed.vendorDelayCount, 2);
+    });
+
+    test('a non-list summary is empty, not a crash', () {
+      final parsed = PurchasingPulsePayload.parse(const {
+        'kind': 'purchasing',
+        'vendor_delay_summary': {'unexpected': true},
+      })!;
+      expect(parsed.vendorDelays, isEmpty);
+      expect(parsed.vendorDelayCount, 0);
+    });
+  });
+
+  group('accountant checks and blocks', () {
+    test('reads the five documented checks as their own keys', () {
+      final parsed = AccountantPulsePayload.parse(const {
+        'kind': 'accountant',
+        'no_reference': {'available': true, 'count': 4},
+        // A bare number is a count, never "unavailable".
+        'manual_on_control': 7,
+        'edited_after_post': {'available': false},
+      })!;
+
+      expect(parsed.checks.keys, ['no_reference', 'manual_on_control',
+          'edited_after_post']);
+      expect(parsed.checks['no_reference']!.count, 4);
+      expect(parsed.checks['manual_on_control']!.available, isTrue);
+      expect(parsed.checks['manual_on_control']!.count, 7);
+      expect(parsed.checks['edited_after_post']!.available, isFalse);
+      // Absent keys are absent — no phantom tiles.
+      expect(parsed.checks.containsKey('multi_company'), isFalse);
+    });
+
+    test('blocks carry the trail behind a counter, by key', () {
+      final parsed = AccountantPulsePayload.parse(const {
+        'kind': 'accountant',
+        'blocks': {
+          'no_reference': [
+            {'move': 'INV/2026/0031'},
+          ],
+          // A `{items: […]}` wrapper is the same thing.
+          'multi_company': {
+            'items': [
+              {'move': 'JE/2026/0004'},
+            ],
+          },
+          // Empty trails are dropped rather than kept as empty keys.
+          'self_cancelling': <Object?>[],
+        },
+      })!;
+
+      expect(parsed.detailsFor('no_reference'), hasLength(1));
+      expect(parsed.detailsFor('multi_company'), hasLength(1));
+      expect(parsed.detailsFor('self_cancelling'), isEmpty);
+      expect(parsed.detailsFor('nothing_here'), isEmpty);
+    });
+
+    test('a check carrying its own items is its own trail', () {
+      final parsed = AccountantPulsePayload.parse(const {
+        'kind': 'accountant',
+        'self_cancelling': {
+          'available': true,
+          'count': 1,
+          'items': [
+            {'move': 'JE/2026/0009'},
+          ],
+        },
+      })!;
+      expect(parsed.detailsFor('self_cancelling'), hasLength(1));
+    });
+  });
+
+  group('hr sections', () {
+    test('reads recruitment, payroll and time_off as uniform buckets', () {
+      final parsed = HrPulsePayload.parse(const {
+        'kind': 'hr',
+        'recruitment': {
+          'available': true,
+          'count': 6,
+          'items': [
+            {'name': 'Sara'},
+          ],
+        },
+        'payroll': {'available': false},
+        'operations': {'available': true},
+      })!;
+
+      expect(parsed.recruitment!.count, 6);
+      expect(parsed.recruitment!.items, hasLength(1));
+      expect(parsed.payroll!.available, isFalse);
+      // Absent means absent, not unavailable.
+      expect(parsed.timeOff, isNull);
+    });
+  });
+
+  group('quality_guard — the other eleven keys', () {
+    test('reads all sixteen from the top level', () {
+      final parsed = QualityGuardPulsePayload.parse(const {
+        'kind': 'quality_guard',
+        'out_of_spec': 2,
+        'failed_checks': 1,
+        'pending_checks': 0,
+        'quality_alerts': 3,
+        'missing_numeric_specs': 7,
+        'review_cases': 1,
+        'deep_discounts': 5,
+        'lower_cost_substitutes': 2,
+        'documented_substitutes': 1,
+        'undocumented_substitutes': 4,
+        'invoice_swaps': 0,
+        'delivery_swaps': 2,
+        'high_risk_cases': 1,
+        'cost_saving_total': 450.0,
+        'discount_value_estimate': 18400.0,
+        'standard_odoo_only': true,
+      })!;
+
+      expect(parsed.deepDiscounts, 5);
+      expect(parsed.lowerCostSubstitutes, 2);
+      expect(parsed.documentedSubstitutes, 1);
+      expect(parsed.undocumentedSubstitutes, 4);
+      expect(parsed.discountValueEstimate, 18400.0);
+      expect(parsed.standardOdooOnly, isTrue);
+      expect(parsed.missingNumericSpecs, 7);
+    });
+
+    test('reads the same keys when they are nested in the stat objects', () {
+      final parsed = QualityGuardPulsePayload.parse(const {
+        'kind': 'quality_guard',
+        'spec_stats': {
+          'deep_discounts': 5,
+          'undocumented_substitutes': 4,
+          'discount_value_estimate': 18400.0,
+        },
+        'quality_stats': {'standard_odoo_only': false},
+      })!;
+
+      expect(parsed.deepDiscounts, 5);
+      expect(parsed.undocumentedSubstitutes, 4);
+      expect(parsed.discountValueEstimate, 18400.0);
+      expect(parsed.standardOdooOnly, isFalse);
+    });
+
+    test('an absent flag stays null — neither true nor false', () {
+      final parsed =
+          QualityGuardPulsePayload.parse(const {'kind': 'quality_guard'})!;
+      expect(parsed.standardOdooOnly, isNull);
+      expect(parsed.deepDiscounts, isNull);
     });
   });
 

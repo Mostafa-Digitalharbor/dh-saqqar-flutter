@@ -22,10 +22,18 @@ class ChatResumeBanner extends StatelessWidget {
     super.key,
     required this.onResume,
     this.busy = false,
+    this.failureMessage,
   });
 
   final VoidCallback onResume;
   final bool busy;
+
+  /// Reason the last Resume attempt failed (e.g. "No internet connection"),
+  /// or null when the last attempt succeeded or none has been made yet.
+  /// Rendered as the banner's body line instead of a toast — this button
+  /// is expected to be tapped again, so the reason should stay put and
+  /// visible rather than flash past in a dismissable pop-up.
+  final String? failureMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +42,7 @@ class ChatResumeBanner extends StatelessWidget {
       color: context.saqqar.warning,
       icon: AppIcons.warning,
       title: tr.chatResumeBannerText,
+      body: failureMessage,
       action: PrimaryButton(
         label: busy ? tr.chatResumeButtonWorking : tr.chatResumeButton,
         icon: AppIcons.refresh,

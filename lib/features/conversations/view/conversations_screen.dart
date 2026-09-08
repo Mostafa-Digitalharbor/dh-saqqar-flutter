@@ -487,9 +487,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         // to eyeball to confirm still matched.
         final totalCount = data == null ? 0 : _view(data).active.length;
         final subtitleText = pendingCount > 0
-            ? '$totalCount ${context.tr.conversations} · '
+            ? '${context.tr.conversationsCount(totalCount)} · '
                 '$pendingCount ${context.tr.pending}'
-            : '$totalCount ${context.tr.conversations}';
+            : context.tr.conversationsCount(totalCount);
 
         // `ConversationsEmptyState` renders its own prominent "New
         // conversation" CTA, so keeping the FAB up as well stacks two

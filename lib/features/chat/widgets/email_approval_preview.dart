@@ -6,6 +6,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/auto_direction_text.dart';
+import '../../../shared/widgets/capped_scroll_list.dart';
 
 /// §9 — preview of an email an approval is about to send.
 ///
@@ -151,17 +152,27 @@ class EmailApprovalPreview extends StatelessWidget {
           if (cc.isNotEmpty) _Line(label: tr.emailPreviewCc, value: cc),
           if (bcc.isNotEmpty) _Line(label: tr.emailPreviewBcc, value: bcc),
           const SizedBox(height: AppSpacing.s8),
-          AutoDirectionText(
-            displayBody,
-            // Long enough to judge the message, short enough that the card
-            // stays a card. The full text is still one tap away under
-            // "Show details".
-            maxLines: 8,
-            overflow: TextOverflow.ellipsis,
-            style: context.text.bodySmall?.copyWith(
-              color: s.muted,
-              height: AppLineHeights.body,
-              fontStyle: body.isEmpty ? FontStyle.italic : FontStyle.normal,
+          // Capped in HEIGHT and scrollable, never truncated.
+          //
+          // This used to be `maxLines: 8` with an ellipsis, on the grounds
+          // that the rest was "one tap away under Show details". It was not:
+          // that disclosure renders each payload value as a `MiniChip`,
+          // which upper-cases its text — so the tail of an English email was
+          // only ever readable as shouting. A card whose whole purpose is
+          // "read this before you send it" cannot hide the end of the
+          // message, and an approval is not a place to guess at what was
+          // cut. Same shape, and the same reasoning, as the record list a
+          // delete approval shows above its red button.
+          CappedScrollList(
+            itemCount: 1,
+            maxHeight: AppSheetHeights.approvalPayloadMax,
+            itemBuilder: (context, _) => AutoDirectionText(
+              displayBody,
+              style: context.text.bodySmall?.copyWith(
+                color: s.muted,
+                height: AppLineHeights.body,
+                fontStyle: body.isEmpty ? FontStyle.italic : FontStyle.normal,
+              ),
             ),
           ),
         ],
@@ -184,19 +195,33 @@ class _Line extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: context.text.labelSmall?.copyWith(
-              color: s.muted,
-              fontWeight: FontWeight.w700,
+          // `Flexible`, not a bare `Text` — "Bcc" translates to "نسخة
+          // مخفية", long enough that at a large text scale on a narrow phone
+          // its own natural width can exceed the row before the value even
+          // gets a look-in. An un-clamped label is a fixed-width sibling a
+          // Flex can't shrink, so it overflows the row outright rather than
+          // squeezing the Expanded value the way it is supposed to.
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.labelSmall?.copyWith(
+                color: s.muted,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.s6),
           Expanded(
+            // No line cap. Who an email is going to is the field a user is
+            // most likely to be checking, and a Bcc of fifteen addresses
+            // ellipsised after two lines hides exactly the recipients that
+            // would make someone reject the send. It wraps instead; the
+            // body below it is what is height-capped, so the card still
+            // cannot grow without bound.
             child: AutoDirectionText(
               value,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: context.text.labelSmall?.copyWith(color: s.text),
             ),
           ),

@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../data/credential_field_visibility.dart';
 import '../data/credential_models.dart';
 import '../data/credentials_api.dart';
 import '../view_model/vault_cubit.dart';
@@ -47,12 +48,15 @@ class CredentialForm extends StatefulWidget {
 }
 
 class _CredentialFormState extends State<CredentialForm> {
-  /// Name of the sibling field whose value drives `*_key_by_auth_type`
-  /// lookups. Hard-coded to "auth_type" because that's the only
-  /// dependency name the backend ships today; if a future schema adds
-  /// a different driver field name we'd promote this to a per-field
-  /// hint on the schema instead of a global constant.
-  static const _authDriverField = 'auth_type';
+  /// Name of the sibling select whose value the rest of the form depends on:
+  /// which `*_key_by_auth_type` entry to read, and which fields apply at all.
+  ///
+  /// Resolved from the schema rather than hard-coded, because there are two
+  /// spellings in play — Odoo and email ship `auth_type`, the SSH schema
+  /// ships `auth` — and the SSH one was previously unhandled, so its form
+  /// asked for a password AND a private key with nothing to say which the
+  /// user should fill.
+  String? _driverField;
 
   late final TextEditingController _label;
   final Map<String, TextEditingController> _fieldControllers = {};
@@ -134,7 +138,11 @@ class _CredentialFormState extends State<CredentialForm> {
     }
     // Seed the auth-type mirror so dependent fields render with the
     // right initial label/help on the first frame.
-    final driver = _fieldControllers[_authDriverField];
+    _driverField = credentialAuthDriverFields
+        .where(_fieldControllers.containsKey)
+        .firstOrNull;
+    final driver =
+        _driverField == null ? null : _fieldControllers[_driverField!];
     if (driver != null && driver.text.isNotEmpty) {
       _activeAuthType = driver.text;
     }
@@ -163,11 +171,18 @@ class _CredentialFormState extends State<CredentialForm> {
       // next test-connection. Web client does the same (app.js:
       // `wireXmlrpcAuthTypeDependencies`).
       for (final field in schema.fields) {
-        if (field.labelKeyByAuthType == null &&
-            field.placeholderKeyByAuthType == null &&
-            field.helpKeyByAuthType == null) {
-          continue;
-        }
+        final dependsOnMode = field.labelKeyByAuthType != null ||
+            field.placeholderKeyByAuthType != null ||
+            field.helpKeyByAuthType != null;
+        // A field the new mode does not use is cleared too, not just
+        // hidden: an SSH form switched from password to key would otherwise
+        // still be carrying the typed password in its payload.
+        final nowHidden = !credentialFieldApplies(
+          fieldName: field.name,
+          driverField: _driverField,
+          mode: next,
+        );
+        if (!dependsOnMode && !nowHidden) continue;
         _fieldControllers[field.name]?.clear();
       }
       // Any prior test result is stale now — drop the badge.
@@ -384,12 +399,21 @@ class _CredentialFormState extends State<CredentialForm> {
             hint: schema.label,
           ),
           const SizedBox(height: AppSpacing.s12),
-          for (final field in schema.fields) ...[
+          // A field the current auth mode does not use is not dimmed or
+          // disabled — it is absent. SSH offers a password and a private key
+          // and wants exactly one; leaving both on screen asks the user to
+          // decide something only the mode knows.
+          for (final field in schema.fields)
+            if (credentialFieldApplies(
+              fieldName: field.name,
+              driverField: _driverField,
+              mode: _activeAuthType,
+            )) ...[
             _SchemaField(
               field: field,
               controller: _fieldControllers[field.name]!,
               activeAuthType: _activeAuthType,
-              onSelectChanged: field.name == _authDriverField
+              onSelectChanged: field.name == _driverField
                   ? (next) => _onAuthTypeChanged(schema, next)
                   : null,
               // Wire DB detection onto the schema's database field (only
@@ -603,6 +627,20 @@ class _SchemaField extends StatelessWidget {
     return field.placeholder;
   }
 
+  /// The explainer under the field, in the user's language.
+  ///
+  /// Three sources, in the web's order:
+  ///
+  ///   1. `help_key_by_auth_type` — the one field whose explainer changes
+  ///      with a sibling ("API Key" vs "Password"). An empty-string value
+  ///      means "no help block for this branch", which is not the same as
+  ///      "fall through".
+  ///   2. `help_key` — where the text lives for every OTHER field. This
+  ///      branch was missing, and its absence is why the form had no help at
+  ///      all: the server sends `help: ""` on 27 of its 28 fields, so the
+  ///      fallback below had nothing to fall back to.
+  ///   3. `help` — the schema's own literal, for a server that ships text
+  ///      instead of a key.
   String _resolveHelp(BuildContext context) {
     final tr = context.tr;
     if (field.helpKeyByAuthType != null && activeAuthType != null) {
@@ -612,6 +650,10 @@ class _SchemaField extends StatelessWidget {
         return tr.lookup(key, fallback: field.help);
       }
       return '';
+    }
+    final key = field.helpKey;
+    if (key != null && key.isNotEmpty) {
+      return tr.lookup(key, fallback: field.help);
     }
     return field.help;
   }

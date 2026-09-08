@@ -62,6 +62,7 @@ class CredentialField extends Equatable {
     this.options,
     this.defaultValue,
     this.labelKey,
+    this.helpKey,
     this.labelKeyByAuthType,
     this.placeholderKeyByAuthType,
     this.helpKeyByAuthType,
@@ -87,6 +88,17 @@ class CredentialField extends Equatable {
   /// in EN / "نوع المصادقة" in AR without baking the translation into
   /// the schema response.
   final String? labelKey;
+
+  /// i18n key for the help line under the field, from the schema's
+  /// `help_key`.
+  ///
+  /// This is where the field's explainer actually lives. The schema's own
+  /// `help` string is empty on 27 of the 28 fields the server ships — the
+  /// text is not on the wire at all, it is a KEY each client resolves in its
+  /// own table, so a client that only reads `help` renders no help anywhere.
+  /// That is what the app did: "Database", "Port", "SSL mode" and twenty-odd
+  /// others stood bare on a phone while the web explained every one of them.
+  final String? helpKey;
 
   /// Maps the active value of the schema's sibling `auth_type` field to
   /// an i18n key for THIS field's label. Today only the `secret` field on
@@ -120,6 +132,7 @@ class CredentialField extends Equatable {
       options: opts is List ? opts.map((e) => e.toString()).toList() : null,
       defaultValue: json['default']?.toString(),
       labelKey: json['label_key'] as String?,
+      helpKey: json['help_key'] as String?,
       labelKeyByAuthType: keyMap(json['label_key_by_auth_type']),
       placeholderKeyByAuthType: keyMap(json['placeholder_key_by_auth_type']),
       helpKeyByAuthType: keyMap(json['help_key_by_auth_type']),
@@ -136,6 +149,7 @@ class CredentialField extends Equatable {
         if (options != null) 'options': options,
         if (defaultValue != null) 'default': defaultValue,
         if (labelKey != null) 'label_key': labelKey,
+        if (helpKey != null) 'help_key': helpKey,
         if (labelKeyByAuthType != null)
           'label_key_by_auth_type': labelKeyByAuthType,
         if (placeholderKeyByAuthType != null)
@@ -155,6 +169,7 @@ class CredentialField extends Equatable {
         options,
         defaultValue,
         labelKey,
+        helpKey,
         labelKeyByAuthType,
         placeholderKeyByAuthType,
         helpKeyByAuthType,

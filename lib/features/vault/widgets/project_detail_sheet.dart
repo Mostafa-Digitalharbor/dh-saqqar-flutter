@@ -8,6 +8,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/compact_search_field.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/ghost_button.dart';
@@ -262,7 +263,9 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                         // small projects (1–5 envs) quiet.
                         if (envs.length >= _envSearchThreshold) ...[
                           const SizedBox(height: AppSpacing.s14),
-                          _EnvSearchField(
+                          CompactSearchField(
+                            hintText: context.tr.envSearchHint,
+                            textInputAction: TextInputAction.search,
                             controller: _envSearch,
                             onChanged: (_) => setState(() {}),
                           ),
@@ -661,57 +664,6 @@ class _EnvRowState extends State<_EnvRow> {
 /// Compact search bar surfaced above the env list once it grows past
 /// the visual-scan threshold. Mirrors the chat-search pattern (search
 /// icon + clear button + dim hint).
-class _EnvSearchField extends StatelessWidget {
-  const _EnvSearchField({
-    required this.controller,
-    required this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
-        borderRadius: AppRadius.buttonR,
-        border: Border.all(color: s.cardBorder),
-      ),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        textInputAction: TextInputAction.search,
-        style: context.text.bodySmall,
-        decoration: InputDecoration(
-          hintText: context.tr.envSearchHint,
-          hintStyle: context.text.bodySmall?.copyWith(color: s.muted),
-          prefixIcon: Icon(AppIcons.search, size: AppIconSizes.small, color: s.muted),
-          prefixIconConstraints:
-              const BoxConstraints(minWidth: AppControlSizes.rowMin, minHeight: AppControlSizes.rowMin),
-          suffixIcon: controller.text.isEmpty
-              ? null
-              : IconButton(
-                  icon: Icon(AppIcons.close, size: AppIconSizes.compact, color: s.muted),
-                  onPressed: () {
-                    controller.clear();
-                    onChanged('');
-                  },
-                  visualDensity: VisualDensity.compact,
-                  tooltip: context.tr.clearSearch,
-                ),
-          isCollapsed: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
-          filled: false,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-        ),
-      ),
-    );
-  }
-}
 
 /// Always-editable env-name field. Renders as plain bold text until the
 /// user taps; tapping focuses + shows a subtle underline so the user

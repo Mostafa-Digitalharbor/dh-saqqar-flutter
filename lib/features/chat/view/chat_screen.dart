@@ -1,5 +1,6 @@
 
 import 'dart:async';
+import 'dart:io' show File;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/ui_strings.dart';
@@ -17,8 +19,12 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/api_error_mapper.dart';
+import '../data/image_downscaler.dart';
+import '../data/prompt_memory_api.dart';
+import '../data/task_wording_intent.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
@@ -43,6 +49,7 @@ import '../data/chat_features.dart';
 import '../data/saqqar_tools_api.dart';
 import '../data/chat_timeline.dart';
 import '../data/interactive_cards.dart';
+import '../data/approval_grouping.dart';
 import '../data/approval_adapter.dart';
 import '../data/message_adapter.dart';
 import '../data/message_visibility.dart';
@@ -87,6 +94,28 @@ class _ChatScreenState extends State<ChatScreen>
   // -------- State --------
 
   final _composer = TextEditingController();
+
+  // ── Task wording (web's prompt bank) ────────────────────────────────
+  // The rough text the docked card is structuring, or null when no card is
+  // open. Kept separate from [_taskWordingDraft] so the card can render its
+  // loading state before any draft exists.
+  String? _taskWordingQuery;
+  String _taskWordingDraft = '';
+  bool _taskWordingLoading = false;
+
+  /// Guards against a slow request finishing after a newer one started, or
+  /// after the card was closed — the answer to a question nobody is asking
+  /// any more must not reopen the card.
+  int _taskWordingSeq = 0;
+
+  /// Text currently being offered for structuring, or null when the hint bar
+  /// is hidden.
+  String? _taskWordingHint;
+
+  /// The hint key the user last dismissed. Dismissing is per-text, not
+  /// forever: rewriting the message brings the offer back, which is what the
+  /// web does and what makes the bar an offer rather than a nag.
+  String _taskWordingHintDismissed = '';
   final _composerFocus = FocusNode();
   final _scroll = ScrollController();
   late List<ChatMessage> _messages;
@@ -707,6 +736,12 @@ class _ChatScreenState extends State<ChatScreen>
     // Existing chats resolve their bound env from the server snapshot (see
     // `_resolveEnv`); new chats from the local vault picker. No demo seed.
     _scroll.addListener(_onScrollChanged);
+    // The task-wording offer tracks what is being typed. Listening on the
+    // controller rather than adding an `onChanged` to ChatComposer keeps the
+    // composer unaware of a feature it does not own — and catches text the
+    // app itself seeds (a suggestion chip, a shared file's caption), which an
+    // onChanged callback would miss.
+    _composer.addListener(_onComposerTextChanged);
     // Listen for app foreground / background transitions so the chat
     // poll timer pauses when the user minimises the app — without this,
     // a chat sitting in a paused process keeps firing GET requests
@@ -836,6 +871,7 @@ class _ChatScreenState extends State<ChatScreen>
       ..dispose();
     _scroll.removeListener(_onScrollChanged);
     _persistScrollOffset();
+    _composer.removeListener(_onComposerTextChanged);
     _composer.dispose();
     _composerFocus.dispose();
     _scroll.dispose();
@@ -1914,40 +1950,161 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// Prompt bank (§7) — a picker of ready-made task wordings that seeds the
-  /// composer instead of sending.
+  /// Task wording (§7) — hands a rough task to `/api/v1/prompt-memory/` and
+  /// docks the structured result above the composer for review.
   ///
-  /// Sourced from the app's OWN starter prompts (the same four the empty-chat
-  /// grid and the suggestion strip offer). The backend exposes no saved-prompt
-  /// catalogue, and inventing rows here would put wording on screen that no
-  /// server ever authored. Gated on the `prompt_bank` feature flag, so the row
-  /// stays hidden until the backend says this account has the feature.
+  /// This used to offer four hardcoded starter prompts, because when it was
+  /// written "the backend exposes no saved-prompt catalogue" was true. The
+  /// route exists now and returns two things the app cannot author: the
+  /// user's own past tasks, ranked, and an LLM rewrite of whatever rough text
+  /// it is given. Gated on the `prompt_bank` feature flag, so the row stays
+  /// hidden until the backend says this account has the feature.
+  ///
+  /// The sheet is pre-filled from [_taskWordingContext] — a half-typed
+  /// composer, else the last thing the user said.
   Future<void> _openPromptBank() async {
-    final tr = context.tr;
-    final prompts = [
-      tr.suggestRestartWorker,
-      tr.suggestReconciliationReport,
-      tr.suggestPendingInvoices,
-      tr.suggestSyncInventory,
-    ];
-    final picked = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => ChatSheet(
-        title: tr.toolsPromptBank,
-        children: [
-          for (final p in prompts)
-            ListTile(
-              leading: Icon(AppIcons.sparkles,
-                  size: AppIconSizes.regular, color: context.saqqar.brandCyan),
-              title: Text(p, style: context.text.bodyMedium),
-              onTap: () => Navigator.of(sheetContext).pop(p),
-            ),
-        ],
-      ),
+    final query = await TaskWordingSheet.show(
+      context,
+      initialQuery: _taskWordingContext(),
     );
-    if (picked == null || !mounted) return;
-    _seedSuggestion(picked);
+    if (query == null || !mounted) return;
+    await _prepareTaskWording(query);
+  }
+
+  /// What the user is most likely asking to have structured: what they have
+  /// already half-typed, else their last message. Mirrors the web's
+  /// `latestUserPromptContext`.
+  String _taskWordingContext() {
+    final typed = _composer.text.trim();
+    if (typed.isNotEmpty) return typed;
+    // [_searchableMessages], not `_effectiveMessages`: the latter reaches the
+    // cubit through `context.watch`, which asserts when called from a button
+    // callback rather than during build. This is the same build-time cache the
+    // in-conversation search sheet reads for exactly that reason, and it holds
+    // the whole loaded transcript rather than the rendered window — so a chat
+    // scrolled to the top still finds the last thing the user actually said.
+    for (final m in _searchableMessages.reversed) {
+      if (m.role == ChatMessageRole.user && m.content.trim().isNotEmpty) {
+        return m.content.trim();
+      }
+    }
+    return '';
+  }
+
+  /// Opens the dock card immediately in its loading state, then fills in the
+  /// draft. Opening first is deliberate: the rewrite takes seconds, and a tap
+  /// that produces nothing visible reads as a tap that missed.
+  Future<void> _prepareTaskWording(String query) async {
+    final rough = query.trim();
+    if (rough.isEmpty) return;
+    // Dismiss the hint for this text — it has been acted on.
+    final key = taskWordingHintKey(rough);
+    setState(() {
+      _taskWordingHintDismissed = key;
+      _taskWordingHint = null;
+      _taskWordingQuery = rough;
+      _taskWordingDraft = '';
+      _taskWordingLoading = true;
+    });
+    final seq = ++_taskWordingSeq;
+
+    try {
+      final result = await context.read<PromptMemoryApi>().fetch(
+            lang: Localizations.localeOf(context).languageCode,
+            query: rough,
+            conversationId: _isNewChat ? null : widget.conversationId,
+          );
+      // A second request started while this one was in flight, or the card
+      // was closed — either way this answer is stale.
+      if (!mounted || seq != _taskWordingSeq || _taskWordingQuery == null) {
+        return;
+      }
+      setState(() {
+        // No draft is not a failure: the card falls back to the rough text
+        // so the user still has something to edit and send.
+        _taskWordingDraft = result.draft?.promptTemplate ?? rough;
+        _taskWordingLoading = false;
+      });
+      _toast(context.tr.promptCardAdded);
+    } catch (e) {
+      if (!mounted || seq != _taskWordingSeq) return;
+      setState(() {
+        _taskWordingQuery = null;
+        _taskWordingLoading = false;
+      });
+      _toast(ApiErrorMapper.message(context, e));
+    }
+  }
+
+  void _closeTaskWording() {
+    setState(() {
+      _taskWordingQuery = null;
+      _taskWordingDraft = '';
+      _taskWordingLoading = false;
+      // Bump the sequence so an in-flight fetch cannot re-open the card.
+      _taskWordingSeq++;
+    });
+  }
+
+  /// "Approve & use" — the draft goes into the composer, unsent.
+  void _useTaskWording(String text) {
+    if (text.trim().isEmpty) return;
+    _closeTaskWording();
+    setState(() {
+      _taskWordingHintDismissed = taskWordingHintKey(text);
+    });
+    _seedSuggestion(text);
+    _toast(context.tr.promptInserted);
+  }
+
+  /// "Run this" — seeds and sends in one step.
+  void _runTaskWording(String text) {
+    if (text.trim().isEmpty) return;
+    _closeTaskWording();
+    setState(() {
+      _taskWordingHintDismissed = taskWordingHintKey(text);
+    });
+    _seedSuggestion(text);
+    _send();
+  }
+
+  /// The effective task-prep setting: the conversation's when the server owns
+  /// one, the device preference otherwise. Same resolution as the send path
+  /// uses — a second rule here is how the toggle and the offer end up
+  /// disagreeing about whether the feature is on.
+  bool get _taskPrepEnabled {
+    final fromServer = _isNewChat
+        ? null
+        : context
+            .read<ChatCubit>()
+            .state
+            .data
+            .dataOrNull
+            ?.conversation
+            .taskPrep;
+    return fromServer ?? context.read<TaskPrepCubit>().state;
+  }
+
+  void _onComposerTextChanged() => _onComposerChanged(_composer.text);
+
+  /// Re-evaluates the "shall I structure this?" offer as the user types.
+  ///
+  /// Gated on the task-prep toggle, exactly like the web: the offer belongs to
+  /// the same "help me phrase this before running it" setting, and someone who
+  /// turned that off has said they do not want to be asked.
+  void _onComposerChanged(String text) {
+    if (!_taskPrepEnabled) {
+      if (_taskWordingHint != null) setState(() => _taskWordingHint = null);
+      return;
+    }
+    final key = taskWordingHintKey(text);
+    final show = _taskWordingQuery == null &&
+        looksLikeLongTaskPrompt(text) &&
+        key.isNotEmpty &&
+        key != _taskWordingHintDismissed;
+    final next = show ? text.trim() : null;
+    if (next == _taskWordingHint) return;
+    setState(() => _taskWordingHint = next);
   }
 
   /// Opens the slash-command menu (design parity: composer "/" button →
@@ -2215,18 +2372,58 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// Shared tail for every attachment source: enforces the per-kind size
   /// cap, builds the composer chips, and stages the upload.
+  /// Replaces any oversized photo with a 1600 px copy, keeping the original
+  /// filename so the transcript still reads the way the user expects.
+  ///
+  /// Non-images, small images and anything the resizer declines come back
+  /// untouched — [ImageDownscaler.shrink] returns the input path in every
+  /// one of those cases, so this loop has no branches of its own.
+  Future<List<AttachmentCandidate>> _downscaleImages(
+    List<PlatformFile> picked,
+  ) async {
+    final tempDir = (await getTemporaryDirectory()).path;
+    final out = <AttachmentCandidate>[];
+    for (final p in picked) {
+      final path = p.path;
+      if (path == null) {
+        out.add((name: p.name, path: null, size: p.size, extension: p.extension));
+        continue;
+      }
+      final shrunk = await ImageDownscaler.shrink(
+        path: path,
+        tempDir: tempDir,
+      );
+      if (identical(shrunk, path) || shrunk == path) {
+        out.add((name: p.name, path: path, size: p.size, extension: p.extension));
+        continue;
+      }
+      final size = await File(shrunk).length();
+      AppLogger.info(
+        'ChatAttachments',
+        'downscaled ${p.name}: ${p.size} bytes to $size',
+      );
+      out.add((
+        name: p.name,
+        path: shrunk,
+        size: size,
+        // The re-encode may have changed the container (a 12 MP PNG comes
+        // back as JPEG), and the extension drives the kind icon and the cap.
+        extension: shrunk.split('.').last,
+      ));
+    }
+    return out;
+  }
+
   Future<void> _stagePickedFiles(List<PlatformFile> pickedFiles) async {
+    // Shrink photos first, so the caps below measure what will actually be
+    // sent. Every source funnels through here, which is why this is the only
+    // place it has to happen — and why a picture picked from the gallery is
+    // treated the same as one taken with the camera.
+    final candidates = await _downscaleImages(pickedFiles);
+    if (!mounted) return;
     // Kind-aware size caps (Gap F) and the chips live in
     // [AttachmentStaging], shared with the share-sheet path below.
-    final staged = AttachmentStaging.validate(
-      pickedFiles.map((p) => (
-            name: p.name,
-            path: p.path,
-            size: p.size,
-            extension: p.extension,
-          )),
-      context.tr,
-    );
+    final staged = AttachmentStaging.validate(candidates, context.tr);
     final newChips = staged.chips;
     final newFiles = staged.files;
 
@@ -2771,6 +2968,7 @@ class _ChatScreenState extends State<ChatScreen>
                   ChatResumeBanner(
                     busy: context.watch<ChatCubit>().state.isResuming,
                     onResume: _resumeRun,
+                    failureMessage: _resumeFailureMessage(),
                   ),
                 // Plan/quota banner (Gap A near-limit + Gap B exceeded). Sits
                 // directly above the composer so the upgrade CTA is next to
@@ -2789,6 +2987,26 @@ class _ChatScreenState extends State<ChatScreen>
                       _effectiveMessages.isNotEmpty,
                   onSelect: _seedSuggestion,
                 ),
+                // Task wording (web's `promptSuggestions` slot): the card
+                // when one is open, otherwise the offer bar, never both —
+                // the card IS the answer to what the bar asks.
+                if (_taskWordingQuery != null)
+                  TaskWordingCard(
+                    draft: _taskWordingDraft,
+                    loading: _taskWordingLoading,
+                    onUse: _useTaskWording,
+                    onRun: _runTaskWording,
+                    onClose: _closeTaskWording,
+                  )
+                else if (_taskWordingHint != null)
+                  TaskWordingHintBar(
+                    onOpen: () => _prepareTaskWording(_taskWordingHint!),
+                    onDismiss: () => setState(() {
+                      _taskWordingHintDismissed =
+                          taskWordingHintKey(_taskWordingHint!);
+                      _taskWordingHint = null;
+                    }),
+                  ),
                 // Inside the band, and last: `reverse: true` rests the scroll
                 // at its end, so the composer is the part that stays on screen
                 // and the banners above are what scroll away.
@@ -2902,6 +3120,23 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   // -------- Inline approval actions --------
+
+  /// The line under a grouped card's title.
+  ///
+  /// The server's own prompt is preferred over the technical shape: "Create a
+  /// manufacturing order for 40 × Product A" tells the user what they are
+  /// approving, where "create on `mrp.production`" tells them which table it
+  /// lands in. Every sibling in a group shares the prompt's shape, so the
+  /// first one speaks for all of them; the model id is the fallback for a
+  /// server that sent no prompt at all.
+  String _groupSubtitle(ApprovalGroup group, AppStrings tr) {
+    final prompt = group.first.prompt.trim();
+    if (prompt.isNotEmpty) return prompt;
+    return tr.operationOnModel(
+      group.first.payload['operation']?.toString() ?? '',
+      group.first.payload['model']?.toString() ?? '',
+    );
+  }
 
   /// POSTs the decide call against the real `/approvals/<id>/decision/`
   /// endpoint and refreshes the chat snapshot so the approved/rejected
@@ -3019,12 +3254,34 @@ class _ChatScreenState extends State<ChatScreen>
                 .where((a) => a.status == api.ApprovalStatus.pending)
                 .toList() ??
             const []);
+    // A burst of same-shape writes collapses into one card, exactly as it
+    // does on the web — six manufacturing orders are six approvals on the
+    // wire but one decision for the user. Singles fall through unchanged, so
+    // an ordinary conversation looks identical to before.
+    // The newest reply the user can actually read — the only one allowed to
+    // carry a Continue button. Steps and empty rows are skipped for the same
+    // reason the web skips them (`latestVisibleAssistantMessage`): a button
+    // under a tool step would be attached to something the agent did, not to
+    // something it said and then stopped after.
+    final latestAssistantId = messages.lastWhere(
+      (m) =>
+          m.role == ChatMessageRole.assistant &&
+          !m.isAgentStep &&
+          m.content.trim().isNotEmpty,
+      orElse: () => const ChatMessage(
+        role: ChatMessageRole.assistant,
+        content: '',
+        time: '',
+      ),
+    ).id;
+
+    final approvalGroups = groupApprovalsByShape(pendingApprovals);
     final firstApprovalIndex =
         headerCount + timeline.length + (hasThinking ? 1 : 0);
     final totalCount = headerCount +
         timeline.length +
         (hasThinking ? 1 : 0) +
-        pendingApprovals.length +
+        approvalGroups.length +
         1;
 
     // Schedule a one-shot restore for the first frame in which the
@@ -3153,9 +3410,10 @@ class _ChatScreenState extends State<ChatScreen>
         // Inline approval cards (immediately after thinking row /
         // after the last real message).
         if (index >= firstApprovalIndex &&
-            index < firstApprovalIndex + pendingApprovals.length) {
+            index < firstApprovalIndex + approvalGroups.length) {
           final approvalIdx = index - firstApprovalIndex;
-          final approval = pendingApprovals[approvalIdx];
+          final group = approvalGroups[approvalIdx];
+          final approval = group.first;
           return ResponsiveContent(
             maxWidth: AppLayoutWidths.chatColumn,
             padding: const EdgeInsets.fromLTRB(
@@ -3176,13 +3434,32 @@ class _ChatScreenState extends State<ChatScreen>
               index: approvalIdx,
               duration: AppDurations.cardIn,
               offset: const Offset(0, AppMotionTravel.riseTight),
-              child: ChatApprovalCard(
-                approval: adaptApiApproval(approval, context.tr),
-                onApprove: () => _decideApprovalInline(approval, true),
-                onReject: () => _decideApprovalInline(approval, false),
-                onApproveAllSimilar: () =>
-                    _decideApprovalInline(approval, true, batchScope: true),
-              ),
+              child: group.isGroup
+                  ? ChatGroupedApprovalCard(
+                      group: group,
+                      subtitle: _groupSubtitle(group, context.tr),
+                      promptOf: (a) => a.prompt.trim().isEmpty
+                          ? approvalTitle(a, context.tr)
+                          : a.prompt,
+                      // Both headline buttons carry `scope: "batch"`. That is
+                      // what makes the count on them true: the server resolves
+                      // every sibling of this shape, so the card is not firing
+                      // N requests and hoping they all land.
+                      onApproveAll: (a) =>
+                          _decideApprovalInline(a, true, batchScope: true),
+                      onRejectAll: (a) =>
+                          _decideApprovalInline(a, false, batchScope: true),
+                      onApproveOne: (a) => _decideApprovalInline(a, true),
+                      onRejectOne: (a) => _decideApprovalInline(a, false),
+                    )
+                  : ChatApprovalCard(
+                      approval: adaptApiApproval(approval, context.tr),
+                      onApprove: () => _decideApprovalInline(approval, true),
+                      onReject: () => _decideApprovalInline(approval, false),
+                      onApproveAllSimilar: () => _decideApprovalInline(
+                          approval, true,
+                          batchScope: true),
+                    ),
             ),
           );
         }
@@ -3237,6 +3514,7 @@ class _ChatScreenState extends State<ChatScreen>
           entry,
           showDateSeparator: showDateSeparator,
           previousLast: previousLast,
+          latestAssistantId: latestAssistantId,
         );
 
         final row = !showDateSeparator
@@ -3287,6 +3565,7 @@ class _ChatScreenState extends State<ChatScreen>
     TimelineEntry entry, {
     required bool showDateSeparator,
     required ChatMessage? previousLast,
+    required String? latestAssistantId,
   }) {
     if (entry is SingleMessageEntry) {
       final message = entry.message;
@@ -3306,6 +3585,8 @@ class _ChatScreenState extends State<ChatScreen>
           isFirstOfGroup: isFirstOfGroup,
           isLastOfGroup: true,
           isRunning: _effectiveIsThinking,
+          isLatestAssistant:
+              message.id.isNotEmpty && message.id == latestAssistantId,
           onCardSend: _sendComposed,
           onCardSeed: _seedFromCard,
           entityLoader: _loadReportEntities,
@@ -3331,6 +3612,8 @@ class _ChatScreenState extends State<ChatScreen>
           isFirstOfGroup: true,
           isLastOfGroup: true,
           isRunning: _effectiveIsThinking,
+          isLatestAssistant: finalReply.id.isNotEmpty &&
+              finalReply.id == latestAssistantId,
           // `_buildTimeline` never folds a card into an agent turn, so this
           // reply cannot be one today. Wired anyway: if that ever changes,
           // the failure would be a silently inert card, not a crash.
@@ -3527,13 +3810,28 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  /// Task 2 — restarts a run stuck at `needs_resume`. No toast either way:
-  /// success is self-evident (new messages arrive), and a failure just
-  /// re-enables the button for another tap, per the web behaviour this
-  /// mirrors — the user can just tap again, no error copy needed.
+  /// Task 2 — restarts a run stuck at `needs_resume`. No toast on failure
+  /// (per the web behaviour this mirrors — a floating error over the
+  /// composer would be jarring for a button the user can just tap again),
+  /// but silence alone left a failure indistinguishable from success: the
+  /// button would simply re-enable with no clue why nothing happened. So the
+  /// reason still surfaces, inline in the banner itself, via
+  /// [_resumeFailureMessage] — visible without demanding a dismiss.
   void _resumeRun() {
     if (_isNewChat) return;
     unawaited(context.read<ChatCubit>().resumeRun());
+  }
+
+  /// Localized reason the last Resume attempt failed, or null when the last
+  /// attempt succeeded (or none has been made yet). Read directly off cubit
+  /// state rather than consumed/cleared like a toast: [ChatCubit.resumeRun]
+  /// already clears `actionFailure` at the start of the next attempt, so
+  /// this naturally disappears the moment the user retries.
+  String? _resumeFailureMessage() {
+    if (_isNewChat) return null;
+    final failure = context.watch<ChatCubit>().state.actionFailure;
+    if (failure == null || failure.action != ChatAction.resume) return null;
+    return ApiErrorMapper.message(context, failure.failure);
   }
 
   /// "Sent · N file(s) attached". Lives next to [_toast] so both `_send` and
@@ -3717,6 +4015,16 @@ ChatMessage _adaptApiMessage(api.Message m, BuildContext context) {
     attachments: m.attachments
         .map((a) => adaptApiAttachment(a, context.tr))
         .toList(),
+    // A tool row reaches the transcript as one readable line inside the
+    // thinking pill. The raw result stays on `toolPayload` for anything that
+    // wants it; what the user reads is a sentence.
+    stepLabel: isAgentStepMessage(m)
+        ? completedStepLabel(
+            context,
+            toolName: m.toolName,
+            resultJson: m.content,
+          )
+        : null,
   );
 }
 

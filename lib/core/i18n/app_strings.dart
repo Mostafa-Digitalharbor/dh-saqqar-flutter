@@ -96,6 +96,22 @@ class AppStrings {
     return _table[key] ?? _en[key] ?? fallback;
   }
 
+  /// [lookup] with `{placeholder}` substitution — the public half of [_f].
+  ///
+  /// Exists for the app-pulse action rows (`pulse_actions.dart`), which
+  /// carry ~40 title/body/prompt strings whose keys are data, not typed
+  /// getters: one getter per string would be forty getters that only ever
+  /// get called from one table-driven builder. `pulse_action_copy_test`
+  /// pins that every key that builder can ask for resolves in both
+  /// locales, which is the guarantee a getter would otherwise give.
+  String format(String key, Map<String, Object?> vars, {String fallback = ''}) {
+    var out = lookup(key, fallback: fallback);
+    for (final entry in vars.entries) {
+      out = out.replaceAll('{${entry.key}}', '${entry.value}');
+    }
+    return out;
+  }
+
   // App
   String get appName => _t('app_name');
   String get productInitial => _t('product_initial');
@@ -312,8 +328,18 @@ class AppStrings {
   String get activityReadingRepo => _t('activity_reading_repo');
   String get activityRunningCommand => _t('activity_running_command');
   String get activityFinishingResponse => _t('activity_finishing_response');
+  String get activityStepAwaitedApproval =>
+      _t('activity_step_awaited_approval');
+  String activityStepFailed(String step) =>
+      _f('activity_step_failed', {'step': step});
   String get activityReviewingAttachment =>
       _t('activity_reviewing_attachment');
+  String get activityImportingFromFile =>
+      _t('activity_importing_from_file');
+  String get activityRecallingHistory =>
+      _t('activity_recalling_history');
+  String get activityPreparingQuestions =>
+      _t('activity_preparing_questions');
   String get activityPreparingAccess => _t('activity_preparing_access');
   String get activityInspectingOdooModel =>
       _t('activity_inspecting_odoo_model');
@@ -334,6 +360,8 @@ class AppStrings {
   String rejectAllN(int count) => _f('reject_all_n', {'count': count});
   String get preApprovalTip => _t('pre_approval_tip');
   String get approveAllSimilar => _t('approve_all_similar');
+  String get showIndividual => _t('show_individual');
+  String get hideIndividual => _t('hide_individual');
   String approvalBatchResolved(int count) =>
       _p('approval_batch_resolved', count);
   String approvalGrantedWithPreapproval(int count) =>
@@ -347,6 +375,9 @@ class AppStrings {
         {'envName': envName, 'projectName': projectName},
       );
   String get sendToLive => _t('send_to_live');
+
+  /// A gateway 5xx from a route that reads the user's own Odoo.
+  String get errorOdooUnreachable => _t('error_odoo_unreachable');
   String get dontAskAgain => _t('dont_ask_again');
 
   // Tabs
@@ -461,6 +492,11 @@ class AppStrings {
   String get credential => _t('credential');
   String get credentials => _t('credentials');
   String get conversations => _t('conversations');
+
+  /// Plural-correct "N conversations" for the chats-list header subtitle —
+  /// unlike [conversations], which is only the bare noun and would render
+  /// "1 محادثات" (grammatically wrong) if simply concatenated with a count.
+  String conversationsCount(int n) => _p('conversations_count', n);
   String get artifactsLower => _t('artifacts_lower');
   String get requests => _t('requests');
   String get downloadsLower => _t('downloads_lower');
@@ -576,6 +612,26 @@ class AppStrings {
       _t('voice_support_ticket_not_created');
   String get voiceSupportEmpty => _t('voice_support_empty');
   String get toolsPromptBank => _t('tools_prompt_bank');
+
+  // ── Task wording ──────────────────────────────────────────────────
+  String get promptBankTitle => _t('prompt_bank_title');
+  String get promptBankSubtext => _t('prompt_bank_subtext');
+  String get promptBankAskLabel => _t('prompt_bank_ask_label');
+  String get promptBankAskPlaceholder => _t('prompt_bank_ask_placeholder');
+  String get promptBankAskButton => _t('prompt_bank_ask_button');
+  String get promptBankDraftTitle => _t('prompt_bank_draft_title');
+  String get promptCardIntro => _t('prompt_card_intro');
+  String get promptCardNeedText => _t('prompt_card_need_text');
+  String get promptCardAdded => _t('prompt_card_added');
+  String get promptInserted => _t('prompt_inserted');
+  String get promptUseDraft => _t('prompt_use_draft');
+  String get promptRunNow => _t('prompt_run_now');
+  String get promptNoOriginal => _t('prompt_no_original');
+  String get promptPreparing => _t('prompt_preparing');
+  String get promptHintLong => _t('prompt_hint_long');
+  String get promptHintOpen => _t('prompt_hint_open');
+  String get promptHintDismiss => _t('prompt_hint_dismiss');
+  String get promptBankFailed => _t('prompt_bank_failed');
   String get toolsHealthRadar => _t('tools_health_radar');
   String get toolsWhatIf => _t('tools_what_if');
   String get toolsBusinessPulse => _t('tools_business_pulse');
@@ -1003,6 +1059,9 @@ class AppStrings {
   String get startConversation => _t('start_conversation');
   String get send => _t('send');
   String get autoApprove => _t('auto_approve');
+  /// Tab title for the Odoo credential in the vault's user view.
+  String get connectOdoo => _t('connect_odoo');
+
   String get credentialVault => _t('credential_vault');
   String get noCredentials => _t('no_credentials');
   String get noCredentialsHint => _t('no_credentials_hint');
@@ -1310,6 +1369,8 @@ class AppStrings {
   String get planNearLimitTitle => _t('plan_near_limit_title');
   String get quotaExceededTitle => _t('quota_exceeded_title');
   String get quotaUpgradeCta => _t('quota_upgrade_cta');
+  String get quotaBalanceBody => _t('quota_balance_body');
+  String get quotaBalanceBodyPlain => _t('quota_balance_body_plain');
 
   // Pricing screen (Gap L)
   String get pricingTitle => _t('pricing_title');
@@ -1431,6 +1492,22 @@ class AppStrings {
   // Resume banner — a run stopped without finishing and with nothing else
   // waiting on the user (`conversation.needs_resume`). Copied verbatim from
   // the live web client (MOBILE_TASKS_2026-09.md Task 2).
+  /// One-tap continue for a run that hit the agent's tool-round ceiling.
+  /// Distinct from the resume banner above it: that one is for a run that
+  /// stopped SILENTLY, this one for a run that stopped having said so and
+  /// flagged `tool_payload.continue_available` on its last message.
+  /// Per-message token cost, shown beside the timestamp (web parity).
+  String tokensInput(String total, String fresh, String cached, int pct) =>
+      _f('tokens_input', {
+        'total': total,
+        'fresh': fresh,
+        'cached': cached,
+        'pct': pct,
+      });
+  String tokensOutput(String n) => _f('tokens_output', {'n': n});
+  String tokensTotal(String n) => _f('tokens_total', {'n': n});
+  String get continueRun => _t('continue_run');
+  String get continueRunMessage => _t('continue_run_message');
   String get chatResumeBannerText => _t('chat_resume_banner_text');
   String get chatResumeButton => _t('chat_resume_button');
   String get chatResumeButtonWorking => _t('chat_resume_button_working');
@@ -1466,6 +1543,8 @@ class AppStrings {
   String get pulseInventoryOverstock => _t('pulse_inventory_overstock');
   String get pulseInventoryFastReorder => _t('pulse_inventory_fast_reorder');
   String get pulseInventoryMissingData => _t('pulse_inventory_missing_data');
+  String get pulseInventoryMissingDataReasons =>
+      _t('pulse_inventory_missing_data_reasons');
   // Shared by the counter-driven cards (accountant, HR)
   String get pulseCountersTitle => _t('pulse_counters_title');
   // Finance
@@ -1517,6 +1596,40 @@ class AppStrings {
   String get pulseQualityDeliverySwaps => _t('pulse_quality_delivery_swaps');
   String get pulseQualityHighRiskCases => _t('pulse_quality_high_risk_cases');
   String get pulseQualityCostSaving => _t('pulse_quality_cost_saving');
+  String get pulseQualityDeepDiscounts => _t('pulse_quality_deep_discounts');
+  String get pulseQualityLowerCostSubstitutes =>
+      _t('pulse_quality_lower_cost_substitutes');
+  String get pulseQualityDocumentedSubstitutes =>
+      _t('pulse_quality_documented_substitutes');
+  String get pulseQualityUndocumentedSubstitutes =>
+      _t('pulse_quality_undocumented_substitutes');
+  String get pulseQualityDiscountValue =>
+      _t('pulse_quality_discount_value');
+  String get pulseQualityStandardOdooOnly =>
+      _t('pulse_quality_standard_odoo_only');
+  // Finance aging bands
+  String get pulseFinanceCollectionAging =>
+      _t('pulse_finance_collection_aging');
+  String get pulseFinancePaymentHorizon =>
+      _t('pulse_finance_payment_horizon');
+  String pulseBandInvoices(int n) => _p('pulse_band_invoices', n);
+  // HR sections the server sends as their own top-level keys
+  String get pulseHrRecruitment => _t('pulse_hr_recruitment');
+  String get pulseHrPayroll => _t('pulse_hr_payroll');
+  String get pulseHrTimeOff => _t('pulse_hr_time_off');
+
+  /// One of the accountant's five documented checks, by wire key. Unknown
+  /// keys fall back to the key itself rather than to a generic label: a new
+  /// check the server adds should read as an untranslated name the user can
+  /// report, not as a row that looks like every other row.
+  String pulseAccountantCheck(String key) => switch (key) {
+        'no_reference' => _t('pulse_accountant_no_reference'),
+        'manual_on_control' => _t('pulse_accountant_manual_on_control'),
+        'edited_after_post' => _t('pulse_accountant_edited_after_post'),
+        'self_cancelling' => _t('pulse_accountant_self_cancelling'),
+        'multi_company' => _t('pulse_accountant_multi_company'),
+        _ => key,
+      };
 
   // Email-OTP auth flow (Gap D)
   String get authSignUpEmailTitle => _t('auth_signup_email_title');
@@ -1969,7 +2082,7 @@ const Map<String, String> _en = {
   'theme_system': 'System',
   'language': 'Language',
   'switch_language_to_english': 'Switch language to English',
-  'switch_language_to_arabic': 'التبديل إلى العربية',
+  'switch_language_to_arabic': 'Switch language to Arabic',
   'switch_theme_to_light': 'Switch to light theme',
   'switch_theme_to_dark': 'Switch to dark theme',
   'english': 'English',
@@ -2042,6 +2155,12 @@ const Map<String, String> _en = {
   'credential': 'Credential',
   'credentials': 'credentials',
   'conversations': 'conversations',
+  'conversations_count_zero': '{n} conversations',
+  'conversations_count_one': '1 conversation',
+  'conversations_count_two': '{n} conversations',
+  'conversations_count_few': '{n} conversations',
+  'conversations_count_many': '{n} conversations',
+  'conversations_count_other': '{n} conversations',
   'artifacts_lower': 'artifacts',
   'requests': 'requests',
   'downloads_lower': 'downloads',
@@ -2096,9 +2215,9 @@ const Map<String, String> _en = {
   'approval_granted_executing': 'Approval granted. Executing approved action.',
   'auto_approve_on': 'Auto-approve on.',
   'auto_approve_off': 'Auto-approve off.',
-  'email_preview_to': 'To:',
-  'email_preview_cc': 'Cc:',
-  'email_preview_bcc': 'Bcc:',
+  'email_preview_to': 'To',
+  'email_preview_cc': 'Cc',
+  'email_preview_bcc': 'Bcc',
   // "In reply to" (MOBILE_TASKS_2026-09.md Task 4) — rendered as a badge next
   // to the subject rather than as its own row printing the raw Message-ID,
   // which is opaque and not something a user could act on; only the fact of
@@ -2321,7 +2440,37 @@ const Map<String, String> _en = {
       "The server accepted the request but didn't return a ticket. Nothing was "
           'created — please try again.',
   'voice_support_empty': 'No draft came back. Try describing it differently.',
-  'tools_prompt_bank': 'Prompt bank',
+  // The row now opens the real thing, so it takes the web's name for it.
+  'tools_prompt_bank': 'Task wording',
+  // ── Task wording (web's prompt bank) ──────────────────────────────
+  // The rough task goes to `/api/v1/prompt-memory/` and comes back as a
+  // structured prompt the user edits before sending. Verbatim from the web.
+  'prompt_bank_title': 'Task wording',
+  'prompt_bank_subtext':
+      'Write the rough task. Saqqar will turn it into clear wording above '
+          'the composer before execution.',
+  'prompt_bank_ask_label': 'Task or rough notes',
+  'prompt_bank_ask_placeholder': 'Paste the messy task here…',
+  'prompt_bank_ask_button': 'Structure task',
+  'prompt_bank_draft_title': 'Suggested task prompt',
+  'prompt_card_intro':
+      'I cleaned the rough request into a task prompt. Review it before '
+          'sending.',
+  'prompt_card_need_text': 'Write the task first, then I will prepare it.',
+  'prompt_card_added': 'Task wording card is ready above the composer.',
+  'prompt_inserted': 'Prompt inserted. Review it, then send.',
+  'prompt_use_draft': 'Approve & use',
+  'prompt_run_now': 'Run this',
+  'prompt_no_original': 'No task text yet.',
+  'prompt_preparing': 'Preparing…',
+  'prompt_hint_long':
+      'This looks like a long task. Want me to structure it before sending?',
+  'prompt_hint_open': 'Task wording',
+  'prompt_hint_dismiss': 'Continue normally',
+  // Failure copy for the one call this feature makes. The web silently keeps
+  // the previous list on error; a sheet the user explicitly opened has to say
+  // something instead of sitting blank.
+  'prompt_bank_failed': 'Could not prepare the wording. Try again.',
   'tools_health_radar': 'Health radar',
   'tools_what_if': 'What-if',
   'tools_business_pulse': 'Business pulse',
@@ -2357,6 +2506,43 @@ const Map<String, String> _en = {
   'report_selected_count': '{count} selected',
   'report_build': 'Build report',
   'report_needs_type': 'Pick a report type first',
+  // Report-card chip labels, resolved by `ReportOption.displayLabel` through
+  // the `rbType_` / `rbLens_` / `rbPeriod_` / `rbFormat_` prefixes.
+  //
+  // The backend sends the option KEY plus an Arabic fallback label — the web
+  // says so in its own comment — and every client is expected to translate
+  // the key itself. This table was empty, so the fallback was always taken
+  // and an English-language user got Arabic chips. Verbatim from the web.
+  'rbType_sales': 'Sales',
+  'rbType_invoices': 'Invoices',
+  'rbType_inventory': 'Inventory / stock moves',
+  'rbType_purchases': 'Purchases',
+  'rbType_products': 'Products',
+  'rbType_customers': 'Customers',
+  'rbType_vendors': 'Vendors',
+  'rbType_employees': 'Employees',
+  'rbLens_sales_orders': 'Sold / confirmed orders',
+  'rbLens_sales_deliveries': 'Delivered to customers',
+  'rbLens_sales_invoices': 'Invoiced sales',
+  'rbLens_sales_collections': 'Collected payments',
+  'rbLens_sales_quotations': 'Open quotations',
+  'rbLens_purchase_orders': 'Confirmed purchase orders',
+  'rbLens_purchase_receipts': 'Received from vendors',
+  'rbLens_purchase_rfqs': 'Open RFQs',
+  'rbLens_vendor_bills': 'Vendor bills',
+  'rbLens_vendor_payments': 'Vendor payments',
+  'rbLens_customer_invoices': 'Customer invoices',
+  'rbLens_unpaid_customer_invoices': 'Unpaid customer invoices',
+  'rbLens_unpaid_vendor_bills': 'Unpaid vendor bills',
+  'rbLens_overdue_customer_invoices': 'Overdue customer invoices',
+  'rbPeriod_last_week': 'Last week',
+  'rbPeriod_last_month': 'Last month',
+  'rbPeriod_last_quarter': 'Last 3 months',
+  'rbPeriod_this_year': 'This year',
+  'rbPeriod_custom': 'From – To',
+  'rbFormat_excel': 'Excel',
+  'rbFormat_pdf': 'PDF',
+  'rbFormat_html': 'HTML',
   'report_compose':
       'Build this report:\n- Type: {type}\n- Period: {period}\n'
           '- Format: {format}',
@@ -2777,6 +2963,9 @@ const Map<String, String> _en = {
   // Credential kind / tab labels — proper nouns (PostgreSQL, GitHub,
   // XML-RPC) stay verbatim; only the descriptive part localizes.
   'credKindXmlrpc': 'Odoo Connection',
+  // The user-view name for the same tab (web parity): a call to action
+  // rather than the protocol behind it.
+  'connect_odoo': 'Connect Odoo',
   'credKindPostgres': 'PostgreSQL',
   'credKindServerShell': 'Server Shell',
   'credKindGithub': 'GitHub',
@@ -2785,16 +2974,31 @@ const Map<String, String> _en = {
   // `label_key` for, plus help text for every field (SAQQAR_MOBILE_API §7).
   'fieldEmailAddress': 'Email Address',
   'fieldEmailPassword': 'Password / App-password',
-  'help_email_address': 'The mailbox Saqqar reads from and sends as.',
-  'help_email_auth_type': 'How Saqqar signs in to this mailbox.',
+  // Verbatim from the web, like the other 19 `help_*` entries. These eight
+  // were written independently here and said less: "Defaults to 993" leaves
+  // out that 587 is the STARTTLS port, and neither host line gave the
+  // `imap.gmail.com` example that tells someone what shape of value to type.
+  'help_email_address': 'The email address to connect, e.g. you@example.com.',
+  'help_email_auth_type':
+      'How you sign in. Use “password” with a normal or '
+          'app-specific password (Gmail/Outlook require an app-password).',
   'help_email_password':
-      'Some providers (Gmail, Outlook) require an app-specific password '
-          'instead of your regular one.',
-  'help_email_imap_host': "Your mail provider's incoming (IMAP) server address.",
-  'help_email_imap_port': 'Defaults to 993 (IMAP over SSL).',
-  'help_email_smtp_host': "Your mail provider's outgoing (SMTP) server address.",
-  'help_email_smtp_port': 'Defaults to 465 (SMTP over SSL).',
-  'help_email_smtp_security': 'How the connection to the SMTP server is encrypted.',
+      'Your mailbox password, or an app-password if your provider requires '
+          'one (recommended for Gmail/Outlook).',
+  'help_email_imap_host':
+      'Incoming (IMAP) server hostname, e.g. imap.gmail.com or '
+          'mail.example.com.',
+  'help_email_imap_port':
+      'IMAP port. Leave blank to use the default (993, SSL).',
+  'help_email_smtp_host':
+      'Outgoing (SMTP) server hostname, e.g. smtp.gmail.com or '
+          'mail.example.com.',
+  'help_email_smtp_port':
+      'SMTP port. Leave blank to use the default (465 for SSL, or 587 for '
+          'STARTTLS).',
+  'help_email_smtp_security':
+      'Connection security for sending: SSL (port 465) or STARTTLS '
+          '(port 587).',
   // Test-connection error mapping — common server messages localized so
   // the badge reads in the active locale. Unknown errors fall back to the
   // raw server text.
@@ -2925,6 +3129,11 @@ const Map<String, String> _en = {
   'env_hint_failed': 'Could not set up your database. Try again.',
   'chat_resume_banner_text':
       'This chat stopped before the task was finished.',
+  'tokens_input': 'Input: {total} ({fresh} fresh, {cached} cached, {pct}% hit)',
+  'tokens_output': 'Output: {n}',
+  'tokens_total': 'Total: {n}',
+  'continue_run': 'Continue',
+  'continue_run_message': 'Continue from where you stopped.',
   'chat_resume_button': 'Resume',
   'chat_resume_button_working': 'Resuming…',
   'pulse_unavailable': 'Unavailable',
@@ -2948,6 +3157,7 @@ const Map<String, String> _en = {
   'pulse_inventory_overstock': 'Overstock',
   'pulse_inventory_fast_reorder': 'Fast reorder',
   'pulse_inventory_missing_data': 'Missing data',
+  'pulse_inventory_missing_data_reasons': 'Missing data by reason',
   'pulse_counters_title': 'To review',
   'pulse_finance_cash_balance': 'Cash balance',
   'pulse_finance_receivables_overdue': 'Receivables overdue',
@@ -2980,6 +3190,213 @@ const Map<String, String> _en = {
   'pulse_quality_delivery_swaps': 'Delivery product swaps',
   'pulse_quality_high_risk_cases': 'High-risk cases',
   'pulse_quality_cost_saving': 'Potential savings',
+  'pulse_quality_deep_discounts': 'Deep discounts',
+  'pulse_quality_lower_cost_substitutes': 'Cheaper substitutes',
+  'pulse_quality_documented_substitutes': 'Documented swaps',
+  'pulse_quality_undocumented_substitutes': 'Undocumented swaps',
+  'pulse_quality_discount_value': 'Discount value',
+  'pulse_quality_standard_odoo_only':
+      'Read from standard Odoo records only.',
+  'pulse_act_no_number': 'no number',
+  'pulse_act_inventory_on_hand': ' / on hand {qty}',
+  'pulse_act_inventory_forecast': ' / forecast {qty}',
+  'pulse_act_factory_risk_cause': '{days} days waiting on "{product}"',
+  'pulse_act_factory_promise_label': 'Delivery date',
+  'pulse_act_factory_promise_prompt': 'Estimate the delivery promise for sale order {order} and name the governing component.',
+  'pulse_act_factory_cover_label': 'Cover shortage',
+  'pulse_act_factory_cover_prompt': 'Sale order {order}: compute the NET shortage after the quantities already inbound on existing purchase and manufacturing orders, then propose only the remaining quantity for approval.',
+  'pulse_act_finance_gap_title': '7-day liquidity gap',
+  'pulse_act_finance_gap_main': 'Short before collection by {amount}',
+  'pulse_act_finance_gap_cause': 'After near collections: {after}',
+  'pulse_act_finance_gap_label': 'Cover gap',
+  'pulse_act_finance_gap_prompt': 'Analyze the 7-day liquidity gap and propose a coverage plan from collections and payment scheduling without executing payments.',
+  'pulse_act_finance_collect_title': 'Customer collection',
+  'pulse_act_finance_collect_main_aging': '{n} invoice(s): 1-30 {b1} / 31-60 {b2} / 60+ {b3}',
+  'pulse_act_finance_collect_main_plain': '{n} overdue invoice(s), total {total}',
+  'pulse_act_finance_collect_cause': 'Largest: {name} / {partner} / {amount}',
+  'pulse_act_finance_collect_label': 'Start collection',
+  'pulse_act_finance_collect_prompt': 'Show customer receivables aging by 1-30, 31-60, and 60+, then start with the oldest or highest-value follow-up without executing it.',
+  'pulse_act_finance_pay_title': 'Payment schedule',
+  'pulse_act_finance_pay_main_horizon': '7 days {week}, 30 days {month}',
+  'pulse_act_finance_pay_main_plain': 'Due/overdue within 7 days: {total}',
+  'pulse_act_finance_pay_cause_horizon': 'Overdue {late}, today {today}, next 7 days {week}',
+  'pulse_act_finance_pay_cause_vendor': 'First item: {name} / {partner} / {amount}',
+  'pulse_act_finance_pay_label': 'Plan payments',
+  'pulse_act_finance_pay_prompt': 'Plan vendor payments by overdue, today, 7 days, and 30 days, considering the liquidity gap and without creating payments.',
+  'pulse_act_finance_bank_title': 'Bank reconciliation',
+  'pulse_act_finance_bank_main': '{n} unreconciled bank line(s)',
+  'pulse_act_finance_bank_cause': 'Total lines {total}',
+  'pulse_act_finance_bank_label': 'Reconcile bank',
+  'pulse_act_finance_bank_prompt': 'Show unreconciled bank lines and suggest matching, without reconciling anything without approval.',
+  'pulse_act_finance_drafts_title': 'Close drafts',
+  'pulse_act_finance_drafts_main': '{customer} customer invoice(s), {vendor} vendor bill(s)',
+  'pulse_act_finance_drafts_cause': 'Drafts need review before trusting the final liquidity picture.',
+  'pulse_act_finance_drafts_label': 'Review close',
+  'pulse_act_finance_drafts_prompt': 'Review draft customer invoices and vendor bills before close, sorted by value and risk, without posting.',
+  'pulse_act_purchasing_late_title': 'Delayed receipts',
+  'pulse_act_purchasing_late_main': '{receipts} receipt(s), {orders} PO(s) late',
+  'pulse_act_purchasing_late_cause': 'First follow-up: {name} / {vendor}',
+  'pulse_act_purchasing_late_label': 'Chase supplier',
+  'pulse_act_purchasing_late_prompt': 'Show late incoming receipts and purchase orders, start with the most blocking supplier, and draft a follow-up without sending.',
+  'pulse_act_purchasing_approval_title': 'Purchase approval',
+  'pulse_act_purchasing_approval_main': '{n} PO(s), total {total}',
+  'pulse_act_purchasing_approval_label': 'Review approval',
+  'pulse_act_purchasing_approval_prompt': 'Show purchase orders waiting approval, sorted by value and impact, without approving anything.',
+  'pulse_act_purchasing_rfq_title': 'Open RFQs',
+  'pulse_act_purchasing_rfq_main': '{n} RFQ(s), total {total}',
+  'pulse_act_purchasing_rfq_label': 'Close decision',
+  'pulse_act_purchasing_rfq_prompt': 'Show open RFQs sorted by oldest and highest value, and suggest approve, adjust, or cancel without executing.',
+  'pulse_act_purchasing_bill_title': 'Match and bill',
+  'pulse_act_purchasing_bill_main': '{n} PO(s) waiting vendor bills',
+  'pulse_act_purchasing_bill_cause': 'Separate PO, receipt, and bill before posting.',
+  'pulse_act_purchasing_bill_label': 'Start matching',
+  'pulse_act_purchasing_bill_prompt': 'Show purchase orders waiting vendor bills and suggest PO-receipt-bill matching without posting.',
+  'pulse_act_purchasing_bills_title': 'Vendor bills',
+  'pulse_act_purchasing_bills_main': '{overdue} overdue, {soon} due soon, {draft} draft',
+  'pulse_act_purchasing_bills_cause': 'Due/overdue: {total}',
+  'pulse_act_purchasing_bills_label': 'Prioritize bills',
+  'pulse_act_purchasing_bills_prompt': 'Prioritize overdue, due-soon, and draft vendor bills without posting or paying.',
+  'pulse_act_inventory_demand_title': 'Demand above availability',
+  'pulse_act_inventory_demand_main': '{n} product(s) need review',
+  'pulse_act_inventory_demand_label': 'Review shortage',
+  'pulse_act_inventory_demand_prompt': 'Show your inventory products where demand exceeds availability, sorted by risk, without creating purchase orders.',
+  'pulse_act_inventory_low_title': 'Zero or negative stock',
+  'pulse_act_inventory_low_main': '{n} product(s)',
+  'pulse_act_inventory_low_label': 'Open zero stock',
+  'pulse_act_inventory_low_prompt': 'Show zero or negative stock products and explain whether the likely issue is demand, adjustment, or late supply, without editing.',
+  'pulse_act_inventory_fast_title': 'Fast movers',
+  'pulse_act_inventory_fast_main': '{n} product(s) near reorder',
+  'pulse_act_inventory_fast_label': 'Suggest reorder',
+  'pulse_act_inventory_fast_prompt': 'Review fast-moving inventory products and suggest initial reorder quantities from movement, without creating RFQs or POs.',
+  'pulse_act_inventory_stagnant_title': 'Stagnant stock',
+  'pulse_act_inventory_stagnant_main': '{n} product(s), value {total}',
+  'pulse_act_inventory_stagnant_label': 'Show stagnant',
+  'pulse_act_inventory_stagnant_prompt': 'Show stagnant inventory products, sorted by stock value, and suggest clearance or price review without editing.',
+  'pulse_act_inventory_overstock_title': 'Overstock',
+  'pulse_act_inventory_overstock_main': '{n} product(s) above movement',
+  'pulse_act_inventory_overstock_label': 'Review excess',
+  'pulse_act_inventory_overstock_prompt': 'Show overstocked inventory products with approximate value and priority, without editing.',
+  'pulse_act_inventory_missing_title': 'Product data gaps',
+  'pulse_act_inventory_missing_main': '{cost} cost, {barcode} barcode, {code} code',
+  'pulse_act_inventory_missing_cause': 'Missing data affects margin, inventory, and search.',
+  'pulse_act_inventory_missing_label': 'Review data',
+  'pulse_act_inventory_missing_prompt': 'Show inventory products missing cost, barcode, or internal code, sorted by impact, without editing.',
+  'pulse_act_quality_measure_title': 'Measurement gate',
+  'pulse_act_quality_measure_main': '{n} out-of-spec measurement(s)',
+  'pulse_act_quality_measure_label': 'Review measurements',
+  'pulse_act_quality_measure_prompt': 'Show Quality Guard out-of-spec measurements by product and operation without changing any result.',
+  'pulse_act_quality_checks_title': 'Checks and alerts',
+  'pulse_act_quality_checks_main': '{failed} failed, {pending} pending, {alerts} alert(s)',
+  'pulse_act_quality_checks_label': 'Open rejects',
+  'pulse_act_quality_checks_prompt': 'Show failed/pending quality checks and alerts from Quality Guard, and say which block passage without closing anything.',
+  'pulse_act_quality_swap_title': 'Spec substitution · risk {risk}',
+  'pulse_act_quality_swap_main': '{order}: {requested} -> {actual}',
+  'pulse_act_quality_swap_cause': '{discount}% discount',
+  'pulse_act_quality_swap_label': 'Review swap',
+  'pulse_act_quality_swap_prompt': 'Review the first Quality Guard spec-substitution case: sale order {order}. Compare ordered, delivered, invoiced, and quality records without editing anything.',
+  'pulse_act_quality_actor_title': 'Recorded user',
+  'pulse_act_quality_actor_main_empty': 'Show the user from the substitution record',
+  'pulse_act_quality_actor_cause': 'The user recorded on the last save of the delivery or invoice.',
+  'pulse_act_quality_actor_label': 'Find user',
+  'pulse_act_quality_actor_prompt': 'Use the spec-substitution user tool (list_spec_substitution_users) and show its output as-is: sale order, requested, substitute, source, field, recorded user, and change date.',
+  'pulse_act_quality_substitutes_title': 'Substitute cost and docs',
+  'pulse_act_quality_substitutes_main': '{lower} lower-cost, {undocumented} undocumented, {gap} gap',
+  'pulse_act_quality_substitutes_cause': 'Combines cost-gap and Optional Products review in one step.',
+  'pulse_act_quality_substitutes_label': 'Review substitutes',
+  'pulse_act_quality_substitutes_prompt': 'Review Quality Guard substitute cost and documentation: show requested product, substitute, discount, cost gap, whether it is documented in Optional Products, and the recorded change user. Do not edit records.',
+  'pulse_act_quality_limits_title': 'Missing limits',
+  'pulse_act_quality_limits_main': '{n} measurement point(s) without numeric limits',
+  'pulse_act_quality_limits_cause': 'The device needs min/max limits to decide.',
+  'pulse_act_quality_limits_label': 'Prepare limits',
+  'pulse_act_quality_limits_prompt': 'Show Quality Guard measurement points missing limits and suggest required device fields without editing.',
+  'pulse_act_accountant_journal_label': 'Review entries',
+  'pulse_act_accountant_journal_prompt': 'Run the journal-entry review from Odoo and show the entries worth a second look.',
+  'pulse_act_accountant_invoices_label': 'Check invoices',
+  'pulse_act_accountant_invoices_prompt': 'Run the invoice-chain review from Odoo and show the invoices that disagree with their documents.',
+  'pulse_act_accountant_bank_label': 'Reconcile bank',
+  'pulse_act_accountant_bank_prompt': 'Run the bank-matching review from Odoo and show the unmatched lines and payments.',
+  'pulse_act_accountant_tax_label': 'Review tax',
+  'pulse_act_accountant_tax_prompt': 'Run the tax review from Odoo and show the tax and e-invoicing notes.',
+  'pulse_act_accountant_close_label': 'Close the month',
+  'pulse_act_accountant_close_prompt': 'Run the month-close checklist from Odoo and show what is still open.',
+  'pulse_act_accountant_stock_label': 'Review costing',
+  'pulse_act_accountant_stock_prompt': 'Run the inventory and costing review from Odoo and show where quantity and value disagree.',
+  'pulse_act_accountant_diagnosis_label': 'Show the fix',
+  'pulse_act_accountant_diagnosis_prompt': 'Diagnose the wrong accounting treatments in Odoo: for each one say what happened in plain words, list the document numbers as proof, and give the correcting entry.',
+  'pulse_act_accountant_closing_label': 'List what is open',
+  'pulse_act_accountant_closing_prompt': 'List everything still open in the trial balance: result accounts, the net result and closing entry, and transit accounts still carrying balances.',
+  'pulse_act_accountant_cycles_label': 'Where it stopped',
+  'pulse_act_accountant_cycles_prompt': 'Review the accounting cycles in Odoo: where each one stopped, how many documents are stuck at each step, and how to complete it.',
+  'pulse_act_accountant_deep_brief_label': 'The opinion',
+  'pulse_act_accountant_deep_brief_prompt': 'Give me your opinion on the books: rank the findings by severity and money and tell me where to start.',
+  'pulse_act_accountant_deep_transit_label': 'Transit accounts',
+  'pulse_act_accountant_deep_transit_prompt': 'Report the transit accounts from Odoo: every account still carrying a balance, the cause of each open item with its document numbers, and how it clears.',
+  'pulse_act_accountant_deep_statements_label': 'Financial statements',
+  'pulse_act_accountant_deep_statements_prompt': 'Review the financial statements from Odoo: balance sheet and income statement, whether it balances, and any balances that appear in no statement.',
+  'pulse_act_accountant_deep_ledger_label': 'Ledger integrity',
+  'pulse_act_accountant_deep_ledger_prompt': 'Check the ledger against the sub-ledger: control-account items with no partner, and old items with no reconciliation.',
+  'pulse_act_accountant_deep_balances_label': 'Trial balance',
+  'pulse_act_accountant_deep_balances_prompt': 'Run the balance review from Odoo: does the trial balance balance, and what sits on the wrong side or in suspense?',
+  'pulse_act_accountant_deep_duplicates_label': 'Duplicates',
+  'pulse_act_accountant_deep_duplicates_prompt': 'Check Odoo for duplicates: invoices or payments entered twice.',
+  'pulse_act_accountant_deep_chart_label': 'Chart of accounts',
+  'pulse_act_accountant_deep_chart_prompt': 'Review the chart of accounts in Odoo: untyped accounts, duplicate codes, and receivable/payable accounts that cannot be reconciled.',
+  'pulse_act_accountant_deep_setup_label': 'Setup',
+  'pulse_act_accountant_deep_setup_prompt': 'Review the accounting configuration in Odoo: journals, product categories, taxes, lock dates and currency rates.',
+  'pulse_act_hr_applicants_label': 'Screen applicants',
+  'pulse_act_hr_applicants_prompt': 'Shortlist the best applicants from Odoo Recruitment and explain each recommendation from records and attachments only.',
+  'pulse_act_hr_strong_label': 'Shortlist best',
+  'pulse_act_hr_strong_prompt': 'Compare the strongest Odoo Recruitment candidates and rank them for interview with reasons.',
+  'pulse_act_hr_contracts_label': 'Review contracts',
+  'pulse_act_hr_contracts_prompt': 'Review Odoo employees and contracts: missing contracts, ending or expired contracts, and missing employee data.',
+  'pulse_act_hr_payroll_label': 'Review payroll',
+  'pulse_act_hr_payroll_prompt': 'Review Odoo payroll: draft/to-verify payslips, contracts with no wage or salary structure, and contract risks.',
+  'pulse_act_hr_timeoff_label': 'Review leaves',
+  'pulse_act_hr_timeoff_prompt': 'Review Odoo time off: pending requests, pending allocations, and upcoming approved leaves.',
+  'pulse_act_hr_attendance_label': 'Review attendance',
+  'pulse_act_hr_attendance_prompt': 'Review Odoo attendance and show open or long open attendances.',
+  'pulse_act_hr_deep_rank_label': 'Shortlist best',
+  'pulse_act_hr_deep_rank_prompt': 'Shortlist the best applicants from Odoo Recruitment with score, job, stage, CV signal, and reasons.',
+  'pulse_act_hr_deep_interview_label': 'Interview list',
+  'pulse_act_hr_deep_interview_prompt': 'Prepare an interview list from the best Odoo candidates, without a hire/reject decision, and explain why each was selected.',
+  'pulse_act_hr_deep_ops_label': 'Contracts',
+  'pulse_act_hr_deep_ops_prompt': 'Review employees and contracts from Odoo and show the first records that need correction.',
+  'pulse_act_hr_deep_payroll_label': 'Payroll',
+  'pulse_act_hr_deep_payroll_prompt': 'Review payroll readiness from Odoo: payslips, contracts, and salary structures.',
+  'pulse_act_hr_deep_timeoff_label': 'Time off',
+  'pulse_act_hr_deep_timeoff_prompt': 'Review time off and attendance from Odoo and show pending requests and open attendance.',
+  'pulse_act_accountant_explain_hint': 'Invoice / order / entry number',
+  'pulse_act_accountant_explain_label': 'Explain',
+  'pulse_act_accountant_explain_prompt': 'Explain {ref}: walk the chain from the order to the receipt/delivery to the invoice to the payment to the journal items, and name the missing link.',
+  'pulse_act_hr_explain_hint': 'Job title',
+  'pulse_act_hr_explain_label': 'Shortlist',
+  'pulse_act_hr_explain_prompt': 'Shortlist the best applicants for {ref} from Odoo Recruitment. Use Odoo fields and attachments only, and explain each recommendation without a hire/reject decision.',
+  'pulse_act_empty_factory': 'No sale order is short of material.',
+  'pulse_act_empty_finance': 'Liquidity looks calm in the current read; review bank and close hygiene.',
+  'pulse_act_empty_inventory': 'Your inventory looks calm in the current read; review data and reorder rules regularly.',
+  'pulse_act_empty_purchasing': 'No critical purchasing priority in the current read.',
+  'pulse_act_empty_quality': 'Quality looks calm: no rejected measurements or clear spec swap in the current read.',
+  'pulse_band_not_due': 'Not due',
+  'pulse_band_due_today': 'Due today',
+  'pulse_band_no_due_date': 'No due date',
+  'pulse_band_later': 'Later',
+  'pulse_band_overdue': 'Overdue',
+  'pulse_finance_collection_aging': 'Collection aging',
+  'pulse_finance_payment_horizon': 'Payment horizon',
+  'pulse_band_invoices_zero': '{n} invoices',
+  'pulse_band_invoices_one': '1 invoice',
+  'pulse_band_invoices_two': '{n} invoices',
+  'pulse_band_invoices_few': '{n} invoices',
+  'pulse_band_invoices_many': '{n} invoices',
+  'pulse_band_invoices_other': '{n} invoices',
+  'pulse_hr_recruitment': 'Recruitment',
+  'pulse_hr_payroll': 'Payroll',
+  'pulse_hr_time_off': 'Time off',
+  'pulse_accountant_no_reference': 'Entries with no reference',
+  'pulse_accountant_manual_on_control': 'Manual entries on control accounts',
+  'pulse_accountant_edited_after_post': 'Edited after posting',
+  'pulse_accountant_self_cancelling': 'Self-cancelling entries',
+  'pulse_accountant_multi_company': 'Cross-company entries',
   'addon_hint': 'Saqqar can read, edit, and rebuild this Odoo addon.',
   // Names no tier and sells nothing — the same copy ships on iOS, where
   // naming a paid plan would be an App Store 3.1.1 upsell.
@@ -3260,6 +3677,15 @@ const Map<String, String> _en = {
 
   // Live environment confirmation
   'send_to_live': 'Send to live',
+  // Shown once, the first time a batch approval is granted. The button says
+  // "Approve all (3)"; the consent it takes is wider than those three, and
+  // there is nowhere else on the card to say so. Verbatim from the web.
+  // A gateway 5xx on a route that talks to the user's own Odoo. Names the
+  // thing that is actually down and the two things they can do about it —
+  // "the server had a problem, try later" points at us and offers waiting.
+  'error_odoo_unreachable':
+      "Couldn't reach the Odoo database for this environment. Check that "
+          'it is online, or switch to a different environment.',
   'dont_ask_again': "Don't ask again for this environment",
 
   // Grouped approvals
@@ -3289,7 +3715,50 @@ const Map<String, String> _en = {
   'activity_reading_repo': 'Reading repository files',
   'activity_running_command': 'Running server command',
   'activity_finishing_response': 'Finishing response',
+  'activity_step_awaited_approval': 'Waited for your approval',
+  'activity_step_failed': '{step} — failed',
   'activity_reviewing_attachment': 'Reviewing attachment',
+  'help_url':
+      'Your Odoo site address, e.g. https://mycompany.odoo.com',
+  'help_db':
+      'The Odoo database to connect to. Use “Detect databases” if you\'re unsure of the name.',
+  'help_username':
+      'The login you use to sign in to Odoo — usually your email address.',
+  'help_auth_type':
+      'How you authenticate: an API key (recommended) or your account password.',
+  'help_pg_host':
+      'PostgreSQL server hostname or IP address, e.g. db.example.com.',
+  'help_pg_port':
+      'PostgreSQL port. Leave blank to use the default (5432).',
+  'help_pg_dbname':
+      'Name of the PostgreSQL database to connect to.',
+  'help_pg_username':
+      'PostgreSQL role/user name used to log in.',
+  'help_pg_password':
+      'Password for the PostgreSQL user above.',
+  'help_pg_sslmode':
+      'SSL mode (e.g. disable, prefer, require). Leave blank for the default.',
+  'help_shell_auth':
+      'Connect with a password or an SSH private key.',
+  'help_shell_host':
+      'Server hostname or IP address to SSH into.',
+  'help_shell_port':
+      'SSH port. Leave blank to use the default (22).',
+  'help_shell_username':
+      'The SSH login user on the server.',
+  'help_shell_password':
+      'Password for the SSH user (only for password auth).',
+  'help_shell_private_key':
+      'Paste the private SSH key when authenticating with a key.',
+  'help_gh_token':
+      'A GitHub personal access token with repo access.',
+  'help_gh_owner':
+      'GitHub account or organization that owns the repository.',
+  'help_gh_repo':
+      'Repository name to work with (without the owner prefix).',
+  'activity_importing_from_file': 'Importing records from the file',
+  'activity_recalling_history': 'Looking back through this chat',
+  'activity_preparing_questions': 'Preparing a few questions',
   'activity_preparing_access': 'Preparing access',
   'activity_inspecting_odoo_model': 'Inspecting Odoo model',
   'activity_applying_odoo_change': 'Applying Odoo change',
@@ -3315,6 +3784,8 @@ const Map<String, String> _en = {
   'approve_all_n': 'Approve all {count}',
   'reject_all_n': 'Reject all {count}',
   'approve_all_similar': 'Approve all similar requests',
+  'show_individual': 'Show individual',
+  'hide_individual': 'Hide individual',
   'approval_batch_resolved_zero': 'Approved {n} requests',
   'approval_batch_resolved_one': 'Approved 1 request',
   'approval_batch_resolved_two': 'Approved {n} requests',
@@ -3351,6 +3822,10 @@ const Map<String, String> _en = {
       "You've reached your {window} usage limit. It resets when the window rolls over, or upgrade your plan.",
   'quota_exceeded_body_plain':
       "You've reached your {window} usage limit. It resets when the window rolls over.",
+  // Out of tokens is not a window: nothing rolls over, so the copy must not
+  // promise that it will.
+  'quota_balance_body': "You're out of tokens. Top up or upgrade your plan.",
+  'quota_balance_body_plain': "You're out of tokens.",
 
   // Units. Digits stay Western in both locales (see `AppDateFormat`), but
   // the unit *word* localizes — `2.4 MB` / `2.4 م.ب`.
@@ -3532,7 +4007,7 @@ const Map<String, String> _ar = {
   'theme_light': 'فاتح',
   'theme_system': 'النظام',
   'language': 'اللغة',
-  'switch_language_to_english': 'Switch language to English',
+  'switch_language_to_english': 'التبديل إلى الإنجليزية',
   'switch_language_to_arabic': 'التبديل إلى العربية',
   'switch_theme_to_light': 'التبديل للوضع الفاتح',
   'switch_theme_to_dark': 'التبديل للوضع الداكن',
@@ -3609,6 +4084,12 @@ const Map<String, String> _ar = {
   'credential': 'بيانات الدخول',
   'credentials': 'بيانات دخول',
   'conversations': 'محادثات',
+  'conversations_count_zero': 'بدون محادثات',
+  'conversations_count_one': 'محادثة واحدة',
+  'conversations_count_two': 'محادثتان',
+  'conversations_count_few': '{n} محادثات',
+  'conversations_count_many': '{n} محادثة',
+  'conversations_count_other': '{n} محادثة',
   'artifacts_lower': 'ملفات',
   'requests': 'طلبات',
   'downloads_lower': 'تنزيلات',
@@ -3663,9 +4144,9 @@ const Map<String, String> _ar = {
   'approval_granted_executing': 'تمت الموافقة. جار تنفيذ الإجراء.',
   'auto_approve_on': 'الموافقة التلقائية مفعلة.',
   'auto_approve_off': 'الموافقة التلقائية متوقفة.',
-  'email_preview_to': 'إلى:',
-  'email_preview_cc': 'نسخة إلى:',
-  'email_preview_bcc': 'نسخة مخفية إلى:',
+  'email_preview_to': 'إلى',
+  'email_preview_cc': 'نسخة',
+  'email_preview_bcc': 'نسخة مخفية',
   'email_preview_reply': 'رداً على',
   'email_preview_empty_subject': '(بدون موضوع)',
   'email_preview_empty_body': '(رسالة فارغة)',
@@ -3826,7 +4307,30 @@ const Map<String, String> _ar = {
       'قبل الخادم الطلب لكنه لم يُرجع تذكرة. لم يتم إنشاء أي شيء — من فضلك '
           'حاول مرة أخرى.',
   'voice_support_empty': 'لم يصل أي تشخيص. جرّب صياغة المشكلة بطريقة أخرى.',
-  'tools_prompt_bank': 'بنك الصياغات',
+  'tools_prompt_bank': 'صياغة المهمة',
+  // ── صياغة المهمة (بنك الصياغات في الويب) ─────────────────────────
+  'prompt_bank_title': 'صياغة المهمة',
+  'prompt_bank_subtext':
+      'أدخل نص المهمة الخام، وصقّار سيحوّله إلى صياغة واضحة فوق صندوق '
+          'الكتابة قبل التنفيذ.',
+  'prompt_bank_ask_label': 'المهمة أو النص الخام',
+  'prompt_bank_ask_placeholder': 'اكتب النص غير المرتب هنا…',
+  'prompt_bank_ask_button': 'رتّب المهمة',
+  'prompt_bank_draft_title': 'صياغة المهمة المقترحة',
+  'prompt_card_intro':
+      'تم ترتيب النص الخام إلى صياغة مهمة واضحة. راجعها قبل الإرسال.',
+  'prompt_card_need_text':
+      'أدخل نص المهمة أولًا، وبعدها سيجهّز صقّار صياغتها.',
+  'prompt_card_added': 'بطاقة صياغة المهمة جاهزة فوق صندوق الكتابة.',
+  'prompt_inserted': 'تم وضع الصياغة في الصندوق. راجعها ثم أرسلها.',
+  'prompt_use_draft': 'اعتمد الصياغة',
+  'prompt_run_now': 'نفّذ الآن',
+  'prompt_no_original': 'لا يوجد نص مهمة بعد.',
+  'prompt_preparing': 'بجهّز الصياغة…',
+  'prompt_hint_long': 'يبدو أن هذه مهمة طويلة. هل ترغب في ترتيبها قبل التنفيذ؟',
+  'prompt_hint_open': 'صياغة المهمة',
+  'prompt_hint_dismiss': 'المتابعة بدون ترتيب',
+  'prompt_bank_failed': 'تعذّر تجهيز الصياغة. حاول مرة أخرى.',
   'tools_health_radar': 'رادار الصحة',
   'tools_what_if': 'ماذا لو',
   'tools_business_pulse': 'نبض الأعمال',
@@ -3855,6 +4359,37 @@ const Map<String, String> _ar = {
   'report_selected_count': 'تم اختيار {count}',
   'report_build': 'أنشئ التقرير',
   'report_needs_type': 'اختر نوع التقرير أولاً',
+  // تسميات شرائح بطاقة التقرير — حرفيًا من الويب.
+  'rbType_sales': 'مبيعات',
+  'rbType_invoices': 'فواتير',
+  'rbType_inventory': 'مخزون/حركة مخزون',
+  'rbType_purchases': 'مشتريات',
+  'rbType_products': 'منتجات',
+  'rbType_customers': 'عملاء',
+  'rbType_vendors': 'موردين',
+  'rbType_employees': 'موظفين',
+  'rbLens_sales_orders': 'المتفق عليه / أوامر بيع',
+  'rbLens_sales_deliveries': 'اللي اتسلّم للعميل',
+  'rbLens_sales_invoices': 'اللي اتفوتر',
+  'rbLens_sales_collections': 'اللي اتحصّل',
+  'rbLens_sales_quotations': 'عروض أسعار مفتوحة',
+  'rbLens_purchase_orders': 'أوامر شراء مؤكدة',
+  'rbLens_purchase_receipts': 'اللي وصل من الموردين',
+  'rbLens_purchase_rfqs': 'طلبات شراء مفتوحة',
+  'rbLens_vendor_bills': 'فواتير موردين',
+  'rbLens_vendor_payments': 'مدفوعات الموردين',
+  'rbLens_customer_invoices': 'فواتير عملاء',
+  'rbLens_unpaid_customer_invoices': 'فواتير عملاء غير مدفوعة',
+  'rbLens_unpaid_vendor_bills': 'فواتير موردين غير مدفوعة',
+  'rbLens_overdue_customer_invoices': 'فواتير عملاء متأخرة',
+  'rbPeriod_last_week': 'آخر أسبوع',
+  'rbPeriod_last_month': 'آخر شهر',
+  'rbPeriod_last_quarter': 'آخر 3 شهور',
+  'rbPeriod_this_year': 'هذه السنة',
+  'rbPeriod_custom': 'من – إلى',
+  'rbFormat_excel': 'Excel',
+  'rbFormat_pdf': 'PDF',
+  'rbFormat_html': 'HTML',
   'report_compose':
       'أنشئ هذا التقرير:\n- النوع: {type}\n- الفترة: {period}\n'
           '- الصيغة: {format}',
@@ -4240,6 +4775,7 @@ const Map<String, String> _ar = {
   // مسميات أنواع الاعتماد / التبويبات — الأسماء التقنية (PostgreSQL،
   // GitHub، XML-RPC) تبقى كما هي، ويُترجَم الجزء الوصفي فقط.
   'credKindXmlrpc': 'اتصال أودو',
+  'connect_odoo': 'ربط أودو',
   'credKindPostgres': 'PostgreSQL',
   'credKindServerShell': 'طرفية الخادم',
   'credKindGithub': 'GitHub',
@@ -4248,16 +4784,23 @@ const Map<String, String> _ar = {
   // السيرفر بيبعت لها مفتاح ترجمة صريح، ونص مساعد لكل حقل.
   'fieldEmailAddress': 'عنوان البريد الإلكتروني',
   'fieldEmailPassword': 'كلمة المرور / كلمة مرور التطبيق',
-  'help_email_address': 'صندوق البريد الذي سيقرأ منه صقّار ويرسل باسمه.',
-  'help_email_auth_type': 'طريقة تسجيل دخول صقّار إلى هذا البريد.',
+  // حرفيًا من الويب، زي باقي الـ 19 نص مساعدة.
+  'help_email_address': 'عنوان البريد المراد ربطه، مثال: you@example.com.',
+  'help_email_auth_type':
+      'طريقة تسجيل الدخول. استخدم «password» مع كلمة المرور العادية أو كلمة '
+          'مرور التطبيق (يتطلب Gmail/Outlook كلمة مرور تطبيق).',
   'help_email_password':
-      'بعض مزودي البريد (مثل Gmail وOutlook) يطلبون كلمة مرور خاصة '
-          'بالتطبيقات بدلاً من كلمة المرور المعتادة.',
-  'help_email_imap_host': 'عنوان خادم الاستقبال (IMAP) الخاص بمزود بريدك.',
-  'help_email_imap_port': 'القيمة الافتراضية 993 (IMAP عبر SSL).',
-  'help_email_smtp_host': 'عنوان خادم الإرسال (SMTP) الخاص بمزود بريدك.',
-  'help_email_smtp_port': 'القيمة الافتراضية 465 (SMTP عبر SSL).',
-  'help_email_smtp_security': 'طريقة تشفير الاتصال بخادم SMTP.',
+      'كلمة مرور صندوق البريد، أو كلمة مرور تطبيق إذا كان مزوّدك يتطلبها '
+          '(مُستحسن لـ Gmail/Outlook).',
+  'help_email_imap_host':
+      'اسم مضيف خادم الوارد (IMAP)، مثال: imap.gmail.com أو mail.example.com.',
+  'help_email_imap_port': 'منفذ IMAP. اتركه فارغاً للافتراضي (993، SSL).',
+  'help_email_smtp_host':
+      'اسم مضيف خادم الصادر (SMTP)، مثال: smtp.gmail.com أو mail.example.com.',
+  'help_email_smtp_port':
+      'منفذ SMTP. اتركه فارغاً للافتراضي (465 لـ SSL، أو 587 لـ STARTTLS).',
+  'help_email_smtp_security':
+      'أمان الاتصال للإرسال: SSL (منفذ 465) أو STARTTLS (منفذ 587).',
   // ترجمة أخطاء اختبار الاتصال — رسائل السيرفر الشائعة تُترجَم لتظهر
   // بلغة الواجهة. الأخطاء غير المعروفة تعود لنص السيرفر الأصلي.
   'testErrAuthFailed':
@@ -4372,6 +4915,11 @@ const Map<String, String> _ar = {
       'أضِف بيانات اعتماد Odoo لهذه البيئة للاتصال.',
   'env_hint_failed': 'تعذّر إعداد قاعدة بياناتك. حاول مرة أخرى.',
   'chat_resume_banner_text': 'توقفت المحادثة قبل إكمال المهمة.',
+  'tokens_input': 'المُدخل: {total} ({fresh} جديد، {cached} من الذاكرة، {pct}٪ إصابة)',
+  'tokens_output': 'المُخرج: {n}',
+  'tokens_total': 'الإجمالي: {n}',
+  'continue_run': 'متابعة',
+  'continue_run_message': 'أكمل من حيث توقفت.',
   'chat_resume_button': 'استئناف',
   'chat_resume_button_working': 'جارٍ الاستئناف…',
   'pulse_unavailable': 'غير متاح',
@@ -4395,6 +4943,7 @@ const Map<String, String> _ar = {
   'pulse_inventory_overstock': 'فائض مخزون',
   'pulse_inventory_fast_reorder': 'إعادة طلب سريعة',
   'pulse_inventory_missing_data': 'بيانات ناقصة',
+  'pulse_inventory_missing_data_reasons': 'البيانات الناقصة حسب السبب',
   'pulse_counters_title': 'للمراجعة',
   'pulse_finance_cash_balance': 'رصيد النقدية',
   'pulse_finance_receivables_overdue': 'مستحقات عملاء متأخرة',
@@ -4427,6 +4976,212 @@ const Map<String, String> _ar = {
   'pulse_quality_delivery_swaps': 'استبدال منتج في التسليم',
   'pulse_quality_high_risk_cases': 'حالات عالية الخطورة',
   'pulse_quality_cost_saving': 'توفير محتمل',
+  'pulse_quality_deep_discounts': 'خصومات كبيرة',
+  'pulse_quality_lower_cost_substitutes': 'بدائل أرخص',
+  'pulse_quality_documented_substitutes': 'تبديلات موثّقة',
+  'pulse_quality_undocumented_substitutes': 'تبديلات غير موثّقة',
+  'pulse_quality_discount_value': 'قيمة الخصومات',
+  'pulse_quality_standard_odoo_only': 'قراءة من سجلات أودو القياسية فقط.',
+  'pulse_act_no_number': 'بدون رقم',
+  'pulse_act_inventory_on_hand': ' / المتاح {qty}',
+  'pulse_act_inventory_forecast': ' / المتوقع {qty}',
+  'pulse_act_factory_risk_cause': 'أطول انتظار {days} يوم بسبب «{product}»',
+  'pulse_act_factory_promise_label': 'وعد التسليم',
+  'pulse_act_factory_promise_prompt': 'احسب وعد التسليم لأمر البيع {order} ووضّح العامل الحاكم.',
+  'pulse_act_factory_cover_label': 'غطِّ النواقص',
+  'pulse_act_factory_cover_prompt': 'أمر البيع {order}: احسب النقص الصافي بعد خصم الكميات القادمة فعلًا من أوامر الشراء والتصنيع القائمة، ثم اقترح فقط الكمية المتبقية للاعتماد.',
+  'pulse_act_finance_gap_title': 'فجوة سيولة 7 أيام',
+  'pulse_act_finance_gap_main': 'العجز قبل التحصيل {amount}',
+  'pulse_act_finance_gap_cause': 'بعد تحصيل المستحق القريب: {after}',
+  'pulse_act_finance_gap_label': 'خطة تغطية',
+  'pulse_act_finance_gap_prompt': 'حلل فجوة السيولة خلال 7 أيام، واقترح خطة تغطية من التحصيل وتأجيل/ترتيب السداد بدون تنفيذ أي دفعات.',
+  'pulse_act_finance_collect_title': 'تحصيل العملاء',
+  'pulse_act_finance_collect_main_aging': '{n} فاتورة: 1-30 {b1} / 31-60 {b2} / +60 {b3}',
+  'pulse_act_finance_collect_main_plain': '{n} فاتورة متأخرة بإجمالي {total}',
+  'pulse_act_finance_collect_cause': 'أكبر بند: {name} / {partner} / {amount}',
+  'pulse_act_finance_collect_label': 'ابدأ التحصيل',
+  'pulse_act_finance_collect_prompt': 'اعرض أعمار مديونيات العملاء 1-30 و31-60 و+60، وابدأ بالأقدم أو الأعلى قيمة واقترح متابعة بدون تنفيذ.',
+  'pulse_act_finance_pay_title': 'جدول السداد',
+  'pulse_act_finance_pay_main_horizon': 'خلال 7 أيام {week}، وخلال 30 يوم {month}',
+  'pulse_act_finance_pay_main_plain': 'مستحق/متأخر خلال 7 أيام بإجمالي {total}',
+  'pulse_act_finance_pay_cause_horizon': 'متأخر {late}، اليوم {today}، بعد 7 أيام {week}',
+  'pulse_act_finance_pay_cause_vendor': 'أول بند: {name} / {partner} / {amount}',
+  'pulse_act_finance_pay_label': 'رتّب السداد',
+  'pulse_act_finance_pay_prompt': 'رتّب جدول سداد الموردين: المتأخر، المستحق اليوم، خلال 7 أيام، وخلال 30 يوم، مع مراعاة فجوة السيولة وبدون إنشاء دفعات.',
+  'pulse_act_finance_bank_title': 'التسوية البنكية',
+  'pulse_act_finance_bank_main': '{n} بند بنكي غير مسوّى',
+  'pulse_act_finance_bank_cause': 'إجمالي البنود {total}',
+  'pulse_act_finance_bank_label': 'سوّي البنك',
+  'pulse_act_finance_bank_prompt': 'اعرض بنود البنك غير المسواة واقترح طريقة تسويتها، ولا تنفّذ أي تسوية بدون موافقة.',
+  'pulse_act_finance_drafts_title': 'مسودات قبل الإقفال',
+  'pulse_act_finance_drafts_main': '{customer} فاتورة عميل و{vendor} فاتورة مورد',
+  'pulse_act_finance_drafts_cause': 'مسودات محتاجة مراجعة قبل ما تعتمد صورة السيولة النهائية.',
+  'pulse_act_finance_drafts_label': 'راجع الإقفال',
+  'pulse_act_finance_drafts_prompt': 'راجع فواتير العملاء والموردين المسودة قبل الإقفال، ورتبها حسب القيمة والخطورة بدون ترحيل.',
+  'pulse_act_purchasing_late_title': 'تأخير الاستلام',
+  'pulse_act_purchasing_late_main': '{receipts} استلام و{orders} أمر شراء متأخر',
+  'pulse_act_purchasing_late_cause': 'أول متابعة: {name} / {vendor}',
+  'pulse_act_purchasing_late_label': 'تابع المورد',
+  'pulse_act_purchasing_late_prompt': 'اعرض الاستلامات وأوامر الشراء المتأخرة، وابدأ بأكثر مورد معطل واقترح رسالة متابعة بدون إرسال.',
+  'pulse_act_purchasing_approval_title': 'اعتماد الشراء',
+  'pulse_act_purchasing_approval_main': '{n} أمر شراء بقيمة {total}',
+  'pulse_act_purchasing_approval_label': 'راجع الاعتماد',
+  'pulse_act_purchasing_approval_prompt': 'اعرض أوامر الشراء المنتظرة اعتماد ورتبها حسب القيمة والتأثير، ولا تعتمد أي أمر بدون موافقة.',
+  'pulse_act_purchasing_rfq_title': 'RFQs مفتوحة',
+  'pulse_act_purchasing_rfq_main': '{n} طلب عرض سعر بقيمة {total}',
+  'pulse_act_purchasing_rfq_label': 'اقفل القرار',
+  'pulse_act_purchasing_rfq_prompt': 'اعرض RFQs المفتوحة ورتبها حسب الأقدم والأعلى قيمة، واقترح لكل واحد اعتماد أو تعديل أو إلغاء بدون تنفيذ.',
+  'pulse_act_purchasing_bill_title': 'مطابقة وفوترة',
+  'pulse_act_purchasing_bill_main': '{n} أمر شراء ينتظر فاتورة مورد',
+  'pulse_act_purchasing_bill_cause': 'افصل بين PO والاستلام والفاتورة قبل الترحيل.',
+  'pulse_act_purchasing_bill_label': 'ابدأ المطابقة',
+  'pulse_act_purchasing_bill_prompt': 'اعرض أوامر الشراء التي تنتظر فاتورة مورد، واقترح مطابقة PO مع الاستلام والفاتورة بدون ترحيل.',
+  'pulse_act_purchasing_bills_title': 'فواتير الموردين',
+  'pulse_act_purchasing_bills_main': '{overdue} متأخرة، {soon} مستحقة قريب، {draft} مسودة',
+  'pulse_act_purchasing_bills_cause': 'مستحق/متأخر: {total}',
+  'pulse_act_purchasing_bills_label': 'رتّب الفواتير',
+  'pulse_act_purchasing_bills_prompt': 'رتب فواتير الموردين المتأخرة والمستحقة والمسودة حسب الأولوية، بدون ترحيل أو دفع.',
+  'pulse_act_inventory_demand_title': 'طلب أكبر من المتاح',
+  'pulse_act_inventory_demand_main': '{n} منتج محتاج مراجعة',
+  'pulse_act_inventory_demand_label': 'راجع الناقص',
+  'pulse_act_inventory_demand_prompt': 'اعرض منتجات مخزونك التي عليها طلب أكثر من المتاح، ورتبها حسب أخطر تأثير، ولا تنشئ أوامر شراء بدون موافقة.',
+  'pulse_act_inventory_low_title': 'نفاد أو مخزون سالب',
+  'pulse_act_inventory_low_main': '{n} منتج',
+  'pulse_act_inventory_low_label': 'افتح النفاد',
+  'pulse_act_inventory_low_prompt': 'اعرض المنتجات المنتهية أو السالبة في مخزونك، ووضح هل المشكلة بيع زائد أم جرد أم توريد متأخر، بدون تعديل.',
+  'pulse_act_inventory_fast_title': 'سريع الحركة',
+  'pulse_act_inventory_fast_main': '{n} منتج قريب من إعادة الطلب',
+  'pulse_act_inventory_fast_label': 'اقترح إعادة طلب',
+  'pulse_act_inventory_fast_prompt': 'راجع المنتجات السريعة في مخزونك واقترح كميات إعادة طلب مبدئية بناء على الحركة، بدون إنشاء RFQ أو PO.',
+  'pulse_act_inventory_stagnant_title': 'مخزون راكد',
+  'pulse_act_inventory_stagnant_main': '{n} منتج بقيمة {total}',
+  'pulse_act_inventory_stagnant_label': 'اعرض الراكد',
+  'pulse_act_inventory_stagnant_prompt': 'اعرض المنتجات الراكدة في مخزونك خلال فترة الحركة الحالية، ورتبها حسب قيمة المخزون واقترح تصفية أو مراجعة سعر بدون تعديل.',
+  'pulse_act_inventory_overstock_title': 'مخزون زائد',
+  'pulse_act_inventory_overstock_main': '{n} منتج أعلى من حركته',
+  'pulse_act_inventory_overstock_label': 'راجع الزيادة',
+  'pulse_act_inventory_overstock_prompt': 'اعرض المنتجات التي مخزونها زائد عن حركتها في مخزونك، ووضح القيمة التقريبية وأولوية التصرف بدون تعديل.',
+  'pulse_act_inventory_missing_title': 'بيانات ناقصة',
+  'pulse_act_inventory_missing_main': '{cost} تكلفة، {barcode} باركود، {code} كود',
+  'pulse_act_inventory_missing_cause': 'البيانات الناقصة تؤثر على الهامش، الجرد، والبحث.',
+  'pulse_act_inventory_missing_label': 'راجع البيانات',
+  'pulse_act_inventory_missing_prompt': 'اعرض المنتجات التي ينقصها تكلفة أو باركود أو كود داخلي في مخزونك، ورتبها حسب الأثر بدون تعديل.',
+  'pulse_act_quality_measure_title': 'بوابة القياس',
+  'pulse_act_quality_measure_main': '{n} قراءة خارج حدود المواصفة',
+  'pulse_act_quality_measure_label': 'راجع القياسات',
+  'pulse_act_quality_measure_prompt': 'اعرض قياسات الجودة الخارجة عن المواصفة من حارس الجودة، ورتبها حسب المنتج والعملية، ولا تغيّر أي نتيجة بدون موافقة.',
+  'pulse_act_quality_checks_title': 'اختبارات وبلاغات',
+  'pulse_act_quality_checks_main': '{failed} فاشلة، {pending} معلقة، {alerts} بلاغ',
+  'pulse_act_quality_checks_label': 'افتح الرفض',
+  'pulse_act_quality_checks_prompt': 'اعرض اختبارات الجودة الفاشلة والمعلقة وبلاغات الجودة من حارس الجودة، وقل أيها يمنع المرور بدون إغلاق أي بلاغ.',
+  'pulse_act_quality_swap_title': 'تبديل مواصفة · خطورة {risk}',
+  'pulse_act_quality_swap_main': '{order}: {requested} ← {actual}',
+  'pulse_act_quality_swap_cause': 'خصم {discount}%',
+  'pulse_act_quality_swap_label': 'راجع التبديل',
+  'pulse_act_quality_swap_prompt': 'راجع أول حالة تبديل مواصفة في حارس الجودة: أمر البيع {order}. قارن المطلوب بالتسليم والفاتورة والجودة، ولا تعدل أي سجل.',
+  'pulse_act_quality_actor_title': 'اكتشاف الشخص',
+  'pulse_act_quality_actor_main_empty': 'اعرض المستخدم من سجل التبديل',
+  'pulse_act_quality_actor_cause': 'المستخدم المسجَّل على آخر حفظ لسجل التسليم أو الفاتورة.',
+  'pulse_act_quality_actor_label': 'اكتشف الشخص',
+  'pulse_act_quality_actor_prompt': 'استخدم أداة جدول تبديل المواصفة (list_spec_substitution_users) واعرض ناتجها كما هو: أمر البيع، المطلوب، البديل، المصدر، الحقل، المستخدم المسجّل، وتاريخ التغيير.',
+  'pulse_act_quality_substitutes_title': 'تكلفة وتوثيق البديل',
+  'pulse_act_quality_substitutes_main': '{lower} أقل تكلفة، {undocumented} غير موثقة، فرق {gap}',
+  'pulse_act_quality_substitutes_cause': 'يجمع مراجعة فرق التكلفة وOptional Products في خطوة واحدة.',
+  'pulse_act_quality_substitutes_label': 'راجع البدائل',
+  'pulse_act_quality_substitutes_prompt': 'راجع تكلفة وتوثيق البدائل في حارس الجودة: اعرض جدول المنتج المطلوب، البديل، الخصم، فرق التكلفة، هل البديل موثق في Optional Products، والمستخدم المسجل على التبديل. لا تعدل أي سجل.',
+  'pulse_act_quality_limits_title': 'حدود قياس ناقصة',
+  'pulse_act_quality_limits_main': '{n} نقطة قياس بلا حدود رقمية',
+  'pulse_act_quality_limits_cause': 'الجهاز محتاج حد أدنى/أقصى للحكم.',
+  'pulse_act_quality_limits_label': 'جهّز الحدود',
+  'pulse_act_quality_limits_prompt': 'اعرض نقاط القياس الناقصة في حارس الجودة واقترح حدود/حقول الجهاز المطلوبة بدون تعديل.',
+  'pulse_act_accountant_journal_label': 'راجع القيود',
+  'pulse_act_accountant_journal_prompt': 'شغّل مراجعة القيود من أودو واعرض القيود التي تستحق المراجعة.',
+  'pulse_act_accountant_invoices_label': 'راجع الفواتير',
+  'pulse_act_accountant_invoices_prompt': 'شغّل مراجعة الفواتير من أودو واعرض الفواتير التي لا تتفق مع مستنداتها.',
+  'pulse_act_accountant_bank_label': 'سوّي البنك',
+  'pulse_act_accountant_bank_prompt': 'شغّل مراجعة البنك من أودو واعرض البنود والدفعات غير المطابقة.',
+  'pulse_act_accountant_tax_label': 'راجع الضريبة',
+  'pulse_act_accountant_tax_prompt': 'شغّل المراجعة الضريبية من أودو واعرض الملاحظات على الضريبة والفوترة الإلكترونية.',
+  'pulse_act_accountant_close_label': 'اقفل الشهر',
+  'pulse_act_accountant_close_prompt': 'شغّل قائمة إقفال الشهر من أودو واعرض ما تبقّى قبل الإقفال.',
+  'pulse_act_accountant_stock_label': 'راجع التكلفة',
+  'pulse_act_accountant_stock_prompt': 'شغّل مراجعة المخزون والتكلفة من أودو واعرض الفروق بين الكمية والقيمة.',
+  'pulse_act_accountant_diagnosis_label': 'اعرض التصحيح',
+  'pulse_act_accountant_diagnosis_prompt': 'شخّص المعالجات المحاسبية الخاطئة في أودو: اذكر لكل حالة إيه اللي حصل بكلام بسيط، وأرقام المستندات كإثبات، وقيد التصحيح.',
+  'pulse_act_accountant_closing_label': 'اعرض المفتوح',
+  'pulse_act_accountant_closing_prompt': 'احصر كل ما لم يُقفل في ميزان المراجعة: حسابات النتيجة وصافي النتيجة وقيد الإقفال، وحسابات العبور التي عليها أرصدة.',
+  'pulse_act_accountant_cycles_label': 'أين توقفت',
+  'pulse_act_accountant_cycles_prompt': 'راجع الدورات المحاسبية في أودو: كل دورة فين وقفت، وكام مستند واقف في كل خطوة، وإزاي أكملها.',
+  'pulse_act_accountant_deep_brief_label': 'رأي المحاسب',
+  'pulse_act_accountant_deep_brief_prompt': 'أعطني رأيك في الدفاتر: رتّب الملاحظات حسب الأهمية والمبلغ وقل لي أبدأ بماذا.',
+  'pulse_act_accountant_deep_transit_label': 'الحسابات الوسيطة',
+  'pulse_act_accountant_deep_transit_prompt': 'اطلع تقرير الحسابات الوسيطة من أودو: كل حساب عليه رصيد، وسبب كل بند مفتوح فيه بأرقام مستنداته، وإزاي يتقفل.',
+  'pulse_act_accountant_deep_statements_label': 'القوائم المالية',
+  'pulse_act_accountant_deep_statements_prompt': 'راجع القوائم المالية من أودو: الميزانية وقائمة الدخل، وهل الميزانية متوازنة، وأي أرصدة لا تظهر في القوائم.',
+  'pulse_act_accountant_deep_ledger_label': 'الأستاذ العام والمساعد',
+  'pulse_act_accountant_deep_ledger_prompt': 'افحص الخلل بين الأستاذ العام والمساعد: بنود على حسابات العملاء والموردين بلا اسم طرف، وبنود قديمة بلا مطابقة.',
+  'pulse_act_accountant_deep_balances_label': 'ميزان المراجعة',
+  'pulse_act_accountant_deep_balances_prompt': 'شغّل مراجعة الأرصدة من أودو: هل الميزان متوازن، وما الأرصدة على الجانب الخطأ أو في حسابات معلقة؟',
+  'pulse_act_accountant_deep_duplicates_label': 'تكرار المستندات',
+  'pulse_act_accountant_deep_duplicates_prompt': 'افحص التكرار في أودو: فواتير أو دفعات مسجلة مرتين.',
+  'pulse_act_accountant_deep_chart_label': 'شجرة الحسابات',
+  'pulse_act_accountant_deep_chart_prompt': 'راجع شجرة الحسابات في أودو: حسابات بلا نوع، رموز مكررة، وحسابات عملاء/موردين غير قابلة للتسوية.',
+  'pulse_act_accountant_deep_setup_label': 'إعدادات المحاسبة',
+  'pulse_act_accountant_deep_setup_prompt': 'راجع إعدادات المحاسبة في أودو: الدفاتر، فئات المنتجات، الضرائب، تواريخ القفل وأسعار الصرف.',
+  'pulse_act_hr_applicants_label': 'افرز المتقدمين',
+  'pulse_act_hr_applicants_prompt': 'رشّح أفضل المتقدمين من Odoo Recruitment، واعرض سبب ترشيح كل شخص من السجلات والمرفقات فقط.',
+  'pulse_act_hr_strong_label': 'رشّح الأفضل',
+  'pulse_act_hr_strong_prompt': 'قارن أفضل المرشحين من Odoo Recruitment ورتّبهم للمقابلة مع أسباب الترشيح.',
+  'pulse_act_hr_contracts_label': 'راجع العقود',
+  'pulse_act_hr_contracts_prompt': 'راجع بيانات الموظفين والعقود من أودو: موظفون بلا عقود، عقود منتهية أو قريبة الانتهاء، وبيانات ناقصة.',
+  'pulse_act_hr_payroll_label': 'راجع الرواتب',
+  'pulse_act_hr_payroll_prompt': 'راجع الرواتب من أودو: مسيرات Draft/To Verify، عقود بلا أجر أو بلا هيكل راتب، وأي عقد يؤثر على الراتب.',
+  'pulse_act_hr_timeoff_label': 'راجع الإجازات',
+  'pulse_act_hr_timeoff_prompt': 'راجع الإجازات من أودو: الطلبات المعلقة، الاستحقاقات المعلقة، والإجازات القادمة.',
+  'pulse_act_hr_attendance_label': 'راجع الحضور',
+  'pulse_act_hr_attendance_prompt': 'راجع الحضور والانصراف من أودو واعرض الحضور المفتوح أو الطويل بلا انصراف.',
+  'pulse_act_hr_deep_rank_label': 'رشّح الأفضل',
+  'pulse_act_hr_deep_rank_prompt': 'رشّح أفضل المتقدمين من Odoo Recruitment، واعرض جدولًا مختصرًا بالدرجة، الوظيفة، المرحلة، السيرة، وأسباب الترشيح.',
+  'pulse_act_hr_deep_interview_label': 'قائمة مقابلات',
+  'pulse_act_hr_deep_interview_prompt': 'جهّز قائمة مقابلات من أفضل المرشحين في أودو، بدون قرار تعيين أو رفض، واذكر سبب اختيار كل مرشح.',
+  'pulse_act_hr_deep_ops_label': 'راجع العقود',
+  'pulse_act_hr_deep_ops_prompt': 'راجع الموظفين والعقود من أودو وافتح أول السجلات التي تحتاج تصحيحًا.',
+  'pulse_act_hr_deep_payroll_label': 'راجع الرواتب',
+  'pulse_act_hr_deep_payroll_prompt': 'راجع جاهزية الرواتب من أودو: المسيرات والعقود وهيكل الراتب.',
+  'pulse_act_hr_deep_timeoff_label': 'راجع الإجازات',
+  'pulse_act_hr_deep_timeoff_prompt': 'راجع الإجازات والحضور من أودو واعرض الطلبات المعلقة والحضور المفتوح.',
+  'pulse_act_accountant_explain_hint': 'رقم فاتورة / أمر / قيد',
+  'pulse_act_accountant_explain_label': 'فسّر',
+  'pulse_act_accountant_explain_prompt': 'فسّر لي {ref}: امشِ السلسلة من أمر البيع/الشراء إلى الاستلام/التسليم إلى الفاتورة إلى الدفعة إلى القيود، وقل أي حلقة ناقصة.',
+  'pulse_act_hr_explain_hint': 'المسمى الوظيفي',
+  'pulse_act_hr_explain_label': 'رشّح',
+  'pulse_act_hr_explain_prompt': 'رشّح أفضل المتقدمين لوظيفة {ref} من Odoo Recruitment. اعتمد على حقول Odoo والمرفقات فقط، واعرض سبب كل ترشيح بدون قرار تعيين أو رفض.',
+  'pulse_act_empty_factory': 'لا يوجد أمر بيع مهدد بنقص خامات.',
+  'pulse_act_empty_finance': 'السيولة هادية من القراءة الحالية؛ راجع البنك والإقفال الدوري.',
+  'pulse_act_empty_inventory': 'مخزونك هادئ من القراءة الحالية؛ راجع البيانات وحدود الطلب دوريًا.',
+  'pulse_act_empty_purchasing': 'لا توجد أولوية شراء حرجة من القراءة الحالية.',
+  'pulse_act_empty_quality': 'الجودة هادية: لا قياسات مرفوضة ولا تبديل مواصفة واضح من القراءة الحالية.',
+  'pulse_band_not_due': 'غير مستحقة',
+  'pulse_band_due_today': 'مستحقة اليوم',
+  'pulse_band_no_due_date': 'بدون تاريخ استحقاق',
+  'pulse_band_later': 'لاحقًا',
+  'pulse_band_overdue': 'متأخرة',
+  'pulse_finance_collection_aging': 'أعمار الديون',
+  'pulse_finance_payment_horizon': 'مواعيد السداد',
+  'pulse_band_invoices_zero': 'لا فواتير',
+  'pulse_band_invoices_one': 'فاتورة واحدة',
+  'pulse_band_invoices_two': 'فاتورتان',
+  'pulse_band_invoices_few': '{n} فواتير',
+  'pulse_band_invoices_many': '{n} فاتورة',
+  'pulse_band_invoices_other': '{n} فاتورة',
+  'pulse_hr_recruitment': 'التوظيف',
+  'pulse_hr_payroll': 'الرواتب',
+  'pulse_hr_time_off': 'الإجازات',
+  'pulse_accountant_no_reference': 'قيود بدون مرجع',
+  'pulse_accountant_manual_on_control': 'قيود يدوية على حسابات مراقبة',
+  'pulse_accountant_edited_after_post': 'عُدِّلت بعد الترحيل',
+  'pulse_accountant_self_cancelling': 'قيود تُلغي نفسها',
+  'pulse_accountant_multi_company': 'قيود بين الشركات',
   'addon_hint': 'يستطيع صقّار قراءة وتعديل وإعادة بناء إضافة Odoo هذه.',
   'voice_locked_pro': 'الإدخال الصوتي غير متاح في حسابك.',
   // تدفّق التسجيل عبر رمز البريد (Gap D)
@@ -4552,9 +5307,9 @@ const Map<String, String> _ar = {
   'sample_user_sarah': 'Sarah',
   'sample_user_arabic': 'محمد',
   'sample_password_hint': '********',
-  'field_rules_hint': 'A-Z, 0-9, dot, dash',
-  'with_error': 'With error',
-  'try_again': 'try again',
+  'field_rules_hint': 'أحرف A-Z، أرقام 0-9، نقطة، شرطة',
+  'with_error': 'مع خطأ',
+  'try_again': 'إعادة المحاولة',
   'invalid_value': 'قيمة غير صحيحة',
   'conversation_title': 'عنوان المحادثة',
   'route_not_found': 'المسار غير موجود',
@@ -4697,6 +5452,9 @@ const Map<String, String> _ar = {
 
   // Live environment confirmation
   'send_to_live': 'إرسال للمباشر',
+  'error_odoo_unreachable':
+      'تعذّر الوصول إلى قاعدة بيانات أودو الخاصة بهذه البيئة. تأكد من أنها '
+          'تعمل، أو انتقل إلى بيئة أخرى.',
   'dont_ask_again': 'لا تسألني مرة أخرى لهذه البيئة',
 
   // Grouped approvals
@@ -4726,7 +5484,50 @@ const Map<String, String> _ar = {
   'activity_reading_repo': 'يقرأ ملفات المستودع',
   'activity_running_command': 'ينفّذ أمر على السيرفر',
   'activity_finishing_response': 'يُنهي الرد',
+  'activity_step_awaited_approval': 'انتظر موافقتك',
+  'activity_step_failed': '{step} — لم ينجح',
   'activity_reviewing_attachment': 'يراجع المرفق',
+  'help_url':
+      'عنوان موقع أودو الخاص بك، مثال: https://mycompany.odoo.com',
+  'help_db':
+      'قاعدة بيانات أودو المراد الاتصال بها. استخدم «اكتشاف قواعد البيانات» إذا لم تكن متأكداً من الاسم.',
+  'help_username':
+      'اسم الدخول الذي تستخدمه لتسجيل الدخول إلى أودو — عادةً بريدك الإلكتروني.',
+  'help_auth_type':
+      'طريقة المصادقة: مفتاح API (مُستحسن) أو كلمة مرور حسابك.',
+  'help_pg_host':
+      'اسم مضيف خادم PostgreSQL أو عنوان IP، مثال: db.example.com.',
+  'help_pg_port':
+      'منفذ PostgreSQL. اتركه فارغاً لاستخدام الافتراضي (5432).',
+  'help_pg_dbname':
+      'اسم قاعدة بيانات PostgreSQL المراد الاتصال بها.',
+  'help_pg_username':
+      'اسم مستخدم/دور PostgreSQL المستخدم لتسجيل الدخول.',
+  'help_pg_password':
+      'كلمة مرور مستخدم PostgreSQL أعلاه.',
+  'help_pg_sslmode':
+      'وضع SSL (مثل disable أو prefer أو require). اتركه فارغاً للافتراضي.',
+  'help_shell_auth':
+      'الاتصال بكلمة مرور أو بمفتاح SSH خاص.',
+  'help_shell_host':
+      'اسم مضيف الخادم أو عنوان IP للاتصال عبر SSH.',
+  'help_shell_port':
+      'منفذ SSH. اتركه فارغاً لاستخدام الافتراضي (22).',
+  'help_shell_username':
+      'مستخدم تسجيل الدخول عبر SSH على الخادم.',
+  'help_shell_password':
+      'كلمة مرور مستخدم SSH (لمصادقة كلمة المرور فقط).',
+  'help_shell_private_key':
+      'ألصق مفتاح SSH الخاص عند المصادقة بمفتاح.',
+  'help_gh_token':
+      'رمز وصول شخصي من GitHub يملك صلاحية الوصول إلى المستودع.',
+  'help_gh_owner':
+      'حساب أو منظمة GitHub المالكة للمستودع.',
+  'help_gh_repo':
+      'اسم المستودع المراد العمل عليه (بدون بادئة المالك).',
+  'activity_importing_from_file': 'يستورد السجلات من الملف',
+  'activity_recalling_history': 'يرجع لسابق المحادثة',
+  'activity_preparing_questions': 'يجهّز أسئلة قصيرة',
   'activity_preparing_access': 'يُجهّز الوصول',
   'activity_inspecting_odoo_model': 'يفحص نموذج أودو',
   'activity_applying_odoo_change': 'يُطبّق تعديلاً على أودو',
@@ -4750,6 +5551,8 @@ const Map<String, String> _ar = {
   'approve_all_n': 'وافق على الكل ({count})',
   'reject_all_n': 'ارفض الكل ({count})',
   'approve_all_similar': 'وافق على كل الطلبات المشابهة',
+  'show_individual': 'عرض كل طلب',
+  'hide_individual': 'إخفاء الطلبات الفردية',
   'approval_batch_resolved_zero': 'لم تتم الموافقة على أي طلب',
   'approval_batch_resolved_one': 'تمت الموافقة على طلب واحد',
   'approval_batch_resolved_two': 'تمت الموافقة على طلبين',
@@ -4786,6 +5589,8 @@ const Map<String, String> _ar = {
       'لقد بلغت حدّ الاستخدام {window}. ستُعاد التهيئة عند انتهاء الفترة، أو رقِّ خطتك.',
   'quota_exceeded_body_plain':
       'لقد بلغت حدّ الاستخدام {window}. ستُعاد التهيئة عند انتهاء الفترة.',
+  'quota_balance_body': 'لقد نفدت الأرصدة لديك. اشحن رصيدك أو رقِّ خطتك.',
+  'quota_balance_body_plain': 'لقد نفدت الأرصدة لديك.',
 
   // الوحدات — الأرقام تبقى غربية في اللغتين، والكلمة وحدها تُترجم.
   'unit_bytes': 'بايت',

@@ -36,6 +36,10 @@ class ChatPlanBanner extends StatelessWidget {
     final tr = context.tr;
 
     if (exceededWindow != null) {
+      // A spent balance does not roll over, so it gets its own sentence
+      // rather than being forced through the "{window} limit … it resets"
+      // wording, which would promise a reset that is never coming.
+      final isBalance = exceededWindow == QuotaWindow.balance;
       final word = tr.planWindowWord(exceededWindow!.wire);
       // While sales are web-only the banner states the limit and stops there:
       // no "upgrade your plan" nudge, no CTA into the tier catalogue. Nudging
@@ -45,9 +49,13 @@ class ChatPlanBanner extends StatelessWidget {
         color: s.danger,
         icon: AppIcons.warning,
         title: tr.quotaExceededTitle,
-        body: showPaidUpsell
-            ? tr.quotaExceededBody(word)
-            : tr.quotaExceededBodyPlain(word),
+        body: isBalance
+            ? (showPaidUpsell
+                ? tr.quotaBalanceBody
+                : tr.quotaBalanceBodyPlain)
+            : (showPaidUpsell
+                ? tr.quotaExceededBody(word)
+                : tr.quotaExceededBodyPlain(word)),
         action: showPaidUpsell
             ? GhostButton(
                 label: tr.quotaUpgradeCta,

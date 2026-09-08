@@ -213,10 +213,23 @@ void main() {
 
   /// Runs [call] against every hostile response and asserts the whole
   /// contract: right classification, localized copy, nothing leaked.
-  void contractFor(String client, Future<void> Function(Dio dio) call) {
+  /// [overrides] lets one client classify a shared case differently, keyed by
+  /// case name.
+  ///
+  /// Exactly one client family needs it: the six Odoo reads reach through
+  /// Saqqar into the customer's own database, so a gateway 502 there means
+  /// THAT database is down, not that Saqqar is — and the message has to say
+  /// so. Everything else still gets the shared expectation, so the override
+  /// is a documented exception rather than a hole in the contract.
+  void contractFor(
+    String client,
+    Future<void> Function(Dio dio) call, {
+    Map<String, Type> overrides = const {},
+  }) {
     group(client, () {
       for (final c in _cases) {
-        test('${c.name} → ${c.failure} with localized copy', () async {
+        final expected = overrides[c.name] ?? c.failure;
+        test('${c.name} → $expected with localized copy', () async {
           Object? thrown;
           try {
             await call(_dio(c));
@@ -236,7 +249,7 @@ void main() {
           final failure = ApiErrorMapper.toFailure(thrown);
           expect(
             failure.runtimeType,
-            c.failure,
+            expected,
             reason: '$client · ${c.name} classified as '
                 '${failure.runtimeType}. The message the user reads is chosen '
                 'by this type, so a misclassification is wrong advice: '
@@ -351,10 +364,12 @@ void main() {
   contractFor(
     'OdooDataApi.search',
     (d) => OdooDataApi(d).search('e1', const {}),
+    overrides: const {'502 nginx HTML': OdooUnreachableFailure},
   );
   contractFor(
     'OdooDataApi.count',
     (d) => OdooDataApi(d).count('e1', const {}),
+    overrides: const {'502 nginx HTML': OdooUnreachableFailure},
   );
   contractFor(
     'OdooDataApi.reportEntities',
@@ -684,19 +699,27 @@ void main() {
   contractFor('MeetingsApi.stop', (d) => MeetingsApi(d).stop('m1'));
   contractFor('MeetingsApi.summarize', (d) => MeetingsApi(d).summarize('m1'));
   contractFor('MeetingsApi.chat', (d) => MeetingsApi(d).chat('m1', const {}));
+  const gatewayMeansOdoo = {'502 nginx HTML': OdooUnreachableFailure};
   contractFor(
     'OdooDataApi.read',
     (d) => OdooDataApi(d).read('e1', const {}),
+    overrides: gatewayMeansOdoo,
   );
   contractFor(
     'OdooDataApi.readGroup',
     (d) => OdooDataApi(d).readGroup('e1', const {}),
+    overrides: gatewayMeansOdoo,
   );
   contractFor(
     'OdooDataApi.fields',
     (d) => OdooDataApi(d).fields('e1', const {}),
+    overrides: gatewayMeansOdoo,
   );
-  contractFor('OdooDataApi.sql', (d) => OdooDataApi(d).sql('e1', const {}));
+  contractFor(
+    'OdooDataApi.sql',
+    (d) => OdooDataApi(d).sql('e1', const {}),
+    overrides: gatewayMeansOdoo,
+  );
 
   // The remote string bundle. It layers over the local table, so a failure
   // is survivable — but it must still be a failure the caller can see rather

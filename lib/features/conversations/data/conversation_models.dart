@@ -40,6 +40,7 @@ class Message extends Equatable {
     this.toolName,
     this.toolPayload,
     this.attachments = const [],
+    this.tokens,
   });
 
   final String id;
@@ -54,6 +55,10 @@ class Message extends Equatable {
   final Map<String, dynamic>? toolPayload;
 
   final List<Attachment> attachments;
+
+  /// What this reply cost, when the server reported it. Null on user rows,
+  /// on tool rows, and on assistant rows the backend did not meter.
+  final MessageTokens? tokens;
 
   factory Message.fromJson(Map<String, dynamic> json) {
     final tn = json['tool_name'];
@@ -73,6 +78,7 @@ class Message extends Equatable {
           .whereType<Map<String, dynamic>>()
           .map(Attachment.fromJson)
           .toList(),
+      tokens: MessageTokens.fromJson(json['tokens']),
     );
   }
 
@@ -85,7 +91,65 @@ class Message extends Equatable {
         toolName,
         toolPayload,
         attachments,
+        tokens,
       ];
+}
+
+/// The token cost of one assistant reply, as the server meters it.
+///
+/// `cached_input` is the part of the prompt that was served from the model's
+/// cache — it is a SUBSET of [input], not an addition to it, which is why
+/// [fresh] subtracts rather than the total adding. Getting that backwards
+/// would show a number larger than what was billed.
+class MessageTokens extends Equatable {
+  const MessageTokens({
+    required this.input,
+    required this.output,
+    required this.cachedInput,
+  });
+
+  final int input;
+  final int output;
+  final int cachedInput;
+
+  int get total => input + output;
+
+  /// Prompt tokens that were not served from cache. Clamped at zero: a
+  /// server reporting more cache than input is wrong, but a negative count
+  /// on screen would be the client repeating the mistake.
+  int get fresh => input - cachedInput < 0 ? 0 : input - cachedInput;
+
+  /// Share of the prompt that hit the cache, 0-100. Zero when there was no
+  /// prompt to hit it with.
+  int get cacheHitPercent =>
+      input <= 0 ? 0 : ((cachedInput / input) * 100).round();
+
+  /// Null unless the server sent a metered object with something in it.
+  ///
+  /// The web hides the chip when input and output are both zero, and so does
+  /// this: "0" is not a cost worth a row of chrome, and a message the backend
+  /// did not meter must not read as one that was free.
+  static MessageTokens? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    int read(String key) {
+      final v = raw[key];
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+
+    final input = read('input');
+    final output = read('output');
+    if (input == 0 && output == 0) return null;
+    return MessageTokens(
+      input: input,
+      output: output,
+      cachedInput: read('cached_input'),
+    );
+  }
+
+  @override
+  List<Object?> get props => [input, output, cachedInput];
 }
 
 // ─────────────────────────────────────────────────────────────────────────

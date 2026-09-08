@@ -61,6 +61,7 @@ void main() {
     'UnsupportedMediaFailure': const UnsupportedMediaFailure(),
     'ServiceUnavailableFailure': const ServiceUnavailableFailure(),
     'ServerFailure': const ServerFailure(),
+    'OdooUnreachableFailure': const OdooUnreachableFailure(),
     'ParseFailure': const ParseFailure(),
     'SocialSignInFailure': const SocialSignInFailure(
       SocialSignInProblem.notConfigured,

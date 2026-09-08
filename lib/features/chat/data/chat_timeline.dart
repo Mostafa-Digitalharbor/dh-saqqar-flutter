@@ -147,12 +147,24 @@ List<TimelineEntry> buildChatTimeline(
       j++;
     }
     final run = messages.sublist(i, j);
-    if (run.length == 1) {
+    // The reply is the last row that is actually a REPLY. Trailing agent
+    // steps are dropped rather than promoted: a run whose last row is
+    // "Applying a change in Odoo" has not answered yet — the agent is still
+    // working, the typing row is already saying so, and printing the step as
+    // the answer would put words in the agent's mouth. They come back as
+    // steps on the next poll, once the real reply lands behind them.
+    final replyAt = run.lastIndexWhere((m) => !m.isAgentStep);
+    if (replyAt < 0) {
+      // Steps only — nothing to attach them to yet.
+      i = j;
+      continue;
+    }
+    if (replyAt == 0) {
       out.add(SingleMessageEntry(run.first));
     } else {
       out.add(AgentTurnEntry(
-        thinkingSteps: run.sublist(0, run.length - 1),
-        finalReply: run.last,
+        thinkingSteps: run.sublist(0, replyAt),
+        finalReply: run[replyAt],
       ));
     }
     i = j;

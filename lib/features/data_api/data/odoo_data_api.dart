@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../core/error/app_failure.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/response_body.dart';
 
@@ -26,27 +27,52 @@ class OdooDataApi {
 
   /// `POST /environments/<envId>/odoo/search/` — search records.
   Future<Map<String, dynamic>> search(String envId, Map<String, dynamic> q) =>
-      _dio.postJson(ApiEndpoints.odooSearch(envId), data: q);
+      _odoo(() => _dio.postJson(ApiEndpoints.odooSearch(envId), data: q));
 
   /// `POST /environments/<envId>/odoo/count/` — count records.
   Future<Map<String, dynamic>> count(String envId, Map<String, dynamic> q) =>
-      _dio.postJson(ApiEndpoints.odooCount(envId), data: q);
+      _odoo(() => _dio.postJson(ApiEndpoints.odooCount(envId), data: q));
 
   /// `POST /environments/<envId>/odoo/read-group/` — grouped aggregates.
   Future<Map<String, dynamic>> readGroup(String envId, Map<String, dynamic> q) =>
-      _dio.postJson(ApiEndpoints.odooReadGroup(envId), data: q);
+      _odoo(() => _dio.postJson(ApiEndpoints.odooReadGroup(envId), data: q));
 
   /// `POST /environments/<envId>/odoo/read/` — read records by id.
   Future<Map<String, dynamic>> read(String envId, Map<String, dynamic> q) =>
-      _dio.postJson(ApiEndpoints.odooRead(envId), data: q);
+      _odoo(() => _dio.postJson(ApiEndpoints.odooRead(envId), data: q));
 
   /// `POST /environments/<envId>/odoo/fields/` — field metadata.
   Future<Map<String, dynamic>> fields(String envId, Map<String, dynamic> q) =>
-      _dio.postJson(ApiEndpoints.odooFields(envId), data: q);
+      _odoo(() => _dio.postJson(ApiEndpoints.odooFields(envId), data: q));
 
   /// `POST /environments/<envId>/sql/` — read-only SQL.
   Future<Map<String, dynamic>> sql(String envId, Map<String, dynamic> q) =>
-      _dio.postJson(ApiEndpoints.envSql(envId), data: q);
+      _odoo(() => _dio.postJson(ApiEndpoints.envSql(envId), data: q));
+
+  /// Turns a gateway 5xx into [OdooUnreachableFailure].
+  ///
+  /// Every call above reaches through Saqqar into the customer's own Odoo, so
+  /// a 502/504 here does not mean Saqqar is unwell — it means that database
+  /// did not answer. Verified against the live server on 2026-09-08: one
+  /// environment returned a 502 with an HTML maintenance page and no JSON
+  /// message at all, which the generic mapper could only render as "the
+  /// server had a problem, try again later". That points the user at us, and
+  /// the only action it offers is waiting.
+  ///
+  /// Anything else is rethrown untouched: a 400 is still a bad query and a
+  /// 403 is still a permission problem, and relabelling those would be
+  /// trading one wrong explanation for another.
+  static Future<T> _odoo<T>(Future<T> Function() call) async {
+    try {
+      return await call();
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 502 || code == 504) {
+        throw OdooUnreachableFailure(statusCode: code);
+      }
+      rethrow;
+    }
+  }
 
   /// `GET /report-entities/?conversation_id=<id>` — entity list for the
   /// report filter.

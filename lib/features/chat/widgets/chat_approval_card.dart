@@ -8,6 +8,8 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/auto_direction_text.dart';
+import '../../../shared/widgets/capped_scroll_list.dart';
+import '../../../shared/widgets/danger_callout.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -280,17 +282,7 @@ class _DeleteRecordList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s12,
-        vertical: AppSpacing.s10,
-      ),
-      decoration: BoxDecoration(
-        color: s.danger.withValues(alpha: AppAlphas.a06),
-        borderRadius: AppRadius.smallR,
-        border: Border.all(color: s.danger.withValues(alpha: AppAlphas.a22)),
-      ),
+    return DangerCallout(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -303,22 +295,15 @@ class _DeleteRecordList extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.s6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: AppSheetHeights.approvalPayloadMax),
-            child: Scrollbar(
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: EdgeInsets.zero,
-                itemCount: records.length,
-                itemBuilder: (context, i) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-                  child: Text(
-                    records[i],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.bodySmall?.copyWith(color: s.text),
-                  ),
-                ),
+          CappedScrollList(
+            itemCount: records.length,
+            itemBuilder: (context, i) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+              child: Text(
+                records[i],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.bodySmall?.copyWith(color: s.text),
               ),
             ),
           ),

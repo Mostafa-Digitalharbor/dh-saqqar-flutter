@@ -15,6 +15,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
 import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/chat_view_models.dart';
+import 'message_token_chip.dart';
 import '../../inbox/data/artifact_downloader.dart';
 import '../view/attachment_viewer_screen.dart';
 import 'artifact_pill.dart';
@@ -150,6 +151,15 @@ class _AgentMessage extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
             dotColor: s.muted.withValues(alpha: AppAlphas.a70),
+            // Only where the timestamp is: both belong to the message as a
+            // whole, and a cost hanging under a grouped follow-up bubble
+            // would read as the cost of that fragment alone.
+            trailing: showTime && message.tokens != null
+                ? WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: MessageTokenChip(tokens: message.tokens!),
+                  )
+                : null,
           ),
           const SizedBox(height: AppSpacing.s6),
           // Optional tool name (sits above the body so the user knows
@@ -220,6 +230,7 @@ class MessageMeta extends StatelessWidget {
     required this.style,
     required this.dotColor,
     this.align = TextAlign.start,
+    this.trailing,
   });
 
   /// The attribution itself: a `TextSpan` for "You", a `WidgetSpan` for the
@@ -235,9 +246,15 @@ class MessageMeta extends StatelessWidget {
   final Color dotColor;
   final TextAlign align;
 
+  /// Appended after the timestamp, behind its own separator. A span rather
+  /// than a widget for the reason the whole class exists: this line is one
+  /// paragraph so it can WRAP, and a Row child never can.
+  final InlineSpan? trailing;
+
   @override
   Widget build(BuildContext context) {
     final label = time;
+    final extra = trailing;
     return Text.rich(
       TextSpan(
         style: style,
@@ -246,6 +263,10 @@ class MessageMeta extends StatelessWidget {
           if (label != null) ...[
             TextSpan(text: ' · ', style: TextStyle(color: dotColor)),
             TextSpan(text: label),
+          ],
+          if (extra != null) ...[
+            TextSpan(text: ' · ', style: TextStyle(color: dotColor)),
+            extra,
           ],
         ],
       ),

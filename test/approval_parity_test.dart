@@ -295,6 +295,122 @@ void main() {
     });
   });
 
+  group('§9b — the whole message is readable, not just its opening', () {
+    testWidgets('a long body is not cut off at a fixed line count',
+        (tester) async {
+      // The card exists so nobody approves an email they have not read. It
+      // used to stop at eight lines and point the user to "Show details" for
+      // the rest — but that disclosure renders payload values as MiniChips,
+      // which upper-case their text, so the tail was only readable as
+      // shouting. Every line has to be reachable HERE.
+      final body = [for (var i = 1; i <= 40; i++) 'line $i of the message']
+          .join('\n');
+
+      await _pumpCard(
+        tester,
+        _emailApproval(payload: {
+          'to': 'ops@acme.test',
+          'subject': 'Long one',
+          'body': body,
+        }),
+      );
+
+      final text = tester.widget<Text>(
+        find.descendant(
+          of: find.byType(EmailApprovalPreview),
+          matching: find.byWidgetPredicate(
+            (w) => w is Text && (w.data ?? '').contains('line 40'),
+          ),
+        ),
+      );
+
+      expect(text.maxLines, isNull,
+          reason: 'the body is line-capped again');
+      expect(text.data, contains('line 1'));
+      expect(text.data, contains('line 40'));
+    });
+
+    testWidgets('and the line breaks in it survive', (tester) async {
+      // "plain text, preserve line breaks" — MOBILE_TASKS_2026-09.md Task 4.
+      await _pumpCard(
+        tester,
+        _emailApproval(payload: {
+          'to': 'ops@acme.test',
+          'body': 'first line\nsecond line',
+        }),
+      );
+
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && (w.data ?? '').contains('first line\nsecond line'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a long body still leaves the decision on screen',
+        (tester) async {
+      // Uncapping the text must not push Approve/Reject out of the card.
+      final body = [for (var i = 0; i < 200; i++) 'line $i'].join('\n');
+
+      await _pumpCard(
+        tester,
+        _emailApproval(payload: {'to': 'a@b.test', 'body': body}),
+      );
+
+      expect(find.text(en.approve), findsOneWidget);
+      expect(find.text(en.reject), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group("§9c — the labels are the web's, verbatim", () {
+    test('no mobile-only punctuation or wording crept in', () {
+      // MOBILE_TASKS_2026-09.md Task 4 gives these as "copied verbatim from
+      // the live web client — use these, don't retranslate". A user moving
+      // between the two surfaces should read the same words; the label sits
+      // in its own muted column, so a colon on top of that separation was
+      // only ever mobile habit.
+      const web = {
+        'en': {'to': 'To', 'cc': 'Cc', 'bcc': 'Bcc', 'reply': 'In reply to'},
+        'ar': {
+          'to': 'إلى',
+          'cc': 'نسخة',
+          'bcc': 'نسخة مخفية',
+          'reply': 'رداً على',
+        },
+      };
+      for (final entry in web.entries) {
+        final tr = AppStrings(Locale(entry.key));
+        expect(tr.emailPreviewTo, entry.value['to'], reason: entry.key);
+        expect(tr.emailPreviewCc, entry.value['cc'], reason: entry.key);
+        expect(tr.emailPreviewBcc, entry.value['bcc'], reason: entry.key);
+        expect(tr.emailPreviewReply, entry.value['reply'], reason: entry.key);
+      }
+    });
+
+    testWidgets('a long recipient list is not ellipsised away',
+        (tester) async {
+      // "Who is this going to" is the field most worth checking before a
+      // send, and a two-line cap hid exactly the addresses that would make
+      // someone reject it.
+      final many =
+          [for (var i = 0; i < 15; i++) 'person$i@acme.test'].join(', ');
+
+      await _pumpCard(
+        tester,
+        _emailApproval(payload: {'to': many, 'subject': 'x', 'body': 'y'}),
+      );
+
+      final row = tester.widget<Text>(
+        find.byWidgetPredicate(
+          (w) => w is Text && (w.data ?? '').contains('person14@acme.test'),
+        ),
+      );
+      expect(row.maxLines, isNull);
+    });
+  });
+
   group('§11 — the card cannot promise a count it does not have', () {
     testWidgets('the primary button is always the singular Approve',
         (tester) async {

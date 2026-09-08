@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/colored_icon_box.dart';
 
 /// The card body every accented in-chat card wears: a translucent surface, a
 /// hairline border, and a 4 px accent rail down the inline-start edge.
@@ -72,6 +73,58 @@ class AccentCardChrome extends StatelessWidget {
           Padding(padding: contentPadding, child: child),
         ],
       ),
+    );
+  }
+}
+
+/// The icon-box-plus-title row every accented card opens with, above the
+/// rest of its [AccentCardChrome] body.
+///
+/// Extracted for the same reason as [AccentCardChrome] itself:
+/// `interactive_card_shell.dart` and `app_pulse/pulse_card_shell.dart` both
+/// built this row character-for-character (same [ColoredIconBox] sizing,
+/// same title style, same 12 px gap) — only the icon, title and accent
+/// colour ever differed between them.
+class CardHeaderRow extends StatelessWidget {
+  const CardHeaderRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.accent,
+  });
+
+  final IconData icon;
+  final String title;
+
+  /// Same accent the enclosing [AccentCardChrome] was given — kept as a
+  /// separate parameter rather than read off context so this row can be
+  /// previewed/tested on its own.
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.saqqar;
+    return Row(
+      children: [
+        ColoredIconBox(
+          icon: icon,
+          color: accent,
+          size: AppIconSizes.cardHeader,
+          radius: AppRadius.small,
+          iconSize: AppIconSizes.boxGlyphCard,
+        ),
+        const SizedBox(width: AppSpacing.s12),
+        Expanded(
+          child: Text(
+            title,
+            style: context.text.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: s.text,
+              letterSpacing: AppLetterSpacing.title,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

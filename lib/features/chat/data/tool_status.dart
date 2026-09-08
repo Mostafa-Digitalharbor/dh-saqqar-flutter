@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/widgets.dart';
 
 import '../../../core/i18n/app_localizations.dart';
@@ -27,6 +29,29 @@ class ToolNames {
   static const getGithubFile = 'get_github_file';
   static const requestShellCommandApproval = 'request_shell_command_approval';
   static const runServerCommand = 'run_server_command';
+
+  // ── Tools the server runs that neither client knew about ──────────────
+  //
+  // Read off the wire, not off a spec: a sweep of two long real
+  // conversations on 2026-09-07 found these nine tool names in `tool_name`,
+  // `query_attachment` alone 37 times. Both clients fell through to the
+  // generic "Finishing response" for every one of them.
+  //
+  // On the web that was survivable — its thinking fold prints the tool's raw
+  // JSON, so the label is decoration. Here the label IS the step, so an
+  // unmapped tool does not read as vague, it reads as WRONG: "Finishing
+  // response" under a step that spent a minute importing 700 rows.
+  //
+  // Reported to the web team, whose `pendingStatusForTool` has the same gap.
+  static const queryAttachment = 'query_attachment';
+  static const analyzeImage = 'analyze_image';
+  static const importRecordsFromAttachment = 'import_records_from_attachment';
+  static const recallHistory = 'recall_history';
+  static const askTaskQuestions = 'ask_task_questions';
+  static const createManyOdooRecords = 'create_many_odoo_records';
+  static const grepOdooSource = 'grep_odoo_source';
+  static const readOdooSource = 'read_odoo_source';
+  static const readAddonTree = 'read_addon_tree';
 }
 
 /// Resolves the localised "Saqqar is doing X" label for the chat typing
@@ -56,10 +81,24 @@ String pendingStatusForTool(
     case ToolNames.describeOdooModel:
       return context.tr.activityInspectingOdooModel;
     case ToolNames.createOdooRecord:
+    case ToolNames.createManyOdooRecords:
     case ToolNames.writeOdooRecords:
     case ToolNames.deleteOdooRecords:
     case ToolNames.callOdooMethod:
       return context.tr.activityApplyingOdooChange;
+    case ToolNames.queryAttachment:
+    case ToolNames.analyzeImage:
+      return context.tr.activityReviewingAttachment;
+    case ToolNames.importRecordsFromAttachment:
+      return context.tr.activityImportingFromFile;
+    case ToolNames.recallHistory:
+      return context.tr.activityRecallingHistory;
+    case ToolNames.askTaskQuestions:
+      return context.tr.activityPreparingQuestions;
+    case ToolNames.grepOdooSource:
+    case ToolNames.readOdooSource:
+    case ToolNames.readAddonTree:
+      return context.tr.activityReadingRepo;
     case ToolNames.runReadonlySql:
       return context.tr.activityRunningQuery;
     case ToolNames.generateExcelReport:
@@ -79,6 +118,50 @@ String pendingStatusForTool(
       return context.tr.activityRunningCommand;
     default:
       return context.tr.activityFinishingResponse;
+  }
+}
+
+/// Label for a step the agent has already FINISHED, as shown inside the
+/// collapsed "Saqqar thinking · N steps" pill.
+///
+/// The web prints the tool's raw JSON result here. That is a log line, not a
+/// sentence, and on a phone it is a wall of braces — so the same row is named
+/// with the same localised label the typing row already uses for that tool,
+/// and only the two outcomes a user would want to spot are called out:
+///
+///   * `approval_required` — the run stopped and waited for the user. Naming
+///     the tool instead would claim the write happened when it had not.
+///   * `error` / `failed` — the step did not do what its label says.
+///
+/// [resultJson] is the tool row's `content`. It is parsed defensively: a
+/// backend that stops sending JSON there, or sends prose, falls back to the
+/// plain tool label rather than showing the user a parse failure.
+String completedStepLabel(
+  BuildContext context, {
+  String? toolName,
+  String resultJson = '',
+}) {
+  final status = _statusOf(resultJson);
+  if (status == 'approval_required') return context.tr.activityStepAwaitedApproval;
+  if (status == 'error' || status == 'failed') {
+    return context.tr.activityStepFailed(
+      pendingStatusForTool(context, toolName: toolName),
+    );
+  }
+  return pendingStatusForTool(context, toolName: toolName);
+}
+
+/// `status` off a tool result, lowercased. Empty when there is no JSON object
+/// with a string `status` — which includes every non-JSON body.
+String _statusOf(String resultJson) {
+  final trimmed = resultJson.trim();
+  if (!trimmed.startsWith('{')) return '';
+  try {
+    final decoded = jsonDecode(trimmed);
+    if (decoded is! Map) return '';
+    return (decoded['status'] as Object?)?.toString().toLowerCase() ?? '';
+  } on FormatException {
+    return '';
   }
 }
 

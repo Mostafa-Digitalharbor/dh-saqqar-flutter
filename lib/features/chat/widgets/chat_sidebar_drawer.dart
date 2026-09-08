@@ -9,6 +9,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/widgets/compact_search_field.dart';
 import '../../../shared/widgets/saqqar_logo.dart';
 import '../../../shared/widgets/title_trailing_row.dart';
 import '../../conversations/data/conversation_models.dart';
@@ -178,7 +179,8 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                 AppSpacing.s16,
                 AppSpacing.s10,
               ),
-              child: _DrawerSearchField(
+              child: CompactSearchField(
+                hintText: context.tr.searchConversations,
                 controller: _search,
                 onChanged: (_) => setState(() {}),
               ),
@@ -268,41 +270,6 @@ class _NewConversationButton extends StatelessWidget {
   }
 }
 
-class _DrawerSearchField extends StatelessWidget {
-  const _DrawerSearchField({required this.controller, required this.onChanged});
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
-        borderRadius: AppRadius.buttonR,
-        border: Border.all(color: s.cardBorder),
-      ),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        style: context.text.bodySmall,
-        decoration: InputDecoration(
-          hintText: context.tr.searchConversations,
-          hintStyle: context.text.bodySmall?.copyWith(color: s.muted),
-          prefixIcon: Icon(AppIcons.search, size: AppIconSizes.small, color: s.muted),
-          prefixIconConstraints:
-              const BoxConstraints(minWidth: AppControlSizes.rowMin, minHeight: AppControlSizes.rowMin),
-          isCollapsed: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
-          filled: false,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-        ),
-      ),
-    );
-  }
-}
 
 class _ConversationGroupedList extends StatelessWidget {
   const _ConversationGroupedList({

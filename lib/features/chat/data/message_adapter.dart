@@ -23,10 +23,15 @@ import '../../conversations/data/conversation_models.dart' as api;
 import 'chat_view_models.dart';
 
 /// Maps a server [message] onto [ChatMessage].
+/// [stepLabel] marks this row as an agent STEP and supplies the short human
+/// sentence that stands in for the tool's raw JSON result. Non-null only for
+/// the rows `isAgentStepMessage` picks out; everything else keeps the
+/// server's own content.
 ChatMessage adaptApiMessage(
   api.Message message, {
   required String time,
   List<ChatAttachment> attachments = const [],
+  String? stepLabel,
 }) {
   return ChatMessage(
     id: message.id,
@@ -39,7 +44,8 @@ ChatMessage adaptApiMessage(
       api.MessageRole.system =>
         ChatMessageRole.assistant,
     },
-    content: message.content,
+    content: stepLabel ?? message.content,
+    isAgentStep: stepLabel != null,
     // Web-parity full timestamp under the bubble. The chat row also renders a
     // date separator above the first message of a new calendar day; both
     // reference `createdAt` so they stay in sync.
@@ -51,6 +57,7 @@ ChatMessage adaptApiMessage(
     // the user can't act on.
     toolPayload: message.toolPayload,
     attachments: attachments,
+    tokens: message.tokens,
   );
 }
 

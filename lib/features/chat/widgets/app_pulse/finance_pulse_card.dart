@@ -4,66 +4,92 @@ import '../../../../core/format/compact_number.dart';
 import '../../../../core/i18n/app_localizations.dart';
 import '../../../../core/theme/app_sizes.dart';
 import '../../../../shared/extensions/context_extensions.dart';
-import '../../../../shared/widgets/stat_tile.dart';
 import '../../data/app_pulse_payloads.dart';
 import '../../data/interactive_card_kind.dart';
+import '../../data/pulse_actions.dart';
+import 'pulse_bands_list.dart';
 import 'pulse_card_shell.dart';
 import 'pulse_helpers.dart';
 
 /// "Your money" pulse — collect, pay, reconcile and close the day straight
 /// from Odoo financial data (Task 1, MOBILE_TASKS_2026-09.md).
 class FinancePulseCard extends StatelessWidget {
-  const FinancePulseCard({super.key, required this.payload});
+  const FinancePulseCard({
+    super.key,
+    required this.payload,
+    this.actions = const [],
+    this.deepActions = const [],
+    this.onSend,
+  });
 
   final FinancePulsePayload payload;
+
+  /// Web-parity action rows, built by `pulseActions` from the same payload.
+  /// Empty leaves the card read-only, which is what every non-chat surface
+  /// (the storybook, the conformance sweeps) wants.
+  final List<PulseAction> actions;
+  final List<PulseAction> deepActions;
+  final ValueChanged<String>? onSend;
 
   @override
   Widget build(BuildContext context) {
     final tr = context.tr;
+    // Locals so the null check promotes — a nullable field can't.
+    final collectionAging = payload.collectionAging;
+    final paymentHorizon = payload.paymentHorizon;
     return PulseCardShell(
       kind: InteractiveCardKind.finance,
       envelope: payload.envelope,
+      actions: actions,
+      deepActions: deepActions,
+      onSend: onSend,
       priorities: payload.priorities,
-      children: [
+      stats: [
         Wrap(
           spacing: AppSpacing.s16,
           runSpacing: AppSpacing.s12,
           children: [
             _moneyTile(context, payload.cash.available, payload.cash.balance,
                 tr.pulseFinanceCashBalance),
-            _countTile(context, payload.receivablesOverdue,
+            pulseBucketStatTile(context, payload.receivablesOverdue,
                 tr.pulseFinanceReceivablesOverdue),
-            _countTile(context, payload.receivablesDueSoon,
+            pulseBucketStatTile(context, payload.receivablesDueSoon,
                 tr.pulseFinanceReceivablesDueSoon),
-            _countTile(context, payload.payablesOverdue,
+            pulseBucketStatTile(context, payload.payablesOverdue,
                 tr.pulseFinancePayablesOverdue),
-            _countTile(context, payload.payablesDueSoon,
+            pulseBucketStatTile(context, payload.payablesDueSoon,
                 tr.pulseFinancePayablesDueSoon),
-            _countTile(context, payload.draftVendorBills,
+            pulseBucketStatTile(context, payload.draftVendorBills,
                 tr.pulseFinanceDraftVendorBills),
-            _countTile(context, payload.draftCustomerInvoices,
+            pulseBucketStatTile(context, payload.draftCustomerInvoices,
                 tr.pulseFinanceDraftCustomerInvoices),
-            _countTile(context, payload.bankReconciliation,
+            pulseBucketStatTile(context, payload.bankReconciliation,
                 tr.pulseFinanceBankReconciliation),
             if (payload.liquidityAvailable && payload.liquidityStatus != null)
-              _wrap(payload.liquidityStatus!, tr.pulseFinanceLiquidityStatus,
-                  null),
+              pulseStatTile(
+                  payload.liquidityStatus!, tr.pulseFinanceLiquidityStatus),
           ],
         ),
+        // The day-band breakdown behind the receivable/payable tiles: which
+        // of the overdue money is a week late and which is a quarter late is
+        // a different decision from how much of it there is.
+        if (collectionAging != null)
+          PulseBandsList(
+            title: tr.pulseFinanceCollectionAging,
+            bands: collectionAging,
+          ),
+        if (paymentHorizon != null)
+          PulseBandsList(
+            title: tr.pulseFinancePaymentHorizon,
+            bands: paymentHorizon,
+          ),
       ],
     );
   }
 
-  Widget _wrap(String value, String label, Color? color) => SizedBox(
-        width: AppControlSizes.pulseStatTile,
-        child: StatTile(value: value, label: label, valueColor: color),
-      );
-
-  Widget _countTile(BuildContext context, PulseBucket bucket, String label) {
-    final cell = pulseBucketCountCell(context, bucket);
-    return _wrap(cell.value, label, cell.color);
-  }
-
+  /// Formats a currency-scale balance via [compactCount] — the one tile
+  /// here that isn't a plain bucket count, so it can't route through
+  /// [pulseBucketStatTile] even though it shares the same tri-state.
   Widget _moneyTile(
     BuildContext context,
     bool available,
@@ -71,11 +97,12 @@ class FinancePulseCard extends StatelessWidget {
     String label,
   ) {
     if (!available) {
-      return _wrap(context.tr.pulseUnavailable, label, context.saqqar.muted);
+      return pulseStatTile(
+          context.tr.pulseUnavailable, label, color: context.saqqar.muted);
     }
     if (balance == null) {
-      return _wrap('—', label, context.saqqar.muted);
+      return pulseStatTile('—', label, color: context.saqqar.muted);
     }
-    return _wrap(compactCount(balance.round(), context.tr), label, null);
+    return pulseStatTile(compactCount(balance.round(), context.tr), label);
   }
 }

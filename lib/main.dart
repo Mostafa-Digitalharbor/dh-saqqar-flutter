@@ -42,6 +42,8 @@ import 'features/trial/data/trial_api.dart';
 import 'features/billing/view_model/plan_cubit.dart';
 import 'features/billing/view_model/saqqar_features_cubit.dart';
 import 'features/chat/data/live_env_ack_service.dart';
+import 'features/vault/data/vault_persona_service.dart';
+import 'features/chat/data/prompt_memory_api.dart';
 import 'features/chat/data/saqqar_tools_api.dart';
 import 'features/support/data/voice_support_api.dart';
 import 'features/chat/data/transcribe_api.dart';
@@ -384,6 +386,8 @@ Future<void> _bootApp() async {
     firebaseReady: firebaseReady,
   );
   final liveEnvAckService = LiveEnvAckService(prefs);
+  final vaultPersonaService = VaultPersonaService(prefs);
+  final promptMemoryApi = PromptMemoryApi(dio);
   // In-memory hand-off between Android's ACTION_SEND intent-filter and
   // the chat screen. Lives at boot scope so files survive the
   // BlocProvider rebuild that fires when the user picks a destination.
@@ -443,6 +447,10 @@ Future<void> _bootApp() async {
         RepositoryProvider<SaqqarToolsApi>.value(value: saqqarToolsApi),
         RepositoryProvider<VoiceSupportApi>.value(value: voiceSupportApi),
         RepositoryProvider<LiveEnvAckService>.value(value: liveEnvAckService),
+        RepositoryProvider<VaultPersonaService>.value(
+          value: vaultPersonaService,
+        ),
+        RepositoryProvider<PromptMemoryApi>.value(value: promptMemoryApi),
         // `ShareIntakeService` extends `ChangeNotifier`, so a plain
         // `RepositoryProvider`/`Provider` throws — Provider auto-detects
         // Listenable subtypes and refuses to wrap them (it can't drive

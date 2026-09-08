@@ -1,0 +1,801 @@
+{
+ "money": {
+  "cash": {
+   "balance": 0,
+   "journals": [
+    "Bank"
+   ],
+   "available": true,
+   "journal_count": 1
+  },
+  "kind": "finance",
+  "as_of": "2026-09-06",
+  "notes": [],
+  "drafts": {
+   "vendor_bills": {
+    "count": 0,
+    "items": [],
+    "total": null,
+    "available": true
+   },
+   "customer_invoices": {
+    "count": 0,
+    "items": [],
+    "total": null,
+    "available": true
+   }
+  },
+  "status": "ok",
+  "payables": {
+   "overdue": {
+    "count": 0,
+    "items": [],
+    "total": 0.0,
+    "available": true
+   },
+   "due_soon": {
+    "count": 0,
+    "items": [],
+    "total": 0.0,
+    "available": true
+   }
+  },
+  "priorities": [
+   "لا توجد أولوية مالية حرجة من القراءة الحالية؛ ابدأ بمراجعة البنك والإقفال الدوري."
+  ],
+  "receivables": {
+   "overdue": {
+    "count": 0,
+    "items": [],
+    "total": 0.0,
+    "available": true
+   },
+   "due_soon": {
+    "count": 0,
+    "items": [],
+    "total": 0.0,
+    "available": true
+   }
+  },
+  "liquidity_7d": {
+   "cash": 0.0,
+   "status": "covered",
+   "cash_gap": 0.0,
+   "available": true,
+   "payables_due_7d": 0.0,
+   "receivables_due_7d": 0.0,
+   "after_collection_gap": 0.0,
+   "status_after_collection": "covered"
+  },
+  "payment_horizon": {
+   "later": {
+    "count": 0,
+    "total": 0.0
+   },
+   "overdue": {
+    "count": 0,
+    "total": 0.0
+   },
+   "days_1_7": {
+    "count": 0,
+    "total": 0.0
+   },
+   "available": true,
+   "days_8_30": {
+    "count": 0,
+    "total": 0.0
+   },
+   "due_today": {
+    "count": 0,
+    "total": 0.0
+   },
+   "no_due_date": {
+    "count": 0,
+    "total": 0.0
+   },
+   "total_due_7d": 0.0,
+   "total_due_30d": 0.0
+  },
+  "collection_aging": {
+   "not_due": {
+    "count": 0,
+    "total": 0.0
+   },
+   "available": true,
+   "days_1_30": {
+    "count": 0,
+    "total": 0.0
+   },
+   "due_today": {
+    "count": 0,
+    "total": 0.0
+   },
+   "days_31_60": {
+    "count": 0,
+    "total": 0.0
+   },
+   "no_due_date": {
+    "count": 0,
+    "total": 0.0
+   },
+   "days_61_plus": {
+    "count": 0,
+    "total": 0.0
+   },
+   "total_overdue": 0.0
+  },
+  "bank_reconciliation": {
+   "count": 0,
+   "items": [],
+   "total": null,
+   "available": true
+  }
+ },
+ "inventory": {
+  "kind": "inventory",
+  "as_of": "2026-09-05",
+  "notes": [
+   "حقل qty_available غير متاح؛ لم أحسب المنتجات المنتهية أو السالبة.",
+   "حقل الكمية المتوقعة غير متاح؛ لم أحسب المنتجات التي عليها طلب أكثر من المتاح.",
+   "حقل كمية المخزون الحالية غير متاح على المنتجات."
+  ],
+  "status": "ok",
+  "low_stock": {
+   "count": 0,
+   "items": [],
+   "available": false
+  },
+  "overstock": {
+   "count": 0,
+   "items": [],
+   "total": null,
+   "available": false
+  },
+  "priorities": [
+   "نضّف بيانات المنتجات: 2 بدون تكلفة، 2 بدون باركود، 2 بدون كود داخلي."
+  ],
+  "sales_days": 90,
+  "fast_reorder": {
+   "count": 0,
+   "items": [],
+   "total": null,
+   "available": false
+  },
+  "missing_data": {
+   "count": 6,
+   "items": [
+    {
+     "id": 2,
+     "code": "",
+     "name": "Sample name 2",
+     "flags": [
+      "بدون تكلفة",
+      "بدون باركود",
+      "بدون كود داخلي"
+     ],
+     "category": "",
+     "sold_qty": null,
+     "list_price": 150.0,
+     "stock_value": 0.0,
+     "incoming_qty": null,
+     "outgoing_qty": null,
+     "qty_available": 0.0,
+     "standard_price": 0.0,
+     "virtual_available": null
+    },
+    {
+     "id": 1,
+     "code": "",
+     "name": "Sample name 3",
+     "flags": [
+      "بدون تكلفة",
+      "بدون باركود",
+      "بدون كود داخلي"
+     ],
+     "category": "",
+     "sold_qty": null,
+     "list_price": 100.0,
+     "stock_value": 0.0,
+     "incoming_qty": null,
+     "outgoing_qty": null,
+     "qty_available": 0.0,
+     "standard_price": 0.0,
+     "virtual_available": null
+    }
+   ],
+   "counts": {
+    "missing_code": 2,
+    "missing_cost": 2,
+    "missing_barcode": 2
+   },
+   "available": true
+  },
+  "product_count": 2,
+  "stagnant_stock": {
+   "count": 0,
+   "items": [],
+   "total": null,
+   "available": false
+  },
+  "demand_shortage": {
+   "count": 0,
+   "items": [],
+   "available": false
+  },
+  "inventory_value": {
+   "total": null,
+   "limited": false,
+   "available": false,
+   "products_counted": 0
+  }
+ },
+ "factory": {
+  "kind": "factory",
+  "as_of": "2026-09-05",
+  "notes": [
+   "تطبيق التصنيع (mrp) غير مثبت — عرض المشتريات والمخزون فقط."
+  ],
+  "status": "ok",
+  "mo_late": null,
+  "po_late": null,
+  "top_risks": [],
+  "mo_running": null,
+  "mo_done_today": null,
+  "orders_at_risk": 0
+ },
+ "purchasing": {
+  "kind": "purchasing",
+  "as_of": "2026-09-06",
+  "notes": [
+   "تطبيق المشتريات غير مثبت أو غير مقروء في قاعدة أودو المربوطة."
+  ],
+  "status": "ok",
+  "to_bill": {},
+  "open_rfqs": {},
+  "priorities": [
+   "اربط/فعّل المشتريات أو اختار Environment فيه بيانات شراء."
+  ],
+  "vendor_bills": {},
+  "awaiting_approval": {},
+  "late_purchase_orders": {},
+  "vendor_delay_summary": [],
+  "late_incoming_receipts": {}
+ },
+ "quality": {
+  "kind": "quality_guard",
+  "as_of": "2026-09-06",
+  "notes": [
+   "تطبيق الجودة غير مثبت أو غير مقروء في قاعدة أودو المربوطة.",
+   "تطبيق المبيعات غير مثبت أو غير مقروء في قاعدة أودو المربوطة.",
+   "موديل sale.order.line غير متاح للقراءة."
+  ],
+  "status": "ok",
+  "priorities": [
+   "لا توجد مشكلة جودة أو تبديل مواصفة واضحة من القراءة الحالية؛ راجع القياسات والخصومات الكبيرة دوريًا."
+  ],
+  "spec_guard": {
+   "as_of": "2026-09-06",
+   "notes": [
+    "تطبيق المبيعات غير مثبت أو غير مقروء في قاعدة أودو المربوطة.",
+    "موديل sale.order.line غير متاح للقراءة."
+   ],
+   "status": "ok",
+   "signals": {
+    "high_risk_cases": 0,
+    "cost_saving_total": 0.0,
+    "standard_odoo_only": true,
+    "documented_substitutes": 0,
+    "lower_cost_substitutes": 0,
+    "quality_pending_linked": 0,
+    "discount_value_estimate": 0.0,
+    "invoice_product_changes": 0,
+    "quality_failures_linked": 0,
+    "delivery_product_changes": 0,
+    "undocumented_substitutes": 0,
+    "same_line_edit_limited_by_standard_odoo": true
+   },
+   "findings": [],
+   "priorities": [
+    "لا توجد حالة تبديل مواصفة واضحة من القراءة الحالية؛ راجع الخصومات الكبيرة دوريًا."
+   ],
+   "window_days": 90,
+   "orders_checked": 0,
+   "discounted_lines": {
+    "count": 0,
+    "items": [],
+    "available": false,
+    "threshold": 20.0
+   },
+   "standard_sources": [
+    "sale.order.line.product_id",
+    "sale.order.line.discount",
+    "stock.move.sale_line_id",
+    "stock.move.product_id",
+    "account.move.line.sale_line_ids",
+    "product.product.default_code",
+    "product.product.barcode",
+    "product.product.standard_price",
+    "product.product.optional_product_ids",
+    "quality.check.quality_state",
+    "quality.check.measure",
+    "quality.point.norm/tolerance_min/tolerance_max"
+   ],
+   "discount_threshold": 20.0
+  },
+  "spec_stats": {
+   "review_cases": 0,
+   "invoice_swaps": 0,
+   "deep_discounts": null,
+   "delivery_swaps": 0,
+   "high_risk_cases": 0,
+   "cost_saving_total": 0.0,
+   "standard_odoo_only": true,
+   "documented_substitutes": 0,
+   "lower_cost_substitutes": 0,
+   "quality_pending_linked": 0,
+   "discount_value_estimate": 0.0,
+   "quality_failures_linked": 0,
+   "undocumented_substitutes": 0
+  },
+  "quality_gate": {
+   "as_of": "2026-09-06",
+   "notes": [
+    "تطبيق الجودة غير مثبت أو غير مقروء في قاعدة أودو المربوطة."
+   ],
+   "status": "ok",
+   "priorities": [
+    "فعّل Quality أو اربط جهاز القياس بحقول quality.check قبل الاعتماد على بوابة الجودة."
+   ],
+   "quality_app": {
+    "available": false
+   },
+   "window_days": 30,
+   "measurements": {},
+   "top_products": [],
+   "failed_checks": {},
+   "control_points": {},
+   "pending_checks": {},
+   "quality_alerts": {}
+  },
+  "priorities_en": [
+   "No clear quality or spec-substitution issue in the current read; review measurements and large discounts regularly."
+  ],
+  "quality_stats": {
+   "out_of_spec": 0,
+   "failed_checks": 0,
+   "pending_checks": 0,
+   "quality_alerts": 0,
+   "missing_numeric_specs": 0
+  }
+ },
+ "accountant": {
+  "kind": "accountant",
+  "as_of": "2026-09-06",
+  "month": "2026-08",
+  "blocks": {
+   "tax": {
+    "as_of": "2026-09-06",
+    "notes": [
+     "حقول الفوترة الإلكترونية السعودية غير مثبتة على هذه القاعدة.",
+     "لا توجد ضريبة على أي فاتورة في الفترة، فتم تخطي فحص الفواتير بلا ضريبة.",
+     "لم يُضبط تاريخ قفل الضريبة لـ: My Company"
+    ],
+    "total": 1,
+    "counts": {
+     "zero_tax_invoices": 0,
+     "company_without_vat": 1
+    },
+    "status": "ok",
+    "window_days": 365,
+    "missing_zatca_qr": [],
+    "zero_tax_invoices": [],
+    "company_without_vat": [
+     {
+      "id": 1,
+      "company": "My Company"
+     }
+    ],
+    "partner_without_vat": []
+   },
+   "bank": {
+    "as_of": "2026-09-06",
+    "notes": [],
+    "total": 0,
+    "counts": {
+     "unmatched_payments": 0,
+     "unreconciled_lines": 0,
+     "payments_without_document": 0
+    },
+    "status": "ok",
+    "window_days": 365,
+    "multi_company": false,
+    "unmatched_payments": [],
+    "unreconciled_lines": [],
+    "payments_without_document": []
+   },
+   "close": {
+    "to": "2026-08-31",
+    "from": "2026-08-01",
+    "items": [
+     {
+      "key": "draft_entries",
+      "hint": "القيد غير المُرحّل لا يدخل في أرقام الشهر.",
+      "count": 0,
+      "label": "قيود لم تُرحّل",
+      "status": "ok"
+     },
+     {
+      "key": "draft_invoices",
+      "hint": "إمّا تُرحَّل أو تُلغى قبل الإقفال.",
+      "count": 0,
+      "label": "فواتير ومطالبات مسودة",
+      "status": "ok"
+     },
+     {
+      "key": "bank_lines",
+      "hint": "رصيد البنك لن يتطابق مع الدفتر قبل مطابقتها.",
+      "count": 0,
+      "label": "بنود بنكية بلا مطابقة",
+      "status": "ok"
+     },
+     {
+      "key": "lock_date",
+      "hint": "بدون قفل التاريخ يمكن تعديل شهر مقفل.",
+      "count": 1,
+      "label": "قفل التاريخ بعد الإقفال",
+      "detail": [
+       "My Company"
+      ],
+      "status": "attention"
+     }
+    ],
+    "month": "2026-08",
+    "notes": [],
+    "total": 1,
+    "status": "ok",
+    "pending": 1
+   },
+   "stock": {
+    "notes": [
+     "التقييم الآلي للمخزون غير مفعّل، فالتكلفة مقروءة من تكلفة المنتج."
+    ],
+    "total": 0,
+    "counts": {},
+    "status": "ok",
+    "negative_stock": [],
+    "stock_without_cost": [],
+    "billed_not_received": [],
+    "received_not_billed": []
+   },
+   "cycles": {
+    "as_of": "2026-09-06",
+    "notes": [],
+    "total": 2,
+    "cycles": [
+     {
+      "chain": "دفعة ← حساب مؤقت ← كشف بنك ← مطابقة ← رصيد نهائي",
+      "cycle": "دورة النقدية",
+      "stages": [
+       {
+        "how": "افتح شاشة المطابقة واربط البند بفاتورته أو دفعته.",
+        "count": 0,
+        "stage": "بند كشف حساب لم يُطابَق",
+        "amount": 0,
+        "samples": []
+       },
+       {
+        "how": "الرصيد يُقفل بالمطابقة، لا بقيد يدوي.",
+        "count": 0,
+        "stage": "رصيد واقف في حسابات مؤقتة",
+        "amount": 0.0,
+        "samples": []
+       }
+      ]
+     },
+     {
+      "chain": "ترحيل ← تسويات ← إقرار ضريبي ← قفل الفترة",
+      "cycle": "دورة الإقفال",
+      "stages": [
+       {
+        "how": "رحّل المستند أو ألغه؛ المسودة لا تدخل أي تقرير.",
+        "count": 0,
+        "stage": "مستند لم يُرحّل",
+        "amount": 0,
+        "samples": []
+       },
+       {
+        "how": "اضبط تاريخ القفل بعد آخر شهر مُراجَع حتى لا يتغيّر الماضي.",
+        "count": 1,
+        "stage": "شركة بلا تاريخ قفل",
+        "amount": null,
+        "samples": [
+         "My Company"
+        ]
+       },
+       {
+        "how": "اضبط قفل الضريبة بعد تقديم الإقرار حتى لا تتغيّر أرقامه.",
+        "count": 1,
+        "stage": "شركة بلا قفل ضريبي",
+        "amount": null,
+        "samples": [
+         "My Company"
+        ]
+       }
+      ]
+     }
+    ],
+    "status": "ok",
+    "open_steps": 2
+   },
+   "closing": {
+    "to": "2026-12-31",
+    "from": "2026-01-01",
+    "year": 2026,
+    "notes": [],
+    "total": 0,
+    "counts": {
+     "result_accounts": 0,
+     "clearing_accounts": 0,
+     "inactive_with_balance": 0
+    },
+    "status": "ok",
+    "net_result": 0.0,
+    "income_total": 0.0,
+    "closing_entry": {
+     "note": "",
+     "lines": []
+    },
+    "expense_total": 0.0,
+    "result_accounts": [],
+    "clearing_accounts": [],
+    "inactive_with_balance": []
+   },
+   "journal": {
+    "as_of": "2026-09-06",
+    "notes": [],
+    "total": 0,
+    "status": "ok",
+    "window_days": 365,
+    "no_reference": [],
+    "multi_company": false,
+    "self_cancelling": [],
+    "edited_after_post": [],
+    "manual_on_control": []
+   },
+   "invoices": {
+    "as_of": "2026-09-06",
+    "notes": [
+     "لا توجد ضريبة على أي فاتورة في هذه الفترة، فتم تخطي فحص الضريبة."
+    ],
+    "scope": {
+     "kinds": "المُرحّل والمسودة معًا، وحالة كل مستند مذكورة بجانبه؛ إشعارات الدائن في قسم مستقل",
+     "since": "2025-09-06",
+     "until": "2026-09-06",
+     "drafts": 0,
+     "refunds": 0,
+     "invoices": 0,
+     "documents": 0,
+     "per_company": "",
+     "older_than_window": 0
+    },
+    "total": 0,
+    "counts": {
+     "untaxed_lines": 0,
+     "large_discounts": 0,
+     "vendor_without_order": 0,
+     "credit_notes_unlinked": 0,
+     "customer_without_order": 0
+    },
+    "status": "ok",
+    "window_days": 365,
+    "multi_company": false,
+    "untaxed_lines": [],
+    "large_discounts": [],
+    "vendor_without_order": [],
+    "credit_notes_unlinked": [],
+    "customer_without_order": []
+   },
+   "diagnosis": {
+    "as_of": "2026-09-06",
+    "notes": [],
+    "total": 0,
+    "amount": 0,
+    "status": "ok",
+    "findings": [],
+    "window_days": 365
+   }
+  },
+  "status": "ok",
+  "counters": [
+   {
+    "key": "journal",
+    "label": "قيود للمراجعة",
+    "value": 0,
+    "action": "راجع القيود"
+   },
+   {
+    "key": "invoices",
+    "label": "ملاحظات على الفواتير",
+    "value": 0,
+    "action": "طابق الفواتير"
+   },
+   {
+    "key": "bank",
+    "label": "بنود بنكية معلّقة",
+    "value": 0,
+    "action": "سوّ البنك"
+   },
+   {
+    "key": "tax",
+    "label": "ملاحظات ضريبية",
+    "value": 1,
+    "action": "راجع الضريبة"
+   },
+   {
+    "key": "close",
+    "label": "بنود إقفال 2026-08",
+    "value": 1,
+    "action": "اقفل الشهر"
+   },
+   {
+    "key": "stock",
+    "label": "ملاحظات مخزون وتكلفة",
+    "value": 0,
+    "action": "راجع التكلفة"
+   },
+   {
+    "key": "diagnosis",
+    "label": "أخطاء محاسبية لها تصحيح",
+    "value": 0,
+    "action": "وريني الخطأ والتصحيح"
+   },
+   {
+    "key": "closing",
+    "label": "حسابات لم تُقفل",
+    "value": 0,
+    "action": "احصر ما لم يُقفل"
+   },
+   {
+    "key": "cycles",
+    "label": "خطوات متوقفة في الدورات",
+    "value": 2,
+    "action": "فين وقفت الدورة"
+   }
+  ],
+  "window_days": 365
+ },
+ "hr": {
+  "kind": "hr",
+  "as_of": "2026-09-06",
+  "notes": [
+   "موديل العقود hr.contract غير ظاهر؛ سأراجع بيانات الموظفين فقط.",
+   "موديل الرواتب hr.payslip غير ظاهر؛ سأراجع جاهزية العقود للأجر وهيكل الراتب فقط.",
+   "موديل الإجازات hr.leave غير ظاهر؛ سأراجع الحضور فقط إن كان مثبتًا."
+  ],
+  "status": "ok",
+  "payroll": {
+   "as_of": "2026-09-06",
+   "items": [],
+   "notes": [
+    "موديل الرواتب hr.payslip غير ظاهر؛ سأراجع جاهزية العقود للأجر وهيكل الراتب فقط."
+   ],
+   "status": "ok",
+   "available": false,
+   "window_days": 45,
+   "contract_items": [],
+   "draft_payslips": 0,
+   "posted_payslips": 0,
+   "contracts_no_wage": 0,
+   "contracts_without_structure": 0,
+   "employees_with_multiple_open_contracts": 0
+  },
+  "counters": [
+   {
+    "key": "applicants",
+    "label": "متقدمون للفرز",
+    "value": 0,
+    "action": "افرز المتقدمين"
+   },
+   {
+    "key": "strong",
+    "label": "مرشحون أقوياء",
+    "value": 0,
+    "action": "رشّح الأفضل"
+   },
+   {
+    "key": "contracts",
+    "label": "موظفون وعقود للمراجعة",
+    "value": 1,
+    "action": "راجع العقود"
+   },
+   {
+    "key": "payroll",
+    "label": "رواتب للمراجعة",
+    "value": 0,
+    "action": "راجع الرواتب"
+   },
+   {
+    "key": "timeoff",
+    "label": "إجازات معلقة",
+    "value": 0,
+    "action": "راجع الإجازات"
+   },
+   {
+    "key": "attendance",
+    "label": "حضور مفتوح",
+    "value": 0,
+    "action": "راجع الحضور"
+   }
+  ],
+  "time_off": {
+   "as_of": "2026-09-06",
+   "items": [],
+   "notes": [
+    "موديل الإجازات hr.leave غير ظاهر؛ سأراجع الحضور فقط إن كان مثبتًا."
+   ],
+   "status": "ok",
+   "available": false,
+   "window_days": 30,
+   "pending_leaves": 0,
+   "attendance_items": [],
+   "open_attendances": 0,
+   "upcoming_approved": 0,
+   "pending_allocations": 0,
+   "long_open_attendances": 0
+  },
+  "operations": {
+   "as_of": "2026-09-06",
+   "items": [
+    {
+     "type": "missing_work_email",
+     "reason": "بريد العمل غير مسجل",
+     "employee": "Sample employee 4"
+    },
+    {
+     "type": "missing_manager",
+     "reason": "المدير غير محدد",
+     "employee": "Sample employee 5"
+    },
+    {
+     "type": "missing_manager",
+     "reason": "المدير غير محدد",
+     "employee": "Sample employee 6"
+    },
+    {
+     "type": "missing_manager",
+     "reason": "المدير غير محدد",
+     "employee": "Sample employee 7"
+    },
+    {
+     "type": "missing_manager",
+     "reason": "المدير غير محدد",
+     "employee": "Sample employee 8"
+    }
+   ],
+   "notes": [
+    "موديل العقود hr.contract غير ظاهر؛ سأراجع بيانات الموظفين فقط."
+   ],
+   "status": "ok",
+   "available": true,
+   "active_employees": 9,
+   "contracts_ending": 0,
+   "missing_managers": 9,
+   "contracts_no_wage": 0,
+   "missing_contracts": 0,
+   "missing_department": 0,
+   "missing_work_email": 1,
+   "expired_open_contracts": 0,
+   "contracts_without_structure": 0,
+   "employees_with_multiple_open_contracts": 0
+  },
+  "recruitment": {
+   "items": [],
+   "available": false,
+   "open_jobs": 0,
+   "open_applicants": 0,
+   "strong_candidates": 0,
+   "stale_applications": 0
+  },
+  "window_days": 90
+ }
+}

@@ -36,10 +36,25 @@ import 'package:saqqar_app/features/chat/widgets/app_pulse/factory_pulse_card.da
 import 'package:saqqar_app/features/chat/widgets/app_pulse/finance_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/hr_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/inventory_pulse_card.dart';
+import 'package:saqqar_app/features/chat/data/pulse_actions.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_action_list.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_bands_list.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_counter_list.dart';
+import 'package:saqqar_app/features/chat/widgets/app_pulse/pulse_raw_items.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/purchasing_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/app_pulse/quality_guard_pulse_card.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_approval_card.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_grouped_approval_card.dart';
+import 'package:saqqar_app/features/chat/widgets/task_wording_card.dart';
+import 'package:saqqar_app/features/chat/widgets/task_wording_hint_bar.dart';
+import 'package:saqqar_app/features/chat/widgets/task_wording_sheet.dart';
+import 'package:saqqar_app/features/chat/widgets/continue_run_button.dart';
+import 'package:saqqar_app/features/chat/widgets/message_token_chip.dart';
+import 'package:saqqar_app/features/conversations/data/conversation_models.dart'
+    show MessageTokens;
+import 'package:saqqar_app/features/chat/data/approval_grouping.dart';
+import 'package:saqqar_app/features/inbox/data/approval_models.dart'
+    show Approval, ApprovalActionType, ApprovalStatus;
 import 'package:saqqar_app/features/chat/widgets/chat_bottom_chrome.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_date_separator.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_header_controls.dart';
@@ -196,6 +211,11 @@ void main() {
     'CardChoiceChip unselected': () =>
         CardChoiceChip(label: kLongEnglish, selected: false, onTap: () {}),
     'CardFieldLabel': () => const CardFieldLabel(kLongArabic),
+    'CardHeaderRow': () => const CardHeaderRow(
+          icon: AppIcons.sparkles,
+          title: kLongArabic,
+          accent: AppColors.brandCyan,
+        ),
     'InteractiveCardShell': () => const InteractiveCardShell(
           icon: AppIcons.sparkles,
           title: kLongArabic,
@@ -348,11 +368,33 @@ void main() {
             'product_count': 1840,
             'inventory_value': {'available': true, 'total': 984000.0},
             'low_stock': {'available': false},
-            'demand_shortage': {'available': true, 'count': 4},
+            // Undocumented item shape, hostile content: a product name that
+            // cannot wrap, an Arabic one that must, and a fact line long
+            // enough to need its own ellipsis.
+            'demand_shortage': {
+              'available': true,
+              'count': 4,
+              'items': [
+                {
+                  'product': kUnbreakable,
+                  'qty_on_hand': 0,
+                  'qty_needed': 1450,
+                  'state': kLongEnglish,
+                },
+                {'name': kLongArabic, 'days_late': 12},
+                // No name field at all — the row still has to print.
+                {'quantity': 4},
+              ],
+            },
             'stagnant_stock': {'available': true, 'count': 31, 'total': 120400.0},
             'overstock': {'available': true, 'count': 8, 'total': 65000.0},
             'fast_reorder': {'available': true, 'count': 6},
-            'missing_data': {'available': true, 'count': 22},
+            'missing_data': {
+              'available': true,
+              'count': 22,
+              // The doc shows `counts` empty; a real one is reason → count.
+              'counts': {'no_cost': 8, 'no_lead_time': 14},
+            },
             'notes': [kLongArabic],
             'priorities': [kLongEnglish, kUnbreakable],
           })!,
@@ -384,7 +426,29 @@ void main() {
             },
             'bank_reconciliation': {'count': 0, 'available': false},
             'liquidity_7d': {'status': 'covered', 'available': true},
+            // Both band encodings in one card: a flat `{band: amount}` map
+            // and a wrapper whose bands are rows.
+            'collection_aging': {
+              'available': true,
+              'buckets': {'d0_30': 84000.0, '31_60': 12500.0, 'over_90': 3100.0},
+            },
+            'payment_horizon': {
+              'available': true,
+              'bands': [
+                {'label': '0_7', 'amount': 4200.0, 'count': 12},
+                {'label': kLongArabic, 'count': 3},
+              ],
+            },
             'priorities': [kLongArabic],
+          })!,
+        ),
+        // A database that cannot answer the aging question says so — the
+        // state that must never render as an empty row of zeroes.
+    'FinancePulseCard aging unavailable': () => FinancePulseCard(
+          payload: FinancePulsePayload.parse({
+            'kind': 'finance',
+            'collection_aging': {'available': false},
+            'payment_horizon': {'available': false},
           })!,
         ),
     'PurchasingPulseCard': () => PurchasingPulseCard(
@@ -398,7 +462,8 @@ void main() {
             'to_bill': {'count': 0, 'available': true},
             'vendor_bills': {'count': 3, 'available': true},
             'vendor_delay_summary': [
-              {'vendor': kUnbreakable},
+              {'vendor': kUnbreakable, 'avg_delay_days': 9, 'orders': 4},
+              {'partner': kLongArabic, 'late_receipts': 2},
             ],
             'priorities': [kLongArabic],
           })!,
@@ -426,6 +491,22 @@ void main() {
                 {'employee': kUnbreakable, 'reason': kLongArabic},
               ],
             },
+            'recruitment': {
+              'available': true,
+              'count': 6,
+              'items': [
+                {'name': kLongArabic, 'stage': kLongEnglish, 'days_open': 34},
+              ],
+            },
+            'payroll': {'available': false},
+            'time_off': {'available': true, 'count': 0},
+          })!,
+        ),
+    // Operations unavailable: the tiles have to say so rather than vanish.
+    'HrPulseCard operations unavailable': () => HrPulseCard(
+          payload: HrPulsePayload.parse({
+            'kind': 'hr',
+            'operations': {'available': false},
           })!,
         ),
     'AccountantPulseCard': () => AccountantPulseCard(
@@ -442,6 +523,30 @@ void main() {
                 'action': kLongEnglish,
               },
             ],
+            // The audit trail behind the counter, collapsed by default.
+            'blocks': {
+              'tax': [
+                {'move': kUnbreakable, 'amount': 1250.0, 'partner': kLongArabic},
+              ],
+            },
+          })!,
+        ),
+    // The other documented shape: the five checks as their own keys, with
+    // no rolled-up `counters` list at all.
+    'AccountantPulseCard checks': () => AccountantPulseCard(
+          payload: AccountantPulsePayload.parse({
+            'kind': 'accountant',
+            'no_reference': {'available': true, 'count': 4},
+            'manual_on_control': 7,
+            'edited_after_post': {'available': false},
+            'self_cancelling': {
+              'available': true,
+              'count': 1,
+              'items': [
+                {'move': kLongArabic, 'amount': -300.0},
+              ],
+            },
+            'multi_company': {'available': true, 'count': 0},
           })!,
         ),
     'QualityGuardPulseCard': () => QualityGuardPulseCard(
@@ -463,7 +568,34 @@ void main() {
               'delivery_swaps': 2,
               'high_risk_cases': 1,
               'cost_saving_total': 450.0,
+              'deep_discounts': 5,
+              'lower_cost_substitutes': 2,
+              'documented_substitutes': 1,
+              'undocumented_substitutes': 4,
+              'discount_value_estimate': 18400.0,
             },
+            'standard_odoo_only': true,
+          })!,
+        ),
+    // The doc's own shape for the same card: all 16 numbers flat at the top
+    // level rather than inside the two stat objects.
+    'QualityGuardPulseCard flat': () => QualityGuardPulseCard(
+          payload: QualityGuardPulsePayload.parse({
+            'kind': 'quality_guard',
+            'out_of_spec': 2,
+            'failed_checks': 1,
+            'pending_checks': 0,
+            'quality_alerts': 3,
+            'missing_numeric_specs': 7,
+            'review_cases': 1,
+            'deep_discounts': 5,
+            'lower_cost_substitutes': 2,
+            'documented_substitutes': 1,
+            'undocumented_substitutes': 4,
+            'high_risk_cases': 1,
+            'cost_saving_total': 450.0,
+            'discount_value_estimate': 18400.0,
+            'standard_odoo_only': true,
           })!,
         ),
     'PulseCounterList': () => const PulseCounterList(counters: [
@@ -475,6 +607,77 @@ void main() {
           ),
           PulseCounter(key: 'b', label: kUnbreakable, value: null),
         ]),
+    // The trail disclosure: a counter whose rows are one tap away.
+    'PulseCounterList with details': () => PulseCounterList(
+          counters: const [
+            PulseCounter(key: 'a', label: kLongArabic, value: 3),
+          ],
+          detailsFor: (key) => const [
+            {'move': kUnbreakable, 'amount': 1250.0},
+            {'move': kLongArabic, 'amount': -80.5, 'posted': true},
+          ],
+        ),
+    // The generic renderers behind every undocumented `items` array.
+    'PulseRawItemsList': () => const PulseRawItemsList(
+          title: kLongArabic,
+          items: [
+            {'product': kUnbreakable, 'qty': 14200, 'state': kLongEnglish},
+            {'name': kLongArabic, 'days': 3.5},
+            // Neither a map nor a name — the row still prints.
+            'a bare string row',
+            42,
+          ],
+        ),
+    'PulseBandsList': () => const PulseBandsList(
+          title: kLongArabic,
+          bands: PulseBands(
+            available: true,
+            bands: [
+              PulseBand(label: '0–30', amount: 84000, count: 12),
+              PulseBand(label: kUnbreakable, count: 3),
+              PulseBand(label: kLongArabic),
+            ],
+          ),
+        ),
+    'PulseBandsList unavailable': () => const PulseBandsList(
+          title: kLongEnglish,
+          bands: PulseBands(available: false),
+        ),
+    // The web-parity action rows. Fed the longest copy the real cards can
+    // carry — an Arabic title over an unbreakable order number over a
+    // two-clause cause line, all above a button that must still fit.
+    'PulseActionList': () => PulseActionList(
+          actions: const [
+            PulseAction(
+              title: kLongArabic,
+              main: kUnbreakable,
+              cause: kLongEnglish,
+              label: kLongArabic,
+              prompt: 'p',
+              primary: true,
+            ),
+            PulseAction(
+              title: kLongEnglish,
+              main: kLongArabic,
+              label: kLongEnglish,
+              prompt: 'p',
+            ),
+          ],
+          onSend: (_) {},
+        ),
+    'PulseDeepActionChips': () => PulseDeepActionChips(
+          actions: const [
+            PulseAction(
+                title: '', main: '', label: kLongArabic, prompt: 'p'),
+            PulseAction(
+                title: '', main: '', label: kUnbreakable, prompt: 'p'),
+          ],
+          onSend: (_) {},
+        ),
+    'PulseFreeTextAction': () => PulseFreeTextAction(
+          kind: InteractiveCardKind.accountant,
+          onSend: (_) {},
+        ),
     // Watches AuthCubit and PlanCubit off the tree, so it needs both. The
     // plan is left at its `null` default deliberately — that is what the
     // hero renders during the first paint after sign-in, before
@@ -506,6 +709,62 @@ void main() {
           ),
           onApprove: () {},
           onReject: () {},
+        ),
+    // The grouped variant carries the same agent-generated prompt risk, plus
+    // two numbered buttons side by side — "Reject all 12" next to "Approve
+    // all 12" is the widest row on the card in either language.
+    'ContinueRunButton': () => ContinueRunButton(onPressed: () {}),
+    // Task wording. The card holds a real structured prompt — the draft the
+    // server returns is many lines of Arabic with numbered steps, which is
+    // the case that decides whether the box scrolls or the card overflows.
+    'TaskWordingCard': () => TaskWordingCard(
+          draft: '$kLongArabic\n1. $kLongArabic\n2. $kLongEnglish',
+          loading: false,
+          onUse: (_) {},
+          onRun: (_) {},
+          onClose: () {},
+        ),
+    // Two buttons plus a full sentence of Arabic on one bar — the row that
+    // has to wrap rather than clip at 1.3x text on a 320 px screen.
+    'TaskWordingHintBar': () => TaskWordingHintBar(
+          onOpen: () {},
+          onDismiss: () {},
+        ),
+    'TaskWordingSheet': () => const TaskWordingSheet(
+          initialQuery: kLongArabic,
+        ),
+    // The widest a cost chip gets: a million-token prompt, a long Arabic
+    // tooltip behind it, inside a meta line that must still wrap.
+    'MessageTokenChip': () => const MessageTokenChip(
+          tokens: MessageTokens(
+            input: 1234567,
+            output: 98765,
+            cachedInput: 1200000,
+          ),
+        ),
+    'ChatGroupedApprovalCard': () => ChatGroupedApprovalCard(
+          group: ApprovalGroup(
+            key: 'odoo_write|create|mrp.production',
+            approvals: [
+              for (var i = 0; i < 12; i++)
+                Approval(
+                  id: 'a$i',
+                  actionType: ApprovalActionType.odooWrite,
+                  status: ApprovalStatus.pending,
+                  prompt: '$kLongArabic $kUnbreakable',
+                  payload: const {
+                    'operation': 'create',
+                    'model': 'mrp.production',
+                  },
+                ),
+            ],
+          ),
+          subtitle: '$kLongArabic $kUnbreakable $kLongEnglish',
+          promptOf: (a) => '$kUnbreakable ${a.id}',
+          onApproveAll: (_) {},
+          onRejectAll: (_) {},
+          onApproveOne: (_) {},
+          onRejectOne: (_) {},
         ),
   };
 

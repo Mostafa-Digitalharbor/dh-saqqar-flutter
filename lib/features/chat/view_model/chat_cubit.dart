@@ -878,9 +878,11 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   /// `emit(DataSuccess(...))` would risk dropping whatever `_mergeSnapshot`
   /// otherwise reconciles.
   ///
-  /// No success/failure toast by design (unlike [stopGeneration]): a failed
-  /// resume just re-enables the button for another tap, silently — the web
-  /// behaviour this mirrors.
+  /// No success/failure toast by design (unlike [stopGeneration]) — the web
+  /// behaviour this mirrors just re-enables the button for another tap. The
+  /// stored [ChatActionFailure] is still surfaced, though: the chat screen
+  /// reads it back inline on the Resume banner itself rather than as a
+  /// toast, so a failure is never silent, just not a pop-up.
   Future<bool> resumeRun() async {
     if (state.isResuming) return false;
     emit(state.copyWith(isResuming: true, clearActionFailure: true));

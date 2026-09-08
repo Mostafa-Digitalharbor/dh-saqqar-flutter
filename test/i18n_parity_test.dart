@@ -401,6 +401,17 @@ void main() {
       'auth_email_placeholder': 'email example',
       'email_hint': 'email example',
       'header_none_option': 'em dash',
+      // File formats on the report card's chips. The web's own Arabic table
+      // leaves all three Latin, and so does every Arabic Office UI — an
+      // Arabic user looking for an Excel export is looking for "Excel".
+      'rbFormat_excel': 'file format',
+      'rbFormat_pdf': 'file format',
+      'rbFormat_html': 'file format',
+      // "SO/0042: Steel bracket ← Copper bracket" — three server-authored
+      // product/order names joined by an arrow. Every word in it comes from
+      // Odoo; the only difference between the locales is which way the
+      // arrow points, which the Arabic entry already flips.
+      'pulse_act_quality_swap_main': 'server-authored names and an arrow',
       // A currency figure. The rest of the price UI already renders Western
       // digits in Arabic ('$20 / شهرياً'), so a translated zero would be the
       // one price on the screen written differently from its neighbours.

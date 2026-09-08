@@ -165,6 +165,26 @@ class ServerFailure extends AppFailure {
   List<Object?> get props => [statusCode, serverMessage];
 }
 
+/// A route that talks to a customer's own Odoo instance could not reach it.
+///
+/// Distinct from [ServerFailure] because the cause and the remedy are both
+/// different. Saqqar itself is up — it answered, and it answered about a
+/// specific environment. What is unreachable is the Odoo database bound to
+/// that environment, which the user owns and can check.
+///
+/// Verified on 2026-09-08: `POST /environments/<id>/odoo/count/` on one
+/// environment returned a gateway 502 with an HTML maintenance page and no
+/// JSON message, while the same call on a healthy environment returned 200.
+/// Mapped to "something went wrong on the server", that reads as *our*
+/// outage and the advice is to wait — when the thing to do is look at the
+/// connection, or work in a different environment.
+class OdooUnreachableFailure extends AppFailure {
+  const OdooUnreachableFailure({this.statusCode});
+  final int? statusCode;
+  @override
+  List<Object?> get props => [statusCode];
+}
+
 /// The request succeeded at the transport layer but the body wasn't the
 /// shape we expect — a field changed type, a required key vanished, a list
 /// became an object.

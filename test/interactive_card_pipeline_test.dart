@@ -85,7 +85,15 @@ List<ChatMessage> _pipeline(Map<String, dynamic> body) {
   final running = snapshot.conversation.isRunning;
   return snapshot.messages
       .where((m) => isVisibleMessage(m, isRunning: running))
-      .map((m) => adaptApiMessage(m, time: '10:00'))
+      // Mirrors the screen: a tool row reaches the transcript as a labelled
+      // STEP, never as its raw JSON. The real label is localised through a
+      // BuildContext, which this pure pipeline has none of, so it stands in
+      // with the same SHAPE — a short string that is not the tool's result.
+      .map((m) => adaptApiMessage(
+            m,
+            time: '10:00',
+            stepLabel: isAgentStepMessage(m) ? 'did:${m.toolName}' : null,
+          ))
       .toList();
 }
 
@@ -251,6 +259,191 @@ void main() {
     }
   });
 
+  // The same four stages for the seven app-pulse kinds (Task 1,
+  // MOBILE_TASKS_2026-09.md). Worth its own group rather than a bigger
+  // `payloads` map above: these ride on the FINAL ASSISTANT message of a
+  // turn — often one carrying prose — where the three composer cards ride
+  // on a tool message, and that difference is exactly the kind of gap
+  // between stages this file exists to catch.
+  group('all seven app-pulse kinds make it through', () {
+    const payloads = <String, Map<String, dynamic>>{
+      'factory': {
+        'kind': 'factory',
+        'status': 'ok',
+        'as_of': '2026-09-05',
+        'mo_running': 12,
+        'top_risks': [
+          {'order': 'SO/0042', 'customer': 'Al Rajhi Trading'},
+        ],
+        'notes': ['تطبيق المشتريات غير مثبت.'],
+      },
+      'inventory': {
+        'kind': 'inventory',
+        'low_stock': {
+          'available': true,
+          'count': 2,
+          'items': [
+            {'product': 'Steel bracket 40mm', 'qty_on_hand': 0},
+          ],
+        },
+      },
+      'finance': {
+        'kind': 'finance',
+        'cash': {'available': true, 'balance': 12500.0},
+        'collection_aging': {'available': true, 'd0_30': 84000.0},
+      },
+      'purchasing': {
+        'kind': 'purchasing',
+        'open_rfqs': {'available': true, 'count': 4},
+        'vendor_delay_summary': [
+          {'vendor': 'Acme Supplies', 'avg_delay_days': 9},
+        ],
+      },
+      'quality_guard': {
+        'kind': 'quality_guard',
+        'out_of_spec': 2,
+        'undocumented_substitutes': 4,
+      },
+      'accountant': {
+        'kind': 'accountant',
+        'month': '2026-08',
+        'no_reference': {'available': true, 'count': 4},
+      },
+      'hr': {
+        'kind': 'hr',
+        'operations': {'available': true, 'active_employees': 9},
+        'recruitment': {'available': true, 'count': 6},
+      },
+    };
+
+    /// `app_name_<slug>` — the same key the Apps gallery titles the card's
+    /// own app with, which is what `pulseAppTitle` resolves.
+    const titleKey = {
+      'factory': 'app_name_factory',
+      'inventory': 'app_name_smart_inventory',
+      'finance': 'app_name_finance_pulse',
+      'purchasing': 'app_name_purchase_pulse',
+      'quality_guard': 'app_name_quality_guard',
+      'accountant': 'app_name_accountant',
+      'hr': 'app_name_hr_assistant',
+    };
+
+    payloads.forEach((kind, payload) {
+      test('$kind — survives the visibility filter', () {
+        final messages = _pipeline(_snapshotWithCard(
+          role: 'assistant',
+          content: 'Here is where the factory stands:',
+          payload: payload,
+        ));
+
+        expect(messages, hasLength(2), reason: 'user turn + the card');
+        expect(messages.last.toolPayload?['kind'], kind);
+      });
+
+      testWidgets('$kind — renders as a card, not a text dump',
+          (tester) async {
+        await _pumpTimeline(
+          tester,
+          _pipeline(_snapshotWithCard(
+            role: 'assistant',
+            content: '',
+            payload: payload,
+          )),
+          onSend: (_) {},
+        );
+
+        expect(find.text(en.lookup(titleKey[kind]!)), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('$kind — renders in Arabic too', (tester) async {
+        await _pumpTimeline(
+          tester,
+          _pipeline(_snapshotWithCard(
+            role: 'assistant',
+            content: '',
+            payload: payload,
+          )),
+          locale: const Locale('ar'),
+          onSend: (_) {},
+        );
+
+        expect(
+          find.text(AppStrings(const Locale('ar')).lookup(titleKey[kind]!)),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      });
+    });
+
+    testWidgets('the finance card reaches the screen WITH its buttons',
+        (tester) async {
+      // The whole point of the parity fix: a payload off the wire must end
+      // up as a button that sends the agent a prompt, not as numbers the
+      // user has to retype a request about.
+      final sent = <String>[];
+      await _pumpTimeline(
+        tester,
+        _pipeline(_snapshotWithCard(
+          role: 'assistant',
+          content: '',
+          payload: const {
+            'kind': 'finance',
+            'receivables': {
+              'overdue': {'available': true, 'count': 13, 'total': 303194.0},
+            },
+          },
+        )),
+        onSend: sent.add,
+      );
+
+      expect(find.text('Start collection'), findsOneWidget);
+      await tester.tap(find.text('Start collection'));
+      await tester.pumpAndSettle();
+      expect(sent.single, contains('receivables aging'));
+    });
+
+    testWidgets('the card REPLACES the prose it arrived with', (tester) async {
+      // Pinning the behaviour rather than endorsing it. `MessageRow` returns
+      // the card instead of the bubble for every card kind, so an assistant
+      // message that carried both a sentence and a pulse payload shows only
+      // the card. That matches the doc's "a rich card … instead of a wall of
+      // text", and it is how the three older kinds have always rendered —
+      // but it does mean a lead-in sentence the agent wrote is dropped, so
+      // if the server ever puts something load-bearing there, this test is
+      // the one that will have to change.
+      await _pumpTimeline(
+        tester,
+        _pipeline(_snapshotWithCard(
+          role: 'assistant',
+          content: 'Here is where the factory stands:',
+          payload: payloads['factory']!,
+        )),
+        onSend: (_) {},
+      );
+
+      expect(find.text(en.lookup('app_name_factory')), findsOneWidget);
+      expect(
+        find.textContaining('Here is where the factory stands'),
+        findsNothing,
+      );
+    });
+
+    test('an unrecognised kind is not kept as an empty row', () {
+      // The ordinary-chat case the doc warns about: the server answers in
+      // prose and sends no card. A payload with no renderable kind must not
+      // keep an empty assistant message alive on the strength of having a
+      // `tool_payload` at all.
+      final messages = _pipeline(_snapshotWithCard(
+        role: 'assistant',
+        content: '',
+        payload: const {'kind': 'weather', 'temperature': 31},
+      ));
+
+      expect(messages.map((m) => m.id), ['m1']);
+    });
+  });
+
   group('the card is not swallowed by a multi-step turn', () {
     /// A real transcript: user asks, agent thinks twice, posts a card, then
     /// keeps working. The card sits mid-run — the exact position that used to
@@ -321,6 +514,45 @@ void main() {
             'tool_name': 'count_odoo_records',
             'tool_payload': {'model': 'res.partner'},
           },
+          {'id': 'm3', 'role': 'assistant', 'content': 'You have 42.'},
+        ],
+      });
+
+      // The row survives now — but as a folded STEP, not as a bubble, and
+      // carrying a label instead of `{"rows": 42}`. Dropping it entirely was
+      // what made a write leave no trace in the transcript: "add a product"
+      // → "done", with nothing in between.
+      expect(messages.map((m) => m.id), ['m1', 'm2', 'm3']);
+
+      final step = messages[1];
+      expect(step.isAgentStep, isTrue);
+      expect(step.content, isNot(contains('rows')),
+          reason: 'the tool result JSON reached the transcript');
+      expect(messages.first.isAgentStep, isFalse);
+      expect(messages.last.isAgentStep, isFalse);
+
+      // And it is folded, not standing on its own: one turn, one reply.
+      final timeline = buildChatTimeline(messages, isRunning: false);
+      expect(timeline, hasLength(2));
+      final turn = timeline.last as AgentTurnEntry;
+      expect(turn.finalReply.id, 'm3');
+      expect(turn.thinkingSteps.map((m) => m.id), ['m2']);
+    });
+
+    test('a tool result with no tool_name is still dropped', () {
+      // Nothing to label it with, so there is nothing readable to show —
+      // better absent than rendered as raw JSON.
+      final messages = _pipeline({
+        'conversation': {
+          'id': 'c1',
+          'title': 'T',
+          'auto_approve': false,
+          'is_running': false,
+          'stop_requested': false,
+        },
+        'messages': [
+          {'id': 'm1', 'role': 'user', 'content': 'hi'},
+          {'id': 'm2', 'role': 'tool', 'content': '{"rows": 42}'},
           {'id': 'm3', 'role': 'assistant', 'content': 'You have 42.'},
         ],
       });

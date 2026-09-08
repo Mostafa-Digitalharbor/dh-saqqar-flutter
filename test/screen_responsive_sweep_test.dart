@@ -60,6 +60,7 @@ import 'package:saqqar_app/features/vault/data/credential_models.dart';
 import 'package:saqqar_app/features/vault/data/credentials_api.dart';
 import 'package:saqqar_app/features/vault/data/project_models.dart';
 import 'package:saqqar_app/features/vault/data/projects_api.dart';
+import 'package:saqqar_app/features/vault/data/vault_persona_service.dart';
 import 'package:saqqar_app/features/vault/data/vault_repository.dart';
 import 'package:saqqar_app/features/vault/view/vault_screen.dart';
 import 'package:saqqar_app/features/vault/view_model/vault_cubit.dart';
@@ -349,9 +350,18 @@ WrapBuilder get _withConversations => (child) => BlocProvider<ConversationsCubit
       child: child,
     );
 
+/// Set in `setUp` so `_withVault` can hand the environment sheet the same
+/// prefs instance the sweep is already using. The sheet reads its audience
+/// (user / developer) synchronously in `initState`, so the service has to be
+/// above it in the tree, not created inside it.
+late SharedPreferences _sweepPrefs;
+
 WrapBuilder get _withVault => (child) => BlocProvider<VaultCubit>(
       create: (_) => _SeededVaultCubit(),
-      child: child,
+      child: RepositoryProvider<VaultPersonaService>(
+        create: (_) => VaultPersonaService(_sweepPrefs),
+        child: child,
+      ),
     );
 
 WrapBuilder get _withDevices => (child) => RepositoryProvider<DevicesApi>(
@@ -365,6 +375,7 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
+    _sweepPrefs = prefs;
   });
 
   testWidgets('AccountScreen survives the matrix', (tester) async {

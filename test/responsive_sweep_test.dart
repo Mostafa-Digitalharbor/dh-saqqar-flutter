@@ -241,6 +241,30 @@ ChatApproval _approval() => const ChatApproval(
       },
     );
 
+/// A `send_email` approval, worst-case shaped: every recipient field long
+/// enough to fight the subject's own `Expanded` and the risk `MiniChip` for
+/// room in the header row, plus `in_reply_to` set so the "Reply" badge is
+/// in play too — the exact combination `approval_parity_test.dart` never
+/// runs through a real viewport (it never calls `setSurfaceSize`), so this
+/// is the only place the composed card + email preview meets the matrix.
+ChatApproval _emailApproval() => const ChatApproval(
+      id: 'a2',
+      title: 'Send the Q3 stock valuation report to finance',
+      prompt: _longEn,
+      actionType: 'send_email',
+      risk: 'high',
+      status: ChatApprovalStatus.pending,
+      payload: {
+        'to': 'finance.team@example.com, warehouse.leads@example.com, '
+            'regional.controllers@example.com',
+        'cc': 'cfo@example.com, audit.committee@example.com',
+        'bcc': 'compliance-archive@example.com',
+        'subject': _longEn,
+        'body': _longAr,
+        'in_reply_to': '<msg-id-abc123@example.com>',
+      },
+    );
+
 PlanSnapshot _plan({int pct = 92}) => PlanSnapshot(
       slug: 'free',
       name: 'Free',
@@ -318,6 +342,17 @@ void main() {
         tester,
         () => ChatApprovalCard(
           approval: _approval(),
+          onApprove: () {},
+          onReject: () {},
+        ),
+      );
+    });
+
+    testWidgets('approval card, send-email', (tester) async {
+      await _sweep(
+        tester,
+        () => ChatApprovalCard(
+          approval: _emailApproval(),
           onApprove: () {},
           onReject: () {},
         ),

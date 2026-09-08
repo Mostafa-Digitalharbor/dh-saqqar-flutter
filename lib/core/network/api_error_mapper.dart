@@ -295,6 +295,7 @@ class ApiErrorMapper {
             (s != null && s > 0
                 ? tr.errorServiceUnavailableWithRetry(s)
                 : tr.errorServiceUnavailable),
+      OdooUnreachableFailure() => tr.errorOdooUnreachable,
       ServerFailure(serverMessage: final m) =>
         tr.presentableServerMessage(m) ?? tr.errorServer,
       UnknownFailure(serverMessage: final m) =>
