@@ -29,14 +29,45 @@ class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
     this.padding = const EdgeInsets.all(AppSpacing.s16),
+    this.margin,
     this.borderRadius = AppRadius.cardR,
     this.blur = false,
     this.color,
     this.borderColor,
+    this.clipBehavior = Clip.none,
     this.child,
-  });
+  }) : _elevated = true;
+
+  /// The same fill, border and radius with **no drop shadow**.
+  ///
+  /// This is the surface a card already sitting inside another card wants —
+  /// a row in a list that is itself on a panel, a suggestion pill, an inline
+  /// hint. Stacking [GlassCard]'s shadow inside a parent that already casts
+  /// one reads as grime around the inner edge rather than as depth, which is
+  /// why every one of these sites had hand-rolled the `Container` +
+  /// `BoxDecoration` instead of using the shared card. Seven copies of the
+  /// same three lines meant `cardBg`/`cardBorder` could drift apart per
+  /// screen, and none of them picked up the radius token when it moved.
+  ///
+  /// Pass [borderRadius] as `AppRadius.pillR` for the pill-shaped variant.
+  const GlassCard.flat({
+    super.key,
+    this.padding = const EdgeInsets.all(AppSpacing.s16),
+    this.margin,
+    this.borderRadius = AppRadius.cardR,
+    this.color,
+    this.borderColor,
+    this.clipBehavior = Clip.none,
+    this.child,
+  })  : blur = false,
+        _elevated = false;
 
   final EdgeInsetsGeometry padding;
+
+  /// Outer inset. Kept on the card rather than left to a wrapping `Padding`
+  /// so a call site that needs both reads as one widget.
+  final EdgeInsetsGeometry? margin;
+
   final BorderRadius borderRadius;
   final Color? color;
   final Color? borderColor;
@@ -44,6 +75,14 @@ class GlassCard extends StatelessWidget {
   /// Set to `true` only when this card actually sits over varied content —
   /// see the class doc for why the default is off.
   final bool blur;
+
+  /// Whether the card casts the elevation shadow. `false` for [GlassCard.flat].
+  final bool _elevated;
+
+  /// Clips the child to [borderRadius]. Needed when the child paints to the
+  /// edge — an `InkWell` ripple, an image, a progress bar — which would
+  /// otherwise square off the corners the border draws round.
+  final Clip clipBehavior;
 
   final Widget? child;
 
@@ -53,6 +92,8 @@ class GlassCard extends StatelessWidget {
 
     final body = Container(
       padding: padding,
+      margin: margin,
+      clipBehavior: clipBehavior,
       decoration: BoxDecoration(
         color: color ?? s.cardBg,
         borderRadius: borderRadius,
@@ -61,21 +102,23 @@ class GlassCard extends StatelessWidget {
         // system's 28/30-blur float bled beyond every card and read as haze
         // rather than depth once cards were stacked in a list. The hue is the
         // shared token; only the blur/offset are local.
-        boxShadow: context.isDark
-            ? [
-                BoxShadow(
-                  color: s.shadowBase.withValues(alpha: AppAlphas.a35),
-                  blurRadius: AppShadowSizes.blurCard,
-                  offset: const Offset(0, AppShadowSizes.dropCard),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: s.shadowBase.withValues(alpha: AppAlphas.a06),
-                  blurRadius: AppShadowSizes.blurHairline,
-                  offset: const Offset(0, AppShadowSizes.dropHairline),
-                ),
-              ],
+        boxShadow: !_elevated
+            ? null
+            : context.isDark
+                ? [
+                    BoxShadow(
+                      color: s.shadowBase.withValues(alpha: AppAlphas.a35),
+                      blurRadius: AppShadowSizes.blurCard,
+                      offset: const Offset(0, AppShadowSizes.dropCard),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: s.shadowBase.withValues(alpha: AppAlphas.a06),
+                      blurRadius: AppShadowSizes.blurHairline,
+                      offset: const Offset(0, AppShadowSizes.dropHairline),
+                    ),
+                  ],
       ),
       child: child,
     );

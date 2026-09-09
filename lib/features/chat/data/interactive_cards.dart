@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/i18n/app_strings.dart';
+import '../../../core/format/wire_value.dart';
 import 'app_pulse_payloads.dart'
     show
         AccountantPulsePayload,
@@ -73,29 +74,13 @@ bool hasRenderableInteractiveCard(Map<String, dynamic>? payload) {
 // would not lose a card; it would throw on every tick and take the whole
 // conversation down with no way back in. So nothing here casts.
 
-/// A displayable string. Numbers and bools stringify (they are still
-/// server-authored values worth showing); maps and lists become empty,
-/// because rendering `{a: 1}` in a chip helps nobody.
-String _str(Object? value) {
-  if (value is String) return value;
-  if (value is num || value is bool) return '$value';
-  return '';
-}
-
-/// A list, or an empty one. Never throws on a scalar.
-List<Object?> _list(Object? value) => value is List ? value : const [];
-
-/// An int from a number or a numeric string; null for anything else.
-int? _int(Object? value) {
-  if (value is num) return value.toInt();
-  if (value is String) return int.tryParse(value.trim());
-  return null;
-}
-
-/// Strictly a `true` bool. A non-bool reads as false rather than as truthy —
-/// for `truncated` that means under-warning, which beats a warning the user
-/// can never clear.
-bool _bool(Object? value) => value is bool && value;
+// The coercions themselves live in `core/format/wire_value.dart` — five
+// parsers had each grown a private copy and they had already drifted. These
+// aliases keep the terse call sites below readable.
+const _str = wireString;
+const _list = wireList;
+const _int = wireInt;
+const _bool = wireBool;
 
 // ─────────────────────────────────────────────────────────────────────────
 // prompt_clarify (§4a)

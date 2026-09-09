@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/i18n/app_strings.dart';
+import '../../../core/format/wire_value.dart';
 import 'interactive_card_kind.dart';
 
 /// The action rows an app-pulse card offers — "Customer collection · 13
@@ -123,10 +124,9 @@ class PulseAction {
 // Payload readers — ported from the web's helpers of the same name
 // ─────────────────────────────────────────────────────────────────────────
 
-Map<String, dynamic> _map(Object? raw) =>
-    raw is Map ? raw.cast<String, dynamic>() : const <String, dynamic>{};
-
-List<Object?> _list(Object? raw) => raw is List ? raw : const [];
+// Shared with every other wire parser — see `core/format/wire_value.dart`.
+const _map = wireMap;
+const _list = wireList;
 
 /// `bucketCount` — null when the bucket says it can't answer, else its count
 /// (a missing count reads as 0, matching the web's `Number(x) || 0`).
@@ -158,19 +158,13 @@ Map<String, dynamic> _first(Object? bucket) {
   return const {};
 }
 
-String _str(Object? value) {
-  if (value is String) return value;
-  if (value is num || value is bool) return '$value';
-  return '';
-}
+const _str = wireString;
+const _num = wireNum;
 
-num? _num(Object? value) {
-  if (value is num) return value;
-  if (value is String) return num.tryParse(value.trim());
-  return null;
-}
-
-int _int(Object? value) => _num(value)?.toInt() ?? 0;
+/// Unlike the other parsers' `_int`, a pulse count that is not a number reads
+/// as 0 rather than as unknown: these feed counters the web renders with
+/// `Number(x) || 0`, and matching that keeps the two clients agreeing.
+int _int(Object? value) => wireIntOr(value, 0);
 
 /// `formatPulseNumber` — `Intl.NumberFormat("en-US", {maximumFractionDigits:
 /// 2})`, and an em dash for a value the server didn't send. Western digits

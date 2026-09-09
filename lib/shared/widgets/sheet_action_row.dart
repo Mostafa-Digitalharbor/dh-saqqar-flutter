@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import 'tappable_surface.dart';
@@ -130,7 +129,7 @@ class SheetActionRow extends StatelessWidget {
             ),
             if (showChevron)
               Icon(
-                context.isRtl ? AppIcons.chevronLeft : AppIcons.chevronRight,
+                context.chevronForward,
                 size: AppIconSizes.small,
                 color: s.muted,
               ),

@@ -185,12 +185,6 @@ class _EnvironmentRow extends StatelessWidget {
     // real fields are shown: name, live/read-only/idle state, and whether
     // credentials are configured. [slug] is the one real secondary
     // identifier the server returns.
-    // Resolved from the rendered direction rather than the language code:
-    // the chevron follows the *layout*, and `Directionality` is what the
-    // layout actually obeys. Comparing against a bare 'ar' literal also
-    // duplicated the code that already exists as `UiStrings.localeArabicCode`.
-    final ar = context.isRtl;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -269,7 +263,7 @@ class _EnvironmentRow extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.s4),
                 child: Icon(
-                  ar ? AppIcons.chevronLeft : AppIcons.chevronRight,
+                  context.chevronForward,
                   size: AppIconSizes.action,
                   color: s.muted,
                 ),

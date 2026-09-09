@@ -208,6 +208,62 @@ class _AuthLogoCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────
 
 /// Title + subtitle header shared by every step.
+/// The email input, in the four places the flow asks for one.
+///
+/// It was written out four times. Three copies were identical; the fourth —
+/// password reset — had lost `autofillHints`, so that one screen alone did
+/// not offer the saved address, on the screen a user reaches precisely
+/// because they cannot remember their credentials. Nothing about that is
+/// visible while the four blocks sit hundreds of lines apart.
+class _EmailField extends StatelessWidget {
+  const _EmailField({
+    required this.controller,
+    required this.errorText,
+    this.onSubmitted,
+    this.textInputAction = TextInputAction.go,
+  });
+
+  final TextEditingController controller;
+  final String? errorText;
+
+  /// Fired on the keyboard's action key. Null where the field is followed by
+  /// another input, in which case [textInputAction] should be `next`.
+  final VoidCallback? onSubmitted;
+
+  final TextInputAction textInputAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = context.tr;
+    return AppTextField(
+      label: tr.email,
+      controller: controller,
+      hint: tr.authEmailPlaceholder,
+      errorText: errorText,
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: textInputAction,
+      autofillHints: const [AutofillHints.email],
+      onSubmitted: onSubmitted == null ? null : (_) => onSubmitted!(),
+    );
+  }
+}
+
+/// The email already established earlier in the flow, shown read-only so the
+/// user can see which account they are completing without being able to
+/// change it out from under the step.
+class _SignedInEmailField extends StatelessWidget {
+  const _SignedInEmailField({required this.email});
+
+  final String email;
+
+  @override
+  Widget build(BuildContext context) => AppTextField(
+        label: context.tr.email,
+        initialValue: email,
+        enabled: false,
+      );
+}
+
 class _Header extends StatelessWidget {
   const _Header({required this.title, required this.subtitle});
   final String title;
@@ -275,25 +331,50 @@ class _EmailChip extends StatelessWidget {
         borderRadius: AppRadius.buttonR,
         border: Border.all(color: s.cardBorder),
       ),
-      child: Row(
-        children: [
-          Icon(AppIcons.mail, size: AppIconSizes.small, color: s.brandCyan),
-          const SizedBox(width: AppSpacing.s10),
-          Expanded(
-            child: Text(
-              email,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+      // A `Row` here overflowed by 66 px on a 320 px phone, in English at
+      // 1.0× — the smallest, plainest cell in the matrix. `Expanded` made the
+      // address yield all its slack, but the button beside it is not a flex
+      // child: "USE DIFFERENT EMAIL" claims its intrinsic width whatever is
+      // left, and on a narrow screen that is more than the row has.
+      //
+      // `Wrap` fixes the direction of the negotiation. The address keeps one
+      // line and ellipsises inside the width it is actually given; the button
+      // drops to a second line when the two cannot share one. On any screen
+      // wide enough — every phone above 320 px with a short address — they
+      // still sit side by side, so the design is unchanged where it fit.
+      child: LayoutBuilder(
+        builder: (context, constraints) => Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: AppSpacing.s4,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(AppIcons.mail,
+                      size: AppIconSizes.small, color: s.brandCyan),
+                  const SizedBox(width: AppSpacing.s10),
+                  Flexible(
+                    child: Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          TextButton(
-            onPressed: onUseDifferent,
-            child: Text(context.tr.authUseDifferentEmail.toUpperCase()),
-          ),
-        ],
+            TextButton(
+              onPressed: onUseDifferent,
+              child: Text(context.tr.authUseDifferentEmail.toUpperCase()),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -449,20 +530,15 @@ class _SignUpEmailBodyState extends State<_SignUpEmailBody> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(title: tr.authSignUpEmailTitle, subtitle: tr.authSignUpEmailSubtitle),
-        AppTextField(
-          label: tr.email,
+        _EmailField(
           controller: _email,
-          hint: tr.authEmailPlaceholder,
           errorText: _error,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.go,
-          autofillHints: const [AutofillHints.email],
-          onSubmitted: (_) => _submit(),
+          onSubmitted: _submit,
         ),
         const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authContinueWithEmail,
-          icon: AppIcons.arrowRight,
+          icon: context.arrowForward,
           loading: loading,
           expand: true,
           onPressed: loading ? null : _submit,
@@ -535,11 +611,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(title: tr.authProfileTitle, subtitle: tr.authProfileSubtitle),
-        AppTextField(
-          label: tr.email,
-          initialValue: cubit.state.email,
-          enabled: false,
-        ),
+        _SignedInEmailField(email: cubit.state.email),
         const SizedBox(height: AppSpacing.s14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,7 +652,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
         const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authCreateAccountBtn,
-          icon: AppIcons.arrowRight,
+          icon: context.arrowForward,
           loading: loading,
           expand: true,
           onPressed: loading ? null : _submit,
@@ -656,20 +728,15 @@ class _SignInEmailBodyState extends State<_SignInEmailBody> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(title: tr.authWelcomeBackTitle, subtitle: tr.authWelcomeBackSubtitle),
-        AppTextField(
-          label: tr.email,
+        _EmailField(
           controller: _email,
-          hint: tr.authEmailPlaceholder,
           errorText: _error,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.go,
-          autofillHints: const [AutofillHints.email],
-          onSubmitted: (_) => _continueWithEmail(),
+          onSubmitted: _continueWithEmail,
         ),
         const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authContinueWithEmail,
-          icon: AppIcons.arrowRight,
+          icon: context.arrowForward,
           loading: loading,
           expand: true,
           onPressed: loading ? null : _continueWithEmail,
@@ -745,14 +812,10 @@ class _PasswordBodyState extends State<_PasswordBody> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(title: tr.authPasswordTitle, subtitle: tr.authPasswordSubtitle),
-        AppTextField(
-          label: tr.email,
+        _EmailField(
           controller: _email,
-          hint: tr.authEmailPlaceholder,
           errorText: _emailError,
-          keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.email],
         ),
         const SizedBox(height: AppSpacing.s14),
         Row(
@@ -796,7 +859,7 @@ class _PasswordBodyState extends State<_PasswordBody> {
         const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authLoginBtn,
-          icon: AppIcons.arrowRight,
+          icon: context.arrowForward,
           loading: loading,
           expand: true,
           onPressed: loading ? null : _submit,
@@ -866,19 +929,15 @@ class _ResetEmailBodyState extends State<_ResetEmailBody> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(title: tr.authResetTitle, subtitle: tr.authResetSubtitle),
-        AppTextField(
-          label: tr.email,
+        _EmailField(
           controller: _email,
-          hint: tr.authEmailPlaceholder,
           errorText: _error,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.go,
-          onSubmitted: (_) => _submit(),
+          onSubmitted: _submit,
         ),
         const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authSendResetCode,
-          icon: AppIcons.arrowRight,
+          icon: context.arrowForward,
           loading: loading,
           expand: true,
           onPressed: loading ? null : _submit,
@@ -937,11 +996,7 @@ class _ResetPasswordBodyState extends State<_ResetPasswordBody> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Header(title: tr.authNewPasswordTitle, subtitle: tr.authNewPasswordSubtitle),
-        AppTextField(
-          label: tr.email,
-          initialValue: cubit.state.email,
-          enabled: false,
-        ),
+        _SignedInEmailField(email: cubit.state.email),
         const SizedBox(height: AppSpacing.s14),
         AppPasswordField(
           label: tr.authNewPasswordLabel,
@@ -960,7 +1015,7 @@ class _ResetPasswordBodyState extends State<_ResetPasswordBody> {
         const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: tr.authSetNewPasswordBtn,
-          icon: AppIcons.arrowRight,
+          icon: context.arrowForward,
           loading: loading,
           expand: true,
           onPressed: loading ? null : _submit,
@@ -1088,7 +1143,7 @@ class _OtpBodyState extends State<_OtpBody> {
         const SizedBox(height: AppSpacing.s16),
         PrimaryButton(
           label: _verifyLabel,
-          icon: AppIcons.arrowRight,
+          icon: context.arrowForward,
           loading: loading,
           expand: true,
           onPressed: loading ? null : _verify,

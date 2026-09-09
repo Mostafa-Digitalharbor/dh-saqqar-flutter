@@ -9,6 +9,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/chip_strip.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/widgets/glass_card.dart';
 
 /// Horizontal strip of quick-action suggestion chips shown directly above
 /// the composer — mirrors the Saqqar Design System's ChatScreen
@@ -87,15 +88,11 @@ class _SuggestionChip extends StatelessWidget {
     return TappableSurface(
       radius: AppRadius.pillR,
       onTap: onTap,
-      child: Container(
+      child: GlassCard.flat(
+        borderRadius: AppRadius.pillR,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.s12,
           vertical: AppSpacing.s7,
-        ),
-        decoration: BoxDecoration(
-          color: s.cardBg,
-          borderRadius: AppRadius.pillR,
-          border: Border.all(color: s.cardBorder),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

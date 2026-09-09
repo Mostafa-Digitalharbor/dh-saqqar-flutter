@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/format/wire_value.dart';
 
 /// Structured draft returned by `POST /api/v1/voice-support/draft/` (§8).
 ///
@@ -195,11 +196,10 @@ class VoiceSupportTicket extends Equatable {
   List<Object?> get props => [ticketId, name, target, kind];
 }
 
-String _str(Object? value) {
-  if (value is String) return value.trim();
-  if (value is num || value is bool) return '$value';
-  return '';
-}
+/// Trimming, unlike the pulse/card parsers: these values go straight into
+/// single-line ticket rows, where a leading newline from a transcript shifts
+/// the whole row. See `core/format/wire_value.dart`.
+String _str(Object? value) => wireString(value, trim: true);
 
 /// Accepts a list of strings, and tolerates a list of `{text: …}`-ish maps or
 /// a single string where a list was documented.

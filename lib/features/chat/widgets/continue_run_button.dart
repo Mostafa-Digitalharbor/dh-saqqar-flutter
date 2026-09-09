@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/widgets/ghost_button.dart';
+import '../../../shared/extensions/context_extensions.dart';
 
 /// "Continue" — one tap to restart a run that stopped at the agent's ceiling
 /// on tool rounds.
@@ -39,7 +39,7 @@ class _ContinueRunButtonState extends State<ContinueRunButton> {
       padding: const EdgeInsetsDirectional.only(start: AppSpacing.s2),
       child: GhostButton(
         label: context.tr.continueRun,
-        icon: AppIcons.arrowRight,
+        icon: context.arrowForward,
         onPressed: _sent
             ? null
             : () {

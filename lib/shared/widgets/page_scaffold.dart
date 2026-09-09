@@ -98,7 +98,24 @@ class _PageScaffoldState extends State<PageScaffold> {
               onNotification: _handleScroll,
               child: SaqqarScreen(
                 controller: widget.controller,
-                padding: widget.padding,
+                // A FAB floats OVER the scroll view, so the scroll view has to
+                // reserve the room itself — `Scaffold` does not inset its body
+                // for one. Without this the last row stayed under the pill at
+                // the very end of the list, where scrolling cannot help:
+                // verified on a Pixel 7, where the vault's final project had
+                // its edit and delete buttons covered, and those two have no
+                // other entry point.
+                //
+                // Added here rather than at the two call sites so a third
+                // screen that mounts a FAB inherits the clearance instead of
+                // rediscovering the bug.
+                padding: widget.floatingActionButton == null
+                    ? widget.padding
+                    : widget.padding.add(
+                        const EdgeInsets.only(
+                          bottom: AppControlSizes.fabClearance,
+                        ),
+                      ),
                 onRefresh: widget.onRefresh,
                 children: widget.children,
               ),

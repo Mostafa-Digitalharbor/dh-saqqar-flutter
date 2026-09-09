@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
 import 'interactive_card_kind.dart' show interactiveCardKind, InteractiveCardKind;
+import '../../../core/format/wire_value.dart';
 
 /// Parsed payloads for the seven guided-app "pulse" cards (Task 1,
 /// MOBILE_TASKS_2026-09.md) — a read-only dashboard rendered from
@@ -27,31 +28,13 @@ import 'interactive_card_kind.dart' show interactiveCardKind, InteractiveCardKin
 ///  4. `notes` / `priorities` arrive already written in Arabic. Print them
 ///     verbatim — never through `context.tr`, never re-translated.
 
-/// A displayable string. Numbers and bools stringify; maps and lists become
-/// empty. Mirrors `interactive_cards.dart`'s `_str` — kept as a separate copy
-/// rather than exported, since exposing a private helper across files is a
-/// worse coupling than four lines duplicated once.
-String _str(Object? value) {
-  if (value is String) return value;
-  if (value is num || value is bool) return '$value';
-  return '';
-}
-
-List<Object?> _list(Object? value) => value is List ? value : const [];
-
-int? _int(Object? value) {
-  if (value is num) return value.toInt();
-  if (value is String) return int.tryParse(value.trim());
-  return null;
-}
-
-double? _double(Object? value) {
-  if (value is num) return value.toDouble();
-  if (value is String) return double.tryParse(value.trim());
-  return null;
-}
-
-bool _bool(Object? value) => value is bool && value;
+// Shared with every other wire parser — see `core/format/wire_value.dart`
+// for why these are one implementation rather than a copy per file.
+const _str = wireString;
+const _list = wireList;
+const _int = wireInt;
+const _double = wireDouble;
+const _bool = wireBool;
 
 /// `status` on every pulse payload — `"ok"` or `"error"` per the doc; an
 /// unrecognised value degrades to `ok` so a payload with real numbers is
@@ -324,8 +307,7 @@ class InventoryPulsePayload extends Equatable {
       ];
 }
 
-Map<String, dynamic> _map(Object? raw) =>
-    raw is Map ? raw.cast<String, dynamic>() : const <String, dynamic>{};
+const _map = wireMap;
 
 /// One row of the accountant's and HR's shared `counters` list: a label, the
 /// count that earned it a place on the list, and the server's own suggested

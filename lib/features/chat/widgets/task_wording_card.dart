@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/glass_card.dart';
 
 /// The structured task prompt, docked above the composer for review.
 ///
@@ -85,7 +85,7 @@ class _TaskWordingCardState extends State<TaskWordingCard> {
     final tr = context.tr;
     final busy = widget.loading;
 
-    return Container(
+    return GlassCard.flat(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.s12,
         AppSpacing.s8,
@@ -93,11 +93,6 @@ class _TaskWordingCardState extends State<TaskWordingCard> {
         0,
       ),
       padding: const EdgeInsets.all(AppSpacing.s12),
-      decoration: BoxDecoration(
-        color: s.cardBg,
-        borderRadius: AppRadius.cardR,
-        border: Border.all(color: s.cardBorder),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

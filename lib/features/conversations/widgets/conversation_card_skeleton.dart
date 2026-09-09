@@ -25,7 +25,10 @@ class ConversationCardSkeleton extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelSkeleton)),
-        borderRadius: AppRadius.modalR,
+        // `conversationCardR`, not `modalR`: this stands in for
+        // `ConversationCard`, whose corner is 16. It was 18, so every row
+        // visibly changed shape at the moment the real list arrived.
+        borderRadius: AppRadius.conversationCardR,
         border: Border.all(color: s.cardBorder),
       ),
       child: const Row(

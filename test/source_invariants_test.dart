@@ -293,6 +293,39 @@ final _developerFacing = () {
   return out;
 }();
 
+/// Whether a file can put text in front of a user.
+///
+/// This used to be spelled inline as `path.contains('/view/') ||
+/// path.contains('/widgets/')`, which is where the feature folders keep their
+/// UI — and nowhere else. Ten files that build widgets do not live in either:
+/// `app.dart`, `navigation/home_shell.dart`, `features/launch/`,
+/// `features/storybook/`, `features/share/intake/` and `shared/animations/`.
+/// The launch splash and the share-destination sheet are both surfaces a user
+/// reaches on their first run, and an English string typed into either would
+/// have shipped onto an Arabic screen with every copy rule green.
+///
+/// Cubits, services and API clients stay out: they use English sentences
+/// constantly for `AppLogger` output and wire values, none of which a user
+/// ever reads.
+bool _rendersUi(String path) {
+  if (path.contains('/view/') || path.contains('/widgets/')) return true;
+  if (path.contains('/data/') ||
+      path.contains('/view_model/') ||
+      path.contains('core/network/') ||
+      path.contains('core/logging/')) {
+    return false;
+  }
+  const extra = [
+    'lib/app.dart',
+    'lib/navigation/',
+    'lib/features/launch/',
+    'lib/features/storybook/',
+    'lib/features/share/intake/',
+    'lib/shared/animations/',
+  ];
+  return extra.any(path.contains);
+}
+
 void main() {
   final lib = _scanLib();
 
@@ -906,8 +939,7 @@ void main() {
       // `AppLogger` output and wire values, and none of that is ever read by a
       // user.
       final hits = _scanLib()
-          .where((l) =>
-              l.path.contains('/view/') || l.path.contains('/widgets/'))
+          .where((l) => _rendersUi(l.path))
           .where((l) => !l.path.contains('core/i18n/'))
           // The one file that MUST carry inline English — it renders when the
           // localization scope itself may have died. Exempt here and pinned
@@ -2094,6 +2126,325 @@ void main() {
             '`extentAfter`, drag sign and insert position changed with it — '
             'and none of it will fail on its own, because the replica is '
             'self-consistent whatever the real screen does.',
+      );
+    });
+  });
+
+  group('Wire coercions are one implementation, not one per parser', () {
+    // Five parsers had each grown a private `_str` / `_int` / `_list`, and
+    // the copies had drifted into four different answers to "what does the UI
+    // show when the server sends something else": one trimmed and three did
+    // not; `_int` meant "unknown" in two files and "zero" in a third; and one
+    // `_str` was a bare `toString()` that would have rendered the literal text
+    // `{en: …, ar: …}` into the prompt bank the day a backend started
+    // localizing a field.
+    //
+    // None of that is visible in review — each file reads fine on its own.
+    // It is only visible from here, which is why the rule lives here.
+    test('no parser declares its own JSON coercion helper', () {
+      // A top-level (not method-level) declaration of a one-argument helper
+      // whose name is the shape it returns. Scoped to the names the copies
+      // actually used, so a genuinely different helper is not caught.
+      final pattern = RegExp(
+        r'^\s*(String|int\??|double\??|num\??|bool|List<[^>]*>|Map<[^>]*>)\s+'
+        r'_(str|int|double|num|bool|list|map)\s*\(\s*Object\?',
+      );
+      // A declaration that DELEGATES to the shared module is the point of
+      // this design, not a violation: `String _str(Object? v) =>
+      // wireString(v, trim: true);` is how a parser names the variant it
+      // wants. Only a hand-rolled body is a fork.
+      final hits = _scanLib(exclude: const ['core/format/wire_value.dart'])
+          .where((l) => pattern.hasMatch(l.text))
+          .where((l) => !RegExp(r'wire[A-Z]').hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Parser declares its own coercion helper:',
+          hits,
+          'read it from `lib/core/format/wire_value.dart` instead — '
+              '`wireString` (with `trim:` when the value goes into a '
+              'single-line row), `wireInt` for "unknown" or `wireIntOr` for an '
+              'explicit substitute, `wireList`, `wireMap`, `wireNum`, '
+              '`wireDouble`, `wireBool`. A terse alias '
+              '(`const _str = wireString;`) keeps the call sites short '
+              'without forking the behaviour.',
+        ),
+      );
+    });
+
+    test('every coercion the shared module promises actually exists', () {
+      // Without this the rule above passes vacuously the moment someone
+      // deletes the module and lets the copies grow back.
+      final src = File('lib/core/format/wire_value.dart').readAsStringSync();
+      for (final name in [
+        'wireString',
+        'wireList',
+        'wireMap',
+        'wireInt',
+        'wireIntOr',
+        'wireNum',
+        'wireDouble',
+        'wireBool',
+      ]) {
+        expect(
+          src,
+          contains(' $name('),
+          reason: 'wire_value.dart no longer declares $name.',
+        );
+      }
+    });
+  });
+
+  group('A row cannot be widened by its own text', () {
+    // Two overflows in one sweep came from the same shape: a `Text` sitting
+    // directly in a `Row` beside something that also wants its intrinsic
+    // width. `ConversationRowMenu` overflowed 27 px in Arabic at 1.4× — and
+    // it is the only route to rename, pin, share, archive and delete, so the
+    // overflow took five actions with it. `_EmailChip` overflowed 66 px in
+    // ENGLISH at 1.0×, the plainest cell in the whole matrix.
+    //
+    // A `Row` gives its children unbounded width, so `overflow: ellipsis` on
+    // a `Text` inside one does nothing at all — the ellipsis can only engage
+    // once something bounds the width. `Expanded` / `Flexible` is what bounds
+    // it.
+    //
+    // The rule is deliberately narrow: it only looks at a `Text(` whose
+    // argument is an interpolation or an identifier — i.e. server-authored
+    // content, whose length the app does not control. A `Text` with a literal
+    // is copy, which the i18n rules already cover and whose length is known.
+    test('no Row places server-authored Text without a flex parent', () {
+      // A widget that bounds the width of everything inside it. Once one of
+      // these is open, a `Text` below it is laid out against a real
+      // constraint and its `overflow` can engage — so it is not this rule's
+      // business how deep it sits.
+      final bounding = RegExp(
+        r'\b(Expanded|Flexible|Wrap|SizedBox|ConstrainedBox|LimitedBox|'
+        r'AutoDirectionText|MarqueeText|IntrinsicWidth|FittedBox)\(',
+      );
+      final offenders = <String>[];
+      final files = Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
+
+      for (final file in files) {
+        final path = file.path.replaceAll(r'\', '/');
+        if (!path.contains('/view/') && !path.contains('/widgets/')) continue;
+        final lines = _stripComments(file.readAsStringSync()).split('\n');
+
+        for (var i = 0; i < lines.length; i++) {
+          if (!RegExp(r'\bRow\(').hasMatch(lines[i])) continue;
+
+          // Depths at which a width-bounding widget is currently open. A
+          // `Text` is safe while this is non-empty; entries pop as their
+          // parens close. Tracking the whole open scope — rather than only
+          // the line above, as the first draft of this rule did — is what
+          // separates `Expanded(child: Column(children: [Text(x)]))`, which
+          // is fine, from `Row(children: [Text(x), Button()])`, which is the
+          // bug.
+          final openBounds = <int>[];
+          var depth = 0;
+          for (var j = i; j < lines.length && j < i + 60; j++) {
+            final line = lines[j];
+            final trimmed = line.trim();
+
+            if (j > i) {
+              final isBareText =
+                  RegExp(r'^(child: )?Text\(\s*[a-z_$]').hasMatch(trimmed);
+              if (isBareText && openBounds.isEmpty) {
+                offenders.add('$path:${j + 1}  $trimmed');
+              }
+            }
+
+            if (j > i && bounding.hasMatch(line)) openBounds.add(depth);
+            depth += '('.allMatches(line).length;
+            depth -= ')'.allMatches(line).length;
+            while (openBounds.isNotEmpty && openBounds.last >= depth) {
+              openBounds.removeLast();
+            }
+            if (j > i && depth <= 0) break;
+          }
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'Unbounded Text inside a Row — it cannot ellipsise, so a long '
+            'value overflows:\n${offenders.map((o) => '  • $o').join('\n')}\n\n'
+            'Fix: wrap it in `Expanded` (to claim the row\'s slack) or '
+            '`Flexible` (to take only what it needs), and give the `Text` '
+            '`maxLines` + `overflow: TextOverflow.ellipsis`. See '
+            '`SheetActionRow` for the house pattern.',
+      );
+    });
+  });
+
+  group('Direction-sensitive glyphs follow the layout', () {
+    // The sibling rule above catches a `←` or `→` typed into copy. This one
+    // catches the same mistake made with an icon, which is how it actually
+    // reached users: seven widgets drew a horizontal chevron and only three
+    // flipped it for Arabic. On an Arabic device the account rows, the chat
+    // sidebar's footer and the share sheet's rows all pointed their "go
+    // deeper" chevron *back the way the user came*, while the vault three
+    // rows away pointed the other way — in the app's primary language.
+    //
+    // A horizontal chevron is never a fixed glyph; it is a direction on the
+    // screen. `context.chevronForward` / `chevronBack` / `chevronsBack`
+    // resolve it from `Directionality`, so a call site cannot get it wrong by
+    // not knowing to ask.
+    test('no bare horizontal glyph at a call site', () {
+      final hits = _scanLib(
+        exclude: const [
+          // The tokens themselves, and the accessors that flip them.
+          'core/theme/app_icons.dart',
+          'shared/extensions/context_extensions.dart',
+        ],
+      )
+          .where((l) => RegExp(
+                r'AppIcons\.(chevronLeft|chevronRight|chevronsLeft|'
+                r'chevronsRight|arrowLeft|arrowRight)',
+              ).hasMatch(l.text))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Bare horizontal glyph:',
+          hits,
+          'read it from the context instead — `context.chevronForward` for '
+              '"onward / into a detail / next page", `context.chevronBack` '
+              'for "back / previous", `context.chevronsBack` for "first '
+              'page", `context.arrowForward` for a Continue button. '
+              'They mirror in Arabic; a named side does not. The door pair '
+              '(`AppIcons.signIn` / `signOut`) is exempt: it mirrors itself '
+              'via `matchTextDirection`, so a bare reference is correct. '
+              'Vertical '
+              'chevrons (`chevronUp` / `chevronDown`) are unaffected and stay '
+              'as they are.',
+        ),
+      );
+    });
+
+    test('the accessors exist and actually flip', () {
+      final src =
+          File('lib/shared/extensions/context_extensions.dart').readAsStringSync();
+      for (final name in [
+        'chevronForward',
+        'chevronBack',
+        'chevronsBack',
+        'arrowForward',
+      ]) {
+        expect(
+          src,
+          contains('get $name'),
+          reason: 'context_extensions no longer declares $name — the rule '
+              'above would then be forbidding a glyph with nothing to '
+              'replace it.',
+        );
+      }
+      // Each must branch on direction. A constant accessor would satisfy the
+      // rule above while reintroducing exactly the bug it exists to stop.
+      expect(
+        RegExp('isRtl').allMatches(src).length,
+        greaterThanOrEqualTo(4),
+        reason: 'A directional-glyph accessor stopped reading the layout '
+            'direction.',
+      );
+    });
+  });
+  group('A scroll target is never the far end of a reversed lane', () {
+    // `maxScrollExtent` means "as far as this lane goes", and which end that
+    // is depends on `reverse`. The chat transcript is the app's only reversed
+    // list, and there it is the OLDEST message — so the restore that meant
+    // "show them the latest" was jumping to the far end of history instead.
+    //
+    // It survived because the pin that runs on the next line snapped the lane
+    // back to 0 before anything was painted, so the only visible symptom was
+    // the cost: the jump notified the scroll listener from `extentAfter == 0`,
+    // which fired an automatic page. Every chat open pulled history nobody
+    // asked for, past a guard that had been set two lines above and so could
+    // not stop it.
+    //
+    // A saved offset clamped INTO the valid range is a different thing and
+    // stays allowed — that is `maxScrollExtent` used as a bound, not as a
+    // destination.
+    test('no jump or animation targets maxScrollExtent', () {
+      final hits = _scanLib()
+          .where((l) => RegExp(
+                r'(jumpTo|animateTo)\([^;]*maxScrollExtent',
+              ).hasMatch(l.text))
+          .where((l) => !l.text.contains('clamp'))
+          .toList();
+
+      expect(
+        hits,
+        isEmpty,
+        reason: _report(
+          'Scroll target read off maxScrollExtent:',
+          hits,
+          'name the end you mean. In the chat lane the newest message is '
+              'offset 0 (`reverse: true`), and `maxScrollExtent` is the '
+              'oldest — so this reads as the opposite of what it says. Use a '
+              'named constant for the end you want, or clamp a saved offset '
+              'into range if that is what this is.',
+        ),
+      );
+    });
+  });
+  group('No stray control character hides inside a source line', () {
+    // This one is here because it already happened, invisibly, to the rule
+    // three groups above: a lone 0x08 had ended up inside its regex literal,
+    // between `signOut)` and the closing quote. In a raw string that is a
+    // literal backspace the pattern then requires, so the rule matched
+    // nothing at all and reported a clean sweep on every run. It was found
+    // only by dumping the file as bytes while editing it for something else.
+    //
+    // A control character is invisible in an editor, survives copy-paste,
+    // and inside a regex, an i18n key or an endpoint path it silently
+    // changes the meaning of the line. Nothing else in this suite can see
+    // it, because every other rule reads the same corrupted text.
+    //
+    // Tab and the line terminators are the legal ones. `\u0001` is allowed
+    // where it is deliberately a field separator, and that one site names
+    // itself.
+    test('lib and test hold no invisible bytes', () {
+      const separatorUse = 'features/push/data/push_notifications_service.dart';
+      final offenders = <String>[];
+      for (final dir in ['lib', 'test']) {
+        for (final file in Directory(dir)
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
+          final normalized = file.path.replaceAll(r'\', '/');
+          if (normalized.endsWith(separatorUse)) continue;
+          final lines = file.readAsStringSync().split('\n');
+          for (var i = 0; i < lines.length; i++) {
+            final match =
+                RegExp(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]').firstMatch(lines[i]);
+            if (match == null) continue;
+            final code = match.group(0)!.codeUnitAt(0);
+            offenders.add('$normalized:${i + 1} '
+                '(U+${code.toRadixString(16).padLeft(4, '0')})');
+          }
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'Invisible control character in source:\n'
+            '  ${offenders.join('\n  ')}\n'
+            'Fix: delete it. If a control character is genuinely wanted as '
+            'data, write it as an escape (`\u0001`) so it is visible to the '
+            'next reader, and add the file to this rule with a note saying '
+            'why.',
       );
     });
   });

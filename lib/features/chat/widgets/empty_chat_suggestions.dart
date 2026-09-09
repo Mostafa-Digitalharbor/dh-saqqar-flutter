@@ -8,6 +8,7 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/widgets/glass_card.dart';
 
 /// Empty-chat surface — replaces the bare "Start a conversation" headline
 /// on 2026-05-17. Hero icon + welcome copy + a 2×2 grid of 4 starter
@@ -216,17 +217,12 @@ class _SuggestionCard extends StatelessWidget {
     return TappableSurface(
       radius: AppRadius.cardR,
       onTap: onTap,
-      child: Container(
+      child: GlassCard.flat(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.s12,
           AppSpacing.s11,
           AppSpacing.s12,
           AppSpacing.s11,
-        ),
-        decoration: BoxDecoration(
-          color: s.cardBg,
-          borderRadius: AppRadius.cardR,
-          border: Border.all(color: s.cardBorder),
         ),
         // mainAxisSize.min so the card hugs its content. The outer
         // IntrinsicHeight + Expanded in the row gives it equal width

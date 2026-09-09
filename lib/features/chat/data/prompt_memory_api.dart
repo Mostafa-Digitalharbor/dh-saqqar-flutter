@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show immutable;
 
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/response_body.dart';
+import '../../../core/format/wire_value.dart';
 
 /// One entry from the saved-task catalogue.
 ///
@@ -128,4 +129,9 @@ class PromptMemoryApi {
   }
 }
 
-String _str(Object? v) => v == null ? '' : v.toString();
+/// Was `v.toString()`, which screened nothing out: every field below is
+/// rendered in the prompt bank, so a `title` that a backend starts sending as
+/// `{"en": …, "ar": …}` would have shown the user the literal text
+/// `{en: …, ar: …}`. [wireString] returns `''` for a map or a list instead,
+/// which the callers already treat as "absent".
+const _str = wireString;

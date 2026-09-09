@@ -11,6 +11,7 @@ import '../../conversations/data/attachment_models.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../../conversations/data/conversations_repository.dart';
 import '../../inbox/data/approval_models.dart';
+import '../../../core/state/action_outcome.dart';
 import 'chat_state.dart';
 
 /// ViewModel for a single chat screen.
@@ -29,7 +30,9 @@ import 'chat_state.dart';
 ///
 /// Marked [QuietBloc] so the BlocObserver doesn't log every 1.5 s state
 /// change — the polling tick would spam the dev console.
-class ChatCubit extends Cubit<ChatState> implements QuietBloc {
+class ChatCubit extends Cubit<ChatState>
+    with ActionOutcomeCubit<ChatState>
+    implements QuietBloc {
   ChatCubit({
     required this.conversationId,
     required ConversationsRepository repository,
@@ -467,6 +470,47 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
   ///
   /// "REPLACE in full" is conditioned on the response having actually
   /// SPOKEN about the field — see [_approvalsFor].
+
+  /// Adopts [incoming] while keeping the transcript and the paging position
+  /// this cubit already holds, then caches and emits it.
+  ///
+  /// Both "keep what we have" branches of [_mergeSnapshot] need the identical
+  /// six preserved fields and differ only in which [messages] survive. They
+  /// were written out twice, which is the exact hazard the first of them
+  /// documents: a hand-rolled snapshot silently drops every field it does not
+  /// happen to list, and that is how `quotaExceeded` was lost — the server
+  /// blocked a send for being over cap, the quota banner painted, and 1.5 s
+  /// later the first poll wiped the flag and re-enabled Send.
+  ///
+  /// `copyWith` on the INCOMING snapshot is what fixes that: a new snapshot
+  /// field is carried by default and can only be lost deliberately. Writing
+  /// the list once means the second branch cannot fall behind the first.
+  void _adoptPreserving(
+    ConversationSnapshot incoming,
+    ConversationSnapshot current,
+    List<Message> messages,
+  ) {
+    final preserved = incoming.copyWith(
+      messages: messages,
+      approvals: _approvalsFor(incoming, current),
+      carriesApprovals: true,
+      // Deliberately the OLD cursor even when rows were stitched in: it is the
+      // low-water mark of what we have definitely seen, so the next delta
+      // re-delivers anything the window missed. Duplicates are deduped on
+      // append; a skipped row would never come back.
+      cursor: current.cursor,
+      delta: false,
+      // A poll asks for the DEFAULT window, so its `oldest_cursor` points at
+      // the newest page — adopting it would rewind our paging position and
+      // make the next "load earlier" re-fetch history we already have. Ours
+      // describes how far back the user has actually read.
+      oldestCursor: current.oldestCursor,
+      hasMoreBefore: current.hasMoreBefore,
+    );
+    emit(state.copyWith(data: DataSuccess(preserved)));
+    _repo.cacheSnapshot(conversationId, preserved);
+  }
+
   void _mergeSnapshot(ConversationSnapshot incoming) {
     final current = state.data.dataOrNull;
     if (current == null || !incoming.delta) {
@@ -485,17 +529,7 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
         // through to "adopt verbatim", replacing a loaded conversation with an
         // empty one. Keep every row we hold and take the rest of the snapshot.
         if (incoming.messages.isEmpty) {
-          final preserved = incoming.copyWith(
-            messages: current.messages,
-            approvals: _approvalsFor(incoming, current),
-            carriesApprovals: true,
-            cursor: current.cursor,
-            delta: false,
-            oldestCursor: current.oldestCursor,
-            hasMoreBefore: current.hasMoreBefore,
-          );
-          emit(state.copyWith(data: DataSuccess(preserved)));
-          _repo.cacheSnapshot(conversationId, preserved);
+          _adoptPreserving(incoming, current, current.messages);
           return;
         }
         final held = {
@@ -520,33 +554,11 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
         ];
         final overlaps = fresh.length < incoming.messages.length;
         if (overlaps) {
-          // `copyWith` on the INCOMING snapshot, not a hand-rolled
-          // constructor: the hand-rolled version silently dropped every field
-          // it didn't happen to list. That's how `quotaExceeded` was being
-          // lost — the server blocks a send for being over cap, the quota
-          // banner paints, and 1.5 s later the first poll wiped the flag and
-          // re-enabled Send. Deriving from `incoming` means a new snapshot
-          // field is carried by default and can only be lost deliberately.
-          final preserved = incoming.copyWith(
-            messages:
-                fresh.isEmpty ? current.messages : [...current.messages, ...fresh],
-            approvals: _approvalsFor(incoming, current),
-            carriesApprovals: true,
-            // Deliberately the OLD cursor even when rows were stitched in: it
-            // is the low-water mark of what we've definitely seen, so the next
-            // delta re-delivers anything the window missed. Duplicates are
-            // deduped on append; a skipped row would never come back.
-            cursor: current.cursor,
-            delta: false,
-            // A poll asks for the DEFAULT window, so its `oldest_cursor` points
-            // at the newest page — adopting it would rewind our paging position
-            // and make the next "load earlier" re-fetch history we already have.
-            // Ours describes how far back the user has actually read.
-            oldestCursor: current.oldestCursor,
-            hasMoreBefore: current.hasMoreBefore,
+          _adoptPreserving(
+            incoming,
+            current,
+            fresh.isEmpty ? current.messages : [...current.messages, ...fresh],
           );
-          emit(state.copyWith(data: DataSuccess(preserved)));
-          _repo.cacheSnapshot(conversationId, preserved);
           return;
         }
       }
@@ -1150,15 +1162,18 @@ class ChatCubit extends Cubit<ChatState> implements QuietBloc {
 
   // ── One-shot message acknowledgement ────────────────────────────────
 
-  void consumeActionFailure() {
-    if (state.actionFailure == null) return;
-    emit(state.copyWith(clearActionFailure: true));
-  }
+  @override
+  Object? get currentActionFailure => state.actionFailure;
 
-  void consumeActionToast() {
-    if (state.actionToast == null) return;
-    emit(state.copyWith(clearActionToast: true));
-  }
+  @override
+  Object? get currentActionToast => state.actionToast;
+
+  @override
+  ChatState clearedActionFailure() =>
+      state.copyWith(clearActionFailure: true);
+
+  @override
+  ChatState clearedActionToast() => state.copyWith(clearActionToast: true);
 
   void consumeShareUrl() {
     if (state.lastShareUrl == null) return;

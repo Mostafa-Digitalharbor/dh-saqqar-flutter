@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/security/view_model/app_lock_cubit.dart';

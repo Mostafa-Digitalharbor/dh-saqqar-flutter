@@ -66,10 +66,22 @@ class _DevicesScreenState extends State<DevicesScreen> {
       AppToast.show(context, message: tr.deviceRevoked,
           variant: ToastVariant.success);
       await _reload();
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      AppToast.show(context, message: tr.deviceRevokeFailed,
-          variant: ToastVariant.error);
+      // The reason, not just the verdict. "Couldn't revoke this device" alone
+      // tells a user with no signal to keep tapping a button that cannot work,
+      // and a user whose session has expired the same thing. `actionContext`
+      // keeps the action named and appends what actually went wrong — offline,
+      // timed out, already revoked (404), no longer permitted (403).
+      AppToast.show(
+        context,
+        message: ApiErrorMapper.message(
+          context,
+          e,
+          actionContext: tr.deviceRevokeFailed,
+        ),
+        variant: ToastVariant.error,
+      );
     } finally {
       if (mounted) setState(() => _revoking.remove(device.id));
     }

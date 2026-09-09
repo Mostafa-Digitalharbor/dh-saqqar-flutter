@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/i18n/app_localizations.dart';
-import '../../core/theme/app_icons.dart';
 import '../extensions/context_extensions.dart';
 import '../extensions/responsive_breakpoints.dart';
 import '../../core/theme/app_radius.dart';
@@ -113,12 +112,12 @@ class PaginationBar extends StatelessWidget {
         IconButton(
           tooltip: context.tr.firstPage,
           onPressed: onFirst,
-          icon: const Icon(AppIcons.chevronsLeft),
+          icon: Icon(context.chevronsBack),
         ),
       IconButton(
         tooltip: context.tr.previousPage,
         onPressed: onPrevious,
-        icon: const Icon(AppIcons.chevronLeft),
+        icon: Icon(context.chevronBack),
       ),
       // Shrinks into whatever the cap leaves rather than pushing the row
       // wider — "Page 128 of 1024" is the widest thing here at large text
@@ -138,7 +137,7 @@ class PaginationBar extends StatelessWidget {
       IconButton(
         tooltip: context.tr.nextPage,
         onPressed: onNext,
-        icon: const Icon(AppIcons.chevronRight),
+        icon: Icon(context.chevronForward),
       ),
     ];
   }

@@ -8,6 +8,7 @@ import '../../../core/network/api_error_mapper.dart';
 import '../../../core/state/data_state.dart';
 import '../data/conversation_models.dart';
 import '../data/conversations_repository.dart';
+import '../../../core/state/action_outcome.dart';
 import 'conversations_state.dart';
 
 /// ViewModel for the Conversations tab (list view).
@@ -22,7 +23,8 @@ import 'conversations_state.dart';
 /// Pattern mirrors [VaultCubit] — every mutation returns `Future<bool>`,
 /// failures land on `state.actionFailure` as typed [AppFailure], the
 /// view's BlocListener surfaces localized toasts via [ApiErrorMapper].
-class ConversationsCubit extends Cubit<ConversationsState> {
+class ConversationsCubit extends Cubit<ConversationsState>
+    with ActionOutcomeCubit<ConversationsState> {
   ConversationsCubit({required ConversationsRepository repository})
       : _repo = repository,
         super(const ConversationsState());
@@ -415,15 +417,19 @@ class ConversationsCubit extends Cubit<ConversationsState> {
 
   // ── One-shot message acknowledgement ────────────────────────────────
 
-  void consumeActionFailure() {
-    if (state.actionFailure == null) return;
-    emit(state.copyWith(clearActionFailure: true));
-  }
+  @override
+  Object? get currentActionFailure => state.actionFailure;
 
-  void consumeActionToast() {
-    if (state.actionToast == null) return;
-    emit(state.copyWith(clearActionToast: true));
-  }
+  @override
+  Object? get currentActionToast => state.actionToast;
+
+  @override
+  ConversationsState clearedActionFailure() =>
+      state.copyWith(clearActionFailure: true);
+
+  @override
+  ConversationsState clearedActionToast() =>
+      state.copyWith(clearActionToast: true);
 
   // ── Internals ───────────────────────────────────────────────────────
 

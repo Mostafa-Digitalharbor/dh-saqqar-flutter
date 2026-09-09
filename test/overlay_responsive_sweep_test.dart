@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
+import 'package:saqqar_app/core/theme/app_icons.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/billing/data/plan_models.dart';
 import 'package:saqqar_app/features/chat/data/chat_features.dart';
@@ -28,8 +29,13 @@ import 'package:saqqar_app/features/conversations/data/conversation_models.dart'
 import 'package:saqqar_app/features/conversations/widgets/conversation_actions_sheet.dart';
 import 'package:saqqar_app/features/conversations/widgets/conversation_card_skeleton.dart';
 import 'package:saqqar_app/features/conversations/widgets/rename_conversation_dialog.dart';
-import 'package:saqqar_app/features/vault/widgets/credential_row_skeleton.dart';
 import 'package:saqqar_app/features/vault/widgets/project_card_skeleton.dart';
+import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
+import 'package:saqqar_app/features/chat/widgets/chat_search_sheet.dart';
+import 'package:saqqar_app/features/chat/widgets/task_wording_sheet.dart';
+import 'package:saqqar_app/features/chat/widgets/voice_input_button.dart';
+import 'package:saqqar_app/features/conversations/widgets/conversation_row_menu.dart';
+import 'package:saqqar_app/shared/widgets/app_card_dialog.dart';
 import 'package:saqqar_app/shared/widgets/blocking_progress_dialog.dart';
 import 'package:saqqar_app/shared/widgets/confirm_dialog.dart';
 
@@ -117,18 +123,46 @@ Widget _harness(Widget child, {required Locale locale, required double scale}) {
   );
 }
 
+/// The overflow-menu trigger, found by icon rather than by text — it has no
+/// label, and its tooltip is localized.
+final _menuIcon = find.byIcon(AppIcons.more);
+
 /// Pumps [build] across the matrix and fails on the first layout error,
 /// naming the cell and the widget that caused it.
+///
+/// Three ways to get the surface on screen:
+///
+///   * default — [build] IS the surface, pumped directly;
+///   * [asDialog] — [build] is passed to `showDialog`, so `Dialog`'s own
+///     `insetPadding` and min-width constraints are the ones under test;
+///   * [openWith] — [build] renders a trigger that opens the surface itself.
+///     Needed for anything whose `show()` owns state the test cannot
+///     reconstruct: `ChatSearchSheet` creates and disposes its controller
+///     there, `PopupMenuButton` routes its own overlay.
 Future<void> _sweep(
   WidgetTester tester,
   Widget Function() build, {
   bool asDialog = false,
+  Object? openWith,
 }) async {
   for (final viewport in _viewports) {
     for (final locale in _locales) {
       for (final scale in _textScales) {
         await tester.binding.setSurfaceSize(viewport.size);
         addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Tear the previous cell's tree down before building the next one.
+        //
+        // `pumpWidget` with a new `MaterialApp` reuses the same `Navigator`
+        // element, so a route pushed in cell N — every dialog and every sheet
+        // this file opens — was still mounted in cell N+1, and the next
+        // "open" tap landed on the leftover overlay instead of the button
+        // under it. Twelve cells deep, the sweep was measuring a stack of
+        // twelve dialogs rather than one, and the tap warnings it printed
+        // were the only sign. Pumping a bare `SizedBox` first unmounts
+        // everything, so each cell starts from nothing.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
 
         final culprits = <String>[];
         final previousOnError = FlutterError.onError;
@@ -176,6 +210,17 @@ Future<void> _sweep(
             _harness(build(), locale: locale, scale: scale),
           );
           await tester.pump();
+          if (openWith != null) {
+            // `warnIfMissed: false` — the landscape row can push the trigger
+            // partly out of the 320 px-tall viewport, and the surface still
+            // opens. A miss that matters shows up as the layout error this
+            // sweep is looking for, not as a tap warning.
+            await tester.tap(
+              openWith is Finder ? openWith : find.text(openWith as String),
+              warnIfMissed: false,
+            );
+            await tester.pump();
+          }
           await tester.pump(const Duration(milliseconds: 350));
         }
 
@@ -305,12 +350,137 @@ void main() {
       await _sweep(tester, () => const ConversationCardSkeleton());
     });
 
-    testWidgets('CredentialRowSkeleton', (tester) async {
-      await _sweep(tester, () => const CredentialRowSkeleton());
-    });
-
     testWidgets('ProjectCardSkeleton', (tester) async {
       await _sweep(tester, () => const ProjectCardSkeleton());
+    });
+  });
+
+  // ── The five overlays nothing was sweeping ─────────────────────────────
+  //
+  // Every dialog and sheet above was added to this file because it broke, or
+  // because someone noticed it could. These five were simply never listed:
+  // `ChatSearchSheet`, `TaskWordingSheet`, `RecordingOverlay`,
+  // `ConversationRowMenu` and `AppCardDialog` render on the same 320 px
+  // phones as everything else, and three of them are the ONLY route to the
+  // action they carry — a row menu that overflows takes rename, pin, share,
+  // archive and delete with it.
+  //
+  // `AppCardDialog` in particular sizes itself off `MediaQuery.sizeOf`, which
+  // is exactly the kind of viewport arithmetic the default 800×600 test
+  // surface never exercises: its `minHeight` floor can exceed the viewport on
+  // the landscape row, and nothing was checking that the clamp survives it.
+  group('the overlays that had no sweep at all', () {
+    testWidgets('ChatSearchSheet', (tester) async {
+      // Opened through its own `show`, because the controller lifecycle and
+      // the `viewInsets` padding both live in there rather than in a widget
+      // this test could build directly.
+      final messages = <ChatMessage>[
+        for (var i = 0; i < 12; i++)
+          ChatMessage(
+            role: i.isEven ? ChatMessageRole.user : ChatMessageRole.assistant,
+            content: i.isEven
+                ? 'محتاجه منك في فقرات كل مستخدم ايه الصلاحيات اللي عنده'
+                : 'ALZOMMAN Trading & Contracting Establishment — Staging Live',
+            time: '10:0$i',
+            id: 'm$i',
+          ),
+      ];
+      await _sweep(
+        tester,
+        () => Builder(
+          builder: (context) => TextButton(
+            onPressed: () => ChatSearchSheet.show(context, messages: messages),
+            child: const Text('open'),
+          ),
+        ),
+        openWith: 'open',
+      );
+    });
+
+    testWidgets('TaskWordingSheet', (tester) async {
+      await _sweep(
+        tester,
+        () => Builder(
+          builder: (context) => TextButton(
+            onPressed: () => TaskWordingSheet.show(
+              context,
+              // The composer hands over whatever is half-typed, so the field
+              // opens at whatever length the user had already reached.
+              initialQuery: kLongName,
+            ),
+            child: const Text('open'),
+          ),
+        ),
+        openWith: 'open',
+      );
+    });
+
+    // Replaces the composer's text field, so it is width-constrained by the
+    // same row that holds the send button — and it carries a fixed-width
+    // waveform plus a monospace timer, the two things least willing to shrink.
+    testWidgets('RecordingOverlay recording', (tester) async {
+      await _sweep(
+        tester,
+        () => RecordingOverlay(
+          // Past ten minutes the timer is five glyphs, not four.
+          elapsed: const Duration(minutes: 12, seconds: 34),
+          transcribing: false,
+          onStop: () {},
+          onDiscard: () {},
+        ),
+      );
+    });
+
+    testWidgets('RecordingOverlay transcribing', (tester) async {
+      await _sweep(
+        tester,
+        () => RecordingOverlay(
+          elapsed: const Duration(seconds: 8),
+          transcribing: true,
+          onStop: () {},
+          onDiscard: () {},
+        ),
+      );
+    });
+
+    // The kebab menu, opened. `PopupMenuButton` lays its items out against the
+    // viewport, so a long Arabic label at 1.4× is the case that decides
+    // whether "Unarchive" fits beside its icon.
+    testWidgets('ConversationRowMenu opened', (tester) async {
+      await _sweep(
+        tester,
+        () => Align(
+          alignment: Alignment.topRight,
+          child: ConversationRowMenu(
+            onAction: (_) {},
+            isPinned: true,
+            isArchived: true,
+          ),
+        ),
+        openWith: _menuIcon,
+      );
+    });
+
+    // The shell the vault's two card dialogs share. Swept at the height
+    // fraction its tallest caller uses, so the clamp is exercised against a
+    // viewport shorter than its own `minHeight`.
+    testWidgets('AppCardDialog at its tallest', (tester) async {
+      await _sweep(
+        tester,
+        () => AppCardDialog(
+          heightFactor: 0.8,
+          minHeight: 320,
+          maxHeight: 640,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              for (var i = 0; i < 8; i++)
+                ListTile(title: Text('$kLongName $i')),
+            ],
+          ),
+        ),
+        asDialog: true,
+      );
     });
   });
 }

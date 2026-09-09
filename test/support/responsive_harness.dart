@@ -279,6 +279,19 @@ Future<void> sweepMatrix(
         await tester.binding.setSurfaceSize(viewport.size);
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
+        // Tear the previous cell's tree down before building the next one.
+        //
+        // `pumpWidget` with a new `MaterialApp` reuses the same `Navigator`
+        // element, so anything an `afterPump` pushed — and several of these
+        // sweeps push a sheet, which is the whole point of their `afterPump`
+        // — was still mounted when the next cell built. The later cells were
+        // then measuring the screen with a stack of sheets over it, and an
+        // `afterPump` that taps to open one was tapping the leftover instead
+        // of the screen underneath. Pumping a bare `SizedBox` first unmounts
+        // everything, so each cell starts from nothing.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
         final culprits = <String>[];
         final previousOnError = FlutterError.onError;
         FlutterError.onError = (details) {

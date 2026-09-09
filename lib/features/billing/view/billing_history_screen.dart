@@ -7,13 +7,13 @@ import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_error_mapper.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/stat_tile.dart';
 import '../../../shared/widgets/status_pill.dart';
 import '../../inbox/data/artifact_downloader.dart';
@@ -225,13 +225,7 @@ class _BalanceHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: s.cardBg,
-        borderRadius: AppRadius.cardR,
-        border: Border.all(color: s.cardBorder),
-      ),
+    return GlassCard.flat(
       child: Row(
         children: [
           Expanded(
@@ -277,13 +271,8 @@ class _PaymentRowCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Container(
+    return GlassCard.flat(
       padding: const EdgeInsets.all(AppSpacing.s14),
-      decoration: BoxDecoration(
-        color: s.cardBg,
-        borderRadius: AppRadius.cardR,
-        border: Border.all(color: s.cardBorder),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

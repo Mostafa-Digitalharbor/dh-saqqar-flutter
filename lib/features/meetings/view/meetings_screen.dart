@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/ui_strings.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
@@ -17,6 +16,7 @@ import '../../../shared/widgets/status_pill.dart';
 import '../view_model/meetings_cubit.dart';
 import '../view_model/meetings_state.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../shared/widgets/glass_card.dart';
 
 /// Meetings transcription (API_MOBILE_NEW_ENDPOINTS.md §4.1, Vexa) — start
 /// transcribing an online meeting, watch the live transcript, then stop /
@@ -248,13 +248,8 @@ class _TextBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Container(
+    return GlassCard.flat(
       padding: const EdgeInsets.all(AppSpacing.s14),
-      decoration: BoxDecoration(
-        color: s.cardBg,
-        borderRadius: AppRadius.cardR,
-        border: Border.all(color: s.cardBorder),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

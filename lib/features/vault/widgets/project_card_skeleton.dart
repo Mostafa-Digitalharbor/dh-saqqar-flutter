@@ -6,9 +6,12 @@ import '../../../shared/widgets/skeleton_block.dart';
 import '../../../core/theme/app_sizes.dart';
 
 /// Placeholder shimmer matching the [ProjectCard] silhouette — header row
-/// (icon + name + env count) plus two stub env rows underneath. Replaces
-/// the legacy `CredentialRowSkeleton` use in the vault screen so the
-/// loading state actually previews the projects-list shape.
+/// (icon + name + env count) plus two stub env rows underneath.
+///
+/// This is the vault's only loading placeholder. It replaced a
+/// credential-row shimmer that previewed the wrong shape; that widget kept
+/// being swept and conformance-tested for a while after its last call site
+/// went, which is the only reason it looked alive.
 class ProjectCardSkeleton extends StatelessWidget {
   const ProjectCardSkeleton({super.key, this.envRows = 2});
 

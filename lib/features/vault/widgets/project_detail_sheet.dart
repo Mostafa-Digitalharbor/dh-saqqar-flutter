@@ -341,7 +341,7 @@ class _BackToProjectsPill extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                context.isRtl ? AppIcons.chevronRight : AppIcons.chevronLeft,
+                context.chevronBack,
                 size: AppIconSizes.small,
                 color: s.text,
               ),

@@ -175,7 +175,8 @@ class _LinkRow extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.s8),
             // Mirrors automatically in RTL.
-            Icon(AppIcons.chevronRight, size: AppIconSizes.regular, color: s.muted),
+            Icon(context.chevronForward,
+                size: AppIconSizes.regular, color: s.muted),
           ],
         ),
       ),

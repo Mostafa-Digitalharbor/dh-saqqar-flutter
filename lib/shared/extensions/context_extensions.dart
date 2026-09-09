@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/theme/saqqar_theme_extension.dart';
 
@@ -18,6 +19,42 @@ extension SaqqarContextX on BuildContext {
   bool get isRtl => Directionality.of(this) == TextDirection.rtl;
 
   Locale get locale => Localizations.localeOf(this);
+
+  /// The chevron meaning "onward" — into a detail, to the next page.
+  ///
+  /// Points right in English and **left in Arabic**, because "forward" is a
+  /// direction on the screen, not a fixed glyph. Seven widgets drew one of
+  /// these and only three flipped it: on a device running in Arabic, the
+  /// account rows, the chat sidebar's footer and the share sheet's rows all
+  /// pointed their chevron *back the way the user came*, while the vault
+  /// three rows away pointed the other way. Reading it off the context means
+  /// a call site cannot get it wrong by not knowing to ask.
+  IconData get chevronForward =>
+      isRtl ? AppIcons.chevronLeft : AppIcons.chevronRight;
+
+  /// The chevron meaning "back" — out of a detail, to the previous page.
+  /// The mirror of [chevronForward].
+  IconData get chevronBack =>
+      isRtl ? AppIcons.chevronRight : AppIcons.chevronLeft;
+
+  /// The double chevron meaning "all the way back" — to the first page.
+  IconData get chevronsBack =>
+      isRtl ? AppIcons.chevronsRight : AppIcons.chevronsLeft;
+
+  /// The arrow meaning "continue" — on a primary button that advances a flow.
+  ///
+  /// Seven of the auth flow's nine steps put this on their Continue button,
+  /// so on an Arabic device the arrow pointed backwards on the first screen
+  /// the user ever sees.
+  IconData get arrowForward =>
+      isRtl ? AppIcons.arrowLeft : AppIcons.arrowRight;
+
+  // No `signOutGlyph` / `signInGlyph` here any more. They used to swap
+  // Lucide's `logOut` for `logIn` in RTL on the belief that the two are
+  // mirrors — they are not, and the swap put an ENTER arrow on the Arabic
+  // Sign out button. Those two glyphs now carry `matchTextDirection`, so a
+  // bare `AppIcons.signOut` reflects itself and needs no accessor. See
+  // [AppIcons.signOut].
 
   /// Resolves an [AlphaPair] against the active brightness.
   ///

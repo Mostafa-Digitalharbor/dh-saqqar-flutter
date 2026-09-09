@@ -44,6 +44,7 @@ import 'package:saqqar_app/features/auth/data/auth_api.dart';
 import 'package:saqqar_app/features/billing/data/billing_history_api.dart';
 import 'package:saqqar_app/features/billing/data/plans_api.dart';
 import 'package:saqqar_app/features/billing/data/usage_api.dart';
+import 'package:saqqar_app/features/chat/data/prompt_memory_api.dart';
 import 'package:saqqar_app/features/chat/data/saqqar_tools_api.dart';
 import 'package:saqqar_app/features/chat/data/transcribe_api.dart';
 import 'package:saqqar_app/features/conversations/data/conversations_api.dart';
@@ -725,6 +726,82 @@ void main() {
   // is survivable — but it must still be a failure the caller can see rather
   // than an empty map that reads as "the server has no strings".
   contractFor('RemoteI18nApi.getBundle', (d) => RemoteI18nApi(d).getBundle('ar'));
+
+  // The prompt bank. It was the last client with no entry here, and it is the
+  // one that had quietly diverged: its field reader was a bare `toString()`,
+  // so a `title` a backend starts sending as `{"en": …, "ar": …}` rendered the
+  // literal text `{en: …, ar: …}` into the list. That is not a failure this
+  // group can catch on its own — see `parses hostile field shapes` below —
+  // but the four transport cases belong here with every other client.
+  contractFor(
+    'PromptMemoryApi.fetch',
+    (d) => PromptMemoryApi(d).fetch(lang: 'ar', query: 'close the month'),
+  );
+
+  // ── The shape check the transport cases cannot make ─────────────────────
+  //
+  // A 200 whose body is the right *type* and the wrong *shape* passes every
+  // case above: nothing throws, so nothing is classified. What it produces is
+  // a screen, and the only question worth asking is whether that screen shows
+  // the user something they can read.
+  group('PromptMemoryApi.fetch parses hostile field shapes', () {
+    // `_dio` takes a full `_Case`; these two only vary the body, so they name
+    // a `failure` that is never reached — nothing here is expected to throw.
+    Dio dioWith(String name, Object? body) => _dio((
+          name: name,
+          status: 200,
+          body: body,
+          contentType: _json,
+          failure: UnknownFailure,
+        ));
+
+    test('an object where a string was documented renders as absent', () async {
+      final dio = dioWith('localized object fields', {
+        'ok': true,
+        'prompts': [
+          {
+            'id': 'p1',
+            'source': 'memory',
+            // The shape a backend produces the day it starts localizing.
+            'title': {'en': 'Close the month', 'ar': 'إقفال الشهر'},
+            'description': ['a', 'list', 'where', 'a', 'string', 'was'],
+            'prompt_template': 'Close the month for this company',
+          },
+        ],
+      });
+
+      final result = await PromptMemoryApi(dio).fetch(lang: 'ar');
+
+      expect(result.matches, hasLength(1));
+      final row = result.matches.single;
+      // Empty — which every caller already treats as "no title" — rather than
+      // the Dart rendering of a Map, which is what the user used to see.
+      expect(row.title, isEmpty, reason: 'a map title must not be printed');
+      expect(row.description, isEmpty,
+          reason: 'a list description must not be printed');
+      for (final value in [row.title, row.description, row.promptTemplate]) {
+        expect(value, isNot(contains('{')),
+            reason: 'Dart collection syntax reached the UI');
+        expect(value, isNot(contains('[')),
+            reason: 'Dart collection syntax reached the UI');
+      }
+      // The field that WAS a string still arrives intact, so this is a
+      // screening rule and not a blanket "drop everything".
+      expect(row.promptTemplate, 'Close the month for this company');
+    });
+
+    test('a scalar where the list was documented is empty, not a throw',
+        () async {
+      final dio = dioWith('prompts is a string', {
+        'ok': true,
+        'prompts': 'none',
+        'draft': 7,
+      });
+      final result = await PromptMemoryApi(dio).fetch(lang: 'en');
+      expect(result.matches, isEmpty);
+      expect(result.draft, isNull);
+    });
+  });
 
   // ── The one client that must do the OPPOSITE ────────────────────────────
   //

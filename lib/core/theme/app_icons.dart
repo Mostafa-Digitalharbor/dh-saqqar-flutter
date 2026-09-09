@@ -27,10 +27,16 @@ class AppIcons {
   static const IconData chevronLeft = LucideIcons.chevronLeft;
   static const IconData chevronRight = LucideIcons.chevronRight;
   // Double-chevron "jump to first page" affordance for the pagination bar.
+  // Both directions exist because the glyph is mirrored in Arabic — read it
+  // through `context.chevronsBack` rather than naming a side here.
   static const IconData chevronsLeft = LucideIcons.chevronsLeft;
+  static const IconData chevronsRight = LucideIcons.chevronsRight;
   static const IconData chevronDown = LucideIcons.chevronDown;
   static const IconData chevronUp = LucideIcons.chevronUp;
+  // Both directions exist because the glyph is mirrored in Arabic — read it
+  // through `context.arrowForward` rather than naming a side here.
   static const IconData arrowRight = LucideIcons.arrowRight;
+  static const IconData arrowLeft = LucideIcons.arrowLeft;
   static const IconData sun = LucideIcons.sun;
   static const IconData moon = LucideIcons.moon;
   static const IconData globe = LucideIcons.globe;
@@ -74,8 +80,52 @@ class AppIcons {
   static const IconData bot = LucideIcons.bot;
   static const IconData save = LucideIcons.save;
   static const IconData open = LucideIcons.externalLink;
-  static const IconData signIn = LucideIcons.logIn;
-  static const IconData signOut = LucideIcons.logOut;
+  // ── The door pair mirrors itself ──────────────────────────────────────
+  //
+  // These two are NOT each other's mirror, which is what an earlier pass
+  // assumed. Lucide draws `log-out` as a door on the LEFT with the arrow
+  // travelling right, out of it; and `log-in` as a door on the RIGHT with
+  // the arrow *also* travelling right, into it. Same arrow direction, door on
+  // opposite sides. Swapping them for RTL therefore does not mirror anything
+  // — it changes the meaning, and the Arabic build shipped an ENTER arrow on
+  // its Sign out button. Caught by putting the two renders side by side.
+  //
+  // The mirror of "arrow leaving a door on the left" is "arrow leaving a door
+  // on the right", and no Lucide glyph draws that. So the flip is done to the
+  // glyph itself: `matchTextDirection` makes Flutter's `Icon` widget apply a
+  // horizontal transform under `TextDirection.rtl`, which is exactly the
+  // reflection wanted and is free at every call site — a bare
+  // `AppIcons.signOut` is now correct in both directions, so there is nothing
+  // for a caller to remember.
+  //
+  // Only these two need it. The chevrons and arrows keep their
+  // `context.chevron*` / `context.arrowForward` accessors, because there the
+  // left and right constants ARE genuine mirrors and naming the direction is
+  // clearer than transforming a glyph.
+
+  // The code points are spelled out because `IconData` has to stay `const`
+  // (call sites build const `Icon`s) and Dart will not let a const expression
+  // read a field off another const object. `app_icons_direction_test.dart`
+  // asserts each one still equals its `LucideIcons` source, so the copy
+  // cannot drift when the package renumbers.
+  static const String _lucideFamily = 'Lucide';
+  static const String _lucidePackage = 'lucide_icons_flutter';
+
+  /// The "enter" door. Mirrors itself in RTL.
+  static const IconData signIn = IconData(
+    0xe10d, // LucideIcons.logIn
+    fontFamily: _lucideFamily,
+    fontPackage: _lucidePackage,
+    matchTextDirection: true,
+  );
+
+  /// The "leave" door. Mirrors itself in RTL.
+  static const IconData signOut = IconData(
+    0xe10e, // LucideIcons.logOut
+    fontFamily: _lucideFamily,
+    fontPackage: _lucidePackage,
+    matchTextDirection: true,
+  );
   static const IconData userPlus = LucideIcons.userPlus;
   static const IconData mail = LucideIcons.mail;
   static const IconData settings = LucideIcons.settings;

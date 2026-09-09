@@ -95,7 +95,21 @@ class _MenuRow extends StatelessWidget {
       children: [
         Icon(icon, size: AppIconSizes.regular, color: color),
         const SizedBox(width: AppSpacing.s10),
-        Text(label, style: TextStyle(color: color)),
+        // Expanded + ellipsis, matching `SheetActionRow`. `PopupMenuButton`
+        // sizes its items against the viewport, not against their content, so
+        // an unconstrained `Text` here overflowed by 27 px on a 320 px phone
+        // in Arabic at 1.4× — "إلغاء الأرشفة" beside its glyph is simply wider
+        // than the menu the OS will give it. The row menu is the ONLY route
+        // to rename, pin, share, archive and delete, so an overflow here
+        // takes five actions with it.
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: color),
+          ),
+        ),
       ],
     );
   }

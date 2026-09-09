@@ -9,6 +9,7 @@ import '../../../core/state/data_state.dart';
 import '../data/credential_models.dart';
 import '../data/project_models.dart';
 import '../data/vault_repository.dart';
+import '../../../core/state/action_outcome.dart';
 import 'vault_state.dart';
 
 /// ViewModel for the Vault feature. Owns:
@@ -26,7 +27,8 @@ import 'vault_state.dart';
 /// time. That keeps the cubit context-free AND guarantees the message
 /// follows the user's current locale even if they switch language after
 /// the cubit emitted.
-class VaultCubit extends Cubit<VaultState> {
+class VaultCubit extends Cubit<VaultState>
+    with ActionOutcomeCubit<VaultState> {
   VaultCubit({required VaultRepository repository})
       : _repo = repository,
         super(const VaultState());
@@ -468,17 +470,18 @@ class VaultCubit extends Cubit<VaultState> {
 
   // ── One-shot message acknowledgement ────────────────────────────────
 
-  /// Call from the screen's `BlocListener` after rendering the toast so
-  /// it doesn't fire on subsequent state changes.
-  void consumeActionFailure() {
-    if (state.actionFailure == null) return;
-    emit(state.copyWith(clearActionFailure: true));
-  }
+  @override
+  Object? get currentActionFailure => state.actionFailure;
 
-  void consumeActionToast() {
-    if (state.actionToast == null) return;
-    emit(state.copyWith(clearActionToast: true));
-  }
+  @override
+  Object? get currentActionToast => state.actionToast;
+
+  @override
+  VaultState clearedActionFailure() =>
+      state.copyWith(clearActionFailure: true);
+
+  @override
+  VaultState clearedActionToast() => state.copyWith(clearActionToast: true);
 
   // ── Internals ───────────────────────────────────────────────────────
 

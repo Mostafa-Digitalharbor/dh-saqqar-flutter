@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/theme/app_icons.dart';
 import '../../../shared/widgets/blocking_wall.dart';
 import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/sign_out_helper.dart';
 import '../view_model/app_lock_cubit.dart';
+import '../../../core/theme/app_icons.dart';
 
 /// Full-screen lock shown over the app when the biometric / device-credential
 /// lock is engaged. Auto-prompts the OS authenticator on first show; on

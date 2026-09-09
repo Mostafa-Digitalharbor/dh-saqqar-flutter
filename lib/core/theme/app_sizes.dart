@@ -309,6 +309,22 @@ class AppControlSizes {
   /// The composer's send button.
   static const double sendButton = 42;
 
+  /// Vertical room a screen must leave below its last row so an extended FAB
+  /// does not sit on top of it.
+  ///
+  /// `GradientFab` is `s14` of padding above and below an
+  /// [AppIconSizes.action] glyph — about 52 — and `Scaffold` floats it
+  /// roughly 16 above the bottom inset. `PageScaffold`'s own bottom padding
+  /// is 28, so on both screens that mount a FAB the last card was permanently
+  /// covered: on Vault that is a project's edit and delete buttons, which
+  /// have no other entry point, and no amount of scrolling reveals them
+  /// because the list is already at its end.
+  ///
+  /// Deliberately a little generous. The cost of over-reserving is empty
+  /// space under the last row that a user never notices; the cost of
+  /// under-reserving is a control nobody can reach.
+  static const double fabClearance = 84;
+
   /// `ColoredIconBox`'s default square.
   static const double iconBox = 38;
 
