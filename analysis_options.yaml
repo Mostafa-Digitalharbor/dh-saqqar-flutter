@@ -6,6 +6,12 @@ analyzer:
     - build/**
     - '**/*.g.dart'
     - '**/*.freezed.dart'
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
   errors:
     # Turn unused imports into errors so dead imports never reach main.
     unused_import: error
@@ -25,7 +31,6 @@ linter:
     # Correctness / safety — keep strict, these catch real bugs.
     avoid_dynamic_calls: true
     avoid_print: true # use a proper logger if needed
-    avoid_returning_null_for_future: true
     avoid_slow_async_io: true
     avoid_type_to_string: true
     cancel_subscriptions: true
