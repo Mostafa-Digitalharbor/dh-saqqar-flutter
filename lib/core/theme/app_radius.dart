@@ -25,7 +25,7 @@ class AppRadius {
   static const double input = 14;
   static const double toast = 12;
   static const double modal = 18;
-  static const double sheetTop = 24;
+  static const double sheetTop = 28;
   static const double bubble = 16;
   static const double row = 12;
 
@@ -121,27 +121,34 @@ class AppRadius {
   static const BorderRadius tightR = BorderRadius.all(Radius.circular(tight));
   static const BorderRadius microR = BorderRadius.all(Radius.circular(micro));
   static const BorderRadius badgeR = BorderRadius.all(Radius.circular(badge));
-  static const BorderRadius checkboxR =
-      BorderRadius.all(Radius.circular(checkbox));
-  static const BorderRadius waveformBarR =
-      BorderRadius.all(Radius.circular(waveformBar));
+  static const BorderRadius checkboxR = BorderRadius.all(
+    Radius.circular(checkbox),
+  );
+  static const BorderRadius waveformBarR = BorderRadius.all(
+    Radius.circular(waveformBar),
+  );
   static const BorderRadius navBarR = BorderRadius.all(Radius.circular(navBar));
-  static const BorderRadius heroPlateR =
-      BorderRadius.all(Radius.circular(heroPlate));
-  static const BorderRadius splashPlateR =
-      BorderRadius.all(Radius.circular(splashPlate));
+  static const BorderRadius heroPlateR = BorderRadius.all(
+    Radius.circular(heroPlate),
+  );
+  static const BorderRadius splashPlateR = BorderRadius.all(
+    Radius.circular(splashPlate),
+  );
 
   static const BorderRadius sheetTopR = BorderRadius.only(
     topLeft: Radius.circular(sheetTop),
     topRight: Radius.circular(sheetTop),
   );
 
-  static const BorderRadius conversationCardR =
-      BorderRadius.all(Radius.circular(conversationCard));
-  static const BorderRadius composerR =
-      BorderRadius.all(Radius.circular(composer));
-  static const BorderRadius cardDialogR =
-      BorderRadius.all(Radius.circular(cardDialog));
+  static const BorderRadius conversationCardR = BorderRadius.all(
+    Radius.circular(conversationCard),
+  );
+  static const BorderRadius composerR = BorderRadius.all(
+    Radius.circular(composer),
+  );
+  static const BorderRadius cardDialogR = BorderRadius.all(
+    Radius.circular(cardDialog),
+  );
 
   /// The user chat bubble, cut corner and all.
   ///
@@ -153,12 +160,13 @@ class AppRadius {
   /// by hand, comment included, so the brand mark was maintained in two
   /// places and the shared transcript was one edit away from disagreeing with
   /// the chat it was a transcript of.
-  static const BorderRadiusDirectional userBubbleR = BorderRadiusDirectional.only(
-    topStart: Radius.circular(bubbleCorner),
-    topEnd: Radius.circular(bubbleCut),
-    bottomStart: Radius.circular(bubbleCorner),
-    bottomEnd: Radius.circular(bubbleCorner),
-  );
+  static const BorderRadiusDirectional userBubbleR =
+      BorderRadiusDirectional.only(
+        topStart: Radius.circular(bubbleCorner),
+        topEnd: Radius.circular(bubbleCut),
+        bottomStart: Radius.circular(bubbleCorner),
+        bottomEnd: Radius.circular(bubbleCorner),
+      );
 
   /// The 4 px accent rail down the inline-start edge of a chat card, rounded
   /// to sit flush inside the card's own [bubble] corner.
@@ -242,6 +250,9 @@ class AppDurations {
   /// the dwell — `pricing_screen` had re-typed the 5 s, so the error dwell
   /// was already maintained in two places.
   static const Duration toastDwell = Duration(seconds: 3);
+
+  /// Longest the launch splash waits for the session check.
+  static const Duration splashMax = Duration(seconds: 4);
   static const Duration toastDwellError = Duration(seconds: 5);
 
   // ── One-per-surface timings ─────────────────────────────────────────

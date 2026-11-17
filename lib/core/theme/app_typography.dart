@@ -24,7 +24,7 @@ class AppTypography {
 
   /// Primary Latin/English face — Space Grotesk (variable; Flutter maps
   /// `fontWeight` onto its `wght` axis).
-  static const String fontSans = 'SpaceGrotesk';
+  static const String fontSans = 'HankenGrotesk';
 
   /// Primary Arabic face — Tajawal. Bundled weights: 400 / 500 / 700 / 800
   /// (the family has no 600; Flutter resolves w600 to the nearest one).
@@ -97,7 +97,11 @@ class AppTypography {
       titleSmall: styled(AppFontSizes.titleSmall, FontWeight.w600),
 
       // Body — chat text, lists.
-      bodyLarge: styled(AppFontSizes.bodyLarge, FontWeight.w400, height: AppLineHeights.body),
+      bodyLarge: styled(
+        AppFontSizes.bodyLarge,
+        FontWeight.w400,
+        height: AppLineHeights.body,
+      ),
       bodyMedium: styled(
         AppFontSizes.bodyMedium,
         FontWeight.w400,
@@ -113,8 +117,16 @@ class AppTypography {
 
       // Label / caption / micro.
       labelLarge: styled(AppFontSizes.labelLarge, FontWeight.w600),
-      labelMedium: styled(AppFontSizes.labelMedium, FontWeight.w600, color: muted),
-      labelSmall: styled(AppFontSizes.labelSmall, FontWeight.w700, color: muted),
+      labelMedium: styled(
+        AppFontSizes.labelMedium,
+        FontWeight.w600,
+        color: muted,
+      ),
+      labelSmall: styled(
+        AppFontSizes.labelSmall,
+        FontWeight.w700,
+        color: muted,
+      ),
     );
   }
 

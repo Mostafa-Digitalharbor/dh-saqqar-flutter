@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
 
+// `AppStrings` keeps its copy getters in extensions (see `app_strings_*.dart`),
+// and an extension only applies where it is imported. Anything that reaches
+// strings through `context.tr` therefore gets them from here.
+export 'app_strings.dart';
+
 /// Tiny [LocalizationsDelegate] that exposes [AppStrings] for the active
 /// locale. Use `context.tr` (defined below) to read strings.
 class AppLocalizations {

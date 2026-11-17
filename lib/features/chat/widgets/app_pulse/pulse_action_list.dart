@@ -278,8 +278,7 @@ class _PulseFreeTextActionState extends State<PulseFreeTextAction> {
               controller: _controller,
               focusNode: _focus,
               textInputAction: TextInputAction.send,
-              onSubmitted: (_) =>
-                  _submit(spec.promptKey, spec.emptyPromptKey),
+              onSubmitted: (_) => _submit(spec.promptKey, spec.emptyPromptKey),
               style: context.text.bodySmall?.copyWith(color: s.text),
               decoration: InputDecoration(
                 isDense: true,

@@ -201,5 +201,4 @@ bool showEarlierRetry({
   required bool isNewChat,
   required bool hasRenderedMessages,
   required bool lastAttemptFailed,
-}) =>
-    !isNewChat && hasRenderedMessages && lastAttemptFailed;
+}) => !isNewChat && hasRenderedMessages && lastAttemptFailed;

@@ -29,6 +29,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:saqqar_app/features/home/home_screen.dart';
+import 'package:saqqar_app/features/onboarding/onboarding_screen.dart';
+import 'package:saqqar_app/features/setup/setup_screens.dart';
+import 'package:saqqar_app/features/tasks/tasks_screen.dart';
 import 'package:saqqar_app/core/app_build_info.dart';
 import 'package:saqqar_app/core/state/data_state.dart';
 import 'package:saqqar_app/features/account/view/account_screen.dart';
@@ -369,6 +373,8 @@ WrapBuilder get _withDevices => (child) => RepositoryProvider<DevicesApi>(
       child: child,
     );
 
+void _noopStart() {}
+
 void main() {
   late SharedPreferences prefs;
 
@@ -376,6 +382,64 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     _sweepPrefs = prefs;
+  });
+
+  // ── Redesign screens (2026-11) ───────────────────────────────────────────
+  testWidgets('HomeScreen survives the matrix', (tester) async {
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => const HomeScreen(),
+      wrap: (child) => _withConversations(_withVault(child)),
+    );
+  });
+
+  testWidgets('TasksScreen survives the matrix, with hostile titles',
+      (tester) async {
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => TasksScreen(initial: [
+        ScheduledTask(
+          id: '1',
+          title: kLongName,
+          time: '8:00',
+          timezone: 'Riyadh (GMT+3)',
+          module: 'Sales',
+          frequency: 'Daily',
+          prompt: kLongName,
+        ),
+        const ScheduledTask(
+          id: '2',
+          title: 'Collections summary',
+          time: 'When stock falls below the configured minimum level',
+          timezone: 'Riyadh (GMT+3)',
+          module: 'Inventory',
+          frequency: 'Weekly',
+          prompt: '',
+        ),
+      ]),
+    );
+  });
+
+  testWidgets('OnboardingScreen survives the matrix', (tester) async {
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => const OnboardingScreen(onStart: _noopStart),
+    );
+  });
+
+  testWidgets('CompanyNameScreen survives the matrix', (tester) async {
+    await sweepMatrix(tester, prefs: prefs, () => const CompanyNameScreen());
+  });
+
+  testWidgets('ConnectEnvironmentScreen survives the matrix', (tester) async {
+    await sweepMatrix(
+      tester,
+      prefs: prefs,
+      () => ConnectEnvironmentScreen(companyName: kLongName),
+    );
   });
 
   testWidgets('AccountScreen survives the matrix', (tester) async {
@@ -591,7 +655,7 @@ void main() {
     testWidgets('AccountScreen shows the signed-in identity', (tester) async {
       await pumpOnce(tester, const AccountScreen(),
           prefs: prefs, wrap: _withPlan);
-      expect(find.text('Digital Harbor'), findsWidgets);
+      expect(find.text(kUser.displayName), findsWidgets);
     });
 
     testWidgets('ConversationsScreen shows the seeded row', (tester) async {
@@ -640,6 +704,10 @@ void main() {
       // bullets, a "everything in Professional" header and a two-cycle price
       // line. If the parse silently dropped the catalogue, it is the first
       // thing to go missing.
+      // The redesign's cards are taller, so Business sits below the first
+      // viewport — scroll it into the lazy list's build window.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -2500));
+      await tester.pump();
       expect(find.textContaining('Business'), findsWidgets);
     });
 

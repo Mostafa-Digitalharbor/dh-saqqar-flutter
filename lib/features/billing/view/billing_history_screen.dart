@@ -97,10 +97,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
       // "No viewer installed" is the user's device missing a PDF app, not a
       // failure on our side — info tone, so it doesn't read as a bug report.
       case ArtifactOpenNoViewer():
-        AppToast.show(
-          context,
-          message: context.tr.billingReceiptNoViewer,
-        );
+        AppToast.show(context, message: context.tr.billingReceiptNoViewer);
       // The file arrived but the OS refused to open it — the download is not
       // the problem, so "try again" is the right advice.
       case ArtifactOpenFailed():
@@ -207,7 +204,10 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.s64),
             child: Center(
-              child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
+              child: CircularProgressIndicator(
+                strokeWidth: AppStrokeWidths.spinnerRegular,
+                color: s.muted,
+              ),
             ),
           ),
         ],
@@ -287,8 +287,9 @@ class _PaymentRowCard extends StatelessWidget {
                       row.what,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: context.text.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: context.text.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.s2),
                     Text(
@@ -309,8 +310,9 @@ class _PaymentRowCard extends StatelessWidget {
                       '${row.amount.toStringAsFixed(2)} ${row.currency}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: context.text.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: context.text.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.s4),
                     _StatusChip(row: row),
@@ -329,8 +331,10 @@ class _PaymentRowCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.s8),
             Text(
               context.tr.billingPendingNote(row.ref),
-              style: context.text.bodySmall
-                  ?.copyWith(color: s.muted, height: AppLineHeights.label),
+              style: context.text.bodySmall?.copyWith(
+                color: s.muted,
+                height: AppLineHeights.label,
+              ),
             ),
           ],
           if (row.hasReceipt) ...[
@@ -348,7 +352,11 @@ class _PaymentRowCard extends StatelessWidget {
                           color: s.brandCyan,
                         ),
                       )
-                    : Icon(AppIcons.download, size: AppIconSizes.small, color: s.brandCyan),
+                    : Icon(
+                        AppIcons.download,
+                        size: AppIconSizes.small,
+                        color: s.brandCyan,
+                      ),
                 label: Text(context.tr.billingReceipt),
               ),
             ),
@@ -387,9 +395,8 @@ class _StatusChip extends StatelessWidget {
     final (label, variant) = row.isPaid
         ? (context.tr.billingPaid, StatusPillVariant.success)
         : row.isFailed
-            ? (context.tr.billingFailed, StatusPillVariant.danger)
-            : (context.tr.billingStatusLabel(row.status),
-                StatusPillVariant.info);
+        ? (context.tr.billingFailed, StatusPillVariant.danger)
+        : (context.tr.billingStatusLabel(row.status), StatusPillVariant.info);
     if (label.isEmpty) return const SizedBox.shrink();
     return StatusPill(label: label, variant: variant);
   }

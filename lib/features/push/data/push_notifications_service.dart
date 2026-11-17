@@ -171,8 +171,11 @@ class PushNotificationsService {
       // iOS shows the system prompt here; Android 13+ shows the runtime
       // POST_NOTIFICATIONS prompt. A denial just means no notifications —
       // token registration still proceeds (the user can enable later).
-      final settings =
-          await messaging.requestPermission(alert: true, badge: true, sound: true);
+      final settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
       // Log the permission outcome. On iOS a `denied`/`notDetermined` here means
       // nothing will ever be delivered (notifications refused, or the prompt
       // never ran) — a top cause of "push doesn't work" that is otherwise
@@ -311,8 +314,12 @@ class PushNotificationsService {
         final apns = await messaging.getAPNSToken();
         if (apns != null && apns.isNotEmpty) return apns;
       } catch (e, st) {
-        AppLogger.warn(_tag, 'getAPNSToken attempt $attempt failed',
-            error: e, stackTrace: st);
+        AppLogger.warn(
+          _tag,
+          'getAPNSToken attempt $attempt failed',
+          error: e,
+          stackTrace: st,
+        );
       }
       await Future<void>.delayed(gap);
     }

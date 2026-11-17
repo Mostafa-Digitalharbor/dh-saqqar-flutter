@@ -95,9 +95,9 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
     });
     try {
       await context.read<AuthCubit>().updateProfile(
-            firstName: first,
-            lastName: _last.text.trim(),
-          );
+        firstName: first,
+        lastName: _last.text.trim(),
+      );
       if (!mounted) return;
       setState(() => _justSaved = true);
       AppToast.show(
@@ -110,8 +110,11 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
       final failure = ApiErrorMapper.toFailure(e);
       if (failure is ValidationFailure) {
         // Screened + localized; see `ApiErrorMapper.fieldMessage`.
-        final fErr =
-            ApiErrorMapper.fieldMessage(context, failure, 'first_name');
+        final fErr = ApiErrorMapper.fieldMessage(
+          context,
+          failure,
+          'first_name',
+        );
         if (fErr != null) {
           setState(() => _firstError = fErr);
           return;
@@ -187,8 +190,9 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
               alignment: AlignmentDirectional.centerEnd,
               child: SaveStatusHint(
                 label: _justSaved ? tr.statusSaved : tr.statusNoChanges,
-                tone:
-                    _justSaved ? SaveStatusTone.saved : SaveStatusTone.neutral,
+                tone: _justSaved
+                    ? SaveStatusTone.saved
+                    : SaveStatusTone.neutral,
               ),
             ),
             const SizedBox(height: AppSpacing.s8),
@@ -200,10 +204,9 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
             expand: true,
             // Disabled unless there's an actual edit (and a non-empty first
             // name) — an unchanged form would just cost a redundant PATCH.
-            onPressed:
-                (_loading || !_isDirty || _first.text.trim().isEmpty)
-                    ? null
-                    : _submit,
+            onPressed: (_loading || !_isDirty || _first.text.trim().isEmpty)
+                ? null
+                : _submit,
           ),
         ],
       ),

@@ -38,12 +38,18 @@ import '../../features/trial/data/trial_api.dart';
 import '../../features/trial/view/trial_screen.dart';
 import '../../features/trial/view_model/trial_cubit.dart';
 import '../../features/vault/data/projects_api.dart';
+import '../../features/home/home_screen.dart';
+import '../../features/setup/setup_screens.dart';
+import '../../features/tasks/tasks_screen.dart';
+import '../../features/onboarding/onboarding_flag.dart';
+import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/vault/view/vault_screen.dart';
 import '../constants/ui_strings.dart';
 import '../../navigation/home_shell.dart';
 import '../i18n/app_localizations.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_sizes.dart';
+import '../theme/app_theme.dart';
 import 'route_names.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -64,6 +70,7 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 /// Public routes that don't require an authenticated session. Used by the
 /// gate below to decide whether to redirect to `/sign-in`.
 const _publicPaths = <String>{
+  RouteNames.welcomePath,
   RouteNames.signInPath,
   RouteNames.signUpPath,
 };
@@ -86,7 +93,7 @@ bool _isPublicShare(String location) =>
 GoRouter buildAppRouter(AuthCubit authCubit) {
   return appRouter = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: RouteNames.chatsPath,
+    initialLocation: RouteNames.homePath,
     debugLogDiagnostics: kDebugMode,
     refreshListenable: _AuthRefreshNotifier(authCubit),
     redirect: (context, state) {
@@ -100,13 +107,26 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
           _publicPaths.contains(location) || _isPublicShare(location);
       final isAuthed = auth.isAuthenticated;
 
-      if (!isAuthed && !isPublic) return RouteNames.signInPath;
+      if (!isAuthed && !isPublic) {
+        return OnboardingFlag.seen
+            ? RouteNames.signInPath
+            : RouteNames.welcomePath;
+      }
       if (isAuthed && _publicPaths.contains(location)) {
-        return RouteNames.chatsPath;
+        return RouteNames.homePath;
       }
       return null;
     },
     routes: [
+      GoRoute(
+        path: RouteNames.welcomePath,
+        name: RouteNames.welcome,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const OnboardingScreen(),
+          kind: _RouteTransitionKind.fade,
+        ),
+      ),
       GoRoute(
         path: RouteNames.signInPath,
         name: RouteNames.signIn,
@@ -191,18 +211,45 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
           kind: _RouteTransitionKind.detail,
         ),
       ),
-      // Saqqar Apps gallery (API_MOBILE_NEW_ENDPOINTS.md §1). Per-route
-      // AppsCubit so its lifetime matches the screen; AppsApi is the
-      // boot-scoped instance from main.dart's RepositoryProvider.
+      // Workspace → Saqqar Apps (same gallery, back-button presentation).
       GoRoute(
-        path: RouteNames.appsPath,
-        name: RouteNames.apps,
+        path: RouteNames.workspaceAppsPath,
+        name: RouteNames.workspaceApps,
         pageBuilder: (context, state) => _transitionPage(
           state: state,
           child: BlocProvider<AppsCubit>(
             create: (ctx) => AppsCubit(ctx.read<AppsApi>()),
-            child: const AppsScreen(),
+            child: const AppsScreen(workspace: true),
           ),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.setupCompanyPath,
+        name: RouteNames.setupCompany,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const CompanyNameScreen(),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.setupEnvironmentPath,
+        name: RouteNames.setupEnvironment,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: ConnectEnvironmentScreen(
+            companyName: state.extra is String ? state.extra! as String : '',
+          ),
+          kind: _RouteTransitionKind.detail,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.accountPath,
+        name: RouteNames.account,
+        pageBuilder: (_, state) => _transitionPage(
+          state: state,
+          child: const AccountScreen(),
           kind: _RouteTransitionKind.detail,
         ),
       ),
@@ -325,15 +372,23 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
                     // sentinel skips the cubit (no server conversation
                     // to poll yet) — the screen falls back to the
                     // create-then-route flow.
-                    child: isNewChat
-                        ? ChatScreen(conversationId: id)
-                        : BlocProvider<ChatCubit>(
-                            create: (ctx) => ChatCubit(
-                              conversationId: id,
-                              repository: ctx.read<ConversationsRepository>(),
-                            )..load(),
-                            child: ChatScreen(conversationId: id),
-                          ),
+                    // The chat is always drawn dark. The Theme sits here,
+                    // above the screen's own context, so the bottom sheets it
+                    // opens inherit it too instead of coming up white.
+                    child: Builder(
+                      builder: (ctx) => Theme(
+                        data: AppTheme.dark(Localizations.localeOf(ctx)),
+                        child: isNewChat
+                            ? ChatScreen(conversationId: id)
+                            : BlocProvider<ChatCubit>(
+                                create: (ctx) => ChatCubit(
+                                  conversationId: id,
+                                  repository: ctx.read<ConversationsRepository>(),
+                                )..load(),
+                                child: ChatScreen(conversationId: id),
+                              ),
+                      ),
+                    ),
                     kind: _RouteTransitionKind.detail,
                   );
                 },
@@ -341,16 +396,33 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
             ],
           ),
           GoRoute(
+            path: RouteNames.homePath,
+            name: RouteNames.home,
+            pageBuilder: (_, state) =>
+                _transitionPage(state: state, child: const HomeScreen()),
+          ),
+          GoRoute(
+            path: RouteNames.appsPath,
+            name: RouteNames.apps,
+            pageBuilder: (context, state) => _transitionPage(
+              state: state,
+              child: BlocProvider<AppsCubit>(
+                create: (ctx) => AppsCubit(ctx.read<AppsApi>()),
+                child: const AppsScreen(),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: RouteNames.tasksPath,
+            name: RouteNames.tasks,
+            pageBuilder: (_, state) =>
+                _transitionPage(state: state, child: const TasksScreen()),
+          ),
+          GoRoute(
             path: RouteNames.vaultPath,
             name: RouteNames.vault,
             pageBuilder: (_, state) =>
                 _transitionPage(state: state, child: const VaultScreen()),
-          ),
-          GoRoute(
-            path: RouteNames.accountPath,
-            name: RouteNames.account,
-            pageBuilder: (_, state) =>
-                _transitionPage(state: state, child: const AccountScreen()),
           ),
         ],
       ),
@@ -416,7 +488,8 @@ CustomTransitionPage<void> _transitionPage({
       // flow, which reads as the route-reverse animation and breaks
       // the affordance "deeper in" = forward motion.
       final isRtl = Directionality.of(context) == TextDirection.rtl;
-      final detailOffset = isRtl ? const Offset(-AppSlideFractions.detailPush, 0)
+      final detailOffset = isRtl
+          ? const Offset(-AppSlideFractions.detailPush, 0)
           : const Offset(AppSlideFractions.detailPush, 0);
       final beginOffset = switch (kind) {
         _RouteTransitionKind.detail => detailOffset,
@@ -429,8 +502,10 @@ CustomTransitionPage<void> _transitionPage({
 
       if (kind == _RouteTransitionKind.scale) {
         return ScaleTransition(
-          scale: Tween<double>(begin: AppScaleFractions.routePush, end: 1)
-              .animate(curve),
+          scale: Tween<double>(
+            begin: AppScaleFractions.routePush,
+            end: AppScaleFractions.settled,
+          ).animate(curve),
           child: faded,
         );
       }

@@ -78,77 +78,75 @@ class ConfirmDialog extends StatelessWidget {
       // the gradient hairline pinned while only this scrolls; on a normal
       // device everything fits and no scrollbar shows.
       child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.s22,
-                      AppSpacing.s22,
-                      AppSpacing.s22,
-                      AppSpacing.s18,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s22,
+          AppSpacing.s22,
+          AppSpacing.s22,
+          AppSpacing.s18,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon case final iconData?) ...[
+              // Align is load-bearing, not decoration. The Column
+              // above is `CrossAxisAlignment.stretch` (the title,
+              // body and button row all want full width), which
+              // hands EVERY child a tight full-width constraint —
+              // and a tight parent constraint beats a child's own
+              // `width: 46`. Without this the 46×46 badge rendered
+              // as a 336px-wide bar with a lone icon floating in
+              // the middle. Align passes loose constraints down,
+              // so the box gets to be the size it asks for.
+              // `centerStart` keeps it edge-aligned with the
+              // left-aligned title beneath it (and mirrors in RTL).
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: ColoredIconBox(
+                  icon: iconData,
+                  color: destructive ? s.danger : s.brandCyan,
+                  size: AppIconSizes.dialogHero,
+                  radius: AppRadius.input,
+                  iconSize: AppIconSizes.boxGlyphLarge,
+                  backgroundAlpha: 0.14,
+                  borderAlpha: 0.28,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s14),
+            ],
+            Text(
+              title,
+              style: context.text.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: AppLetterSpacing.heading,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s8),
+            Text(
+              body,
+              style: context.text.bodyMedium?.copyWith(
+                color: s.muted,
+                height: AppLineHeights.body,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s20),
+            DialogActions(
+              cancel: GhostButton(
+                label: cancelLabel ?? context.tr.cancel,
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              confirm: destructive
+                  ? GhostButton(
+                      label: confirmLabel,
+                      tone: GhostButtonTone.danger,
+                      onPressed: () => Navigator.of(context).pop(true),
+                    )
+                  : PrimaryButton(
+                      label: confirmLabel,
+                      onPressed: () => Navigator.of(context).pop(true),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (icon case final iconData?) ...[
-                          // Align is load-bearing, not decoration. The Column
-                          // above is `CrossAxisAlignment.stretch` (the title,
-                          // body and button row all want full width), which
-                          // hands EVERY child a tight full-width constraint —
-                          // and a tight parent constraint beats a child's own
-                          // `width: 46`. Without this the 46×46 badge rendered
-                          // as a 336px-wide bar with a lone icon floating in
-                          // the middle. Align passes loose constraints down,
-                          // so the box gets to be the size it asks for.
-                          // `centerStart` keeps it edge-aligned with the
-                          // left-aligned title beneath it (and mirrors in RTL).
-                          Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: ColoredIconBox(
-                              icon: iconData,
-                              color: destructive ? s.danger : s.brandCyan,
-                              size: AppIconSizes.dialogHero,
-                              radius: AppRadius.input,
-                              iconSize: AppIconSizes.boxGlyphLarge,
-                              backgroundAlpha: 0.14,
-                              borderAlpha: 0.28,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.s14),
-                        ],
-                        Text(
-                          title,
-                          style: context.text.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: AppLetterSpacing.heading,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s8),
-                        Text(
-                          body,
-                          style: context.text.bodyMedium?.copyWith(
-                            color: s.muted,
-                            height: AppLineHeights.body,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s20),
-                        DialogActions(
-                          cancel: GhostButton(
-                            label: cancelLabel ?? context.tr.cancel,
-                            onPressed: () => Navigator.of(context).pop(false),
-                          ),
-                          confirm: destructive
-                              ? GhostButton(
-                                  label: confirmLabel,
-                                  tone: GhostButtonTone.danger,
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(true),
-                                )
-                              : PrimaryButton(
-                                  label: confirmLabel,
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(true),
-                                ),
-                        ),
-                      ],
+            ),
+          ],
         ),
       ),
     );

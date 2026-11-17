@@ -59,8 +59,8 @@ class GlassCard extends StatelessWidget {
     this.borderColor,
     this.clipBehavior = Clip.none,
     this.child,
-  })  : blur = false,
-        _elevated = false;
+  }) : blur = false,
+       _elevated = false;
 
   final EdgeInsetsGeometry padding;
 
@@ -105,20 +105,20 @@ class GlassCard extends StatelessWidget {
         boxShadow: !_elevated
             ? null
             : context.isDark
-                ? [
-                    BoxShadow(
-                      color: s.shadowBase.withValues(alpha: AppAlphas.a35),
-                      blurRadius: AppShadowSizes.blurCard,
-                      offset: const Offset(0, AppShadowSizes.dropCard),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: s.shadowBase.withValues(alpha: AppAlphas.a06),
-                      blurRadius: AppShadowSizes.blurHairline,
-                      offset: const Offset(0, AppShadowSizes.dropHairline),
-                    ),
-                  ],
+            ? [
+                BoxShadow(
+                  color: s.shadowBase.withValues(alpha: AppAlphas.a35),
+                  blurRadius: AppShadowSizes.blurCard,
+                  offset: const Offset(0, AppShadowSizes.dropCard),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: s.shadowBase.withValues(alpha: AppAlphas.a06),
+                  blurRadius: AppShadowSizes.blurHairline,
+                  offset: const Offset(0, AppShadowSizes.dropHairline),
+                ),
+              ],
       ),
       child: child,
     );
@@ -128,7 +128,10 @@ class GlassCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: borderRadius,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: AppShadowSizes.glassBlurSigma, sigmaY: AppShadowSizes.glassBlurSigma),
+        filter: ImageFilter.blur(
+          sigmaX: AppShadowSizes.glassBlurSigma,
+          sigmaY: AppShadowSizes.glassBlurSigma,
+        ),
         child: body,
       ),
     );

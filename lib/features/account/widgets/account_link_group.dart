@@ -103,7 +103,12 @@ class AccountLinkGroup extends StatelessWidget {
           ],
           for (var i = 0; i < links.length; i++) ...[
             if (i > 0)
-              Divider(height: AppBorderWidths.hairline, thickness: AppBorderWidths.hairline, color: s.cardBorder, endIndent: AppSpacing.s8),
+              Divider(
+                height: AppBorderWidths.hairline,
+                thickness: AppBorderWidths.hairline,
+                color: s.cardBorder,
+                endIndent: AppSpacing.s8,
+              ),
             _LinkRow(link: links[i]),
           ],
         ],
@@ -167,16 +172,21 @@ class _LinkRow extends StatelessWidget {
                     // the users most likely to need it.
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: context.text.bodySmall
-                        ?.copyWith(color: s.muted, height: AppLineHeights.label),
+                    style: context.text.bodySmall?.copyWith(
+                      color: s.muted,
+                      height: AppLineHeights.label,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: AppSpacing.s8),
             // Mirrors automatically in RTL.
-            Icon(context.chevronForward,
-                size: AppIconSizes.regular, color: s.muted),
+            Icon(
+              context.chevronForward,
+              size: AppIconSizes.regular,
+              color: s.muted,
+            ),
           ],
         ),
       ),

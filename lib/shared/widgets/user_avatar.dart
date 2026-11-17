@@ -29,7 +29,9 @@ class UserAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppGradients.vivid,
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.onBrand.withValues(alpha: AppAlphas.a16)),
+        border: Border.all(
+          color: AppColors.onBrand.withValues(alpha: AppAlphas.a16),
+        ),
       ),
       alignment: Alignment.center,
       child: Text(

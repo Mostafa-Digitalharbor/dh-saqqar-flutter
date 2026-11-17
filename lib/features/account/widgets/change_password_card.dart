@@ -95,12 +95,11 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
     setState(() {
       _currentError = _current.text.isEmpty ? tr.passwordTooShort : null;
       _nextError = _next.text.length < 8 ? tr.passwordTooShort : null;
-      _confirmError =
-          _confirm.text != _next.text ? tr.passwordsDoNotMatch : null;
+      _confirmError = _confirm.text != _next.text
+          ? tr.passwordsDoNotMatch
+          : null;
     });
-    return _currentError == null &&
-        _nextError == null &&
-        _confirmError == null;
+    return _currentError == null && _nextError == null && _confirmError == null;
   }
 
   Future<void> _submit() async {
@@ -108,9 +107,9 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
     setState(() => _loading = true);
     try {
       await context.read<AuthCubit>().changePassword(
-            oldPassword: _current.text,
-            newPassword: _next.text,
-          );
+        oldPassword: _current.text,
+        newPassword: _next.text,
+      );
       if (!mounted) return;
       AppToast.show(
         context,
@@ -149,10 +148,16 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
       // Through `fieldMessage`, not `firstError` — the raw field strings
       // are unscreened server text, so a DB constraint name could land
       // verbatim under an Arabic input.
-      final newErr =
-          ApiErrorMapper.fieldMessage(context, failure, 'new_password');
-      final oldErr =
-          ApiErrorMapper.fieldMessage(context, failure, 'old_password');
+      final newErr = ApiErrorMapper.fieldMessage(
+        context,
+        failure,
+        'new_password',
+      );
+      final oldErr = ApiErrorMapper.fieldMessage(
+        context,
+        failure,
+        'old_password',
+      );
       setState(() {
         if (oldErr != null) _currentError = oldErr;
         if (newErr != null) _nextError = newErr;
@@ -232,8 +237,10 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                   children: [
                     Text(
                       context.tr.changePasswordHint,
-                      style: context.text.bodySmall
-                          ?.copyWith(color: s.muted, height: AppLineHeights.compact),
+                      style: context.text.bodySmall?.copyWith(
+                        color: s.muted,
+                        height: AppLineHeights.compact,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.s14),
                     AutofillGroup(
@@ -273,8 +280,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                       icon: AppIcons.lock,
                       loading: _loading,
                       expand: true,
-                      onPressed:
-                          (_loading || !_canSubmit) ? null : _submit,
+                      onPressed: (_loading || !_canSubmit) ? null : _submit,
                     ),
                   ],
                 ),

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 import '../../../core/i18n/platform_strings.dart';
+import '../../../core/i18n/app_strings.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../chat/data/transcribe_api.dart';
 import '../../conversations/data/conversation_models.dart';
@@ -28,10 +29,10 @@ class WatchBridge {
     required ConversationsApi conversationsApi,
     required ProjectsApi projectsApi,
     required PlatformStrings platformStrings,
-  })  : _transcribeApi = transcribeApi,
-        _conversationsApi = conversationsApi,
-        _projectsApi = projectsApi,
-        _platformStrings = platformStrings {
+  }) : _transcribeApi = transcribeApi,
+       _conversationsApi = conversationsApi,
+       _projectsApi = projectsApi,
+       _platformStrings = platformStrings {
     if (Platform.isIOS) {
       _channel.setMethodCallHandler(_handleCall);
     }
@@ -83,12 +84,15 @@ class WatchBridge {
     try {
       await _channel.invokeMethod<void>('syncApprovals', {
         'pendingCount': pendingCount,
-        'approvals': [
-          for (final a in pending.take(maxItems)) _encode(a),
-        ],
+        'approvals': [for (final a in pending.take(maxItems)) _encode(a)],
       });
     } catch (e, st) {
-      AppLogger.warn(_tag, 'syncApprovals failed (non-fatal)', error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'syncApprovals failed (non-fatal)',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -98,13 +102,13 @@ class WatchBridge {
   // `ISO8601DateFormatter` strict parsing on the watch. Millis sidestep
   // the whole format question.
   Map<String, dynamic> _encode(Approval a) => {
-        'id': a.id,
-        'prompt': a.prompt,
-        'actionType': a.actionType.wire,
-        'conversationTitle': a.conversation?.title ?? '',
-        'createdAtMs': a.createdAt?.millisecondsSinceEpoch,
-        'recordCount': a.recordCount,
-      };
+    'id': a.id,
+    'prompt': a.prompt,
+    'actionType': a.actionType.wire,
+    'conversationTitle': a.conversation?.title ?? '',
+    'createdAtMs': a.createdAt?.millisecondsSinceEpoch,
+    'recordCount': a.recordCount,
+  };
 
   /// Handles calls placed by the native iOS host on behalf of the watch —
   /// today just the approve/deny action relayed from a `WCSession`
@@ -116,9 +120,15 @@ class WatchBridge {
         final args = (call.arguments as Map).cast<String, dynamic>();
         final id = args['id'] as String;
         final approved = args['approved'] as bool;
-        AppLogger.info(_tag, 'decideApproval($id, approved=$approved) from watch');
+        AppLogger.info(
+          _tag,
+          'decideApproval($id, approved=$approved) from watch',
+        );
         final result = await _approvalsApi.decide(id: id, approved: approved);
-        return {'id': result.approval.id, 'status': result.approval.status.wire};
+        return {
+          'id': result.approval.id,
+          'status': result.approval.status.wire,
+        };
       case 'voiceCommand':
         final args = (call.arguments as Map).cast<String, dynamic>();
         return _handleVoiceCommand(
@@ -155,7 +165,10 @@ class WatchBridge {
   }) async {
     final file = File(path);
     try {
-      AppLogger.info(_tag, 'voiceCommand(conversationId=$conversationId) from watch');
+      AppLogger.info(
+        _tag,
+        'voiceCommand(conversationId=$conversationId) from watch',
+      );
       final transcript = await _transcribeApi.transcribe(audio: file);
       if (transcript.isEmpty) {
         return {'error': _platformStrings.strings.watchErrorNoSpeech};
@@ -171,15 +184,20 @@ class WatchBridge {
         await _conversationsApi.patch(
           id: id,
           autoApprove: true,
-          environmentId:
-              (environmentId != null && environmentId.isNotEmpty) ? environmentId : null,
+          environmentId: (environmentId != null && environmentId.isNotEmpty)
+              ? environmentId
+              : null,
         );
       }
       final sent = await _conversationsApi.sendMessage(
         conversationId: id,
         content: transcript,
       );
-      final firstPass = await _pollForReply(id, since: sent.cursor, timeout: _voiceReplyTimeout);
+      final firstPass = await _pollForReply(
+        id,
+        since: sent.cursor,
+        timeout: _voiceReplyTimeout,
+      );
       // Best-effort refresh so an approval the turn just created reaches
       // the watch immediately rather than waiting for the phone's own
       // next poll cycle.
@@ -222,16 +240,23 @@ class WatchBridge {
     final deadline = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(deadline)) {
       await Future<void>.delayed(_voiceReplyPollInterval);
-      final snapshot = await _conversationsApi.getSnapshot(conversationId, since: cursor);
+      final snapshot = await _conversationsApi.getSnapshot(
+        conversationId,
+        since: cursor,
+      );
       cursor = snapshot.cursor ?? cursor;
       for (final message in snapshot.messages) {
-        if (message.role == MessageRole.assistant && message.content.trim().isNotEmpty) {
+        if (message.role == MessageRole.assistant &&
+            message.content.trim().isNotEmpty) {
           latestAssistantText = message.content;
         }
       }
       if (!snapshot.conversation.isRunning) {
         final text = latestAssistantText;
-        return (reply: text != null ? _sanitizeForWatch(text) : null, cursor: cursor);
+        return (
+          reply: text != null ? _sanitizeForWatch(text) : null,
+          cursor: cursor,
+        );
       }
     }
     return (reply: null, cursor: cursor);
@@ -271,19 +296,34 @@ class WatchBridge {
   /// `transferUserInfo` — queued, guaranteed delivery (unlike
   /// `sendMessage`), so it still arrives even if the watch app isn't
   /// foregrounded by the time the run finishes.
-  Future<void> _watchForLateReply(String conversationId, {DateTime? since}) async {
+  Future<void> _watchForLateReply(
+    String conversationId, {
+    DateTime? since,
+  }) async {
     try {
-      final result = await _pollForReply(conversationId, since: since, timeout: _lateReplyTimeout);
+      final result = await _pollForReply(
+        conversationId,
+        since: since,
+        timeout: _lateReplyTimeout,
+      );
       final reply = result.reply;
       if (reply != null) {
         await _pushVoiceReply(conversationId: conversationId, reply: reply);
       }
     } catch (e, st) {
-      AppLogger.warn(_tag, 'watchForLateReply failed', error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'watchForLateReply failed',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
-  Future<void> _pushVoiceReply({required String conversationId, required String reply}) async {
+  Future<void> _pushVoiceReply({
+    required String conversationId,
+    required String reply,
+  }) async {
     if (!Platform.isIOS) return;
     try {
       await _channel.invokeMethod<void>('pushVoiceReply', {
@@ -291,7 +331,12 @@ class WatchBridge {
         'reply': reply,
       });
     } catch (e, st) {
-      AppLogger.warn(_tag, 'pushVoiceReply failed (non-fatal)', error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'pushVoiceReply failed (non-fatal)',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -334,17 +379,30 @@ class WatchBridge {
         'projectId': env.projectId,
       };
     } catch (e, st) {
-      AppLogger.warn(_tag, 'useDefaultProject failed', error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'useDefaultProject failed',
+        error: e,
+        stackTrace: st,
+      );
       return {'error': _platformStrings.strings.watchErrorProjectSetup};
     }
   }
 
   Future<void> _refreshApprovals() async {
     try {
-      final page = await _approvalsApi.list(status: ApprovalStatus.pending, limit: 10);
+      final page = await _approvalsApi.list(
+        status: ApprovalStatus.pending,
+        limit: 10,
+      );
       await syncApprovals(page.approvals, pendingCount: page.pendingCount);
     } catch (e, st) {
-      AppLogger.warn(_tag, 'post-voice-command approvals refresh failed', error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'post-voice-command approvals refresh failed',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 }

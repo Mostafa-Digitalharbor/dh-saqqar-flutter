@@ -10,6 +10,22 @@ class RouteNames {
   static const signUp = 'sign_up';
   static const signUpPath = '/sign-up';
 
+  // First-run welcome screen (shown once, before sign-in).
+  static const welcome = 'welcome';
+  static const welcomePath = '/welcome';
+
+  // Redesigned tab roots.
+  static const home = 'home';
+  static const homePath = '/home';
+  static const tasks = 'tasks';
+  static const tasksPath = '/tasks';
+
+  // First-run setup wizard (company name → connect Odoo environment).
+  static const setupCompany = 'setup_company';
+  static const setupCompanyPath = '/setup/company';
+  static const setupEnvironment = 'setup_environment';
+  static const setupEnvironmentPath = '/setup/environment';
+
   // Tab roots.
   static const chats = 'chats';
   static const chatsPath = '/chats';
@@ -57,6 +73,8 @@ class RouteNames {
   // Saqqar Apps gallery (API_MOBILE_NEW_ENDPOINTS.md §1) — opened from Account.
   static const apps = 'apps';
   static const appsPath = '/apps';
+  static const workspaceApps = 'workspace_apps';
+  static const workspaceAppsPath = '/workspace-apps';
 
   // Managed Odoo trial (§2) — opened from Account.
   static const trial = 'trial';

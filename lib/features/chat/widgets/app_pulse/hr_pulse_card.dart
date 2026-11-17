@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
-import '../../../../core/i18n/app_strings.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../../../shared/widgets/auto_direction_text.dart';
 import '../../data/app_pulse_payloads.dart';
@@ -51,15 +50,27 @@ class HrPulseCard extends StatelessWidget {
             // three tiles when `operations.available` is false left the card
             // looking like an employee list with nothing on it.
             if (!ops.available)
-              pulseStatTile(tr.pulseUnavailable, tr.pulseHrOperationsTitle,
-                  color: context.saqqar.muted)
+              pulseStatTile(
+                tr.pulseUnavailable,
+                tr.pulseHrOperationsTitle,
+                color: context.saqqar.muted,
+              )
             else ...[
               pulseScalarStatTile(
-                  context, ops.activeEmployees, tr.pulseHrActiveEmployees),
+                context,
+                ops.activeEmployees,
+                tr.pulseHrActiveEmployees,
+              ),
               pulseScalarStatTile(
-                  context, ops.missingManagers, tr.pulseHrMissingManagers),
+                context,
+                ops.missingManagers,
+                tr.pulseHrMissingManagers,
+              ),
               pulseScalarStatTile(
-                  context, ops.missingWorkEmail, tr.pulseHrMissingWorkEmail),
+                context,
+                ops.missingWorkEmail,
+                tr.pulseHrMissingWorkEmail,
+              ),
             ],
             // The doc's other three top-level keys. Each shows a tile only
             // when the server actually sent the key — a card full of em
@@ -89,10 +100,10 @@ class HrPulseCard extends StatelessWidget {
   /// entries are keys the payload didn't carry at all — distinct from a key
   /// that arrived saying `available: false`, which does get a tile.
   List<(String, PulseBucket?)> _sections(AppStrings tr) => [
-        (tr.pulseHrRecruitment, payload.recruitment),
-        (tr.pulseHrPayroll, payload.payroll),
-        (tr.pulseHrTimeOff, payload.timeOff),
-      ];
+    (tr.pulseHrRecruitment, payload.recruitment),
+    (tr.pulseHrPayroll, payload.payroll),
+    (tr.pulseHrTimeOff, payload.timeOff),
+  ];
 }
 
 class _OperationRow extends StatelessWidget {

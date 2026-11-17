@@ -56,7 +56,7 @@ void main() {
       expect(
         en.taskPrepOn,
         'Task prep on. Saqqar will ask a couple of questions to refine vague '
-            'tasks.',
+        'tasks.',
       );
       expect(
         en.taskPrepOff,
@@ -73,7 +73,7 @@ void main() {
       expect(
         ar.taskPrepOn,
         'تجهيز المهمة مفعّل. صقّار سيطرح أسئلة قصيرة لتوضيح المهام غير '
-            'المكتملة.',
+        'المكتملة.',
       );
       expect(
         ar.taskPrepOff,
@@ -239,11 +239,12 @@ void main() {
     /// All of `lib/`, minus the file that DEFINES the getters.
     String libSource() {
       final buffer = StringBuffer();
-      for (final file in Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart'))) {
-        if (file.path.replaceAll(r'\', '/').endsWith('i18n/app_strings.dart')) {
+      for (final file
+          in Directory('lib')
+              .listSync(recursive: true)
+              .whereType<File>()
+              .where((f) => f.path.endsWith('.dart'))) {
+        if (file.path.replaceAll(r'\', '/').contains('i18n/app_strings')) {
           continue;
         }
         buffer.writeln(file.readAsStringSync());
@@ -262,7 +263,8 @@ void main() {
       expect(
         orphans,
         isEmpty,
-        reason: 'These strings are defined but never rendered. Either wire '
+        reason:
+            'These strings are defined but never rendered. Either wire '
             'them up, or add them to `pending` above with the reason:\n'
             '${orphans.join('\n')}',
       );
@@ -280,7 +282,8 @@ void main() {
       expect(
         wired,
         isEmpty,
-        reason: 'These are now used in lib/, so they are no longer pending — '
+        reason:
+            'These are now used in lib/, so they are no longer pending — '
             'drop them from the list:\n${wired.join('\n')}',
       );
     });

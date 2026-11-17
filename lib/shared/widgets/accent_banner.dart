@@ -73,8 +73,7 @@ class AccentBanner extends StatelessWidget {
                       const SizedBox(height: AppSpacing.s2),
                       Text(
                         body!,
-                        style:
-                            context.text.bodySmall?.copyWith(color: s.text),
+                        style: context.text.bodySmall?.copyWith(color: s.text),
                       ),
                     ],
                   ],
@@ -84,10 +83,7 @@ class AccentBanner extends StatelessWidget {
           ),
           if (action != null) ...[
             const SizedBox(height: AppSpacing.s10),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: action!,
-            ),
+            Align(alignment: AlignmentDirectional.centerStart, child: action!),
           ],
         ],
       ),

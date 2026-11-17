@@ -51,9 +51,13 @@ class ArtifactPill extends StatelessWidget {
           AppSpacing.s10,
         ),
         decoration: BoxDecoration(
-          color: s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintFaintest)),
+          color: s.brandCyan.withValues(
+            alpha: context.alpha(AppAlphaPairs.tintFaintest),
+          ),
           borderRadius: AppRadius.cardR,
-          border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a32)),
+          border: Border.all(
+            color: s.brandCyan.withValues(alpha: AppAlphas.a32),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +65,11 @@ class ArtifactPill extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(AppIcons.sparkles, size: AppIconSizes.meta, color: s.brandCyan),
+                Icon(
+                  AppIcons.sparkles,
+                  size: AppIconSizes.meta,
+                  color: s.brandCyan,
+                ),
                 const SizedBox(width: AppSpacing.s6),
                 Text(
                   context.tr.artifactReady.toUpperCase(),
@@ -101,15 +109,17 @@ class ArtifactPill extends StatelessWidget {
                       const SizedBox(height: AppSpacing.s2),
                       Text(
                         '${attachment.kind} · ${attachment.size}',
-                        style: context.text.bodySmall?.copyWith(
-                          color: s.muted,
-                        ),
+                        style: context.text.bodySmall?.copyWith(color: s.muted),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s4),
-                Icon(AppIcons.download, size: AppIconSizes.regular, color: s.brandCyan),
+                Icon(
+                  AppIcons.download,
+                  size: AppIconSizes.regular,
+                  color: s.brandCyan,
+                ),
               ],
             ),
           ],

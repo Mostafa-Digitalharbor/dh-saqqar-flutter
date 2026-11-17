@@ -2,145 +2,83 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:go_router/go_router.dart';
 
+import '../core/constants/ui_strings.dart';
 import '../core/i18n/app_localizations.dart';
 import '../core/routing/route_names.dart';
 import '../core/theme/app_icons.dart';
-import '../core/theme/app_sizes.dart';
-import '../shared/extensions/context_extensions.dart';
+import '../shared/fig/fig.dart';
+import '../shared/fig/tools_sheet.dart';
 import '../shared/widgets/confirm_dialog.dart';
-import '../core/theme/app_radius.dart';
-import '../shared/widgets/tappable_surface.dart';
 
-/// 3-tab bottom shell — Chats / Vault / Account. Inbox + Files were folded
-/// into the chat's own ⋯ menu (approvals and artifacts now live per-chat).
+/// Tab shell: Home / Chat / Apps / Tasks behind the floating black pill bar
+/// (plus the detached ⋮ pill that opens Saqqar Tools). Chat is a full-screen
+/// route that draws the same bar itself, so the shell only hosts the other
+/// three tabs.
 class HomeShell extends StatelessWidget {
   const HomeShell({super.key, required this.child});
 
   final Widget child;
 
-  // 3-tab shell. Inbox + Files were retired: approvals and artifacts now
-  // live inside the chat's own menu so users never have to leave a chat to
-  // act on its pending work.
-  static const _tabs = <_TabSpec>[
-    _TabSpec(
-      routeName: RouteNames.chats,
-      path: RouteNames.chatsPath,
-      icon: AppIcons.chats,
-    ),
-    _TabSpec(
-      routeName: RouteNames.vault,
-      path: RouteNames.vaultPath,
-      icon: AppIcons.projects,
-    ),
-    _TabSpec(
-      routeName: RouteNames.account,
-      path: RouteNames.accountPath,
-      icon: AppIcons.account,
-    ),
-  ];
-
-  int _indexFor(String location, List<_TabSpec> tabs) {
-    for (var i = 0; i < tabs.length; i++) {
-      if (location == tabs[i].path || location.startsWith('${tabs[i].path}/')) {
-        return i;
-      }
-    }
+  static int indexFor(String location) {
+    if (location.startsWith(RouteNames.appsPath)) return 2;
+    if (location.startsWith(RouteNames.tasksPath)) return 3;
     return 0;
   }
 
-  /// Label by route name (not index) so the visible-tab list can be filtered
-  /// per plan without the labels shifting onto the wrong tabs.
-  String _labelForRoute(String routeName, BuildContext context) {
-    return switch (routeName) {
-      RouteNames.chats => context.tr.tabChats,
-      RouteNames.vault => context.tr.tabVault,
-      _ => context.tr.tabAccount,
-    };
+  /// Shared tab navigation used by the shell and by the chat screen's bar.
+  static void go(BuildContext context, int i) {
+    switch (i) {
+      case 0:
+        context.go(RouteNames.homePath);
+      case 1:
+        context.push(RouteNames.chatPath(UiStrings.newConversationId));
+      case 2:
+        context.go(RouteNames.appsPath);
+      case 3:
+        context.go(RouteNames.tasksPath);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
-    final s = context.saqqar;
-
-    // All three tabs (Chats / Vault / Account) are always shown. We used to
-    // hide Vault for Free users, but that (a) dropped the tab entirely and
-    // (b) desynced the bottom bar when the drawer's "Vault" action routed to
-    // /vault — `_indexFor` couldn't find the missing tab and fell back to
-    // Chats, so the Vault screen rendered under the Chats highlight.
-    const tabs = _tabs;
-    final selected = _indexFor(location, tabs);
-
-    // Per-tab transitions are owned by the GoRouter `CustomTransitionPage`
-    // pageBuilders. We MUST NOT wrap `child` in an AnimatedSwitcher here:
-    // ShellRoute hands us the same Navigator (with a single GlobalKey) on
-    // every rebuild, so keeping the previous instance alive during a switch
-    // animation duplicates that GlobalKey and tears the tree.
+    final selected = indexFor(location);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return PopScope(
-      // System back at the shell root would close the app on Android.
-      // Intercept it so the user gets the same Yes/No confirmation as the
-      // sign-out flow — protects against accidental exits.
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
+        if (selected != 0) {
+          context.go(RouteNames.homePath);
+          return;
+        }
         await _confirmExit(context);
       },
       child: Scaffold(
-        body: child,
-        bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.s10,
-            AppSpacing.s6,
-            AppSpacing.s10,
-            AppSpacing.s10,
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.chrome)),
-              borderRadius: AppRadius.navBarR,
-              border: Border.all(color: s.cardBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(
-                    0xFF020617,
-                  ).withValues(alpha: context.alpha(AppAlphaPairs.glowNav)),
-                  blurRadius: AppShadowSizes.blurCard,
-                  offset: const Offset(0, AppShadowSizes.dropFab),
+        backgroundColor: Fig.pageGrey,
+        extendBody: true,
+        body: Stack(
+          children: [
+            Positioned.fill(child: child),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: (bottomInset - 10).clamp(12.0, 40.0),
+              child: Center(
+                child: FigNavBar(
+                  index: selected,
+                  showMore: selected != 0,
+                  onSelect: (i) => go(context, i),
+                  onMore: () => showSaqqarTools(context),
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.s4,
-                vertical: AppSpacing.s6,
-              ),
-              child: Row(
-                children: [
-                  for (var i = 0; i < tabs.length; i++)
-                    Expanded(
-                      child: _NavTab(
-                        spec: tabs[i],
-                        label: _labelForRoute(tabs[i].routeName, context),
-                        selected: i == selected,
-                        onTap: () => context.go(tabs[i].path),
-                      ),
-                    ),
-                ],
               ),
             ),
-          ),
+          ],
         ),
       ),
-        ),
     );
   }
 
-  /// Confirms the user really wants to leave the app, then yields back to
-  /// the OS via [SystemNavigator.pop]. Uses the same destructive Yes/No
-  /// confirm as sign-out so the two "you're about to lose state" moments
-  /// stay visually consistent.
   Future<void> _confirmExit(BuildContext context) async {
     final tr = context.tr;
     final confirmed = await ConfirmDialog.show(
@@ -156,106 +94,4 @@ class HomeShell extends StatelessWidget {
       await SystemNavigator.pop();
     }
   }
-}
-
-class _NavTab extends StatelessWidget {
-  const _NavTab({
-    required this.spec,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _TabSpec spec;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final color = selected ? s.brandCyan : s.muted;
-
-    // The visible label is drawn only for the selected tab (Material 3), so
-    // without this the other tabs reach a screen reader as an unnamed icon.
-    // `Semantics` carries the name whatever the visual state, and `selected`
-    // is what makes TalkBack/VoiceOver announce "selected" on the active one.
-    return Semantics(
-      label: label,
-      button: true,
-      selected: selected,
-      container: true,
-      child: TappableSurface(
-        radius: AppRadius.bubbleR,
-        onTap: onTap,
-        child: AnimatedContainer(
-      duration: AppDurations.fast,
-      curve: Curves.easeOutCubic,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s6,
-        vertical: AppSpacing.s8,
-      ),
-      decoration: BoxDecoration(
-        color: selected
-            ? s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintNav))
-            : Colors.transparent,
-        borderRadius: AppRadius.bubbleR,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            height: AppControlSizes.navIconSlot,
-            child: Icon(spec.icon, size: AppIconSizes.navBar, color: color),
-          ),
-          // Material 3 pattern: only the active tab shows its label.
-          // Cuts visual noise on a 5-tab bar without losing the icon
-          // legend on the tab the user is currently on.
-          AnimatedSize(
-            duration: AppDurations.fast,
-            curve: Curves.easeOutCubic,
-            child: selected
-                ? Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.s4),
-                    // The name is on the Semantics container above, which
-                    // covers selected and unselected alike. Without this
-                    // the visible copy is merged in as well and the node
-                    // announces the tab twice.
-                    child: ExcludeSemantics(
-                      child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: (context.text.labelSmall ?? const TextStyle())
-                          .copyWith(
-                        color: color,
-                        fontSize: AppFontSizes.caption,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: AppLetterSpacing.tight,
-                      ),
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    ),
-      ),
-    );
-  }
-}
-
-class _TabSpec {
-  const _TabSpec({
-    required this.routeName,
-    required this.path,
-    required this.icon,
-  });
-
-  final String routeName;
-  final String path;
-  final IconData icon;
 }

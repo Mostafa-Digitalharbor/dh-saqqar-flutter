@@ -27,9 +27,9 @@ class SkeletonBlock extends StatefulWidget {
   /// four places, for a shape the widget already knew how to make. A
   /// generative const constructor makes the call site usable.
   const SkeletonBlock.circle({super.key, required double size})
-      : width = size,
-        height = size,
-        radius = size / 2;
+    : width = size,
+      height = size,
+      radius = size / 2;
 
   final double? width;
   final double height;
@@ -101,37 +101,37 @@ class _SkeletonBlockState extends State<SkeletonBlock>
     // (or whatever list row hosts it) every frame.
     return RepaintBoundary(
       child: AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        // Sweep a soft highlight from -1 to 2 (slightly past both edges)
-        // so the shimmer enters from one side and leaves on the other.
-        // 5-stop gradient (edge → mid → highlight → mid → edge) gives
-        // the sweep a faux-curvature: the block looks like it's
-        // catching light on a soft cylinder instead of being a flat
-        // plate. Edge tone is just dim enough to imply depth without
-        // making the skeleton look bruised.
-        final t = (_ctrl.value * 3) - 1;
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.radius),
-            border: border,
-            gradient: LinearGradient(
-              begin: Alignment(t - 0.7, 0),
-              end: Alignment(t + 0.7, 0),
-              colors: [
-                edgeTone,
-                s.surface2,
-                s.surface3,
-                s.surface2,
-                edgeTone,
-              ],
-              stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+        animation: _ctrl,
+        builder: (context, _) {
+          // Sweep a soft highlight from -1 to 2 (slightly past both edges)
+          // so the shimmer enters from one side and leaves on the other.
+          // 5-stop gradient (edge → mid → highlight → mid → edge) gives
+          // the sweep a faux-curvature: the block looks like it's
+          // catching light on a soft cylinder instead of being a flat
+          // plate. Edge tone is just dim enough to imply depth without
+          // making the skeleton look bruised.
+          final t = (_ctrl.value * 3) - 1;
+          return Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(widget.radius),
+              border: border,
+              gradient: LinearGradient(
+                begin: Alignment(t - 0.7, 0),
+                end: Alignment(t + 0.7, 0),
+                colors: [
+                  edgeTone,
+                  s.surface2,
+                  s.surface3,
+                  s.surface2,
+                  edgeTone,
+                ],
+                stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
       ),
     );
   }

@@ -42,9 +42,11 @@ class ApprovalsState extends Equatable {
   /// Per-conversation pending count — for a chat menu badge / row pulse dot
   /// once a consumer wires this cubit up.
   int pendingForConversation(String conversationId) => _list
-      .where((a) =>
-          a.conversation?.id == conversationId &&
-          a.status == ApprovalStatus.pending)
+      .where(
+        (a) =>
+            a.conversation?.id == conversationId &&
+            a.status == ApprovalStatus.pending,
+      )
       .length;
 
   bool conversationNeedsAttention(String conversationId) =>
@@ -72,25 +74,31 @@ class ApprovalsCubit extends Cubit<ApprovalsState> {
   /// Fetches the pending approvals feed. Keeps any previously-loaded list
   /// visible while refreshing (stale-while-revalidate).
   Future<void> load() async {
-    emit(state.copyWith(
-      approvals: DataLoading(previous: state.approvals.dataOrNull),
-    ));
+    emit(
+      state.copyWith(
+        approvals: DataLoading(previous: state.approvals.dataOrNull),
+      ),
+    );
     try {
       final page = await _api.list(status: ApprovalStatus.pending);
-      emit(state.copyWith(
-        approvals: DataSuccess(page.approvals),
-        pendingTotal: page.pendingCount,
-      ));
+      emit(
+        state.copyWith(
+          approvals: DataSuccess(page.approvals),
+          pendingTotal: page.pendingCount,
+        ),
+      );
     } catch (e) {
       // `message` is an unlocalized fallback (matches VaultCubit): the
       // canonical render path is `DataStateView` + `ApiErrorMapper.message`,
       // which localizes the [AppFailure] stashed in `error`.
-      emit(state.copyWith(
-        approvals: DataFailure(
-          error: ApiErrorMapper.toFailure(e),
-          previous: state.approvals.dataOrNull,
+      emit(
+        state.copyWith(
+          approvals: DataFailure(
+            error: ApiErrorMapper.toFailure(e),
+            previous: state.approvals.dataOrNull,
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -113,12 +121,14 @@ class ApprovalsCubit extends Cubit<ApprovalsState> {
       );
       await load();
     } catch (e) {
-      emit(state.copyWith(
-        approvals: DataFailure(
-          error: ApiErrorMapper.toFailure(e),
-          previous: state.approvals.dataOrNull,
+      emit(
+        state.copyWith(
+          approvals: DataFailure(
+            error: ApiErrorMapper.toFailure(e),
+            previous: state.approvals.dataOrNull,
+          ),
         ),
-      ));
+      );
     }
   }
 

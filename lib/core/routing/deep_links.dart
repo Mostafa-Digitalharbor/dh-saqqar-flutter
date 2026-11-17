@@ -193,7 +193,9 @@ class DeepLinks {
 
     // Both `saqqar://conversation/<id>` (host=conversation) and
     // `saqqar:conversation/<id>` (no host, segments=[conversation,id]) work.
-    final head = host.isNotEmpty ? host : (segments.isEmpty ? '' : segments.first);
+    final head = host.isNotEmpty
+        ? host
+        : (segments.isEmpty ? '' : segments.first);
     final tail = host.isNotEmpty
         ? segments
         : (segments.length > 1 ? segments.sublist(1) : const <String>[]);

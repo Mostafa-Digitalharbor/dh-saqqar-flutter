@@ -1,262 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show HapticFeedback;
 
+import '../../../shared/fig/fig.dart';
+import '../../home/home_screen.dart' show Orb;
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
-import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/colored_icon_box.dart';
-import '../../../shared/widgets/tappable_surface.dart';
-import '../../../shared/widgets/glass_card.dart';
 
-/// Empty-chat surface — replaces the bare "Start a conversation" headline
-/// on 2026-05-17. Hero icon + welcome copy + a 2×2 grid of 4 starter
-/// prompts. Tapping a card calls [onSuggestionTap] with the full prompt so
-/// the chat screen can seed the composer and focus it.
-///
-/// Palette accents come from the theme extension (`brandCyan`,
-/// `brandPurple`, `success`, `warning`) so light/dark + custom themes stay
-/// consistent without hardcoded hex.
+/// Empty-chat surface: the orb and the centred "Hello `<name>` — How can i help
+/// you today?" greeting. [onSuggestionTap] is kept for call-site stability;
+/// the redesign has no starter chips (prompts live in the tools sheet).
 class EmptyChatSuggestions extends StatelessWidget {
-  const EmptyChatSuggestions({super.key, required this.onSuggestionTap});
+  const EmptyChatSuggestions({
+    super.key,
+    required this.onSuggestionTap,
+    this.userName = '',
+  });
 
   final ValueChanged<String> onSuggestionTap;
 
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final tiles = <_SuggestionData>[
-      _SuggestionData(
-        icon: AppIcons.database,
-        accent: s.brandCyan,
-        title: context.tr.suggestExploreTitle,
-        subtitle: context.tr.suggestExploreSub,
-        prompt: context.tr.suggestExplorePrompt,
-      ),
-      _SuggestionData(
-        icon: AppIcons.fileText,
-        accent: s.brandPurple,
-        title: context.tr.suggestSummarizeTitle,
-        subtitle: context.tr.suggestSummarizeSub,
-        prompt: context.tr.suggestSummarizePrompt,
-      ),
-      _SuggestionData(
-        icon: AppIcons.table,
-        accent: s.success,
-        title: context.tr.suggestReportTitle,
-        subtitle: context.tr.suggestReportSub,
-        prompt: context.tr.suggestReportPrompt,
-      ),
-      _SuggestionData(
-        icon: AppIcons.terminal,
-        accent: s.warning,
-        title: context.tr.suggestServerLogsTitle,
-        subtitle: context.tr.suggestServerLogsSub,
-        prompt: context.tr.suggestServerLogsPrompt,
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Two columns on phones; the body never goes wider than 540 px so
-        // the grid still reads as a nice 2×2 on tablets / desktop chat.
-        const maxWidth = 540.0;
-        final width =
-            constraints.maxWidth > maxWidth ? maxWidth : constraints.maxWidth;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s20,
-            vertical: AppSpacing.s24,
-          ),
-          child: Center(
-            child: SizedBox(
-              width: width,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _HeroIcon(accent: s.brandCyan),
-                  const SizedBox(height: AppSpacing.s18),
-                  Text(
-                    context.tr.emptyChatTitle,
-                    textAlign: TextAlign.center,
-                    style: context.text.headlineSmall?.copyWith(
-                      color: s.text,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: AppLetterSpacing.displaySmall,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.s6),
-                  Text(
-                    context.tr.emptyChatBody,
-                    textAlign: TextAlign.center,
-                    style: context.text.bodyMedium?.copyWith(
-                      color: s.muted,
-                      height: AppLineHeights.label,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.s22),
-                  // 2×2 grid built from two IntrinsicHeight rows instead
-                  // of GridView. GridView's fixed childAspectRatio was
-                  // squeezing text on small phones; IntrinsicHeight lets
-                  // each row grow to match the taller card's natural
-                  // content height, and Expanded keeps the two cards in
-                  // a row equal width. Adapts to any phone size.
-                  _SuggestionGrid(
-                    tiles: tiles,
-                    onTap: (prompt) {
-                      HapticFeedback.selectionClick();
-                      onSuggestionTap(prompt);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SuggestionData {
-  const _SuggestionData({
-    required this.icon,
-    required this.accent,
-    required this.title,
-    required this.subtitle,
-    required this.prompt,
-  });
-
-  final IconData icon;
-  final Color accent;
-  final String title;
-  final String subtitle;
-  final String prompt;
-}
-
-class _HeroIcon extends StatelessWidget {
-  const _HeroIcon({required this.accent});
-  final Color accent;
+  /// First name for the greeting; empty renders a plain "Hello".
+  final String userName;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: AppBoxSizes.suggestionGlyph,
-      height: AppBoxSizes.suggestionGlyph,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: accent.withValues(alpha: AppAlphas.a14),
-        border: Border.all(color: accent.withValues(alpha: AppAlphas.a32), width: AppBorderWidths.hairline),
-      ),
-      child: Icon(
-        AppIcons.message,
-        color: accent,
-        size: AppIconSizes.tile,
-      ),
-    );
-  }
-}
-
-/// 2×2 grid: two rows, each `IntrinsicHeight` so the two cards in a
-/// row match the taller card's natural height, and `Expanded` so they
-/// split the width equally. Cards size to their content (no
-/// `childAspectRatio` forcing them into a fixed box), so the title +
-/// subtitle text is always fully visible regardless of phone width.
-class _SuggestionGrid extends StatelessWidget {
-  const _SuggestionGrid({required this.tiles, required this.onTap});
-
-  final List<_SuggestionData> tiles;
-  final ValueChanged<String> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var rowStart = 0; rowStart < tiles.length; rowStart += 2) ...[
-          if (rowStart > 0) const SizedBox(height: AppSpacing.s10),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _SuggestionCard(
-                    data: tiles[rowStart],
-                    onTap: () => onTap(tiles[rowStart].prompt),
-                  ),
-                ),
-                if (rowStart + 1 < tiles.length) ...[
-                  const SizedBox(width: AppSpacing.s10),
-                  Expanded(
-                    child: _SuggestionCard(
-                      data: tiles[rowStart + 1],
-                      onTap: () => onTap(tiles[rowStart + 1].prompt),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _SuggestionCard extends StatelessWidget {
-  const _SuggestionCard({required this.data, required this.onTap});
-
-  final _SuggestionData data;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return TappableSurface(
-      radius: AppRadius.cardR,
-      onTap: onTap,
-      child: GlassCard.flat(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.s12,
-          AppSpacing.s11,
-          AppSpacing.s12,
-          AppSpacing.s11,
-        ),
-        // mainAxisSize.min so the card hugs its content. The outer
-        // IntrinsicHeight + Expanded in the row gives it equal width
-        // and matched height with its sibling — the card itself only
-        // commits to height = sum of its children.
+    final user = userName;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            ColoredIconBox(
-              icon: data.icon,
-              color: data.accent,
-              size: AppIconSizes.tileLarge,
-              radius: AppRadius.tight,
-              iconSize: AppIconSizes.boxGlyphCompact,
-              borderAlpha: 0.28,
-            ),
-            const SizedBox(height: AppSpacing.s8),
+            const Orb(size: 74),
+            const SizedBox(height: AppSpacing.s26),
             Text(
-              data.title,
-              style: context.text.bodyMedium?.copyWith(
-                color: s.text,
-                fontWeight: FontWeight.w800,
-                height: AppLineHeights.headingLoose,
-                fontSize: AppFontSizes.cardTitle,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s4),
-            Text(
-              data.subtitle,
-              style: context.text.labelSmall?.copyWith(
-                color: s.muted,
-                fontSize: AppFontSizes.pillLabel,
-                height: AppLineHeights.label,
+              user.isEmpty
+                  ? context.tr.figHelloNhowCanIHelpNyou
+                  : context.tr.figHelloNhowCanIHelpNyou2(user),
+              textAlign: TextAlign.center,
+              style: Fig.t(
+                context,
+                size: 36,
+                color: Colors.white,
+                height: 1.08,
               ),
             ),
           ],

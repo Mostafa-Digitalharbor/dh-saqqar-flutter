@@ -49,8 +49,7 @@ class ProjectDetailSheet extends StatefulWidget {
     return showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (_) =>
-          ProjectDetailSheet(existingProjectId: existingProjectId),
+      builder: (_) => ProjectDetailSheet(existingProjectId: existingProjectId),
     );
   }
 
@@ -74,7 +73,8 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
   @override
   void initState() {
     super.initState();
-    final initialName = context
+    final initialName =
+        context
             .read<VaultCubit>()
             .state
             .data
@@ -104,7 +104,8 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
   void _commitRename() {
     final next = _name.text.trim();
     final cubit = context.read<VaultCubit>();
-    final current = cubit.state.data.dataOrNull
+    final current =
+        cubit.state.data.dataOrNull
             ?.projectById(widget.existingProjectId)
             ?.name ??
         '';
@@ -136,9 +137,9 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
     final name = _newEnv.text.trim();
     if (name.isEmpty) return;
     final ok = await context.read<VaultCubit>().createEnvironment(
-          projectId: widget.existingProjectId,
-          name: name,
-        );
+      projectId: widget.existingProjectId,
+      name: name,
+    );
     if (!mounted) return;
     if (ok) {
       _newEnv.clear();
@@ -165,7 +166,8 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
     final state = context.watch<VaultCubit>().state;
     final data = state.data.dataOrNull;
     final project = data?.projectById(widget.existingProjectId);
-    final envs = data?.environmentsForProject(widget.existingProjectId) ??
+    final envs =
+        data?.environmentsForProject(widget.existingProjectId) ??
         const <Environment>[];
 
     // Centred dialog sized like the projects list popup — body grows with
@@ -179,129 +181,129 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
       minHeight: AppSheetHeights.projectDetailMin,
       maxHeight: AppSheetHeights.projectDetailMax,
       child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.s18,
-            AppSpacing.s18,
-            AppSpacing.s18,
-            AppSpacing.s18,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-                // ── Header: eyebrow + project name + Close ──────────────
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            context.tr.project.toUpperCase(),
-                            style: context.text.labelSmall?.copyWith(
-                              color: s.brandCyan,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: AppLetterSpacing.microCapsWidest,
-                              fontSize: AppFontSizes.chipLabel,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.s2),
-                          Text(
-                            projectName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s18,
+          AppSpacing.s18,
+          AppSpacing.s18,
+          AppSpacing.s18,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Header: eyebrow + project name + Close ──────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        context.tr.project.toUpperCase(),
+                        style: context.text.labelSmall?.copyWith(
+                          color: s.brandCyan,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: AppLetterSpacing.microCapsWidest,
+                          fontSize: AppFontSizes.chipLabel,
+                        ),
                       ),
-                    ),
-                    GhostButton(
-                      label: context.tr.close,
-                      minHeight: AppControlSizes.rowMin,
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.s14),
-                Divider(color: s.cardBorder, height: AppBorderWidths.hairline),
-                const SizedBox(height: AppSpacing.s14),
-                // ── "← All projects" back link (full-width pill) ────────
-                _BackToProjectsPill(onTap: _backToProjectsList),
-                const SizedBox(height: AppSpacing.s16),
-                // ── Body: project name + env list + add-env row ────────
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          context.tr.projectName.toUpperCase(),
-                          style: context.text.labelSmall?.copyWith(
-                            color: s.muted,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: AppLetterSpacing.microCapsWide,
-                            fontSize: AppFontSizes.chipLabel,
-                          ),
+                      const SizedBox(height: AppSpacing.s2),
+                      Text(
+                        projectName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
                         ),
-                        const SizedBox(height: AppSpacing.s6),
-                        AppTextField(
-                          controller: _name,
-                          focusNode: _nameFocus,
-                          hint: context.tr.addProjectHint,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) {
-                            _commitRename();
-                            _nameFocus.unfocus();
-                          },
-                        ),
-                        // Search field — only appears once the env list
-                        // grows past the visual-scan threshold. Keeps
-                        // small projects (1–5 envs) quiet.
-                        if (envs.length >= _envSearchThreshold) ...[
-                          const SizedBox(height: AppSpacing.s14),
-                          CompactSearchField(
-                            hintText: context.tr.envSearchHint,
-                            textInputAction: TextInputAction.search,
-                            controller: _envSearch,
-                            onChanged: (_) => setState(() {}),
-                          ),
-                        ],
-                        if (envs.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.s14),
-                          _EnvList(
-                            envs: _filterEnvs(envs),
-                            onOpen: (env) {
-                              Navigator.of(context).pop();
-                              EnvironmentDetailSheet.show(
-                                context,
-                                environmentId: env.id,
-                              );
-                            },
-                            onDelete: _deleteEnv,
-                          ),
-                        ],
-                        const SizedBox(height: AppSpacing.s14),
-                        // ── Add-environment inline form (always visible,
-                        // even when no envs yet — matches screenshot 1)
-                        // Disabled until an env name is typed (and no
-                        // write in flight) — no empty-tap no-op.
-                        InlineAddForm(
-                          controller: _newEnv,
-                          hint: context.tr.addEnvironmentHint,
-                          buttonLabel: context.tr.addEnvironment,
-                          enabled: !state.actionInFlight,
-                          onSubmit: _addEnv,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
+                GhostButton(
+                  label: context.tr.close,
+                  minHeight: AppControlSizes.rowMin,
+                  onPressed: () => Navigator.of(context).maybePop(),
                 ),
               ],
             ),
+            const SizedBox(height: AppSpacing.s14),
+            Divider(color: s.cardBorder, height: AppBorderWidths.hairline),
+            const SizedBox(height: AppSpacing.s14),
+            // ── "← All projects" back link (full-width pill) ────────
+            _BackToProjectsPill(onTap: _backToProjectsList),
+            const SizedBox(height: AppSpacing.s16),
+            // ── Body: project name + env list + add-env row ────────
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      context.tr.projectName.toUpperCase(),
+                      style: context.text.labelSmall?.copyWith(
+                        color: s.muted,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: AppLetterSpacing.microCapsWide,
+                        fontSize: AppFontSizes.chipLabel,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s6),
+                    AppTextField(
+                      controller: _name,
+                      focusNode: _nameFocus,
+                      hint: context.tr.addProjectHint,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) {
+                        _commitRename();
+                        _nameFocus.unfocus();
+                      },
+                    ),
+                    // Search field — only appears once the env list
+                    // grows past the visual-scan threshold. Keeps
+                    // small projects (1–5 envs) quiet.
+                    if (envs.length >= _envSearchThreshold) ...[
+                      const SizedBox(height: AppSpacing.s14),
+                      CompactSearchField(
+                        hintText: context.tr.envSearchHint,
+                        textInputAction: TextInputAction.search,
+                        controller: _envSearch,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
+                    if (envs.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.s14),
+                      _EnvList(
+                        envs: _filterEnvs(envs),
+                        onOpen: (env) {
+                          Navigator.of(context).pop();
+                          EnvironmentDetailSheet.show(
+                            context,
+                            environmentId: env.id,
+                          );
+                        },
+                        onDelete: _deleteEnv,
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.s14),
+                    // ── Add-environment inline form (always visible,
+                    // even when no envs yet — matches screenshot 1)
+                    // Disabled until an env name is typed (and no
+                    // write in flight) — no empty-tap no-op.
+                    InlineAddForm(
+                      controller: _newEnv,
+                      hint: context.tr.addEnvironmentHint,
+                      buttonLabel: context.tr.addEnvironment,
+                      enabled: !state.actionInFlight,
+                      onSubmit: _addEnv,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -327,7 +329,9 @@ class _BackToProjectsPill extends StatelessWidget {
           height: AppControlSizes.pillRowHeight,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
+            color: s.surface2.withValues(
+              alpha: context.alpha(AppAlphaPairs.panel),
+            ),
             borderRadius: AppRadius.pillR,
             border: Border.all(color: s.cardBorder),
           ),
@@ -474,9 +478,7 @@ class _EnvRowState extends State<_EnvRow> {
       _rename.text = widget.env.name;
       return;
     }
-    context
-        .read<VaultCubit>()
-        .updateEnvironment(id: widget.env.id, name: next);
+    context.read<VaultCubit>().updateEnvironment(id: widget.env.id, name: next);
   }
 
   Future<void> _onLiveChanged(bool value) async {
@@ -484,9 +486,12 @@ class _EnvRowState extends State<_EnvRow> {
     // true) needs explicit confirmation because the chat surface will
     // start gating first sends from this moment on.
     if (!value) {
-      unawaited(context
-          .read<VaultCubit>()
-          .updateEnvironment(id: widget.env.id, isLive: false));
+      unawaited(
+        context.read<VaultCubit>().updateEnvironment(
+          id: widget.env.id,
+          isLive: false,
+        ),
+      );
       return;
     }
     final ok = await ConfirmDialog.show(
@@ -498,9 +503,12 @@ class _EnvRowState extends State<_EnvRow> {
       icon: AppIcons.shieldAlert,
     );
     if (!ok || !mounted) return;
-    unawaited(context
-        .read<VaultCubit>()
-        .updateEnvironment(id: widget.env.id, isLive: true));
+    unawaited(
+      context.read<VaultCubit>().updateEnvironment(
+        id: widget.env.id,
+        isLive: true,
+      ),
+    );
   }
 
   @override
@@ -509,8 +517,7 @@ class _EnvRowState extends State<_EnvRow> {
     final cubit = context.read<VaultCubit>();
     final env = widget.env;
     final credCount = context.select<VaultCubit, int>(
-      (c) =>
-          c.state.data.dataOrNull?.credentialsByEnv[env.id]?.length ?? 0,
+      (c) => c.state.data.dataOrNull?.credentialsByEnv[env.id]?.length ?? 0,
     );
 
     return Padding(
@@ -523,7 +530,9 @@ class _EnvRowState extends State<_EnvRow> {
           AppSpacing.s12,
         ),
         decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
+          color: s.surface2.withValues(
+            alpha: context.alpha(AppAlphaPairs.panel),
+          ),
           borderRadius: AppRadius.cardR,
           border: Border.all(
             // Live envs get a subtle danger border so they're scannable
@@ -592,7 +601,11 @@ class _EnvRowState extends State<_EnvRow> {
                 padding: const EdgeInsetsDirectional.only(start: AppSpacing.s4),
                 child: Row(
                   children: [
-                    Icon(AppIcons.key, size: AppIconSizes.metaTight, color: s.muted),
+                    Icon(
+                      AppIcons.key,
+                      size: AppIconSizes.metaTight,
+                      color: s.muted,
+                    ),
                     const SizedBox(width: AppSpacing.s4),
                     Text(
                       context.tr.credentialCount(credCount),
@@ -704,7 +717,10 @@ class _InlineNameField extends StatelessWidget {
           borderSide: BorderSide(color: Colors.transparent),
         ),
         focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: s.brandCyan, width: AppBorderWidths.medium),
+          borderSide: BorderSide(
+            color: s.brandCyan,
+            width: AppBorderWidths.medium,
+          ),
         ),
       ),
     );
@@ -751,7 +767,10 @@ class _FlagCheckbox extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 activeColor: activeColor,
-                side: BorderSide(color: s.cardBorder, width: AppBorderWidths.medium),
+                side: BorderSide(
+                  color: s.cardBorder,
+                  width: AppBorderWidths.medium,
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.s6),

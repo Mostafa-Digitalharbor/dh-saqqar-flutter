@@ -81,8 +81,7 @@ class CompactSearchField extends StatelessWidget {
                   tooltip: context.tr.clearSearch,
                 ),
           isCollapsed: true,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: AppSpacing.s10),
+          contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
           filled: false,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,

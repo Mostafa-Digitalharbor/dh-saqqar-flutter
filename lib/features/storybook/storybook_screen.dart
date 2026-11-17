@@ -44,9 +44,7 @@ class StorybookScreen extends StatelessWidget {
             ),
             IconButton(
               icon: Icon(
-                context.isRtl
-                    ? AppIcons.textDirLtr
-                    : AppIcons.textDirRtl,
+                context.isRtl ? AppIcons.textDirLtr : AppIcons.textDirRtl,
               ),
               onPressed: () =>
                   context.read<LocaleCubit>().toggleEnglishArabic(),

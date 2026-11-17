@@ -77,9 +77,8 @@ class _CurrentPlanCardState extends State<CurrentPlanCard> {
         // for 200 ms is noisier than the card simply appearing.
         if (!snap.hasData) return const SizedBox.shrink();
         final data = snap.data!;
-        final slug = data.currentPlan ??
-            context.read<PlanCubit>().state?.slug ??
-            'free';
+        final slug =
+            data.currentPlan ?? context.read<PlanCubit>().state?.slug ?? 'free';
         final tier = _tierFor(data.plans, slug);
         if (tier == null) return const SizedBox.shrink();
         return _PlanCardBody(tier: tier);
@@ -178,8 +177,9 @@ class _PlanCardBody extends StatelessWidget {
             const SizedBox(height: AppSpacing.s4),
             Text(
               tagline,
-              style: context.text.bodySmall
-                  ?.copyWith(color: context.saqqar.muted),
+              style: context.text.bodySmall?.copyWith(
+                color: context.saqqar.muted,
+              ),
             ),
           ],
           if (tier.featuresText.isNotEmpty) ...[

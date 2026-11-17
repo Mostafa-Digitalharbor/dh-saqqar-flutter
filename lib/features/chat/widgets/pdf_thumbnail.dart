@@ -149,10 +149,9 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
           // Render at the PAGE's aspect ratio, scaled so it covers the
           // target box, then let BoxFit.cover crop. Rendering straight into
           // the box's own aspect would squash a portrait page into a square.
-          final scale = math.max(
-            widget.width / page.width,
-            widget.height / page.height,
-          ) * ratio;
+          final scale =
+              math.max(widget.width / page.width, widget.height / page.height) *
+              ratio;
           final image = await page.render(
             width: page.width * scale,
             height: page.height * scale,
@@ -219,10 +218,7 @@ class _PdfThumbnailState extends State<PdfThumbnail> {
       );
     }
 
-    return AnimatedSwitcher(
-      duration: AppDurations.cardIn,
-      child: child,
-    );
+    return AnimatedSwitcher(duration: AppDurations.cardIn, child: child);
   }
 }
 

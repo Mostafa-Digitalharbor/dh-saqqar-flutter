@@ -52,7 +52,7 @@ abstract interface class MicPermissionPort {
 /// wording, because the wording needs a `BuildContext` and a locale.
 class MicPermissionGate {
   const MicPermissionGate({MicPermissionPort port = const _MicrophonePort()})
-      : _port = port;
+    : _port = port;
 
   final MicPermissionPort _port;
 

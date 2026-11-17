@@ -31,9 +31,11 @@ class TrialCubit extends Cubit<TrialScreenState> {
   /// provisioning server-side, so this doubles as "resume where we left off".
   Future<void> loadStatus() async {
     if (state.status is DataLoading<TrialInfo>) return;
-    emit(state.copyWith(status: DataLoading<TrialInfo>(
-      previous: state.status.dataOrNull,
-    )));
+    emit(
+      state.copyWith(
+        status: DataLoading<TrialInfo>(previous: state.status.dataOrNull),
+      ),
+    );
     await _fetchStatus();
   }
 
@@ -44,10 +46,7 @@ class TrialCubit extends Cubit<TrialScreenState> {
     emit(state.copyWith(submitting: true, clearSubmitError: true));
     try {
       final info = await _api.request(req);
-      emit(state.copyWith(
-        status: DataSuccess(info),
-        submitting: false,
-      ));
+      emit(state.copyWith(status: DataSuccess(info), submitting: false));
       AppLogger.info(_tag, 'trial requested → ${info.state.name}');
       _syncPolling(info);
     } catch (e, st) {
@@ -72,11 +71,11 @@ class TrialCubit extends Cubit<TrialScreenState> {
       // nothing to show yet.
       final prev = state.status.dataOrNull;
       if (prev == null) {
-        emit(state.copyWith(
-          status: DataFailure<TrialInfo>(
-            error: ApiErrorMapper.toFailure(e),
+        emit(
+          state.copyWith(
+            status: DataFailure<TrialInfo>(error: ApiErrorMapper.toFailure(e)),
           ),
-        ));
+        );
       }
       // On a poll failure with existing data, leave the timer running — the
       // next tick may recover.

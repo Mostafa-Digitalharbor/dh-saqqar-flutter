@@ -149,18 +149,30 @@ class AttachmentSourcePicker {
   /// untouched — [ImageDownscaler.shrink] returns the input path in every one
   /// of those cases, so this loop has no branches of its own beyond the
   /// "picker gave us no path" case (which happens on some cloud providers).
-  Future<List<AttachmentCandidate>> _downscale(List<PlatformFile> picked) async {
+  Future<List<AttachmentCandidate>> _downscale(
+    List<PlatformFile> picked,
+  ) async {
     final tempDir = (await getTemporaryDirectory()).path;
     final out = <AttachmentCandidate>[];
     for (final p in picked) {
       final path = p.path;
       if (path == null) {
-        out.add((name: p.name, path: null, size: p.size, extension: p.extension));
+        out.add((
+          name: p.name,
+          path: null,
+          size: p.size,
+          extension: p.extension,
+        ));
         continue;
       }
       final shrunk = await ImageDownscaler.shrink(path: path, tempDir: tempDir);
       if (shrunk == path) {
-        out.add((name: p.name, path: path, size: p.size, extension: p.extension));
+        out.add((
+          name: p.name,
+          path: path,
+          size: p.size,
+          extension: p.extension,
+        ));
         continue;
       }
       final size = await File(shrunk).length();

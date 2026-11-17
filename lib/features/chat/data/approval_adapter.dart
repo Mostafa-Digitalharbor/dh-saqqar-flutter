@@ -37,11 +37,11 @@ import '../../inbox/data/approval_models.dart';
 /// the web, and it is the safe direction to be wrong in: over-warning about
 /// a harmless export costs a glance, under-warning about a write costs data.
 String approvalRisk(ApprovalActionType type) => switch (type) {
-      ApprovalActionType.credentialStorage => 'medium',
-      ApprovalActionType.credentialUsage => 'medium',
-      ApprovalActionType.reportExport => 'low',
-      _ => 'high',
-    };
+  ApprovalActionType.credentialStorage => 'medium',
+  ApprovalActionType.credentialUsage => 'medium',
+  ApprovalActionType.reportExport => 'low',
+  _ => 'high',
+};
 
 /// The sentence the user approves.
 ///

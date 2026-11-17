@@ -39,7 +39,10 @@ class AppDialogShell extends StatelessWidget {
   static Gradient dangerAccent(BuildContext context) {
     final danger = context.saqqar.danger;
     return LinearGradient(
-      colors: [danger, danger.withValues(alpha: AppAlphas.a70)],
+      colors: [
+        danger,
+        danger.withValues(alpha: AppAlphas.a70),
+      ],
     );
   }
 
@@ -57,8 +60,10 @@ class AppDialogShell extends StatelessWidget {
   /// the FULL viewport height. An unscrollable column then has nothing to
   /// push back against and overflows — in landscape (~320 px tall), or with
   /// a long user-supplied name at 1.4× Arabic. Keep both axes.
-  static const insetPadding =
-      EdgeInsets.symmetric(horizontal: AppSpacing.s32, vertical: AppSpacing.s24);
+  static const insetPadding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.s32,
+    vertical: AppSpacing.s24,
+  );
 
   @override
   Widget build(BuildContext context) {

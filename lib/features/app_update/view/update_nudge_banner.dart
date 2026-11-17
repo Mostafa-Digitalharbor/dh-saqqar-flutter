@@ -70,9 +70,13 @@ class _NudgeRow extends StatelessWidget {
           AppSpacing.s10,
         ),
         decoration: BoxDecoration(
-          color: s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintBanner)),
+          color: s.brandCyan.withValues(
+            alpha: context.alpha(AppAlphaPairs.tintBanner),
+          ),
           border: Border(
-            bottom: BorderSide(color: s.brandCyan.withValues(alpha: AppAlphas.a30)),
+            bottom: BorderSide(
+              color: s.brandCyan.withValues(alpha: AppAlphas.a30),
+            ),
           ),
         ),
         child: SafeArea(
@@ -80,7 +84,11 @@ class _NudgeRow extends StatelessWidget {
           bottom: false,
           child: Row(
             children: [
-              Icon(AppIcons.download, color: s.brandCyan, size: AppIconSizes.regular),
+              Icon(
+                AppIcons.download,
+                color: s.brandCyan,
+                size: AppIconSizes.regular,
+              ),
               const SizedBox(width: AppSpacing.s10),
               // Expanded, not a bare Column: a Row gives its children
               // unbounded width, so the two text lines below would lay out at
@@ -121,7 +129,9 @@ class _NudgeRow extends StatelessWidget {
                 onPressed: onUpdate,
                 style: TextButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s10,
+                  ),
                 ),
                 child: Text(
                   tr.updateAction,

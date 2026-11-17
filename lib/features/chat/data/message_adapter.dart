@@ -41,8 +41,7 @@ ChatMessage adaptApiMessage(
       // don't visually distinguish those today.
       api.MessageRole.assistant ||
       api.MessageRole.tool ||
-      api.MessageRole.system =>
-        ChatMessageRole.assistant,
+      api.MessageRole.system => ChatMessageRole.assistant,
     },
     content: stepLabel ?? message.content,
     isAgentStep: stepLabel != null,

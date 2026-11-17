@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../../../core/theme/app_sizes.dart';
 
 /// Bottom-sheet shell shared by every chat sub-flow (credential picker, more
@@ -33,8 +32,6 @@ class ChatSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SheetDragHandle(),
-              const SizedBox(height: AppSpacing.s18),
               Text(
                 title,
                 style: context.text.titleLarge?.copyWith(

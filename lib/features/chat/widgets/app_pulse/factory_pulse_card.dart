@@ -48,16 +48,33 @@ class FactoryPulseCard extends StatelessWidget {
         PulseStatGrid(
           tiles: [
             pulseScalarStatTile(
-                context, payload.moRunning, tr.pulseFactoryMoRunning),
-            pulseScalarStatTile(context, payload.moLate, tr.pulseFactoryMoLate,
-                tone: PulseTone.warn),
-            pulseScalarStatTile(context, payload.poLate, tr.pulseFactoryPoLate,
-                tone: PulseTone.warn),
+              context,
+              payload.moRunning,
+              tr.pulseFactoryMoRunning,
+            ),
             pulseScalarStatTile(
-                context, payload.ordersAtRisk, tr.pulseFactoryOrdersAtRisk,
-                tone: PulseTone.danger),
+              context,
+              payload.moLate,
+              tr.pulseFactoryMoLate,
+              tone: PulseTone.warn,
+            ),
             pulseScalarStatTile(
-                context, payload.moDoneToday, tr.pulseFactoryMoDoneToday),
+              context,
+              payload.poLate,
+              tr.pulseFactoryPoLate,
+              tone: PulseTone.warn,
+            ),
+            pulseScalarStatTile(
+              context,
+              payload.ordersAtRisk,
+              tr.pulseFactoryOrdersAtRisk,
+              tone: PulseTone.danger,
+            ),
+            pulseScalarStatTile(
+              context,
+              payload.moDoneToday,
+              tr.pulseFactoryMoDoneToday,
+            ),
           ],
         ),
       ],

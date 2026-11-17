@@ -75,46 +75,46 @@ class AppErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-            ColoredIconBox(
-              icon: icon ?? AppIcons.warning,
-              color: s.danger,
-              size: AppIconSizes.errorHero,
-              // A square with a half-side radius IS a circle — same pixels
-              // as the `BoxShape.circle` this replaced.
-              radius: AppRadius.splashPlate,
-              iconSize: AppIconSizes.boxGlyphHero,
-              backgroundAlpha: 0.12,
-              borderAlpha: 0.32,
+          ColoredIconBox(
+            icon: icon ?? AppIcons.warning,
+            color: s.danger,
+            size: AppIconSizes.errorHero,
+            // A square with a half-side radius IS a circle — same pixels
+            // as the `BoxShape.circle` this replaced.
+            radius: AppRadius.splashPlate,
+            iconSize: AppIconSizes.boxGlyphHero,
+            backgroundAlpha: 0.12,
+            borderAlpha: 0.32,
+          ),
+          const SizedBox(height: AppSpacing.s14),
+          Text(
+            headline,
+            textAlign: TextAlign.center,
+            style: context.text.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: AppLetterSpacing.heading,
             ),
-            const SizedBox(height: AppSpacing.s14),
+          ),
+          if (showBody) ...[
+            const SizedBox(height: AppSpacing.s6),
             Text(
-              headline,
+              message,
               textAlign: TextAlign.center,
-              style: context.text.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: AppLetterSpacing.heading,
+              style: context.text.bodyMedium?.copyWith(
+                color: s.muted,
+                height: AppLineHeights.reading,
               ),
             ),
-            if (showBody) ...[
-              const SizedBox(height: AppSpacing.s6),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: context.text.bodyMedium?.copyWith(
-                  color: s.muted,
-                  height: AppLineHeights.reading,
-                ),
-              ),
-            ],
-            if (onRetry != null) ...[
-              const SizedBox(height: AppSpacing.s18),
-              GhostButton(
-                label: retryLabel ?? context.tr.retry,
-                icon: AppIcons.refresh,
-                onPressed: onRetry,
-              ),
-            ],
           ],
+          if (onRetry != null) ...[
+            const SizedBox(height: AppSpacing.s18),
+            GhostButton(
+              label: retryLabel ?? context.tr.retry,
+              icon: AppIcons.refresh,
+              onPressed: onRetry,
+            ),
+          ],
+        ],
       ),
     );
 

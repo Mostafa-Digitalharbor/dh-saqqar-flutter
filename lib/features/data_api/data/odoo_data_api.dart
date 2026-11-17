@@ -34,8 +34,10 @@ class OdooDataApi {
       _odoo(() => _dio.postJson(ApiEndpoints.odooCount(envId), data: q));
 
   /// `POST /environments/<envId>/odoo/read-group/` — grouped aggregates.
-  Future<Map<String, dynamic>> readGroup(String envId, Map<String, dynamic> q) =>
-      _odoo(() => _dio.postJson(ApiEndpoints.odooReadGroup(envId), data: q));
+  Future<Map<String, dynamic>> readGroup(
+    String envId,
+    Map<String, dynamic> q,
+  ) => _odoo(() => _dio.postJson(ApiEndpoints.odooReadGroup(envId), data: q));
 
   /// `POST /environments/<envId>/odoo/read/` — read records by id.
   Future<Map<String, dynamic>> read(String envId, Map<String, dynamic> q) =>

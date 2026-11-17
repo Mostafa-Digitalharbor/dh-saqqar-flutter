@@ -2,12 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../core/i18n/app_localizations.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_gradients.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../shared/widgets/saqqar_logo.dart';
-import '../../core/theme/app_radius.dart';
 
 /// Custom in-app launch screen.
 ///
@@ -32,9 +29,14 @@ class LaunchSplashScreen extends StatefulWidget {
     super.key,
     required this.onComplete,
     this.onReady,
-    this.minDuration = const Duration(milliseconds: 1400),
-    this.maxDuration = const Duration(seconds: 4),
+    this.minDuration = AppDurations.agentPulse,
+    this.maxDuration = AppDurations.splashMax,
+    this.beforeComplete,
   });
+
+  /// Runs after boot work, before [onComplete] — used for the first-launch
+  /// language prompt shown over the splash.
+  final Future<void> Function(BuildContext context)? beforeComplete;
 
   final VoidCallback onComplete;
   final Future<void> Function()? onReady;
@@ -51,7 +53,6 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
   late final AnimationController _progress;
   late final Animation<double> _scale;
   late final Animation<double> _fade;
-  late final Animation<double> _wordmarkSlide;
 
   @override
   void initState() {
@@ -60,33 +61,24 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
       vsync: this,
       duration: AppDurations.splashEntrance,
     );
-    _progress = AnimationController(
-      vsync: this,
-      duration: widget.minDuration,
-    );
+    _progress = AnimationController(vsync: this, duration: widget.minDuration);
 
     // Big zoom-in: tiny → full size with a smooth ease so the wordmark
     // appears to "expand into focus" instead of popping in.
-    _scale = Tween<double>(begin: AppSplashMotion.logoScaleStart, end: 1.0)
-        .animate(
-      CurvedAnimation(parent: _entrance, curve: Curves.easeOutCubic),
-    );
+    _scale = Tween<double>(
+      begin: AppSplashMotion.logoScaleStart,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _entrance, curve: Curves.easeOutCubic));
     _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _entrance,
-        curve: const Interval(0.0, AppSplashMotion.fadeIntervalEnd,
-            curve: Curves.easeOut),
+        curve: const Interval(
+          0.0,
+          AppSplashMotion.fadeIntervalEnd,
+          curve: Curves.easeOut,
+        ),
       ),
     );
-    _wordmarkSlide =
-        Tween<double>(begin: AppMotionTravel.rise, end: 0).animate(
-      CurvedAnimation(
-        parent: _entrance,
-        curve: const Interval(AppSplashMotion.slideIntervalStart, 1.0,
-            curve: Curves.easeOutCubic),
-      ),
-    );
-
     _entrance.forward();
     _progress.forward();
     _bootSequence();
@@ -129,6 +121,10 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
     }
 
     if (!mounted) return;
+    if (widget.beforeComplete != null) {
+      await widget.beforeComplete!(context);
+    }
+    if (!mounted) return;
     widget.onComplete();
   }
 
@@ -144,68 +140,23 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    // Pull brightness from the active MaterialApp theme so the splash
-    // tracks the user's saved preference (Theme cubit hydrates from
-    // SharedPreferences synchronously in `main.dart`, so first paint
-    // already has the correct brightness). Hot restart preserves the
-    // preference, which was the bug the user hit: the splash was
-    // hardcoded to dark and ignored the active theme.
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final bg = isLight ? AppColors.lightBg : AppColors.darkBg;
-
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: const Color(0xFF05070C),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Plain splash backdrop (the animated cyan/purple radial glow was
-          // retired on user request 2026-07-06 for a cleaner look) — the
-          // Scaffold's solid [bg] shows through, and the logo zoom-in below
-          // carries the motion on its own.
-          // Wordmark only — the circular "S" icon was retired on user
-          // request. The entrance scale/fade animation that used to land
-          // on the icon now lands on the wordmark itself so the splash
-          // still feels alive instead of popping flat.
+          const SplashBackdrop(),
           Center(
-            child: AnimatedBuilder(
-              animation: _entrance,
-              builder: (context, _) {
-                final scale = reduceMotion ? 1.0 : _scale.value;
-                final fade = reduceMotion ? 1.0 : _fade.value;
-                final dy = reduceMotion ? 0.0 : _wordmarkSlide.value;
-                // The framing card settles in a touch more gently than the
-                // logo's dramatic zoom: a small 0.94 → 1.0 scale so the card
-                // never "pops", while the logo keeps its full 0.25 → 1.0
-                // expand-into-focus inside it.
-                final cardT = reduceMotion
-                    ? 1.0
-                    : Curves.easeOut.transform(_entrance.value);
-                final cardScale = AppSplashMotion.cardScaleStart +
-                    (1.0 - AppSplashMotion.cardScaleStart) * cardT;
-                return Opacity(
-                  opacity: fade,
-                  child: Transform.scale(
-                    scale: cardScale,
-                    child: _SplashLogoCard(
-                      isLight: isLight,
-                      child: Transform.translate(
-                        offset: Offset(0, dy),
-                        child: Transform.scale(
-                          scale: scale,
-                          child: _Wordmark(isLight: isLight),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
+            child: FadeTransition(
+              opacity: reduceMotion ? const AlwaysStoppedAnimation(1) : _fade,
+              child: ScaleTransition(
+                scale: reduceMotion ? const AlwaysStoppedAnimation(1) : _scale,
+                child: const SaqqarLogo(
+                  height: 59,
+                  forceVariant: Brightness.dark,
+                ),
+              ),
             ),
-          ),
-          PositionedDirectional(
-            start: 0,
-            end: 0,
-            bottom: AppSpacing.s64,
-            child: _ProgressBar(animation: _progress),
           ),
         ],
       ),
@@ -213,124 +164,33 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
   }
 }
 
-/// Thin, elegant frame behind the zooming logo. Deliberately understated so
-/// it reads as a refined mount for the mark, not a competing surface: a
-/// faint surface fill, a hairline border, generously rounded corners, and a
-/// soft drop shadow for a little depth. Theme-aware via [isLight].
-class _SplashLogoCard extends StatelessWidget {
-  const _SplashLogoCard({required this.isLight, required this.child});
+/// Black canvas with the electric-blue corner glows from the launch frame.
+class SplashBackdrop extends StatelessWidget {
+  const SplashBackdrop({super.key, this.blur = false});
 
-  final bool isLight;
-  final Widget child;
+  final bool blur;
 
   @override
   Widget build(BuildContext context) {
-    final fill = isLight ? AppColors.lightSurface : AppColors.darkSurface;
-    final border = isLight ? AppColors.lightBorder : AppColors.darkBorder;
-    final maxW = MediaQuery.sizeOf(context).width * AppFractions.splashWordmark;
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxW.clamp(0, 420)),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s34,
-          vertical: AppSpacing.s30,
-        ),
+    Widget glow(Alignment c, double r, Color color) => Positioned.fill(
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          // Barely-there fill so the card lifts off the plain backdrop
-          // without looking like a solid panel.
-          color: fill.withValues(alpha: AppAlphaPairs.splashFill.resolve(isDark: !isLight)),
-          borderRadius: AppRadius.splashPlateR,
-          border: Border.all(
-            color: border.withValues(alpha: AppAlphaPairs.splashBorder.resolve(isDark: !isLight)),
+          gradient: RadialGradient(
+            center: c,
+            radius: r,
+            colors: [color, color.withValues(alpha: 0)],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.scrimBase.withValues(alpha: AppAlphaPairs.splashShadow.resolve(isDark: !isLight)),
-              blurRadius: AppShadowSizes.blurModal,
-              offset: const Offset(0, AppShadowSizes.dropHalo),
-            ),
-          ],
         ),
-        child: child,
       ),
     );
-  }
-}
-
-class _Wordmark extends StatelessWidget {
-  const _Wordmark({required this.isLight});
-
-  final bool isLight;
-
-  @override
-  Widget build(BuildContext context) {
-    // The brand lockup is a wide (~3.9:1) hexagon-mark + wordmark, so size
-    // it by available width — cap the height at 96 dp but shrink it so the
-    // lockup never runs past ~78 % of the screen on narrow phones.
-    // Sized against a slightly tighter fraction than before (was 0.78) so
-    // the lockup sits comfortably inside the framing card's padding without
-    // crowding its rounded edges on narrow phones.
-    final maxW = MediaQuery.sizeOf(context).width * AppFractions.splashTagline;
-    final logoHeight = (maxW / 3.9).clamp(44.0, 88.0);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        // Brand lockup — force the variant that contrasts with the splash
-        // backdrop: navy + cyan strokes on the light/white backdrop, white
-        // strokes on the dark navy one.
-        SaqqarLogo(
-          height: logoHeight,
-          forceVariant: isLight ? Brightness.light : Brightness.dark,
-        ),
-        const SizedBox(height: AppSpacing.s10),
-        Text(
-          context.tr.appTagline,
-          style: TextStyle(
-            color: isLight ? AppColors.lightMuted : AppColors.darkMuted,
-            fontSize: AppFontSizes.dense,
-            fontWeight: FontWeight.w500,
-            letterSpacing: AppLetterSpacing.label,
-          ),
-        ),
+        const ColoredBox(color: Color(0xFF03050A)),
+        glow(const Alignment(0.9, -1.1), 1.15, const Color(0xFF2B5BD2)),
+        glow(const Alignment(-0.6, 1.1), 1.25, const Color(0xFF2350B8)),
+        glow(const Alignment(-1.3, -0.2), 0.9, const Color(0xFF12296A)),
       ],
     );
   }
 }
-
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.animation});
-  final Animation<double> animation;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SizedBox(
-        width: AppControlSizes.splashProgressWidth,
-        height: AppControlSizes.splashProgressHeight,
-        child: ClipRRect(
-          borderRadius: AppRadius.pillR,
-          child: ColoredBox(
-            color: AppColors.brandCyan.withValues(alpha: AppAlphas.a18),
-            child: AnimatedBuilder(
-              animation: animation,
-              builder: (context, _) {
-                return Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: FractionallySizedBox(
-                    widthFactor: animation.value.clamp(0.0, 1.0),
-                    child: const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.vivid,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-

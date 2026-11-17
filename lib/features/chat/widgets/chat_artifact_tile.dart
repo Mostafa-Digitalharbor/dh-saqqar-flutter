@@ -45,52 +45,52 @@ _ArtifactStyle _styleFor(String name, String kindRaw) {
   // than a category word.
   return switch (FileKinds.of(ext)) {
     FileKind.spreadsheet => const _ArtifactStyle(
-        label: UiStrings.formatXlsx,
-        icon: AppIcons.table,
-        accent: AppColors.success,
-      ),
+      label: UiStrings.formatXlsx,
+      icon: AppIcons.table,
+      accent: AppColors.success,
+    ),
     FileKind.pdf => const _ArtifactStyle(
-        label: UiStrings.formatPdf,
-        icon: AppIcons.fileText,
-        accent: AppColors.danger,
-      ),
+      label: UiStrings.formatPdf,
+      icon: AppIcons.fileText,
+      accent: AppColors.danger,
+    ),
     FileKind.document => const _ArtifactStyle(
-        label: UiStrings.formatDocx,
-        icon: AppIcons.fileText,
-        accent: AppColors.brandCyan,
-      ),
+      label: UiStrings.formatDocx,
+      icon: AppIcons.fileText,
+      accent: AppColors.brandCyan,
+    ),
     FileKind.csv => const _ArtifactStyle(
-        label: UiStrings.formatCsv,
-        icon: AppIcons.table,
-        accent: AppColors.warning,
-      ),
+      label: UiStrings.formatCsv,
+      icon: AppIcons.table,
+      accent: AppColors.warning,
+    ),
     FileKind.json => const _ArtifactStyle(
-        label: UiStrings.formatJson,
-        icon: AppIcons.code,
-        accent: AppColors.brandPurple,
-      ),
+      label: UiStrings.formatJson,
+      icon: AppIcons.code,
+      accent: AppColors.brandPurple,
+    ),
     FileKind.image => _ArtifactStyle(
-        label: ext.toUpperCase(),
-        icon: AppIcons.image,
-        accent: AppColors.brandPurple,
-      ),
+      label: ext.toUpperCase(),
+      icon: AppIcons.image,
+      accent: AppColors.brandPurple,
+    ),
     FileKind.text => _ArtifactStyle(
-        label: ext.toUpperCase(),
-        icon: AppIcons.fileText,
-        accent: AppColors.darkMuted,
-      ),
+      label: ext.toUpperCase(),
+      icon: AppIcons.fileText,
+      accent: AppColors.darkMuted,
+    ),
     FileKind.archive => _ArtifactStyle(
-        label: ext.toUpperCase(),
-        icon: AppIcons.archive,
-        accent: AppColors.brandPurple,
-      ),
+      label: ext.toUpperCase(),
+      icon: AppIcons.archive,
+      accent: AppColors.brandPurple,
+    ),
     // Unknown: the badge shows the first five characters of whatever the
     // extension was, so "PPTX" still reads as itself.
     FileKind.other => _ArtifactStyle(
-        label: FileKinds.badge(ext),
-        icon: AppIcons.file,
-        accent: AppColors.brandCyan,
-      ),
+      label: FileKinds.badge(ext),
+      icon: AppIcons.file,
+      accent: AppColors.brandCyan,
+    ),
   };
 }
 
@@ -177,9 +177,7 @@ class ChatArtifactTile extends StatelessWidget {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: context.text.bodySmall?.copyWith(
-                      color: s.muted,
-                    ),
+                    style: context.text.bodySmall?.copyWith(color: s.muted),
                   ),
                 ],
               ),
@@ -211,7 +209,9 @@ class _KindBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: style.accent.withValues(alpha: AppAlphas.a18),
         borderRadius: AppRadius.pillR,
-        border: Border.all(color: style.accent.withValues(alpha: AppAlphas.a40)),
+        border: Border.all(
+          color: style.accent.withValues(alpha: AppAlphas.a40),
+        ),
       ),
       child: Text(
         style.label,

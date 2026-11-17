@@ -72,10 +72,7 @@ class AttachmentChip extends StatelessWidget {
           : _FileAttachment(attachment: attachment);
     }
     if (onTap == null) return child;
-    return TappableSurface(
-      onTap: onTap,
-      child: child,
-    );
+    return TappableSurface(onTap: onTap, child: child);
   }
 }
 
@@ -351,14 +348,18 @@ class _ImageAttachment extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: AppSheetHeights.attachmentPreviewMax),
+              constraints: const BoxConstraints(
+                maxHeight: AppSheetHeights.attachmentPreviewMax,
+              ),
               child: Image.network(
                 attachment.imageUrl!,
                 fit: BoxFit.cover,
                 // Decode at the display width (× device DPR), capped by the
                 // 360 px bubble max — not the source's full resolution.
                 cacheWidth:
-                    (AppLayoutWidths.chipCap * MediaQuery.devicePixelRatioOf(context)).round(),
+                    (AppLayoutWidths.chipCap *
+                            MediaQuery.devicePixelRatioOf(context))
+                        .round(),
                 errorBuilder: (context, error, stack) {
                   return Container(
                     height: AppControlSizes.attachmentPreviewHeight,

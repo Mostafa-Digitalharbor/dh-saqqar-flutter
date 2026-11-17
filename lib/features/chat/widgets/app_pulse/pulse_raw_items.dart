@@ -27,17 +27,21 @@ import 'pulse_ranked_list.dart';
 /// inventing an Arabic word for a field this client has never seen would be
 /// a guess printed as fact.
 class PulseRawItemsList extends StatelessWidget {
-  const PulseRawItemsList({super.key, required this.title, required this.items});
+  const PulseRawItemsList({
+    super.key,
+    required this.title,
+    required this.items,
+  });
 
   final String title;
   final List<Object?> items;
 
   @override
   Widget build(BuildContext context) => PulseRankedList<Object?>(
-        title: title,
-        items: items,
-        itemBuilder: (context, item) => _RawRow(item: item),
-      );
+    title: title,
+    items: items,
+    itemBuilder: (context, item) => _RawRow(item: item),
+  );
 }
 
 /// How many `key: value` facts a row shows before it stops. Three keeps the
@@ -96,7 +100,9 @@ class _RawRow extends StatelessWidget {
     final s = context.saqqar;
     final map = item is Map ? (item! as Map).cast<String, dynamic>() : null;
     final name = map == null ? null : _name(map);
-    final allFacts = map == null ? const <String>[] : _facts(context, map, name);
+    final allFacts = map == null
+        ? const <String>[]
+        : _facts(context, map, name);
     // A row with no name-ish field is led by its first fact rather than by
     // `{qty: 4}` — Dart's own map syntax is not something to show a user.
     final String title;

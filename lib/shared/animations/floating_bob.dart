@@ -102,10 +102,7 @@ class _FloatingBobState extends State<FloatingBob>
         // amplitude. Smooth, never reaches a sharp peak.
         final radians = _ctrl.value * 2 * pi;
         final offset = (_sin(radians)) * widget.amplitude;
-        return Transform.translate(
-          offset: Offset(0, offset),
-          child: child,
-        );
+        return Transform.translate(offset: Offset(0, offset), child: child);
       },
       child: widget.child,
     );

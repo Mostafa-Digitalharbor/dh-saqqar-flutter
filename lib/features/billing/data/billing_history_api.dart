@@ -16,8 +16,9 @@ class BillingHistoryApi {
   final Dio _dio;
 
   Future<BillingHistory> fetch() async {
-    final res =
-        await _dio.get<Map<String, dynamic>>(ApiEndpoints.billingHistory);
+    final res = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.billingHistory,
+    );
     // A bodiless 200 used to parse into an empty history, which the screen
     // shows as "no payments yet" — a factual claim about the user's account,
     // made from a response that contained nothing.

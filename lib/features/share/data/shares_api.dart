@@ -21,4 +21,3 @@ class SharesApi {
     return SharedTranscript.fromJson(res.data!);
   }
 }
-

@@ -16,8 +16,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// ping-on-send) and is deferred until the real API is wired.
 class ConnectivityCubit extends Cubit<bool> {
   ConnectivityCubit({Connectivity? connectivity})
-      : _connectivity = connectivity ?? Connectivity(),
-        super(true) {
+    : _connectivity = connectivity ?? Connectivity(),
+      super(true) {
     _sub = _connectivity.onConnectivityChanged.listen(_onChange);
     unawaited(_seed());
   }

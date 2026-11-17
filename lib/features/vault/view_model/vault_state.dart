@@ -34,8 +34,8 @@ class VaultData extends Equatable {
   /// Flat env list across all projects — convenient for the legacy chat
   /// header that needs to resolve an env id without the project context.
   List<Environment> get allEnvironments => [
-        for (final p in projects) ...p.environments,
-      ];
+    for (final p in projects) ...p.environments,
+  ];
 
   List<Environment> environmentsForProject(String projectId) {
     final project = projects.where((p) => p.id == projectId).firstOrNull;
@@ -151,10 +151,10 @@ class VaultState extends Equatable {
     return VaultState(
       data: data ?? this.data,
       actionInFlight: actionInFlight ?? this.actionInFlight,
-      actionFailure:
-          clearActionFailure ? null : (actionFailure ?? this.actionFailure),
-      actionToast:
-          clearActionToast ? null : (actionToast ?? this.actionToast),
+      actionFailure: clearActionFailure
+          ? null
+          : (actionFailure ?? this.actionFailure),
+      actionToast: clearActionToast ? null : (actionToast ?? this.actionToast),
     );
   }
 

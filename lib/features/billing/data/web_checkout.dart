@@ -90,7 +90,10 @@ class WebCheckout {
     final target = await resolveTarget(dio, slug);
     if (target.blocking) return (target: target, launched: false);
     try {
-      final ok = await launchUrl(target.uri, mode: LaunchMode.externalApplication);
+      final ok = await launchUrl(
+        target.uri,
+        mode: LaunchMode.externalApplication,
+      );
       return (target: target, launched: ok);
     } catch (e, st) {
       AppLogger.warn(_tag, 'launch failed', error: e, stackTrace: st);
@@ -177,8 +180,10 @@ class WebCheckout {
           // We sent a `next` the server refused. That is our bug, not the
           // user's — log it loudly, and don't put a validation error in front
           // of someone who just tapped Subscribe.
-          AppLogger.error(_tag,
-              'hand-off rejected our next path — check nextPath(): ${res.data}');
+          AppLogger.error(
+            _tag,
+            'hand-off rejected our next path — check nextPath(): ${res.data}',
+          );
           return plain();
         case 401:
           // The session is gone. Opening a browser mid-way just adds a second
@@ -219,4 +224,5 @@ class WebCheckout {
 /// Visible for tests — the URL shape is part of the contract with the web
 /// team, so it is asserted rather than eyeballed.
 @visibleForTesting
-String debugPricingUrl(String slug) => WebCheckout.pricingUrlFor(slug).toString();
+String debugPricingUrl(String slug) =>
+    WebCheckout.pricingUrlFor(slug).toString();

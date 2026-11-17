@@ -56,7 +56,14 @@ class FileKinds {
   /// "open in another app", and that is a better outcome than refusing the
   /// file outright.
   static const Set<String> image = {
-    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'heic', 'heif',
+    'png',
+    'jpg',
+    'jpeg',
+    'gif',
+    'webp',
+    'bmp',
+    'heic',
+    'heif',
   };
 
   static const Set<String> pdf = {'pdf'};
@@ -68,7 +75,15 @@ class FileKinds {
   /// Text-shaped formats the viewer can print as-is. Mostly agent output —
   /// logs, dumps, generated SQL.
   static const Set<String> text = {
-    'txt', 'md', 'log', 'xml', 'yaml', 'yml', 'ini', 'sql', 'html',
+    'txt',
+    'md',
+    'log',
+    'xml',
+    'yaml',
+    'yml',
+    'ini',
+    'sql',
+    'html',
   };
 
   /// Archives carry the 500 MB cap (Odoo addon bundles); everything else is

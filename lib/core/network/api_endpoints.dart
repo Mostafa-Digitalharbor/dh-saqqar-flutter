@@ -75,8 +75,7 @@ class ApiEndpoints {
 
   // ── Conversations (§2) ────────────────────────────────────────────────
   static const String conversations = '/api/v1/conversations/';
-  static String conversationDetail(String id) =>
-      '/api/v1/conversations/$id/';
+  static String conversationDetail(String id) => '/api/v1/conversations/$id/';
   static String conversationMessages(String id) =>
       '/api/v1/conversations/$id/messages/';
   static String conversationAttachments(String id) =>
@@ -112,8 +111,7 @@ class ApiEndpoints {
   // ── Credentials (§7) ─────────────────────────────────────────────────
   static const String credentials = '/api/v1/credentials/';
   static const String credentialSchemas = '/api/v1/credentials/schemas/';
-  static String credentialDetail(String name) =>
-      '/api/v1/credentials/$name/';
+  static String credentialDetail(String name) => '/api/v1/credentials/$name/';
 
   /// `POST /api/v1/credentials/test/` — validates a candidate payload
   /// without storing it. Opens a real connection to the target service
@@ -137,8 +135,7 @@ class ApiEndpoints {
   static String projectDetail(String id) => '/api/v1/projects/$id/';
   static String projectEnvironments(String projectId) =>
       '/api/v1/projects/$projectId/environments/';
-  static String environmentDetail(String id) =>
-      '/api/v1/environments/$id/';
+  static String environmentDetail(String id) => '/api/v1/environments/$id/';
   static String environmentCredentials(String environmentId) =>
       '/api/v1/environments/$environmentId/credentials/';
   static String environmentCredential(String environmentId, String kind) =>

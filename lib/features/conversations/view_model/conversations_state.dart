@@ -148,8 +148,13 @@ class ConversationsData extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [conversations, pinnedIds, total, pendingByConv, filesByConv];
+  List<Object?> get props => [
+    conversations,
+    pinnedIds,
+    total,
+    pendingByConv,
+    filesByConv,
+  ];
 }
 
 /// Top-level state. Same shape as VaultState — same `data` /
@@ -180,10 +185,10 @@ class ConversationsState extends Equatable {
     return ConversationsState(
       data: data ?? this.data,
       actionInFlight: actionInFlight ?? this.actionInFlight,
-      actionFailure:
-          clearActionFailure ? null : (actionFailure ?? this.actionFailure),
-      actionToast:
-          clearActionToast ? null : (actionToast ?? this.actionToast),
+      actionFailure: clearActionFailure
+          ? null
+          : (actionFailure ?? this.actionFailure),
+      actionToast: clearActionToast ? null : (actionToast ?? this.actionToast),
     );
   }
 

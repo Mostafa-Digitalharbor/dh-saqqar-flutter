@@ -119,7 +119,7 @@ class MessageRow extends StatelessWidget {
         // 2026-05-17 (alignment + cyan fill already say "this is you").
         final tier = breakpointForWidth(constraints.maxWidth);
         final userFactor = tier.isCompactOrBelow ? 0.94 : 0.88;
-        final factor = _isUser ? userFactor : 0.96;
+        final factor = _isUser ? userFactor : 1.0;
         final bubble = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: constraints.maxWidth * factor),
           child: MessageBubble(
@@ -235,8 +235,10 @@ class MessageRow extends StatelessWidget {
             : InventoryPulseCard(
                 payload: payload,
                 actions: _actions(context, InteractiveCardKind.inventory),
-                deepActions:
-                    _deepActions(context, InteractiveCardKind.inventory),
+                deepActions: _deepActions(
+                  context,
+                  InteractiveCardKind.inventory,
+                ),
                 onSend: onCardSend,
               );
       case InteractiveCardKind.finance:
@@ -264,8 +266,10 @@ class MessageRow extends StatelessWidget {
             : AccountantPulseCard(
                 payload: payload,
                 actions: _actions(context, InteractiveCardKind.accountant),
-                deepActions:
-                    _deepActions(context, InteractiveCardKind.accountant),
+                deepActions: _deepActions(
+                  context,
+                  InteractiveCardKind.accountant,
+                ),
                 onSend: onCardSend,
               );
       case InteractiveCardKind.hr:
@@ -302,6 +306,5 @@ class MessageRow extends StatelessWidget {
   List<PulseAction> _deepActions(
     BuildContext context,
     InteractiveCardKind kind,
-  ) =>
-      pulseDeepActions(kind, message.toolPayload, context.tr);
+  ) => pulseDeepActions(kind, message.toolPayload, context.tr);
 }

@@ -35,10 +35,10 @@ class ConversationsRepository {
     ConversationsCache? listCache,
     ChatSnapshotDiskCache? snapshotDiskCache,
     WatchBridge? watchBridge,
-  })  : _approvalsApi = approvalsApi,
-        _listCache = listCache,
-        _diskCache = snapshotDiskCache,
-        _watchBridge = watchBridge;
+  }) : _approvalsApi = approvalsApi,
+       _listCache = listCache,
+       _diskCache = snapshotDiskCache,
+       _watchBridge = watchBridge;
 
   static const _tag = 'ConversationsRepository';
 
@@ -223,8 +223,12 @@ class ConversationsRepository {
       final map = await compute(decodeSnapshotJson, body);
       return ConversationSnapshot.fromJson(map);
     } catch (e, st) {
-      AppLogger.warn(_tag, 'diskCachedSnapshot($id) decode failed',
-          error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'diskCachedSnapshot($id) decode failed',
+        error: e,
+        stackTrace: st,
+      );
       return null;
     }
   }
@@ -246,17 +250,21 @@ class ConversationsRepository {
       await Future<void>.delayed(_prefetchStartDelay);
       for (var i = 0; i < ids.length; i += _prefetchConcurrency) {
         final chunk = ids.skip(i).take(_prefetchConcurrency);
-        await Future.wait(chunk.map((id) async {
-          if (_snapshotCache.containsKey(id)) return;
-          if (await cache.isFresh(id, _prefetchTtl)) return;
-          try {
-            final body =
-                await _api.fetchSnapshotBody(id, limit: _prefetchLimit);
-            if (body.isNotEmpty) await cache.writeBody(id, body);
-          } catch (_) {
-            // Best-effort warming — one failed row never aborts the rest.
-          }
-        }));
+        await Future.wait(
+          chunk.map((id) async {
+            if (_snapshotCache.containsKey(id)) return;
+            if (await cache.isFresh(id, _prefetchTtl)) return;
+            try {
+              final body = await _api.fetchSnapshotBody(
+                id,
+                limit: _prefetchLimit,
+              );
+              if (body.isNotEmpty) await cache.writeBody(id, body);
+            } catch (_) {
+              // Best-effort warming — one failed row never aborts the rest.
+            }
+          }),
+        );
         await Future<void>.delayed(_prefetchRoundGap);
       }
     } finally {
@@ -351,10 +359,7 @@ class ConversationsRepository {
       serverPage ??= res.conversations.length;
     }
 
-    AppLogger.info(
-      _tag,
-      'listAll() · ${out.length} of ${total ?? out.length}',
-    );
+    AppLogger.info(_tag, 'listAll() · ${out.length} of ${total ?? out.length}');
     return (conversations: out, total: total);
   }
 
@@ -375,7 +380,7 @@ class ConversationsRepository {
   /// Best-effort: a failure yields an empty map rather than failing the whole
   /// list load. Counts are honest — never fabricated.
   Future<({Map<String, int> pendingByConv, Map<String, int> filesByConv})>
-      conversationMeta() async {
+  conversationMeta() async {
     final pending = await _pendingByConversation();
     return (pendingByConv: pending, filesByConv: const <String, int>{});
   }
@@ -390,13 +395,20 @@ class ConversationsRepository {
         final id = a.conversation?.id;
         if (id != null) counts[id] = (counts[id] ?? 0) + 1;
       }
-      unawaited(_watchBridge?.syncApprovals(
-        page.approvals,
-        pendingCount: page.pendingCount,
-      ));
+      unawaited(
+        _watchBridge?.syncApprovals(
+          page.approvals,
+          pendingCount: page.pendingCount,
+        ),
+      );
       return counts;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'pending-approvals meta failed', error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'pending-approvals meta failed',
+        error: e,
+        stackTrace: st,
+      );
       return const {};
     }
   }
@@ -449,9 +461,9 @@ class ConversationsRepository {
     AppLogger.info(
       _tag,
       'patch(id=$id, title=$title, isArchived=$isArchived, '
-          'autoApprove=$autoApprove, taskPrep=$taskPrep, '
-          'contextKeys=${context?.keys.toList()}, '
-          'environmentId=$environmentId, environmentIds=$environmentIds)',
+      'autoApprove=$autoApprove, taskPrep=$taskPrep, '
+      'contextKeys=${context?.keys.toList()}, '
+      'environmentId=$environmentId, environmentIds=$environmentIds)',
     );
     return _api.patch(
       id: id,
@@ -518,7 +530,7 @@ class ConversationsRepository {
     AppLogger.info(
       _tag,
       'dismissPendingAction(conv=$conversationId, type=$actionType, '
-          'name=$credentialName, kind=$credentialKind)',
+      'name=$credentialName, kind=$credentialKind)',
     );
     return _api.dismissPendingAction(
       conversationId: conversationId,
@@ -547,7 +559,7 @@ class ConversationsRepository {
     AppLogger.info(
       _tag,
       'sendMessage(conv=$conversationId, attachments=${attachmentIds.length}, '
-          'taskPrep=$taskPrep, model=${model ?? '<default>'})',
+      'taskPrep=$taskPrep, model=${model ?? '<default>'})',
     );
     return _api.sendMessage(
       conversationId: conversationId,
@@ -566,10 +578,7 @@ class ConversationsRepository {
       _tag,
       'uploadAttachments(conv=$conversationId, count=${files.length})',
     );
-    return _api.uploadAttachments(
-      conversationId: conversationId,
-      files: files,
-    );
+    return _api.uploadAttachments(conversationId: conversationId, files: files);
   }
 
   Future<Attachment> getAttachmentStatus({

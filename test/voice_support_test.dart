@@ -20,7 +20,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
-import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/network/api_exception.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/support/data/voice_support_api.dart';

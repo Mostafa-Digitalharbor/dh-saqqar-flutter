@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
@@ -93,10 +94,7 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
     // sheet handles its own close → returns the user to the chat (since
     // they typically arrive here from the chat env picker).
     Navigator.of(context).pop();
-    await ProjectDetailSheet.show(
-      context,
-      existingProjectId: project.id,
-    );
+    await ProjectDetailSheet.show(context, existingProjectId: project.id);
   }
 
   @override
@@ -114,114 +112,115 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
       minHeight: AppSheetHeights.projectsListMin,
       maxHeight: AppSheetHeights.projectsListMax,
       child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.s18,
-            AppSpacing.s18,
-            AppSpacing.s18,
-            AppSpacing.s18,
-          ),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s18,
+          AppSpacing.s18,
+          AppSpacing.s18,
+          AppSpacing.s18,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Header — eyebrow + title + Close ──────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header — eyebrow + title + Close ──────────────────
-                Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          context.tr.project.toUpperCase(),
-                          style: context.text.labelSmall?.copyWith(
-                            color: s.brandCyan,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: AppLetterSpacing.microCapsWidest,
-                            fontSize: AppFontSizes.chipLabel,
-                          ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        context.tr.project.toUpperCase(),
+                        style: context.text.labelSmall?.copyWith(
+                          color: s.brandCyan,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: AppLetterSpacing.microCapsWidest,
+                          fontSize: AppFontSizes.chipLabel,
                         ),
-                        const SizedBox(height: AppSpacing.s2),
-                        Text(
-                          context.tr.projectsTitle,
-                          style: context.text.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  GhostButton(
-                    label: context.tr.close,
-                    minHeight: AppControlSizes.rowMin,
-                    onPressed: () => Navigator.of(context).maybePop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s14),
-              Divider(color: s.cardBorder, height: AppBorderWidths.hairline),
-              const SizedBox(height: AppSpacing.s18),
-              // ── Quick "Add project" inline form ─────────────────────
-              // Disabled until a name is typed (and no write in flight) —
-              // the empty-tap no-op used to look like a broken button.
-              InlineAddForm(
-                controller: _newName,
-                hint: context.tr.addProjectHint,
-                buttonLabel: context.tr.addProject,
-                enabled: !state.actionInFlight,
-                onSubmit: _addProject,
-              ),
-              const SizedBox(height: AppSpacing.s18),
-              // ── Project list ─────────────────────────────────────────
-              Flexible(
-                child: projects.isEmpty
-                    // Scrollable for the same reason the list branch is.
-                    // `Flexible` hands this child the sheet's *remaining*
-                    // height, and on a 320×568 phone that is ~127 px once
-                    // the header, the divider and the stacked add-form have
-                    // taken their share — less than the empty plate's icon,
-                    // title and two-line body need. Unscrollable, it
-                    // overflowed by 120 px; the plate is fixed-height
-                    // content in a bounded box, which is the one shape that
-                    // cannot absorb a squeeze.
-                    ? SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
-                        child: EmptyState(
-                          icon: AppIcons.projects,
-                          title: context.tr.noStoredCredentialsTitle,
-                          body: context.tr.noStoredCredentialsBody,
-                        ),
-                      )
-                    : ListView.separated(
-                        // No `shrinkWrap: true` — the parent `Flexible`
-                        // already bounds the ListView's height to the
-                        // sheet's remaining space, so leaving shrinkWrap
-                        // on disables the lazy builder for nothing and
-                        // forces every row into memory upfront (bad for
-                        // workspaces with 30+ projects).
-                        padding: EdgeInsets.zero,
-                        // Pre-render rows that haven't scrolled into
-                        // view yet so the sheet's scroll feels like
-                        // everything was already there.
-                        cacheExtent: AppScrollTuning.cacheExtent,
-                        itemCount: projects.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: AppSpacing.s10),
-                        itemBuilder: (_, index) {
-                          final project = projects[index];
-                          final envCount = project.environments.length;
-                          return _ProjectRow(
-                            project: project,
-                            envCount: envCount,
-                            onTap: () => _openProject(project),
-                            onDelete: () => _deleteProject(project),
-                          );
-                        },
                       ),
-              ),
-            ],
-          ),
+                      const SizedBox(height: AppSpacing.s2),
+                      Text(
+                        context.tr.projectsTitle,
+                        style: context.text.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GhostButton(
+                  label: context.tr.close,
+                  minHeight: AppControlSizes.rowMin,
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.s14),
+            Divider(color: s.cardBorder, height: AppBorderWidths.hairline),
+            const SizedBox(height: AppSpacing.s18),
+            // ── Quick "Add project" inline form ─────────────────────
+            // Disabled until a name is typed (and no write in flight) —
+            // the empty-tap no-op used to look like a broken button.
+            InlineAddForm(
+              controller: _newName,
+              hint: context.tr.addProjectHint,
+              buttonLabel: context.tr.addProject,
+              enabled: !state.actionInFlight,
+              onSubmit: _addProject,
+            ),
+            const SizedBox(height: AppSpacing.s18),
+            // ── Project list ─────────────────────────────────────────
+            Flexible(
+              child: projects.isEmpty
+                  // Scrollable for the same reason the list branch is.
+                  // `Flexible` hands this child the sheet's *remaining*
+                  // height, and on a 320×568 phone that is ~127 px once
+                  // the header, the divider and the stacked add-form have
+                  // taken their share — less than the empty plate's icon,
+                  // title and two-line body need. Unscrollable, it
+                  // overflowed by 120 px; the plate is fixed-height
+                  // content in a bounded box, which is the one shape that
+                  // cannot absorb a squeeze.
+                  ? SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.s24,
+                      ),
+                      child: EmptyState(
+                        icon: AppIcons.projects,
+                        title: context.tr.noStoredCredentialsTitle,
+                        body: context.tr.noStoredCredentialsBody,
+                      ),
+                    )
+                  : ListView.separated(
+                      // No `shrinkWrap: true` — the parent `Flexible`
+                      // already bounds the ListView's height to the
+                      // sheet's remaining space, so leaving shrinkWrap
+                      // on disables the lazy builder for nothing and
+                      // forces every row into memory upfront (bad for
+                      // workspaces with 30+ projects).
+                      scrollCacheExtent: const ScrollCacheExtent.pixels(
+                        AppScrollTuning.cacheExtent,
+                      ),
+                      padding: EdgeInsets.zero,
+                      itemCount: projects.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.s10),
+                      itemBuilder: (_, index) {
+                        final project = projects[index];
+                        final envCount = project.environments.length;
+                        return _ProjectRow(
+                          project: project,
+                          envCount: envCount,
+                          onTap: () => _openProject(project),
+                          onDelete: () => _deleteProject(project),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -251,7 +250,9 @@ class _ProjectRow extends StatelessWidget {
       onTap: onTap,
       child: Ink(
         decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
+          color: s.surface2.withValues(
+            alpha: context.alpha(AppAlphaPairs.panel),
+          ),
           borderRadius: AppRadius.cardR,
           border: Border.all(color: s.cardBorder),
         ),
@@ -279,9 +280,7 @@ class _ProjectRow extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s2),
                   Text(
                     context.tr.environmentCount(envCount),
-                    style: context.text.bodySmall?.copyWith(
-                      color: s.muted,
-                    ),
+                    style: context.text.bodySmall?.copyWith(color: s.muted),
                   ),
                 ],
               ),

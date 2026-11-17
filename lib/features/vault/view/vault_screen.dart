@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/i18n/app_strings.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/widgets/app_icon_button.dart';
@@ -132,9 +131,7 @@ class _VaultScreenState extends State<VaultScreen> {
     if (_query.isEmpty) return true;
     final q = _query.toLowerCase();
     if (project.name.toLowerCase().contains(q)) return true;
-    return project.environments.any(
-      (e) => e.name.toLowerCase().contains(q),
-    );
+    return project.environments.any((e) => e.name.toLowerCase().contains(q));
   }
 
   // ── Build ───────────────────────────────────────────────────────────
@@ -145,8 +142,7 @@ class _VaultScreenState extends State<VaultScreen> {
       // Surface action toasts/errors once each. Consume on the cubit so
       // the same message can't fire on the next unrelated state change.
       listenWhen: (a, b) =>
-          a.actionFailure != b.actionFailure ||
-          a.actionToast != b.actionToast,
+          a.actionFailure != b.actionFailure || a.actionToast != b.actionToast,
       listener: _onCubitChange,
       builder: (context, state) {
         final data = state.data.dataOrNull;
@@ -155,7 +151,7 @@ class _VaultScreenState extends State<VaultScreen> {
         final subtitleText = projectCount == 0
             ? null
             : '$projectCount ${context.tr.projectsTitle.toLowerCase()} · '
-                '${context.tr.environmentCount(envCount)}';
+                  '${context.tr.environmentCount(envCount)}';
 
         return PageScaffold(
           title: context.tr.tabVault,
@@ -248,11 +244,9 @@ class _VaultScreenState extends State<VaultScreen> {
   /// Other failure kinds (validation, conflict, forbidden, …) won't
   /// resolve by retrying so we omit the button rather than mislead the
   /// user.
-  ToastAction? _retryActionFor(
-    BuildContext context,
-    VaultActionFailure f,
-  ) {
-    final retryable = f.failure is NetworkFailure ||
+  ToastAction? _retryActionFor(BuildContext context, VaultActionFailure f) {
+    final retryable =
+        f.failure is NetworkFailure ||
         f.failure is TimeoutFailure ||
         f.failure is ServerFailure;
     if (!retryable) return null;

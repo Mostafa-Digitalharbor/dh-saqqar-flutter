@@ -6,6 +6,16 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 import '../../../core/logging/app_logger.dart';
+import '../../../core/network/api_exception.dart';
+
+/// Whether a failed transcription means voice is locked on the caller's plan.
+///
+/// Decided from the HTTP status, not the mapped failure: the server's 403
+/// text names the plan ("...Pro and Max plans. Upgrade..."), which
+/// `ApiErrorMapper` reads as a quota, so branching on `ForbiddenFailure` let
+/// the "voice is a Pro feature" copy slip away.
+bool isVoiceLockedByPlan(Object error) =>
+    error is ApiException && error.isForbidden;
 
 /// Why a recording could not start.
 ///
@@ -82,8 +92,8 @@ class VoiceNoteRecorder extends ChangeNotifier {
     AudioRecorder? recorder,
     Future<Directory> Function()? temporaryDirectory,
     this.onMaxLengthReached,
-  })  : _recorder = recorder ?? AudioRecorder(),
-        _temporaryDirectory = temporaryDirectory ?? getTemporaryDirectory;
+  }) : _recorder = recorder ?? AudioRecorder(),
+       _temporaryDirectory = temporaryDirectory ?? getTemporaryDirectory;
 
   static const _tag = 'VoiceRecording';
 

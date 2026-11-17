@@ -174,9 +174,8 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
               // choice here, not a cancel.
               cancel: GhostButton(
                 label: tr.appLaunchSkip,
-                onPressed: () => Navigator.of(context).pop(
-                  const AppLaunchChoice(),
-                ),
+                onPressed: () =>
+                    Navigator.of(context).pop(const AppLaunchChoice()),
               ),
               confirm: PrimaryButton(
                 label: tr.appLaunchStart,
@@ -186,9 +185,9 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
                 // the same thing, which makes the choice look fake.
                 onPressed: _environmentId == null
                     ? null
-                    : () => Navigator.of(context).pop(
-                          AppLaunchChoice(environmentId: _environmentId),
-                        ),
+                    : () => Navigator.of(
+                        context,
+                      ).pop(AppLaunchChoice(environmentId: _environmentId)),
               ),
             ),
           ],
@@ -272,9 +271,7 @@ class _PickRow extends StatelessWidget {
                   ? s.brandCyan.withValues(alpha: AppAlphas.a12)
                   : Colors.transparent,
               borderRadius: AppRadius.buttonR,
-              border: Border.all(
-                color: selected ? s.brandCyan : s.border,
-              ),
+              border: Border.all(color: selected ? s.brandCyan : s.border),
             ),
             child: Row(
               children: [

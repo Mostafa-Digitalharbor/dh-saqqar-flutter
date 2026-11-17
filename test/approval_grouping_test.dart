@@ -17,7 +17,6 @@ import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
-import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/data/approval_grouping.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_grouped_approval_card.dart';

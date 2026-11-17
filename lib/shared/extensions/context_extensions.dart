@@ -46,8 +46,7 @@ extension SaqqarContextX on BuildContext {
   /// Seven of the auth flow's nine steps put this on their Continue button,
   /// so on an Arabic device the arrow pointed backwards on the first screen
   /// the user ever sees.
-  IconData get arrowForward =>
-      isRtl ? AppIcons.arrowLeft : AppIcons.arrowRight;
+  IconData get arrowForward => isRtl ? AppIcons.arrowLeft : AppIcons.arrowRight;
 
   // No `signOutGlyph` / `signInGlyph` here any more. They used to swap
   // Lucide's `logOut` for `logIn` in RTL on the belief that the two are

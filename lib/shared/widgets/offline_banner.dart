@@ -84,7 +84,7 @@ class _OfflineBannerState extends State<OfflineBanner> {
             transitionBuilder: (child, animation) {
               return SizeTransition(
                 sizeFactor: animation,
-                axisAlignment: -1,
+                alignment: Alignment.topCenter,
                 child: FadeTransition(opacity: animation, child: child),
               );
             },
@@ -120,7 +120,9 @@ class _BackOnlineRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: s.success.withValues(alpha: context.alpha(AppAlphaPairs.tint)),
           border: Border(
-            bottom: BorderSide(color: s.success.withValues(alpha: AppAlphas.a32)),
+            bottom: BorderSide(
+              color: s.success.withValues(alpha: AppAlphas.a32),
+            ),
           ),
         ),
         child: SafeArea(
@@ -128,7 +130,11 @@ class _BackOnlineRow extends StatelessWidget {
           bottom: false,
           child: Row(
             children: [
-              Icon(AppIcons.success, color: s.success, size: AppIconSizes.regular),
+              Icon(
+                AppIcons.success,
+                color: s.success,
+                size: AppIconSizes.regular,
+              ),
               const SizedBox(width: AppSpacing.s10),
               Expanded(
                 child: Text(
@@ -168,7 +174,9 @@ class _OfflineRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: s.danger.withValues(alpha: context.alpha(AppAlphaPairs.tint)),
           border: Border(
-            bottom: BorderSide(color: s.danger.withValues(alpha: AppAlphas.a32)),
+            bottom: BorderSide(
+              color: s.danger.withValues(alpha: AppAlphas.a32),
+            ),
           ),
         ),
         child: SafeArea(
@@ -176,7 +184,11 @@ class _OfflineRow extends StatelessWidget {
           bottom: false,
           child: Row(
             children: [
-              Icon(AppIcons.cloudOff, color: s.danger, size: AppIconSizes.regular),
+              Icon(
+                AppIcons.cloudOff,
+                color: s.danger,
+                size: AppIconSizes.regular,
+              ),
               const SizedBox(width: AppSpacing.s10),
               Expanded(
                 child: Column(

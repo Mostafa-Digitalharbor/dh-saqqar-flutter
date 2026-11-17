@@ -67,10 +67,7 @@ class ChatBottomChrome extends StatelessWidget {
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: SingleChildScrollView(
         reverse: true,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: children,
-        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: children),
       ),
     );
   }

@@ -21,7 +21,7 @@ const _kRefreshTokenKey = 'saqqar.auth.refresh';
 /// in `main.dart`. Tests provide an in-memory fake instead.
 class SecureTokenStore {
   SecureTokenStore([FlutterSecureStorage? storage])
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
@@ -54,11 +54,11 @@ class SecureTokenStore {
   }
 
   Future<void> writeRefreshToken(String token) => _storage.write(
-        key: _kRefreshTokenKey,
-        value: token,
-        aOptions: _aOptions,
-        iOptions: _iOptions,
-      );
+    key: _kRefreshTokenKey,
+    value: token,
+    aOptions: _aOptions,
+    iOptions: _iOptions,
+  );
 
   Future<String?> readAccessToken() async {
     if (_accessLoaded) return _cachedAccess;
@@ -73,10 +73,10 @@ class SecureTokenStore {
   }
 
   Future<String?> readRefreshToken() => _storage.read(
-        key: _kRefreshTokenKey,
-        aOptions: _aOptions,
-        iOptions: _iOptions,
-      );
+    key: _kRefreshTokenKey,
+    aOptions: _aOptions,
+    iOptions: _iOptions,
+  );
 
   Future<void> clear() async {
     await _storage.delete(

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
 import 'app_localizations.dart';
+import '../constants/ui_strings.dart';
 
 /// Locale-aware date / time / relative-time formatting.
 ///
@@ -117,10 +118,8 @@ class AppDateFormat {
   /// Arabic-Indic digits and the two separators that travel with them.
   static final _easternDigits = RegExp(r'[٠-٩٫٬]');
 
-  static DateFormat _jm(String loc) =>
-      _timeJm[loc] ??= DateFormat.jm(loc);
-  static DateFormat _hm(String loc) =>
-      _timeHm[loc] ??= DateFormat.Hm(loc);
+  static DateFormat _jm(String loc) => _timeJm[loc] ??= DateFormat.jm(loc);
+  static DateFormat _hm(String loc) => _timeHm[loc] ??= DateFormat.Hm(loc);
   static DateFormat _yMMMd(String loc) =>
       _dateYMMMd[loc] ??= DateFormat.yMMMd(loc);
   static DateFormat _mMMd(String loc) =>
@@ -128,10 +127,26 @@ class AppDateFormat {
   static NumberFormat _decimalFor(String loc) =>
       _decimal[loc] ??= NumberFormat.decimalPattern(loc);
 
+  /// Day-first long date for a grouped list header — "15 November 2026" /
+  /// "15 نوفمبر 2026". Western digits, like every other date in the app (the
+  /// notifications inbox used to build this with a bare `DateFormat`, which
+  /// printed Arabic-Indic digits and made it the one screen that disagreed).
+  static String longDate(BuildContext context, DateTime when) {
+    return _western(
+      DateFormat(
+        UiStrings.dateLongDayFirst,
+        _locale(context),
+      ).format(when.toLocal()),
+    );
+  }
+
   /// "11:42 AM" / "11:42 ص". When [twentyFour] is true, renders as
   /// "11:42" without the meridiem.
-  static String time(BuildContext context, DateTime when,
-      {bool twentyFour = false}) {
+  static String time(
+    BuildContext context,
+    DateTime when, {
+    bool twentyFour = false,
+  }) {
     final loc = _locale(context);
     final pattern = twentyFour ? _hm(loc) : _jm(loc);
     return _western(pattern.format(when.toLocal()));
@@ -179,9 +194,11 @@ class AppDateFormat {
     final loc = _locale(context);
     // Same-year dates drop the year — it's redundant and costs width on
     // the 320 px tier where this pill is centred.
-    return _western(stamp.year == today.year
-        ? _mMMd(loc).format(stamp)
-        : _yMMMd(loc).format(stamp));
+    return _western(
+      stamp.year == today.year
+          ? _mMMd(loc).format(stamp)
+          : _yMMMd(loc).format(stamp),
+    );
   }
 
   /// Human relative-time. Buckets:
@@ -213,15 +230,19 @@ class AppDateFormat {
     String num(int v) => _western(n.format(v));
 
     if (delta.inSeconds < 60) return tr.now;
-    if (delta.inMinutes < 60) return tr.relativeMinutesAgo(num(delta.inMinutes));
+    if (delta.inMinutes < 60) {
+      return tr.relativeMinutesAgo(num(delta.inMinutes));
+    }
     if (delta.inHours < 24) return tr.relativeHoursAgo(num(delta.inHours));
     if (delta.inHours < 48) return tr.dateYesterday;
     if (delta.inDays < 7) {
       return tr.relativeDaysAgo(num(delta.inDays), delta.inDays);
     }
     final local = when.toLocal();
-    return _western(local.year == now.year
-        ? _mMMd(loc).format(local)
-        : _yMMMd(loc).format(local));
+    return _western(
+      local.year == now.year
+          ? _mMMd(loc).format(local)
+          : _yMMMd(loc).format(local),
+    );
   }
 }

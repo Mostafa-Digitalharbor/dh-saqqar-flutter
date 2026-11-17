@@ -86,28 +86,21 @@ void main() {
   });
 
   group('EmptyChatSuggestions', () {
-    testWidgets('sends the tile\'s prompt, not its title', (tester) async {
-      // Each tile shows a short title and carries a longer `prompt` that is
-      // what gets sent. Sending the title instead would look right on screen
-      // and quietly ask the agent a different, much vaguer question.
+    testWidgets('greets the user by first name, with no starter tiles',
+        (tester) async {
+      // The redesign replaced the 2x2 prompt grid with the orb and a centred
+      // "Hello <name>" greeting; starter prompts live in the tools sheet.
       final sent = <String>[];
       await tester.pumpWidget(
-        host(EmptyChatSuggestions(onSuggestionTap: sent.add)),
+        host(EmptyChatSuggestions(
+          onSuggestionTap: sent.add,
+          userName: 'Nada',
+        )),
       );
 
-      final tiles = find.byType(InkWell);
-      expect(tiles, findsWidgets, reason: 'No tappable suggestion tiles.');
-      await tester.tap(tiles.first, warnIfMissed: false);
-      await tester.pump();
-
-      expect(sent, hasLength(1));
-      expect(sent.single.trim(), isNotEmpty);
-      // The prompt is a full request; the titles are two or three words.
-      expect(
-        sent.single.length,
-        greaterThan(12),
-        reason: 'Got "${sent.single}" — that looks like a title, not a prompt.',
-      );
+      expect(find.textContaining('Hello Nada'), findsOneWidget);
+      expect(find.byType(InkWell), findsNothing);
+      expect(sent, isEmpty);
     });
   });
 

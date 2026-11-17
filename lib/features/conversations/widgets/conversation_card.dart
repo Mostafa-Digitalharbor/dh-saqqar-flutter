@@ -151,7 +151,10 @@ class ConversationCard extends StatelessWidget {
                     start: 0,
                     top: 0,
                     bottom: 0,
-                    child: Container(width: AppBorderWidths.accentBar, color: s.warning),
+                    child: Container(
+                      width: AppBorderWidths.accentBar,
+                      color: s.warning,
+                    ),
                   ),
                 Padding(
                   padding: EdgeInsetsDirectional.fromSTEB(
@@ -461,7 +464,10 @@ class _ConversationAvatar extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: s.success,
-                border: Border.all(color: s.cardBg, width: AppBorderWidths.ringThick),
+                border: Border.all(
+                  color: s.cardBg,
+                  width: AppBorderWidths.ringThick,
+                ),
               ),
             ),
           ),

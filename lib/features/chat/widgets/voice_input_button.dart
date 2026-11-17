@@ -1,13 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/fig/fig.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// Mic-tap → start recording. Reduced to a pure stateless button after
 /// the Whisper integration (2026-05-23): the State that used to live
@@ -58,19 +60,12 @@ class VoiceInputButton extends StatelessWidget {
   }
 }
 
-/// Full-width strip that replaces the composer's text field while a
-/// recording is in flight. Renders:
+/// The redesigned recording card (figma-design / Chats — Mobile Recording):
+/// "● Recording 00:12 … Max 02:00", a live waveform, then Cancel / Send.
 ///
-///   * leading "discard" X (drops the buffer, no upload),
-///   * pulsing red dot,
-///   * faux waveform (CSS-style — just sine-displaced bars, no FFT),
-///   * monospace mm:ss timer,
-///   * trailing stop / spinner.
-///
-/// All three states (recording, transcribing) live here so the visual
-/// transition between "recording" → "transcribing" is local. The chat
-/// screen owns the actual recorder + transcribe call and feeds the
-/// elapsed Duration in via [elapsed].
+/// Send stops the recorder and uploads for transcription, so while
+/// [transcribing] the card swaps the waveform for a quiet "Transcribing…"
+/// line and both actions go inert (the bytes have already left the device).
 class RecordingOverlay extends StatefulWidget {
   const RecordingOverlay({
     super.key,
@@ -81,12 +76,7 @@ class RecordingOverlay extends StatefulWidget {
   });
 
   final Duration elapsed;
-
-  /// `true` once the user tapped stop and the upload is in flight.
-  /// Hides the timer + waveform, shows a "Transcribing…" line + spinner
-  /// where the stop button used to be.
   final bool transcribing;
-
   final VoidCallback onStop;
   final VoidCallback onDiscard;
 
@@ -101,10 +91,8 @@ class _RecordingOverlayState extends State<RecordingOverlay>
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: AppDurations.recordingPulse,
-    )..repeat(reverse: true);
+    _pulse = AnimationController(vsync: this, duration: AppDurations.agentPulse)
+      ..repeat();
   }
 
   @override
@@ -121,166 +109,187 @@ class _RecordingOverlayState extends State<RecordingOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
     final tr = context.tr;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s8,
-        vertical: AppSpacing.s8,
-      ),
-      child: Row(
+    const red = Color(0xFFFF6B6B);
+    final busy = widget.transcribing;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Discard — drops the recording without uploading. Disabled
-          // while the upload is in flight (the audio bytes have already
-          // left the device at that point).
-          IconButton(
-            tooltip: tr.discardRecording,
-            onPressed: widget.transcribing ? null : widget.onDiscard,
-            icon: Icon(AppIcons.trash,
-                size: AppIconSizes.navBar,
-                color: widget.transcribing ? s.muted : s.danger),
-            visualDensity: VisualDensity.compact,
-          ),
-          const SizedBox(width: AppSpacing.s4),
-          if (widget.transcribing) ...[
-            // Mid-upload: timer + waveform stand down; show a quiet
-            // "Transcribing…" line + spinner instead. Same row height
-            // either way so the composer doesn't jump.
-            Expanded(
-              child: Text(
-                tr.transcribing,
-                style: context.text.bodyMedium?.copyWith(
-                  color: s.muted,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: AppControlSizes.spinnerMedium,
-              height: AppControlSizes.spinnerMedium,
-              child: CircularProgressIndicator(
-                strokeWidth: AppStrokeWidths.spinnerSnug,
-                color: s.brandCyan,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.s8),
-          ] else ...[
-            // Pulsing red dot — signals "we're capturing audio right now".
-            AnimatedBuilder(
-              animation: _pulse,
-              builder: (context, _) {
-                final v = 0.55 + 0.45 * _pulse.value;
-                return Container(
-                  width: AppBoxSizes.dotLarge,
-                  height: AppBoxSizes.dotLarge,
+          Row(
+            children: [
+              AnimatedBuilder(
+                animation: _pulse,
+                builder: (context, _) => Container(
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
-                    color: s.danger.withValues(alpha: v),
+                    color: red.withValues(
+                      alpha: busy ? 0.4 : 0.6 + 0.4 * (1 - _pulse.value),
+                    ),
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: s.danger.withValues(alpha: AppAlphas.a35 * v),
-                        blurRadius: AppShadowSizes.blurGlow,
-                      ),
-                    ],
                   ),
-                );
-              },
-            ),
-            const SizedBox(width: AppSpacing.s10),
-            Expanded(
-              child: _FauxWaveform(animation: _pulse, color: s.brandCyan),
-            ),
-            const SizedBox(width: AppSpacing.s10),
-            Text(
-              _fmt(widget.elapsed),
-              style: context.text.labelMedium?.copyWith(
-                color: s.text,
-                fontWeight: FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.s8),
-            IconButton(
-              tooltip: tr.stopRecording,
-              onPressed: widget.onStop,
-              icon: Container(
-                width: AppBoxSizes.glyphCompact,
-                height: AppBoxSizes.glyphCompact,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: s.danger,
-                  shape: BoxShape.circle,
                 ),
-                child: const Icon(AppIcons.stop,
-                    color: AppColors.onBrand, size: AppIconSizes.regular),
               ),
-              visualDensity: VisualDensity.compact,
-            ),
-          ],
+              const SizedBox(width: AppSpacing.s8),
+              Flexible(
+                child: Text(
+                  busy ? tr.transcribing : context.tr.figRecording,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Fig.t(context, size: 15, color: red),
+                ),
+              ),
+              if (!busy) ...[
+                const SizedBox(width: AppSpacing.s10),
+                Text(
+                  _fmt(widget.elapsed),
+                  style: Fig.t(
+                    context,
+                    size: 15,
+                    color: Colors.white,
+                    weight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  context.tr.figMax0200,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Fig.t(
+                    context,
+                    size: 13,
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s20),
+          SizedBox(
+            height: 40,
+            child: busy
+                ? const Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: Fig.blueBright,
+                      ),
+                    ),
+                  )
+                : _LiveWaveform(animation: _pulse),
+          ),
+          const SizedBox(height: AppSpacing.s18),
+          Row(
+            children: [
+              Flexible(
+                child: Tooltip(
+                  message: tr.discardRecording,
+                  child: GestureDetector(
+                    onTap: busy ? null : widget.onDiscard,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.s8,
+                      ),
+                      child: Text(
+                        context.tr.figCancel,
+                        style: Fig.t(
+                          context,
+                          size: 15,
+                          color: busy ? Colors.white38 : red,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Tooltip(
+                message: tr.stopRecording,
+                child: GestureDetector(
+                  onTap: busy ? null : widget.onStop,
+                  child: Container(
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s24,
+                    ),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(
+                        0xFF2F6BF0,
+                      ).withValues(alpha: busy ? 0.5 : 1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      context.tr.figSend,
+                      style: Fig.t(
+                        context,
+                        size: 15,
+                        color: Colors.white,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-/// Decorative bars that ride the same pulse the red dot uses. Cheap
-/// stand-in for a real FFT visualisation — testers don't expect a
-/// spectrum analyser, they expect "something animated that says it's
-/// listening". Cost: nine `Container`s and one Animation rebuild.
-class _FauxWaveform extends StatelessWidget {
-  const _FauxWaveform({required this.animation, required this.color});
+/// Decorative bars: a fixed pseudo-random silhouette that swells and ebbs on
+/// the pulse. A stand-in for an FFT — the recorder exposes no amplitude here.
+class _LiveWaveform extends StatelessWidget {
+  const _LiveWaveform({required this.animation});
 
   final Animation<double> animation;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: AppControlSizes.waveformHeight,
-      child: AnimatedBuilder(
-        animation: animation,
-        builder: (context, _) {
-          final t = animation.value;
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              for (var i = 0; i < 9; i++) ...[
-                _Bar(
-                  height: 6 +
-                      14 *
-                          (0.5 +
-                              0.5 *
-                                  ((i.isEven ? t : 1 - t) *
-                                      (1 - (i - 4).abs() / 5))),
-                  color: color,
-                ),
-                const SizedBox(width: AppSpacing.s4),
+    return LayoutBuilder(
+      builder: (context, c) {
+        const barW = 3.0, gap = 3.0;
+        final n = ((c.maxWidth + gap) / (barW + gap)).floor().clamp(8, 80);
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, _) {
+            final t = animation.value * 6.2831853;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                for (var i = 0; i < n; i++)
+                  Container(
+                    width: barW,
+                    height:
+                        6 +
+                        32 *
+                            (0.25 +
+                                0.75 *
+                                    ((((i * 37) % 11) / 11) * 0.6 +
+                                        0.4 *
+                                            (0.5 +
+                                                0.5 * math.sin(t + i * 0.45)))),
+                    decoration: BoxDecoration(
+                      color: Fig.blueBright,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
               ],
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _Bar extends StatelessWidget {
-  const _Bar({required this.height, required this.color});
-
-  final double height;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: AppDurations.waveformBar,
-      width: AppControlSizes.waveformBarWidth,
-      height: height.clamp(AppControlSizes.waveformBarMin, AppControlSizes.waveformBarMax),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: AppAlphas.a75),
-        borderRadius: AppRadius.waveformBarR,
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }

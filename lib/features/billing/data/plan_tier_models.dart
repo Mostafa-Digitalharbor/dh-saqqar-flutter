@@ -183,14 +183,15 @@ class PlansResponse {
   final VatPolicy vat;
 
   factory PlansResponse.fromJson(Map<String, dynamic> json) {
-    final tiers = (json['plans'] as List? ?? [])
-        // `whereType`, not `cast`: `cast` defers the check to iteration and
-        // then throws mid-`map`, so one malformed row would empty the price
-        // list. Skipping the bad row shows four tiers instead of none.
-        .whereType<Map<String, dynamic>>()
-        .map(PlanTier.fromJson)
-        .toList()
-      ..sort((a, b) => a.sort.compareTo(b.sort));
+    final tiers =
+        (json['plans'] as List? ?? [])
+            // `whereType`, not `cast`: `cast` defers the check to iteration and
+            // then throws mid-`map`, so one malformed row would empty the price
+            // list. Skipping the bad row shows four tiers instead of none.
+            .whereType<Map<String, dynamic>>()
+            .map(PlanTier.fromJson)
+            .toList()
+          ..sort((a, b) => a.sort.compareTo(b.sort));
     return PlansResponse(
       currentPlan: json['current_plan'] as String?,
       plans: tiers,

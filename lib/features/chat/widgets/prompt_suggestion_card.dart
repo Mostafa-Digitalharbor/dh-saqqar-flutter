@@ -35,8 +35,9 @@ class PromptSuggestionCard extends StatefulWidget {
 }
 
 class _PromptSuggestionCardState extends State<PromptSuggestionCard> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.payload.improved);
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.payload.improved,
+  );
 
   /// "Keep mine" hides the card for this session. Deliberately local: the
   /// server has no "dismissed" state for a suggestion, and writing one into

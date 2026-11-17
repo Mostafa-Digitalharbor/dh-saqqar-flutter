@@ -142,7 +142,9 @@ String completedStepLabel(
   String resultJson = '',
 }) {
   final status = _statusOf(resultJson);
-  if (status == 'approval_required') return context.tr.activityStepAwaitedApproval;
+  if (status == 'approval_required') {
+    return context.tr.activityStepAwaitedApproval;
+  }
   if (status == 'error' || status == 'failed') {
     return context.tr.activityStepFailed(
       pendingStatusForTool(context, toolName: toolName),

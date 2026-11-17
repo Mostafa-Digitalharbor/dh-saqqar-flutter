@@ -35,9 +35,17 @@ class AuthFlowState extends Equatable {
     this.loading = false,
     this.failure,
     this.noticeKey,
+    this.pendingName = '',
+    this.pendingPassword = '',
   });
 
   final AuthFlowStep step;
+
+  /// Name + password typed on the single sign-up form (the redesign collects
+  /// them up front). Held until the OTP is verified, then sent to
+  /// `signup/complete`.
+  final String pendingName;
+  final String pendingPassword;
 
   /// Email carried across steps. `start` is keyed by email (it returns only
   /// `{ ok, resend_in }`); the short-lived [token] below is what `verify`
@@ -73,8 +81,12 @@ class AuthFlowState extends Equatable {
     String? noticeKey,
     bool clearFailure = false,
     bool clearNotice = false,
+    String? pendingName,
+    String? pendingPassword,
   }) {
     return AuthFlowState(
+      pendingName: pendingName ?? this.pendingName,
+      pendingPassword: pendingPassword ?? this.pendingPassword,
       step: step ?? this.step,
       email: email ?? this.email,
       token: token ?? this.token,
@@ -85,7 +97,16 @@ class AuthFlowState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [step, email, token, loading, failure, noticeKey];
+  List<Object?> get props => [
+    step,
+    email,
+    token,
+    loading,
+    failure,
+    noticeKey,
+    pendingName,
+    pendingPassword,
+  ];
 }
 
 /// Drives the multi-step email-OTP auth flow. On any terminal success it
@@ -97,10 +118,10 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
     required AuthCubit authCubit,
     required SocialAuthService socialAuth,
     required AuthFlowStep initial,
-  })  : _api = api,
-        _auth = authCubit,
-        _social = socialAuth,
-        super(AuthFlowState(step: initial));
+  }) : _api = api,
+       _auth = authCubit,
+       _social = socialAuth,
+       super(AuthFlowState(step: initial));
 
   final AuthApi _api;
   final AuthCubit _auth;
@@ -124,37 +145,73 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
     emit(state.copyWith(email: email.trim()));
   }
 
-  void toSignUp() => emit(state.copyWith(
-        step: AuthFlowStep.signUpEmail,
-        clearFailure: true,
-      ));
+  void toSignUp() =>
+      emit(state.copyWith(step: AuthFlowStep.signUpEmail, clearFailure: true));
 
-  void toSignIn() => emit(state.copyWith(
-        step: AuthFlowStep.signInEmail,
-        clearFailure: true,
-      ));
+  void toSignIn() =>
+      emit(state.copyWith(step: AuthFlowStep.signInEmail, clearFailure: true));
 
   // ── Sign-up branch ───────────────────────────────────────────────────
 
   Future<void> submitSignUpEmail(String email) async {
     await _run(() async {
       await _api.signupStart(email: email);
-      emit(state.copyWith(
-        email: email,
-        step: AuthFlowStep.signUpOtp,
-        loading: false,
-      ));
+      emit(
+        state.copyWith(
+          email: email,
+          step: AuthFlowStep.signUpOtp,
+          loading: false,
+        ),
+      );
+    });
+  }
+
+  /// Redesigned sign-up: the form collects name + email + password together.
+  /// Start the email verification now and finish the account after the OTP.
+  Future<void> submitSignUpForm({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    await _run(() async {
+      await _api.signupStart(email: email);
+      emit(
+        state.copyWith(
+          email: email,
+          pendingName: name,
+          pendingPassword: password,
+          step: AuthFlowStep.signUpOtp,
+          loading: false,
+        ),
+      );
     });
   }
 
   Future<void> verifySignUpOtp(String code) async {
     await _run(() async {
       final token = await _api.signupVerify(email: state.email, code: code);
-      emit(state.copyWith(
-        token: token ?? '',
-        step: AuthFlowStep.signUpProfile,
-        loading: false,
-      ));
+      if (state.pendingPassword.isNotEmpty) {
+        // Form already holds the profile — finish the account in one go.
+        final parts = state.pendingName.trim().split(RegExp(r'\s+'));
+        final first = parts.first;
+        final last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+        final session = await _api.signupComplete(
+          email: state.email,
+          signupToken: (token == null || token.isEmpty) ? null : token,
+          password: state.pendingPassword,
+          firstName: first,
+          lastName: last,
+        );
+        await _adoptOrSignIn(session, state.pendingPassword);
+        return;
+      }
+      emit(
+        state.copyWith(
+          token: token ?? '',
+          step: AuthFlowStep.signUpProfile,
+          loading: false,
+        ),
+      );
     });
   }
 
@@ -180,18 +237,22 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
   Future<void> submitSignInEmail(String email) async {
     await _run(() async {
       await _api.loginEmailStart(email: email);
-      emit(state.copyWith(
-        email: email,
-        step: AuthFlowStep.signInOtp,
-        loading: false,
-      ));
+      emit(
+        state.copyWith(
+          email: email,
+          step: AuthFlowStep.signInOtp,
+          loading: false,
+        ),
+      );
     });
   }
 
   Future<void> verifySignInOtp(String code) async {
     await _run(() async {
-      final session =
-          await _api.loginEmailVerify(email: state.email, code: code);
+      final session = await _api.loginEmailVerify(
+        email: state.email,
+        code: code,
+      );
       await _auth.adoptSession(session);
     });
   }
@@ -227,10 +288,16 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
   /// sign-in (Apple omits it afterwards). Cancel is a no-op like Google.
   Future<void> continueWithApple() async {
     await _run(() async {
-      AppLogger.info('AppleSignIn', '▶ START — user tapped "Continue with Apple"');
+      AppLogger.info(
+        'AppleSignIn',
+        '▶ START — user tapped "Continue with Apple"',
+      );
       final result = await _social.signInWithApple();
       if (result == null) {
-        AppLogger.info('AppleSignIn', '⊘ canceled before token — nothing to do');
+        AppLogger.info(
+          'AppleSignIn',
+          '⊘ canceled before token — nothing to do',
+        );
         emit(state.copyWith(loading: false));
         return;
       }
@@ -253,24 +320,30 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
   Future<void> submitResetEmail(String email) async {
     await _run(() async {
       await _api.passwordResetStart(email: email);
-      emit(state.copyWith(
-        email: email,
-        step: AuthFlowStep.resetOtp,
-        loading: false,
-      ));
+      emit(
+        state.copyWith(
+          email: email,
+          step: AuthFlowStep.resetOtp,
+          loading: false,
+        ),
+      );
     });
   }
 
   Future<void> verifyResetOtp(String code) async {
     await _run(() async {
-      final token =
-          await _api.passwordResetVerify(email: state.email, code: code);
+      final token = await _api.passwordResetVerify(
+        email: state.email,
+        code: code,
+      );
       // Keep the minted reset_token for the final complete call.
-      emit(state.copyWith(
-        token: token,
-        step: AuthFlowStep.resetNewPassword,
-        loading: false,
-      ));
+      emit(
+        state.copyWith(
+          token: token,
+          step: AuthFlowStep.resetNewPassword,
+          loading: false,
+        ),
+      );
     });
   }
 
@@ -308,16 +381,19 @@ class AuthFlowCubit extends Cubit<AuthFlowState> {
       // useless: it sends the user into a sign-in the app already knows
       // will fail, with no hint why. Show the notice AND the reason.
       final failure = ApiErrorMapper.toFailure(e);
-      final isTransport = failure is NetworkFailure ||
+      final isTransport =
+          failure is NetworkFailure ||
           failure is TimeoutFailure ||
           failure is ServerFailure;
-      emit(state.copyWith(
-        step: AuthFlowStep.signInPassword,
-        loading: false,
-        noticeKey: 'auth_password_set',
-        failure: isTransport ? e : null,
-        clearFailure: !isTransport,
-      ));
+      emit(
+        state.copyWith(
+          step: AuthFlowStep.signInPassword,
+          loading: false,
+          noticeKey: 'auth_password_set',
+          failure: isTransport ? e : null,
+          clearFailure: !isTransport,
+        ),
+      );
     }
   }
 

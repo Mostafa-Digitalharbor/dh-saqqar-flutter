@@ -63,8 +63,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
     try {
       await context.read<DevicesApi>().revoke(device.id);
       if (!mounted) return;
-      AppToast.show(context, message: tr.deviceRevoked,
-          variant: ToastVariant.success);
+      AppToast.show(
+        context,
+        message: tr.deviceRevoked,
+        variant: ToastVariant.success,
+      );
       await _reload();
     } catch (e) {
       if (!mounted) return;
@@ -104,7 +107,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
               if (snap.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: CircularProgressIndicator(
-                      strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
+                    strokeWidth: AppStrokeWidths.spinnerRegular,
+                    color: s.muted,
+                  ),
                 );
               }
               // Errors MUST be caught before the empty check. `snap.data` is
@@ -150,7 +155,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 ),
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: devices.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s8),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppSpacing.s8),
                 itemBuilder: (context, i) => _DeviceRowTile(
                   device: devices[i],
                   revoking: _revoking.contains(devices[i].id),
@@ -206,8 +212,9 @@ class _DeviceRowTile extends StatelessWidget {
                   // the null-check rendered a bare "Android · v".
                   '${isIos ? UiStrings.platformIos : UiStrings.platformAndroid}'
                   '${(device.appVersion ?? '').isNotEmpty ? ' · v${device.appVersion}' : ''}',
-                  style: context.text.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: context.text.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -221,8 +228,9 @@ class _DeviceRowTile extends StatelessWidget {
                 if (lastSeen != null) ...[
                   const SizedBox(height: AppSpacing.s2),
                   Text(
-                    context.tr
-                        .deviceLastSeen(AppDateFormat.relative(context, lastSeen)),
+                    context.tr.deviceLastSeen(
+                      AppDateFormat.relative(context, lastSeen),
+                    ),
                     style: context.text.labelSmall?.copyWith(color: s.muted),
                   ),
                 ],
@@ -234,12 +242,19 @@ class _DeviceRowTile extends StatelessWidget {
             SizedBox(
               width: AppControlSizes.spinnerRow,
               height: AppControlSizes.spinnerRow,
-              child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerThin, color: s.muted),
+              child: CircularProgressIndicator(
+                strokeWidth: AppStrokeWidths.spinnerThin,
+                color: s.muted,
+              ),
             )
           else
             IconButton(
               tooltip: context.tr.deviceRevoke,
-              icon: Icon(AppIcons.trash, color: s.danger, size: AppIconSizes.action),
+              icon: Icon(
+                AppIcons.trash,
+                color: s.danger,
+                size: AppIconSizes.action,
+              ),
               onPressed: onRevoke,
             ),
         ],

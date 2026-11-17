@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 
 import '../error/app_failure.dart';
 import '../i18n/app_localizations.dart';
-import '../i18n/app_strings.dart';
 import 'api_exception.dart';
 
 /// Converts thrown errors → typed [AppFailure], and typed [AppFailure] →
@@ -69,7 +68,14 @@ class ApiErrorMapper {
   /// `as`-cast failures surface as [TypeError] and are what a schema change
   /// actually throws; [FormatException] covers malformed JSON and the
   /// `int.parse`/`DateTime.parse` family.
-  static bool _isParseError(Object? e) => e is TypeError || e is FormatException;
+  static bool _isParseError(Object? e) =>
+      e is TypeError || e is FormatException;
+
+  /// A 403 body that names the plan or an upgrade is a quota, not a permission.
+  static final RegExp _planCap = RegExp(
+    r'\b(plan|upgrade)\b',
+    caseSensitive: false,
+  );
 
   static AppFailure _fromDioType(DioException e) {
     return switch (e.type) {
@@ -132,6 +138,12 @@ class ApiErrorMapper {
       );
     }
     if (e.isUnauthorized) return const UnauthorizedFailure();
+    // The backend answers a plan cap ("Your plan allows 2 project(s). Upgrade
+    // …") with 403, not 402. It is a quota, not a missing permission, and the
+    // fix — upgrade or delete something — differs from "ask the owner".
+    if (e.isForbidden && _planCap.hasMatch(e.message)) {
+      return QuotaExceededFailure(serverMessage: e.message);
+    }
     if (e.isForbidden) return const ForbiddenFailure();
     if (e.isNotFound) return const NotFoundFailure();
     if (e.isConflict) return ConflictFailure(serverMessage: e.message);
@@ -265,7 +277,9 @@ class ApiErrorMapper {
       ConflictFailure(serverMessage: final m) =>
         tr.presentableServerMessage(m) ?? tr.errorConflict,
       RateLimitFailure(retryAfterSeconds: final s) =>
-        s != null && s > 0 ? tr.errorRateLimitedWithRetry(s) : tr.errorRateLimited,
+        s != null && s > 0
+            ? tr.errorRateLimitedWithRetry(s)
+            : tr.errorRateLimited,
       PayloadTooLargeFailure() => tr.errorPayloadTooLarge,
       // Both prefer the server's wording — it's the only source that can
       // name the actual cap, reset time or accepted formats.
@@ -281,10 +295,10 @@ class ApiErrorMapper {
       // device. Each arm names the way out; `notConfigured` in particular
       // cannot be retried, so offering "try again" would loop the user.
       SocialSignInFailure(problem: final p) => switch (p) {
-          SocialSignInProblem.notConfigured => tr.errorSocialNotConfigured,
-          SocialSignInProblem.noToken => tr.errorSocialNoToken,
-          SocialSignInProblem.rejected => tr.errorSocialRejected,
-        },
+        SocialSignInProblem.notConfigured => tr.errorSocialNotConfigured,
+        SocialSignInProblem.noToken => tr.errorSocialNoToken,
+        SocialSignInProblem.rejected => tr.errorSocialRejected,
+      },
       // Prefers the server's own wording (a maintenance window can name
       // itself), then a timed message, then the untimed fallback.
       ServiceUnavailableFailure(

@@ -55,12 +55,17 @@ class FilterPill extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: selected
-              ? s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintPill))
-              : s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelDense)),
+              ? s.brandCyan.withValues(
+                  alpha: context.alpha(AppAlphaPairs.tintPill),
+                )
+              : s.surface2.withValues(
+                  alpha: context.alpha(AppAlphaPairs.panelDense),
+                ),
           borderRadius: AppRadius.pillR,
           border: Border.all(
-            color:
-                selected ? s.brandCyan.withValues(alpha: AppAlphas.a40) : s.cardBorder,
+            color: selected
+                ? s.brandCyan.withValues(alpha: AppAlphas.a40)
+                : s.cardBorder,
           ),
         ),
         // Single line + ellipsis: these sit in a horizontally scrolling

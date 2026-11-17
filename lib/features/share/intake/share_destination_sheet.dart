@@ -152,8 +152,7 @@ class _ShareDestinationOverlayContentState
                 ),
               ),
               _NewChatRow(
-                onTap: () =>
-                    widget.onPick(const ShareDestination.newChat()),
+                onTap: () => widget.onPick(const ShareDestination.newChat()),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -178,7 +177,9 @@ class _ShareDestinationOverlayContentState
                   if (data == null) {
                     if (state.data.isLoading) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s24),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.s24,
+                        ),
                         child: Center(
                           child: SizedBox(
                             width: AppControlSizes.spinnerMedium,
@@ -198,7 +199,9 @@ class _ShareDestinationOverlayContentState
                     final failure = state.data;
                     if (failure is DataFailure<ConversationsData>) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.s12,
+                        ),
                         child: AppErrorState(
                           message: ApiErrorMapper.message(
                             context,
@@ -211,10 +214,9 @@ class _ShareDestinationOverlayContentState
                     }
                     return _EmptyHint(text: tr.shareNoConversations);
                   }
-                  final active = data.conversations
-                      .where((c) => !c.isArchived)
-                      .toList()
-                    ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                  final active =
+                      data.conversations.where((c) => !c.isArchived).toList()
+                        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
                   if (active.isEmpty) {
                     return _EmptyHint(text: tr.shareNoConversations);
                   }
@@ -263,7 +265,9 @@ class _NewChatRow extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           borderRadius: AppRadius.inputR,
-          border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a45)),
+          border: Border.all(
+            color: s.brandCyan.withValues(alpha: AppAlphas.a45),
+          ),
           color: s.brandCyan.withValues(alpha: AppAlphas.a08),
         ),
         child: Row(
@@ -276,7 +280,11 @@ class _NewChatRow extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: s.brandCyan.withValues(alpha: AppAlphas.a18),
               ),
-              child: Icon(AppIcons.plus, color: s.brandCyan, size: AppIconSizes.regular),
+              child: Icon(
+                AppIcons.plus,
+                color: s.brandCyan,
+                size: AppIconSizes.regular,
+              ),
             ),
             const SizedBox(width: AppSpacing.s12),
             Expanded(
@@ -287,8 +295,11 @@ class _NewChatRow extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(context.chevronForward,
-                color: s.muted, size: AppIconSizes.regular),
+            Icon(
+              context.chevronForward,
+              color: s.muted,
+              size: AppIconSizes.regular,
+            ),
           ],
         ),
       ),
@@ -327,7 +338,11 @@ class _ConversationRow extends StatelessWidget {
                 color: s.surface2,
                 border: Border.all(color: s.border),
               ),
-              child: Icon(AppIcons.chats, size: AppIconSizes.compact, color: s.muted),
+              child: Icon(
+                AppIcons.chats,
+                size: AppIconSizes.compact,
+                color: s.muted,
+              ),
             ),
             const SizedBox(width: AppSpacing.s12),
             Expanded(
@@ -361,8 +376,11 @@ class _ConversationRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.s8),
-            Icon(context.chevronForward,
-                color: s.muted, size: AppIconSizes.small),
+            Icon(
+              context.chevronForward,
+              color: s.muted,
+              size: AppIconSizes.small,
+            ),
           ],
         ),
       ),
@@ -386,7 +404,10 @@ class _EmptyHint extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: context.text.bodySmall?.copyWith(color: s.muted, height: AppLineHeights.compact),
+        style: context.text.bodySmall?.copyWith(
+          color: s.muted,
+          height: AppLineHeights.compact,
+        ),
       ),
     );
   }

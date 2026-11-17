@@ -26,15 +26,13 @@ class SaqqarToolsApi {
   Future<void> runHealthRadar({
     required String conversationId,
     required String lang,
-  }) =>
-      _run(ApiEndpoints.radarRun, conversationId, lang);
+  }) => _run(ApiEndpoints.radarRun, conversationId, lang);
 
   /// `POST /api/v1/pulse/run/` — Business Pulse / executive brief.
   Future<void> runBusinessPulse({
     required String conversationId,
     required String lang,
-  }) =>
-      _run(ApiEndpoints.pulseRun, conversationId, lang);
+  }) => _run(ApiEndpoints.pulseRun, conversationId, lang);
 
   /// `POST /api/v1/whatif/intro/` — posts the "describe your decision"
   /// primer.
@@ -47,8 +45,7 @@ class SaqqarToolsApi {
   Future<void> runWhatIfIntro({
     required String conversationId,
     required String lang,
-  }) =>
-      _run(ApiEndpoints.whatIfIntro, conversationId, lang);
+  }) => _run(ApiEndpoints.whatIfIntro, conversationId, lang);
 
   /// Every one of the three takes the same body and returns a body the app
   /// does not read: the report reaches the user as a posted message, not as

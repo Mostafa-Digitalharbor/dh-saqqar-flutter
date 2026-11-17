@@ -68,8 +68,9 @@ class _AppUpdateGateState extends State<AppUpdateGate>
     // `select` rather than `watch` so a `dismissed` flip (which only the
     // banner cares about) does not rebuild every screen in the app to hide
     // one row.
-    final blocking =
-        context.select<AppUpdateCubit?, bool>((c) => c?.state.isBlocking ?? false);
+    final blocking = context.select<AppUpdateCubit?, bool>(
+      (c) => c?.state.isBlocking ?? false,
+    );
     if (!blocking) return widget.child;
     final status = context.read<AppUpdateCubit>().state.status!;
     return UpdateRequiredScreen(

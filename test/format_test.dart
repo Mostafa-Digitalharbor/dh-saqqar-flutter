@@ -5,7 +5,6 @@ import 'package:saqqar_app/core/format/byte_size.dart';
 import 'package:saqqar_app/core/format/compact_number.dart';
 import 'package:saqqar_app/core/i18n/app_date_format.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
-import 'package:saqqar_app/core/i18n/app_strings.dart';
 
 void main() {
   group('humanBytes', () {

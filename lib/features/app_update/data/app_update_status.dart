@@ -74,8 +74,12 @@ class AppUpdateStatus extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [minSupportedBuild, latestBuild, latestVersion, storeUrl];
+  List<Object?> get props => [
+    minSupportedBuild,
+    latestBuild,
+    latestVersion,
+    storeUrl,
+  ];
 }
 
 /// What the app should do about [AppUpdateStatus] for this specific install.

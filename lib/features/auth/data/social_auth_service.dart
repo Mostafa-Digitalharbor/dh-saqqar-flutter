@@ -41,16 +41,16 @@ class SocialAuthService {
   GoogleSignIn? _google;
 
   GoogleSignIn get _googleSignIn => _google ??= GoogleSignIn(
-        // iOS needs its own client ID passed explicitly; on Android the SDK
-        // resolves the app via the package + SHA-1 registered in the Cloud
-        // project, so `clientId` stays null there.
-        clientId: Platform.isIOS ? SocialAuthConfig.googleIosClientId : null,
-        // The Web client ID → the ID token's `aud`, which Saqqar trusts.
-        serverClientId: SocialAuthConfig.isGoogleConfigured
-            ? SocialAuthConfig.googleServerClientId
-            : null,
-        scopes: const ['email', 'profile'],
-      );
+    // iOS needs its own client ID passed explicitly; on Android the SDK
+    // resolves the app via the package + SHA-1 registered in the Cloud
+    // project, so `clientId` stays null there.
+    clientId: Platform.isIOS ? SocialAuthConfig.googleIosClientId : null,
+    // The Web client ID → the ID token's `aud`, which Saqqar trusts.
+    serverClientId: SocialAuthConfig.isGoogleConfigured
+        ? SocialAuthConfig.googleServerClientId
+        : null,
+    scopes: const ['email', 'profile'],
+  );
 
   /// Opens the native Google account picker. Returns null if the user
   /// cancels; throws a [SocialSignInFailure] if unconfigured or no token comes
@@ -172,7 +172,8 @@ class SocialAuthService {
       var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
       payload = payload.padRight((payload.length + 3) ~/ 4 * 4, '=');
       final map =
-          jsonDecode(utf8.decode(base64.decode(payload))) as Map<String, dynamic>;
+          jsonDecode(utf8.decode(base64.decode(payload)))
+              as Map<String, dynamic>;
       AppLogger.info(
         _appleTag,
         '③ token claims → aud=${map['aud']} | iss=${map['iss']} | '

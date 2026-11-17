@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/theme/app_gradients.dart';
-import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_sizes.dart';
-import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/compact_search_field.dart';
-import '../../../shared/widgets/saqqar_logo.dart';
-import '../../../shared/widgets/title_trailing_row.dart';
+import '../../../shared/fig/fig.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../../conversations/view_model/conversations_cubit.dart';
 import '../../conversations/view_model/conversations_state.dart';
 import '../../conversations/widgets/conversation_action_handler.dart';
 import '../../conversations/widgets/conversation_actions_sheet.dart';
-import '../../../shared/widgets/tappable_surface.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/format/plain_preview.dart';
+import '../../../shared/widgets/auto_direction_text.dart';
 
-/// Brief §4.2 — sidebar drawer mounted on `Scaffold.drawer` of the chat
+/// Redesigned (figma-design / Light) "Chats" panel — sidebar drawer mounted on `Scaffold.drawer` of the chat
 /// screen. Opens from the start side via the AppBar hamburger.
 ///
 /// Carries the same quick-switch surface the desktop sidebar does:
@@ -90,12 +85,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
       isPinned: cubit.isPinned(c.id),
     );
     if (action == null || !mounted) return;
-    await runConversationAction(
-      context,
-      cubit: cubit,
-      c: c,
-      action: action,
-    );
+    await runConversationAction(context, cubit: cubit, c: c, action: action);
   }
 
   /// Filters by title / last-message preview — same shape the Chats
@@ -110,169 +100,182 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
     final visible = data.ordered.where((c) => !c.isArchived);
     if (q.isEmpty) return visible.toList();
     return visible
-        .where((c) =>
-            c.title.toLowerCase().contains(q) ||
-            c.lastMessagePreview.toLowerCase().contains(q))
+        .where(
+          (c) =>
+              c.title.toLowerCase().contains(q) ||
+              c.lastMessagePreview.toLowerCase().contains(q),
+        )
         .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    // Spec §10.2 — the drawer is no longer a Material `Drawer` widget;
-    // it lives inside the chat's Stack as a plain Material+Container so
-    // we control the slide animation + scrim ourselves (see chat_screen).
+    // A light card hung from the start edge: rounded trailing corners, a soft
+    // shadow, "Chats" + close, the search pill, the New Chat button and the
+    // recent-conversations list.
     return Material(
-      color: s.surface,
-      elevation: AppElevations.drawer,
-      child: SafeArea(
-        child: Column(
-          children: [
-            // ── Logo row ──────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s18,
-                AppSpacing.s14,
-                AppSpacing.s12,
-                AppSpacing.s10,
-              ),
-              child: Row(
-                children: [
-                  // Tapping the wordmark goes home (/chats). Wrapped in a
-                  // borderless InkWell so it reads as tappable without
-                  // adding chrome around the logo.
-                  InkWell(
-                    onTap: widget.onGoHome,
-                    borderRadius: AppRadius.buttonR,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s4,
-                        vertical: AppSpacing.s4,
-                      ),
-                      child: SaqqarLogo(height: AppLogoSizes.drawer),
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: context.tr.close,
-                    icon: Icon(AppIcons.close, color: s.muted, size: AppIconSizes.action),
-                    onPressed: widget.onClose,
-                  ),
-                ],
-              ),
-            ),
-            // ── New conversation CTA ──────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                AppSpacing.s4,
-                AppSpacing.s16,
-                AppSpacing.s8,
-              ),
-              child: _NewConversationButton(onTap: widget.onNewConversation),
-            ),
-            // ── Search ────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                AppSpacing.s6,
-                AppSpacing.s16,
-                AppSpacing.s10,
-              ),
-              child: CompactSearchField(
-                hintText: context.tr.searchConversations,
-                controller: _search,
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s4),
-            // ── Conversation list (scrollable) ────────────────────────
-            // Subscribe to ConversationsCubit so the drawer reflects
-            // live server state — new/renamed/deleted chats appear
-            // without remount. The cubit's `load()` is fired once by
-            // ConversationsScreen; opening the drawer doesn't re-fetch.
-            Expanded(
-              child: BlocBuilder<ConversationsCubit, ConversationsState>(
-                builder: (context, state) {
-                  return _ConversationGroupedList(
-                    conversations: _filtered(state),
-                    currentId: widget.currentConversationId,
-                    onPick: widget.onPickConversation,
-                    onLongPress: _onRowLongPress,
-                  );
-                },
-              ),
-            ),
-            // ── Vault footer pill ─────────────────────────────────────
-            Container(
-              height: AppBorderWidths.hairline,
-              color: s.cardBorder,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.s16,
-                AppSpacing.s10,
-                AppSpacing.s16,
-                AppSpacing.s14,
-              ),
-              child: _VaultFooterButton(onTap: widget.onOpenVault),
+      color: Colors.transparent,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadiusDirectional.only(
+            topEnd: Radius.circular(40),
+            bottomEnd: Radius.circular(40),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Fig.drawerShadow,
+              blurRadius: 40,
+              offset: Offset(0, 16),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _NewConversationButton extends StatelessWidget {
-  const _NewConversationButton({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return TappableSurface(
-      onTap: onTap,
-      child: Ink(
-        decoration: const BoxDecoration(
-          gradient: AppGradients.primaryCta,
-          borderRadius: AppRadius.buttonR,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s14,
-          vertical: AppSpacing.s12,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(AppIcons.plus, color: AppColors.onBrand, size: AppIconSizes.regular),
-            const SizedBox(width: AppSpacing.s8),
-            // Flexible: the drawer is `min(screenW * 0.86, 320)` wide, so on
-            // a 320 px phone this button gets ~240 px and a bare `Text` here
-            // is laid out unbounded — it overflowed by 38 px in English at
-            // 1.0x, before Arabic or a larger text scale even came into it.
-            Flexible(
-              child: Text(
-                context.tr.newConversation,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.onBrand,
-                  fontSize: AppFontSizes.body,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: AppLetterSpacing.tight,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        context.tr.figChats,
+                        style: Fig.t(
+                          context,
+                          size: 26,
+                          weight: FontWeight.w700,
+                          color: Fig.navy,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: widget.onClose,
+                      child: Tooltip(
+                        message: context.tr.close,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Fig.hairline),
+                          ),
+                          child: const Icon(
+                            LucideIcons.x,
+                            size: 19,
+                            color: Fig.navy,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s14,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Fig.hairline),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.search,
+                        size: 17,
+                        color: Fig.muted,
+                      ),
+                      const SizedBox(width: AppSpacing.s10),
+                      Expanded(
+                        child: TextField(
+                          controller: _search,
+                          onChanged: (_) => setState(() {}),
+                          style: Fig.t(context, size: 13, color: Fig.navy),
+                          decoration: InputDecoration(
+                            hintText:
+                                context.tr.figSearchContactsOrConversations,
+                            hintStyle: Fig.t(
+                              context,
+                              size: 13,
+                              color: Fig.muted,
+                            ),
+                            isCollapsed: true,
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: GestureDetector(
+                  onTap: widget.onNewConversation,
+                  child: Container(
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Fig.tintBlue,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          LucideIcons.squarePen,
+                          size: 16,
+                          color: Fig.blue,
+                        ),
+                        const SizedBox(width: AppSpacing.s8),
+                        Flexible(
+                          child: Text(
+                            context.tr.figNewChat,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Fig.t(
+                              context,
+                              size: 14,
+                              weight: FontWeight.w600,
+                              color: Fig.blue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: BlocBuilder<ConversationsCubit, ConversationsState>(
+                  builder: (context, state) {
+                    final list = _filtered(state);
+                    return _ConversationList(
+                      conversations: list,
+                      currentId: widget.currentConversationId,
+                      onPick: widget.onPickConversation,
+                      onLongPress: _onRowLongPress,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-
-class _ConversationGroupedList extends StatelessWidget {
-  const _ConversationGroupedList({
+class _ConversationList extends StatelessWidget {
+  const _ConversationList({
     required this.conversations,
     required this.currentId,
     required this.onPick,
@@ -286,95 +289,78 @@ class _ConversationGroupedList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (conversations.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.s24),
-          child: Text(
-            context.tr.noMatches,
-            style: context.text.bodySmall?.copyWith(color: context.saqqar.muted),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(8, 18, 8, 24),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.tr.figRecentConversations,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Fig.t(
+                    context,
+                    size: 11.5,
+                    color: Fig.muted,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+              Text(
+                context.tr.figChats2(conversations.length),
+                style: Fig.t(context, size: 12, color: Fig.blue),
+              ),
+            ],
           ),
         ),
-      );
-    }
-
-    // Group into Today / Earlier via real DateTime math on
-    // `updatedAt` — replaces the demo's string-label heuristic.
-    final now = DateTime.now();
-    final startOfToday = DateTime(now.year, now.month, now.day);
-    final today = <ConversationSummary>[];
-    final earlier = <ConversationSummary>[];
-    for (final c in conversations) {
-      if (!c.updatedAt.isBefore(startOfToday)) {
-        today.add(c);
-      } else {
-        earlier.add(c);
-      }
-    }
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s8,
-        0,
-        AppSpacing.s8,
-        AppSpacing.s16,
-      ),
-      cacheExtent: AppScrollTuning.cacheExtent,
-      children: [
-        if (today.isNotEmpty) ...[
-          _GroupLabel(text: context.tr.today),
-          for (final c in today)
-            _DrawerConversationRow(
-              conversation: c,
-              isActive: c.id == currentId,
-              onTap: () => onPick(c.id),
-              onLongPress: () => onLongPress(c),
+        if (conversations.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.s24),
+            child: Center(
+              child: Text(
+                context.tr.noMatches,
+                style: Fig.t(context, size: 13, color: Fig.muted),
+              ),
             ),
-        ],
-        if (earlier.isNotEmpty) ...[
-          _GroupLabel(text: context.tr.older),
-          for (final c in earlier)
-            _DrawerConversationRow(
-              conversation: c,
-              isActive: c.id == currentId,
-              onTap: () => onPick(c.id),
-              onLongPress: () => onLongPress(c),
-            ),
-        ],
+          ),
+        for (final c in conversations)
+          _ConversationRow(
+            conversation: c,
+            isActive: c.id == currentId,
+            onTap: () => onPick(c.id),
+            onLongPress: () => onLongPress(c),
+          ),
       ],
     );
   }
 }
 
-class _GroupLabel extends StatelessWidget {
-  const _GroupLabel({required this.text});
-  final String text;
+const _avatarPalette = [
+  Color(0xFF2A5598),
+  Color(0xFF5B3E8B),
+  Color(0xFF1F6B6B),
+  Color(0xFF7A5230),
+];
 
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s10,
-        AppSpacing.s12,
-        AppSpacing.s10,
-        AppSpacing.s6,
-      ),
-      child: Text(
-        text.toUpperCase(),
-        style: context.text.labelSmall?.copyWith(
-          color: s.muted,
-          fontWeight: FontWeight.w900,
-          fontSize: AppFontSizes.chipLabel,
-          letterSpacing: AppLetterSpacing.microCapsWide,
-        ),
-      ),
-    );
+String _initials(String title) {
+  final parts = title
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) {
+    final w = parts.first;
+    return w.substring(0, w.length >= 2 ? 2 : 1).toUpperCase();
   }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-class _DrawerConversationRow extends StatelessWidget {
-  const _DrawerConversationRow({
+class _ConversationRow extends StatelessWidget {
+  const _ConversationRow({
     required this.conversation,
     required this.isActive,
     required this.onTap,
@@ -388,114 +374,78 @@ class _DrawerConversationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return TappableSurface(
+    final c = conversation;
+    final title = c.title.trim().isEmpty
+        ? context.tr.untitledConversation
+        : c.title;
+    final color = _avatarPalette[c.id.hashCode.abs() % _avatarPalette.length];
+    return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.s10,
-          AppSpacing.s9,
-          AppSpacing.s10,
-          AppSpacing.s9,
-        ),
+        padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
         decoration: BoxDecoration(
-          color: isActive
-              ? s.brandCyan.withValues(alpha: AppAlphas.a12)
-              : Colors.transparent,
-          borderRadius: AppRadius.buttonR,
-          border: Border.all(
-            color: isActive
-                ? s.brandCyan.withValues(alpha: AppAlphas.a40)
-                : Colors.transparent,
-          ),
-        ),
-        child: TitleTrailingRow.stamp(
-          gap: 6,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                conversation.title.trim().isEmpty
-                    ? context.tr.untitledConversation
-                    : conversation.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.bodyMedium?.copyWith(
-                  color: s.text,
-                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s2),
-              Text(
-                conversation.lastMessagePreview,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.labelSmall?.copyWith(
-                  color: s.muted,
-                  fontSize: AppFontSizes.caption,
-                ),
-              ),
-            ],
-          ),
-          // Locale-aware relative timestamp ("5 m ago" / "Yesterday" /
-          // "May 8"), driven off the server's real `updatedAt` instead of
-          // the demo's pre-baked string label.
-          stamp: AppDateFormat.relative(context, conversation.updatedAt),
-          stampStyle: context.text.labelSmall?.copyWith(
-            color: s.muted,
-            fontSize: AppFontSizes.chipLabel,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _VaultFooterButton extends StatelessWidget {
-  const _VaultFooterButton({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return TappableSurface(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s14,
-          vertical: AppSpacing.s12,
-        ),
-        decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
-          borderRadius: AppRadius.buttonR,
-          border: Border.all(color: s.cardBorder),
+          color: isActive ? Fig.tintBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
-            Icon(AppIcons.shield, color: s.brandCyan, size: AppIconSizes.regular),
-            const SizedBox(width: AppSpacing.s10),
-            // `Expanded` in place of `Text` + `Spacer`. The Spacer already
-            // pushed the chevron to the end, but it could only claim space the
-            // bare `Text` had not already taken — and at 1.4× text the label
-            // takes more than the 275 px drawer has, overflowing by 9 px.
-            // Expanding the label does the same job and lets it ellipsize.
-            Expanded(
-              child: Text(
-                context.tr.credentialVault,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.bodyMedium?.copyWith(
-                  color: s.text,
-                  fontWeight: FontWeight.w700,
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _initials(title),
+                  style: Fig.t(
+                    context,
+                    size: 12,
+                    weight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-            Icon(context.chevronForward,
-                color: s.muted, size: AppIconSizes.regular),
+            const SizedBox(width: AppSpacing.s14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Fig.t(
+                      context,
+                      size: 15,
+                      weight: isActive ? FontWeight.w700 : FontWeight.w500,
+                      color: Fig.navy,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  AutoDirectionText(
+                    plainPreview(c.lastMessagePreview),
+                    // Aligned with the title above, not with the preview's own script.
+                    textAlign: Directionality.of(context) == TextDirection.rtl
+                        ? TextAlign.right
+                        : TextAlign.left,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Fig.t(context, size: 12.5, color: Fig.muted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s8),
+            Text(
+              AppDateFormat.relative(context, c.updatedAt),
+              style: Fig.t(context, size: 11.5, color: Fig.muted),
+            ),
           ],
         ),
       ),

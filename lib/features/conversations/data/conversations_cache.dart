@@ -38,11 +38,14 @@ class ConversationsCache extends VersionedPrefsCache<ConversationsCacheEntry> {
   int get version => 1;
 
   @override
-  ConversationsCacheEntry fromBody(Map<String, dynamic> body, DateTime savedAt) {
+  ConversationsCacheEntry fromBody(
+    Map<String, dynamic> body,
+    DateTime savedAt,
+  ) {
     return ConversationsCacheEntry(
-      conversations: VersionedPrefsCache.objectList(body['conversations'])
-          .map(ConversationSummary.fromJson)
-          .toList(),
+      conversations: VersionedPrefsCache.objectList(
+        body['conversations'],
+      ).map(ConversationSummary.fromJson).toList(),
       pendingByConv: VersionedPrefsCache.intMap(body['pending_by_conv']),
       filesByConv: VersionedPrefsCache.intMap(body['files_by_conv']),
       savedAt: savedAt,

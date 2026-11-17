@@ -1,29 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/i18n/app_date_format.dart';
-import '../../../core/i18n/app_localizations.dart';
 import '../../../core/routing/route_names.dart';
-import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_sizes.dart';
-import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
-import '../../../shared/widgets/chip_strip.dart';
-import '../../../shared/widgets/colored_icon_box.dart';
-import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/filter_pill.dart';
-import '../../../shared/widgets/title_trailing_row.dart';
+import '../../../shared/fig/fig.dart';
 import '../data/notifications_store.dart';
+import '../../../core/i18n/app_localizations.dart';
+import '../../../core/i18n/app_date_format.dart';
+import '../../../core/constants/asset_paths.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_sizes.dart';
 
-/// Notification type filter for the inbox chip row.
-enum _NotifFilter { all, approvals, tasks, reports }
-
-/// In-app notifications inbox — every push the user received, kept so they can
-/// review notifications the OS shade has since cleared. Opened from the header
-/// bell. Filter by type, grouped by day, swipe a row to dismiss, tap to open
-/// its conversation.
+/// In-app notifications inbox, restyled to the Figma "Notification" frames:
+/// white page, centred title, grouped rows with a category caption and a
+/// purple unread marker. Swipe a row to dismiss; tap to open its chat.
 class NotificationsInboxScreen extends StatefulWidget {
   const NotificationsInboxScreen({super.key});
 
@@ -33,286 +25,284 @@ class NotificationsInboxScreen extends StatefulWidget {
 }
 
 class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
-  _NotifFilter _filter = _NotifFilter.all;
+  /// Which ids were unread when the screen opened — they keep their purple
+  /// marker for this visit even though everything is marked read on entry.
+  Set<String> _unreadOnEntry = {};
 
   @override
   void initState() {
     super.initState();
-    // Pull in anything the FCM background isolate wrote while we were away,
-    // then mark everything read now that the user is looking at the inbox.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final store = context.read<NotificationsStore>()..reload();
+      setState(() {
+        _unreadOnEntry = store.items
+            .where((n) => !n.read)
+            .map((n) => n.id)
+            .toSet();
+      });
       store.markAllRead();
     });
   }
 
-  bool _matches(_NotifFilter f, AppNotification n) => switch (f) {
-        _NotifFilter.all => true,
-        _NotifFilter.approvals => n.type == 'approval_required',
-        _NotifFilter.tasks => n.type == 'run_complete',
-        _NotifFilter.reports => n.type == 'artifact_ready',
-      };
+  String _category(BuildContext c, AppNotification n) => switch (n.type) {
+    'approval_required' => c.tr.figApprovals2,
+    'run_complete' => c.tr.figAutomation,
+    'artifact_ready' => c.tr.figReports,
+    'quota_warning' => c.tr.figUsage,
+    _ => c.tr.figInventory2,
+  };
 
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final s = context.saqqar;
-    final store = context.watch<NotificationsStore>();
-    final all = store.items;
-    final items = all.where((n) => _matches(_filter, n)).toList();
+  String _ago(BuildContext c, DateTime t) => AppDateFormat.relative(c, t);
 
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(
-        title: Text(tr.notifications),
-        actions: [
-          if (all.isNotEmpty)
-            IconButton(
-              tooltip: tr.notificationsClear,
-              icon: const Icon(AppIcons.trash),
-              onPressed: () => context.read<NotificationsStore>().clear(),
-            ),
-        ],
-      ),
-      body: AmbientBackground(
-        child: Column(
-          children: [
-            if (all.isNotEmpty) _FilterRow(
-              selected: _filter,
-              onSelected: (f) => setState(() => _filter = f),
-            ),
-            Expanded(
-              child: items.isEmpty
-                  ? Center(
-                      child: EmptyState(
-                        icon: AppIcons.bell,
-                        title: tr.notificationsEmptyTitle,
-                        body: tr.notificationsEmptyBody,
-                      ),
-                    )
-                  : _GroupedList(items: items),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Type-filter chip row.
-class _FilterRow extends StatelessWidget {
-  const _FilterRow({required this.selected, required this.onSelected});
-
-  final _NotifFilter selected;
-  final ValueChanged<_NotifFilter> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final entries = <(_NotifFilter, String)>[
-      (_NotifFilter.all, tr.notifFilterAll),
-      (_NotifFilter.approvals, tr.notifFilterApprovals),
-      (_NotifFilter.tasks, tr.notifFilterTasks),
-      (_NotifFilter.reports, tr.notifFilterReports),
-    ];
-    // Sizes to the chips rather than pinning `height: 52`, which clipped
-    // Arabic descenders at large text scales with no overflow warning.
-    return ChipStrip(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s14,
-        vertical: AppSpacing.s10,
-      ),
-      children: [
-        for (final (value, label) in entries)
-          FilterPill(
-            label: label,
-            selected: value == selected,
-            onTap: () => onSelected(value),
-          ),
-      ],
-    );
-  }
-}
-
-/// The list, split into Today / Yesterday / Earlier sections.
-class _GroupedList extends StatelessWidget {
-  const _GroupedList({required this.items});
-
-  final List<AppNotification> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    // Build [header, item, item, header, item, …] rows preserving order
-    // (items are already newest-first).
+  /// Groups newest-first into Today / Earlier today / one section per day.
+  List<(String, List<AppNotification>)> _group(
+    BuildContext c,
+    List<AppNotification> all,
+  ) {
+    final sorted = [...all]
+      ..sort((a, b) => b.receivedAt.compareTo(a.receivedAt));
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    String bucket(DateTime d) {
-      final day = DateTime(d.year, d.month, d.day);
-      if (!day.isBefore(today)) return tr.notifGroupToday;
-      if (!day.isBefore(yesterday)) return tr.notifGroupYesterday;
-      return tr.notifGroupEarlier;
+    final out = <(String, List<AppNotification>)>[];
+    void put(String label, AppNotification n) {
+      if (out.isEmpty || out.last.$1 != label) out.add((label, []));
+      out.last.$2.add(n);
     }
 
-    final rows = <Widget>[];
-    String? lastBucket;
-    for (final n in items) {
-      final b = bucket(n.receivedAt);
-      if (b != lastBucket) {
-        rows.add(_SectionHeader(label: b));
-        lastBucket = b;
+    for (final n in sorted) {
+      final sameDay =
+          n.receivedAt.year == now.year &&
+          n.receivedAt.month == now.month &&
+          n.receivedAt.day == now.day;
+      if (sameDay) {
+        final recent = now.difference(n.receivedAt).inMinutes < 30;
+        put(recent ? c.tr.figToday : c.tr.figEarlierToday, n);
+      } else {
+        put(AppDateFormat.longDate(c, n.receivedAt), n);
       }
-      rows.add(_DismissibleTile(item: n));
     }
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.s14,
-        AppSpacing.s4,
-        AppSpacing.s14,
-        AppSpacing.s24,
-      ),
-      children: rows,
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s4, AppSpacing.s14, AppSpacing.s4, AppSpacing.s6),
-      child: Text(
-        label,
-        style: context.text.labelMedium?.copyWith(
-          color: s.muted,
-          fontWeight: FontWeight.w800,
-          letterSpacing: AppLetterSpacing.label,
-        ),
-      ),
-    );
-  }
-}
-
-class _DismissibleTile extends StatelessWidget {
-  const _DismissibleTile({required this.item});
-
-  final AppNotification item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.s8),
-      child: Dismissible(
-        key: ValueKey('notif-${item.id}'),
-        direction: DismissDirection.horizontal,
-        onDismissed: (_) =>
-            context.read<NotificationsStore>().remove(item.id),
-        background: _swipeBg(context, AlignmentDirectional.centerStart),
-        secondaryBackground: _swipeBg(context, AlignmentDirectional.centerEnd),
-        child: _NotificationTile(item: item),
-      ),
-    );
-  }
-
-  Widget _swipeBg(BuildContext context, AlignmentGeometry align) {
-    final s = context.saqqar;
-    return Container(
-      alignment: align,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s20),
-      decoration: BoxDecoration(
-        color: s.danger.withValues(alpha: AppAlphas.a14),
-        borderRadius: AppRadius.cardR,
-      ),
-      child: Icon(AppIcons.trash, color: s.danger, size: AppIconSizes.action),
-    );
-  }
-}
-
-class _NotificationTile extends StatelessWidget {
-  const _NotificationTile({required this.item});
-
-  final AppNotification item;
-
-  ({IconData icon, Color color}) _accent(BuildContext context) {
-    final s = context.saqqar;
-    return switch (item.type) {
-      'approval_required' => (icon: AppIcons.shieldAlert, color: s.warning),
-      'artifact_ready' => (icon: AppIcons.fileText, color: s.brandCyan),
-      'quota_warning' => (icon: AppIcons.shieldAlert, color: s.danger),
-      _ => (icon: AppIcons.bell, color: s.brandCyan),
-    };
+    return out;
   }
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final accent = _accent(context);
-    final convId = item.conversationId;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: AppRadius.cardR,
-        onTap: convId == null || convId.isEmpty
-            ? null
-            : () => context.go(RouteNames.chatPath(convId)),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.s14),
-          decoration: BoxDecoration(
-            color: item.read
-                ? s.cardBg
-                : Color.alphaBlend(
-                    accent.color.withValues(alpha: AppAlphas.a06), s.cardBg),
-            borderRadius: AppRadius.cardR,
-            border: Border.all(
-              color: item.read
-                  ? s.cardBorder
-                  : accent.color.withValues(alpha: AppAlphas.a30),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final store = context.watch<NotificationsStore>();
+    final items = store.items;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
             children: [
-              ColoredIconBox(icon: accent.icon, color: accent.color),
-              const SizedBox(width: AppSpacing.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              SizedBox(
+                height: 100,
+                child: Row(
                   children: [
-                    TitleTrailingRow.stamp(
-                      title: Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                    const SizedBox(width: AppSpacing.s8),
+                    SizedBox(
+                      width: 52,
+                      child: FigBackButton(
+                        color: Colors.black,
+                        onTap: () => context.canPop()
+                            ? context.pop()
+                            : context.go(RouteNames.homePath),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          context.tr.figNotification,
+                          style: Fig.t(context, size: 22, color: Fig.inkPlain),
                         ),
                       ),
-                      stamp: AppDateFormat.relative(context, item.receivedAt),
-                      stampStyle:
-                          context.text.labelSmall?.copyWith(color: s.muted),
                     ),
-                    if (item.body.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.s3),
-                      Text(
-                        item.body,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.bodySmall?.copyWith(color: s.muted),
-                      ),
-                    ],
+                    const SizedBox(width: 60),
                   ],
                 ),
               ),
+              Expanded(
+                child: items.isEmpty
+                    ? _Empty()
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+                        children: [
+                          for (final g in _group(context, items)) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 14,
+                                bottom: 10,
+                              ),
+                              child: Text(
+                                g.$1,
+                                style: Fig.t(
+                                  context,
+                                  size: 10.5,
+                                  color: Fig.mutedLight,
+                                ),
+                              ),
+                            ),
+                            for (final n in g.$2)
+                              _Row(
+                                n: n,
+                                category: _category(context, n),
+                                ago: _ago(context, n.receivedAt),
+                                unread: _unreadOnEntry.contains(n.id),
+                                onOpen: () {
+                                  final id = n.conversationId;
+                                  if (id != null && id.isNotEmpty) {
+                                    context.push(RouteNames.chatPath(id));
+                                  }
+                                },
+                                onDismiss: () => store.remove(n.id),
+                              ),
+                          ],
+                        ],
+                      ),
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Row extends StatelessWidget {
+  const _Row({
+    required this.n,
+    required this.category,
+    required this.ago,
+    required this.unread,
+    required this.onOpen,
+    required this.onDismiss,
+  });
+
+  final AppNotification n;
+  final String category;
+  final String ago;
+  final bool unread;
+  final VoidCallback onOpen;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dismissible(
+      key: ValueKey(n.id),
+      onDismissed: (_) => onDismiss(),
+      background: Container(
+        color: const Color(0xFFF3F3F5),
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsets.only(right: AppSpacing.s16),
+        child: const Icon(LucideIcons.trash2, color: Fig.dangerText, size: 20),
+      ),
+      child: InkWell(
+        onTap: onOpen,
+        child: Container(
+          padding: const EdgeInsets.only(
+            top: AppSpacing.s8,
+            bottom: AppSpacing.s14,
+          ),
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Color(0xFFEEEEF1))),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      n.title,
+                      style: Fig.t(
+                        context,
+                        size: 13,
+                        weight: FontWeight.w700,
+                        color: Fig.inkPlain,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    ago,
+                    style: Fig.t(context, size: 9, color: Fig.mutedCool),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s4),
+              Text(
+                n.body,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Fig.t(
+                  context,
+                  size: 11,
+                  color: Fig.mutedLight,
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s5),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      category,
+                      style: Fig.t(context, size: 9, color: Fig.mutedCool),
+                    ),
+                  ),
+                  if (unread)
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: AppColors.brandPurple,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Empty extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              AssetPaths.emptyMailbox,
+              width: 150,
+              filterQuality: FilterQuality.medium,
+            ),
+            const SizedBox(height: AppSpacing.s18),
+            Text(
+              context.tr.figNoNotificationsYet,
+              style: Fig.t(context, size: 21, color: Fig.navy),
+            ),
+            const SizedBox(height: AppSpacing.s10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s26),
+              child: Text(
+                context.tr.figNoNotificationsYetWeLlLet,
+                textAlign: TextAlign.center,
+                style: Fig.t(
+                  context,
+                  size: 12.5,
+                  color: const Color(0xFF656B80),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -99,13 +99,14 @@ class _TypingDotsState extends State<TypingDots>
     // the next by the configured stagger.
     final t = (_ctrl.value - delay) % 1.0;
     // Map the wrapped interval onto a soft 0 → 1 → 0 curve.
-    final eased = Curves.easeInOut.transform(
-      t < 0.5 ? t * 2 : (1 - t) * 2,
-    );
+    final eased = Curves.easeInOut.transform(t < 0.5 ? t * 2 : (1 - t) * 2);
     if (widget.bounce) {
       // Hop up (negative dy) at the peak, back to baseline at the troughs.
       return Transform.translate(
-        offset: Offset(0, -eased * widget.dotSize * AppTypingDotsMotion.bounceRatio),
+        offset: Offset(
+          0,
+          -eased * widget.dotSize * AppTypingDotsMotion.bounceRatio,
+        ),
         child: _dot(),
       );
     }

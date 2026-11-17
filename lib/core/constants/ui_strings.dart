@@ -21,6 +21,7 @@ class UiStrings {
   static const localeArabicLabel = 'ع';
   static const themePreferenceKey = 'saqqar.theme';
   static const localePreferenceKey = 'saqqar.locale';
+
   /// Global "Task prep" preference. Mirrors the web's composer toggle:
   /// when on, Saqqar asks a couple of clarifying questions (which arrive as
   /// a `prompt_clarify` card) before building a vague task.
@@ -68,6 +69,12 @@ class UiStrings {
   /// Placeholder shown in the meeting-link field (API_MOBILE_NEW_ENDPOINTS.md
   /// §4.1). A URL example — reads the same in every locale, so it lives here
   /// rather than in `app_strings`.
+  /// Day-first long date used by the redesigned inbox section headers.
+  static const dateLongDayFirst = 'd MMMM yyyy';
+
+  /// Prefix assumed when the user types a bare Odoo host.
+  static const httpsScheme = 'https://';
+
   static const meetingUrlExample = 'https://meet.google.com/…';
 
   /// Mask rendered in place of a secret while it is hidden (trial credential

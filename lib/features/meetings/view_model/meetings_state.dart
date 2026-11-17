@@ -45,6 +45,12 @@ class MeetingsState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [session, transcript, summary, chatReply, busy, error];
+  List<Object?> get props => [
+    session,
+    transcript,
+    summary,
+    chatReply,
+    busy,
+    error,
+  ];
 }

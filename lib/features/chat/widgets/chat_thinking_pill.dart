@@ -21,11 +21,7 @@ import 'chat_markdown.dart';
 /// Empty [steps] is invalid — callers should skip rendering this widget
 /// entirely when there's nothing to group (single-message turns).
 class ChatThinkingPill extends StatefulWidget {
-  const ChatThinkingPill({
-    super.key,
-    required this.steps,
-    this.totalDuration,
-  });
+  const ChatThinkingPill({super.key, required this.steps, this.totalDuration});
 
   /// Intermediate assistant messages (everything between the user turn
   /// and the final assistant reply). The widget renders them in order,
@@ -73,7 +69,9 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                 vertical: AppSpacing.s7,
               ),
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: context.alpha(AppAlphaPairs.tintFaint)),
+                color: accent.withValues(
+                  alpha: context.alpha(AppAlphaPairs.tintFaint),
+                ),
                 borderRadius: AppRadius.pillR,
                 border: Border.all(
                   color: accent.withValues(alpha: AppAlphas.a34),
@@ -181,7 +179,9 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                 bottom: AppSpacing.s6,
               ),
               child: Container(
-                padding: const EdgeInsetsDirectional.only(start: AppSpacing.s10),
+                padding: const EdgeInsetsDirectional.only(
+                  start: AppSpacing.s10,
+                ),
                 decoration: BoxDecoration(
                   border: BorderDirectional(
                     start: BorderSide(
@@ -196,10 +196,7 @@ class _ChatThinkingPillState extends State<ChatThinkingPill> {
                   children: [
                     for (var i = 0; i < widget.steps.length; i++) ...[
                       if (i > 0) const SizedBox(height: AppSpacing.s10),
-                      _StepBullet(
-                        step: widget.steps[i],
-                        accent: accent,
-                      ),
+                      _StepBullet(step: widget.steps[i], accent: accent),
                     ],
                   ],
                 ),

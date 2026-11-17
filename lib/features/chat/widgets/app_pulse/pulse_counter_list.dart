@@ -94,8 +94,9 @@ class _CounterRowState extends State<_CounterRow> {
                         padding: const EdgeInsets.only(top: AppSpacing.s2),
                         child: AutoDirectionText(
                           counter.action,
-                          style:
-                              context.text.labelSmall?.copyWith(color: s.muted),
+                          style: context.text.labelSmall?.copyWith(
+                            color: s.muted,
+                          ),
                         ),
                       ),
                   ],
@@ -108,8 +109,9 @@ class _CounterRowState extends State<_CounterRow> {
                   vertical: AppSpacing.s2,
                 ),
                 decoration: BoxDecoration(
-                  color: (flagged ? s.warning : s.muted)
-                      .withValues(alpha: AppAlphas.a12),
+                  color: (flagged ? s.warning : s.muted).withValues(
+                    alpha: AppAlphas.a12,
+                  ),
                   borderRadius: AppRadius.pillR,
                 ),
                 child: Text(
@@ -151,8 +153,7 @@ class _CounterRowState extends State<_CounterRow> {
                 ],
               ),
             ),
-            if (_open)
-              PulseRawItemsList(title: counter.label, items: details),
+            if (_open) PulseRawItemsList(title: counter.label, items: details),
           ],
         ],
       ),

@@ -114,8 +114,7 @@ class SaqqarApp {
 
   String displayName(AppStrings tr) => _resolve(tr, 'app_name_', name);
 
-  String displayTagline(AppStrings tr) =>
-      _resolve(tr, 'app_tagline_', tagline);
+  String displayTagline(AppStrings tr) => _resolve(tr, 'app_tagline_', tagline);
 
   /// The short chip label (`Compliance · KSA`).
   ///

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 
 import '../extensions/context_extensions.dart';
 import 'ambient_background.dart';
@@ -44,15 +45,14 @@ class SaqqarScreen extends StatelessWidget {
     // every row its own RepaintBoundary, so a card's shadow raster is cached
     // and off-screen rows cost nothing. This is the single biggest scroll win.
     final list = ListView.builder(
+      scrollCacheExtent: const ScrollCacheExtent.pixels(
+        AppScrollTuning.cacheExtent,
+      ),
       controller: controller,
       padding: EdgeInsets.only(top: resolved.top, bottom: resolved.bottom),
       physics: onRefresh != null
           ? const AlwaysScrollableScrollPhysics()
           : physics,
-      // Pre-render ~1.5 screenfuls of off-screen rows so flick-scroll
-      // never reveals a row that wasn't built yet — user explicitly
-      // asked for the "everything was already there" feel.
-      cacheExtent: AppScrollTuning.cacheExtent,
       itemCount: children.length,
       itemBuilder: (context, i) => Align(
         alignment: Alignment.topCenter,

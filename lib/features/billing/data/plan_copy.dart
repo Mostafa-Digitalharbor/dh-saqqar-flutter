@@ -166,16 +166,19 @@ class PlanCopy {
         _norm(_englishStrings.lookup(key)): key,
   };
 
-  static final AppStrings _englishStrings =
-      AppStrings(const Locale(UiStrings.localeEnglishCode));
+  static final AppStrings _englishStrings = AppStrings(
+    const Locale(UiStrings.localeEnglishCode),
+  );
 
   /// Every key this file references, for the test that pins them against the
   /// i18n tables. A missing key renders as the server's English — silently,
   /// because [translate] falls back rather than leaking the identifier — so
   /// the guard has to be a test, not a runtime check.
   @visibleForTesting
-  static List<String> get allKeys =>
-      [..._translatableKeys, ..._nameKeyBySlug.values];
+  static List<String> get allKeys => [
+    ..._translatableKeys,
+    ..._nameKeyBySlug.values,
+  ];
 
   /// The slugs whose names are localized, for the same test.
   @visibleForTesting
@@ -184,6 +187,7 @@ class PlanCopy {
   /// The English strings this file can translate, for the test that compares
   /// them against a captured `/plans/` payload.
   @visibleForTesting
-  static List<String> get translatableEnglish =>
-      [for (final key in _translatableKeys) _englishStrings.lookup(key)];
+  static List<String> get translatableEnglish => [
+    for (final key in _translatableKeys) _englishStrings.lookup(key),
+  ];
 }

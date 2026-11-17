@@ -68,9 +68,7 @@ class CredentialsApi {
     final res = await _dio.get<Map<String, dynamic>>(
       ApiEndpoints.credentialDetail(name),
     );
-    return Credential.fromJson(
-      res.data!['credential'] as Map<String, dynamic>,
-    );
+    return Credential.fromJson(res.data!['credential'] as Map<String, dynamic>);
   }
 
   // ── Test connection (read-only validation) ──────────────────────────
@@ -151,9 +149,7 @@ class CredentialsApi {
     // from a missing one silently downgrades the form for a failure the
     // user is never told about.
     final body = res.requiredBody;
-    return (body['databases'] as List? ?? [])
-        .map((e) => e.toString())
-        .toList();
+    return (body['databases'] as List? ?? []).map((e) => e.toString()).toList();
   }
 
   // ── Save / update / delete ──────────────────────────────────────────
@@ -228,9 +224,7 @@ class CredentialsApi {
       ApiEndpoints.credentialDetail(name),
       data: body,
     );
-    return Credential.fromJson(
-      res.data!['credential'] as Map<String, dynamic>,
-    );
+    return Credential.fromJson(res.data!['credential'] as Map<String, dynamic>);
   }
 
   /// `DELETE /api/v1/credentials/<name>/` — hard delete. Server clears
@@ -250,4 +244,3 @@ class CredentialsApi {
     );
   }
 }
-

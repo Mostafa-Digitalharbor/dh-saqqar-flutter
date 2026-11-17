@@ -77,15 +77,16 @@ class ChatRunProgressCard extends StatelessWidget {
 
     final pctChip = progress.isDeterminate
         ? Container(
-            padding:
-                const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s6,
-                  vertical: AppSpacing.s1,
-                ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s6,
+              vertical: AppSpacing.s1,
+            ),
             decoration: BoxDecoration(
               color: s.brandCyan.withValues(alpha: AppAlphas.a18),
               borderRadius: AppRadius.pillR,
-              border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a40)),
+              border: Border.all(
+                color: s.brandCyan.withValues(alpha: AppAlphas.a40),
+              ),
             ),
             child: Text(
               '${((progress.fraction ?? 0) * 100).round()}%',
@@ -110,7 +111,9 @@ class ChatRunProgressCard extends StatelessWidget {
         AppSpacing.s12,
       ),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSheet)),
+        color: s.surface2.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelSheet),
+        ),
         borderRadius: AppRadius.cardR,
         border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a30)),
       ),
@@ -120,7 +123,11 @@ class ChatRunProgressCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIcons.fileText, size: AppIconSizes.small, color: s.brandCyan),
+              Icon(
+                AppIcons.fileText,
+                size: AppIconSizes.small,
+                color: s.brandCyan,
+              ),
               const SizedBox(width: AppSpacing.s8),
               Expanded(
                 child: Text(

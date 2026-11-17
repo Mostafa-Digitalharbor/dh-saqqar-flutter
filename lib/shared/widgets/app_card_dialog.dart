@@ -52,8 +52,10 @@ class AppCardDialog extends StatelessWidget {
   /// Width past which the card's content stops being scannable.
   static const double maxContentWidth = 520;
 
-  static const EdgeInsets _inset =
-      EdgeInsets.symmetric(horizontal: AppSpacing.s20, vertical: AppSpacing.s24);
+  static const EdgeInsets _inset = EdgeInsets.symmetric(
+    horizontal: AppSpacing.s20,
+    vertical: AppSpacing.s24,
+  );
 
   @override
   Widget build(BuildContext context) {

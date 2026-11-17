@@ -7,7 +7,6 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import 'core/constants/ui_strings.dart';
 import 'core/i18n/app_localizations.dart';
-import 'core/i18n/app_strings.dart';
 import 'core/i18n/view_model/locale_cubit.dart';
 import 'core/routing/app_router.dart';
 import 'core/routing/deep_link_service.dart';
@@ -22,7 +21,9 @@ import 'features/auth/view_model/auth_state.dart';
 import 'features/billing/view_model/plan_cubit.dart';
 import 'features/billing/view_model/saqqar_features_cubit.dart';
 import 'features/conversations/view_model/conversations_cubit.dart';
+import 'features/launch/language_sheet.dart';
 import 'features/launch/launch_splash_screen.dart';
+import 'features/onboarding/onboarding_flag.dart';
 import 'features/share/intake/share_intent_bootstrap.dart';
 import 'features/vault/view_model/vault_cubit.dart';
 
@@ -92,6 +93,17 @@ class _SaqqarAppState extends State<SaqqarApp> {
           GlobalCupertinoLocalizations.delegate,
         ],
         home: LaunchSplashScreen(
+          beforeComplete: (ctx) async {
+            // First launch: ask for a language over the splash (design:
+            // "Choose Your Language"). Skipped once a locale is saved.
+            final localeCubit = ctx.read<LocaleCubit>();
+            if (localeCubit.state != null || OnboardingFlag.seen) return;
+            final code = await showLanguageSheet(ctx);
+            if (code == null) return;
+            await localeCubit.setLocale(
+              Locale(code == 'ar' ? 'ar' : UiStrings.localeEnglishCode),
+            );
+          },
           onReady: () async {
             // Remove the native OS splash the moment the in-app one is up.
             // Once-only — calling .remove() twice is a no-op but noisy.
@@ -103,14 +115,16 @@ class _SaqqarAppState extends State<SaqqarApp> {
             // never touch `context` after the await.
             final authCubit = context.read<AuthCubit>();
             final push = context.read<PushNotificationsService>();
-            final notificationsEnabled =
-                context.read<NotificationsSettingsCubit>().state;
+            final notificationsEnabled = context
+                .read<NotificationsSettingsCubit>()
+                .state;
             // Block the splash → router handoff until AuthCubit's
             // cold-start bootstrap (read stored token + validate via
             // /auth/me/) resolves. Otherwise the router's redirect
             // callback sees `auth.isResolved == false` and lets the user
             // through to /chats for one frame before bouncing them out —
             // visible as a flicker.
+            await OnboardingFlag.load();
             await authCubit.bootstrap();
             // Cold-start push registration for a RETURNING signed-in user.
             // bootstrap() flips auth → authenticated HERE, before the
@@ -184,90 +198,94 @@ class _SaqqarAppState extends State<SaqqarApp> {
         // backend localizes future notifications to the new language.
         listenWhen: (prev, curr) => prev?.languageCode != curr?.languageCode,
         listener: (context, loc) {
-          final code = (loc?.languageCode ??
+          final code =
+              (loc?.languageCode ??
                       WidgetsBinding
-                          .instance.platformDispatcher.locale.languageCode) ==
+                          .instance
+                          .platformDispatcher
+                          .locale
+                          .languageCode) ==
                   UiStrings.localeArabicCode
               ? UiStrings.localeArabicCode
               : UiStrings.localeEnglishCode;
           context.read<PushNotificationsService>().updateLocale(code);
         },
         child: MaterialApp.router(
-        title: AppStrings(supportedLocale).appName,
-        debugShowCheckedModeBanner: false,
-        themeMode: mode.materialMode,
-        theme: lightTheme,
-        darkTheme: darkTheme,
-        locale: locale,
-        supportedLocales: AppStrings.supported,
-        // Smooth iOS-style scroll on every platform. Android's default
-        // ClampingScrollPhysics felt "heavy / panicky" on touch — the
-        // bouncing physics + AlwaysScrollable parent gives momentum
-        // and gentle deceleration everywhere consistently.
-        scrollBehavior: const _SmoothScrollBehavior(),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        routerConfig: _router,
-        builder: (context, child) {
-          // Honour the OS Dynamic Type setting but clamp to a safe range so
-          // very large user scaling (e.g. accessibility 3x) doesn't break
-          // the chat bubble + tab bar layouts. 0.85–1.4 keeps the spec
-          // §2.2 type hierarchy legible without overflowing fixed-height
-          // surfaces.
-          //
-          // `withClampedTextScaling`, NOT `MediaQuery.of(context)` +
-          // `copyWith`. The two produce the same clamp; they differ in WHERE
-          // the MediaQuery dependency is registered, and that is the whole
-          // point. Reading it on this `context` made the widget that runs
-          // this builder depend on every MediaQuery field — `viewInsets`
-          // included — so each frame of the keyboard's open/close animation
-          // re-ran the builder and rebuilt all four gates below, ~15 times
-          // per keyboard transition, at the root of the app.
-          //
-          // The helper takes `child` as an already-built widget and reads
-          // MediaQuery inside its own `Builder`. A keyboard frame now
-          // rebuilds that Builder alone: the gate subtree is the identical
-          // widget instance, so the element diff stops there. Same clamp,
-          // none of the churn.
-          //
-          // [ShareIntentBootstrap] lives INSIDE the MaterialApp.router
-          // builder so it sits BELOW the Navigator — that's the level at
-          // which `showModalBottomSheet` finds an Overlay to draw on.
-          // Wrapping above the router would yield "No MaterialLocalizations
-          // found" the moment the share sheet tries to render.
-          return MediaQuery.withClampedTextScaling(
-            minScaleFactor: 0.85,
-            maxScaleFactor: 1.4,
-            // AppUpdateGate sits OUTSIDE AppLockGate: when a build is below
-            // the backend's supported floor there is nothing behind the lock
-            // worth authenticating into, so making the user pass Face ID
-            // first only to meet a wall would be pure friction. The wall
-            // shows no user data, so it is also safe as the app-switcher
-            // snapshot that the lock normally exists to hide.
-            child: AppUpdateGate(
-              // AppLockGate overlays the biometric lock above EVERYTHING
-              // (including the share sheet + any open dialog) and re-locks on
-              // background. Sits inside the builder so it's below the root
-              // Navigator — the lock screen's sign-out dialog still resolves.
-              child: AppLockGate(
-                child: ShareIntentBootstrap(
-                  // Global "tap a blank area to dismiss the keyboard". iOS has
-                  // no system button to hide the soft keyboard (Android's back
-                  // gesture does), so without this a user can get stuck with
-                  // the keyboard covering the UI on any screen that lacks an
-                  // obvious "done" affordance.
-                  child: _DismissKeyboardOnTap(
-                    child: child ?? const SizedBox.shrink(),
+          title: AppStrings(supportedLocale).appName,
+          debugShowCheckedModeBanner: false,
+          themeMode: mode.materialMode,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          locale: locale,
+          supportedLocales: AppStrings.supported,
+          // Smooth iOS-style scroll on every platform. Android's default
+          // ClampingScrollPhysics felt "heavy / panicky" on touch — the
+          // bouncing physics + AlwaysScrollable parent gives momentum
+          // and gentle deceleration everywhere consistently.
+          scrollBehavior: const _SmoothScrollBehavior(),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          routerConfig: _router,
+          builder: (context, child) {
+            // Honour the OS Dynamic Type setting but clamp to a safe range so
+            // very large user scaling (e.g. accessibility 3x) doesn't break
+            // the chat bubble + tab bar layouts. 0.85–1.4 keeps the spec
+            // §2.2 type hierarchy legible without overflowing fixed-height
+            // surfaces.
+            //
+            // `withClampedTextScaling`, NOT `MediaQuery.of(context)` +
+            // `copyWith`. The two produce the same clamp; they differ in WHERE
+            // the MediaQuery dependency is registered, and that is the whole
+            // point. Reading it on this `context` made the widget that runs
+            // this builder depend on every MediaQuery field — `viewInsets`
+            // included — so each frame of the keyboard's open/close animation
+            // re-ran the builder and rebuilt all four gates below, ~15 times
+            // per keyboard transition, at the root of the app.
+            //
+            // The helper takes `child` as an already-built widget and reads
+            // MediaQuery inside its own `Builder`. A keyboard frame now
+            // rebuilds that Builder alone: the gate subtree is the identical
+            // widget instance, so the element diff stops there. Same clamp,
+            // none of the churn.
+            //
+            // [ShareIntentBootstrap] lives INSIDE the MaterialApp.router
+            // builder so it sits BELOW the Navigator — that's the level at
+            // which `showModalBottomSheet` finds an Overlay to draw on.
+            // Wrapping above the router would yield "No MaterialLocalizations
+            // found" the moment the share sheet tries to render.
+            return MediaQuery.withClampedTextScaling(
+              minScaleFactor: 0.85,
+              maxScaleFactor: 1.4,
+              // AppUpdateGate sits OUTSIDE AppLockGate: when a build is below
+              // the backend's supported floor there is nothing behind the lock
+              // worth authenticating into, so making the user pass Face ID
+              // first only to meet a wall would be pure friction. The wall
+              // shows no user data, so it is also safe as the app-switcher
+              // snapshot that the lock normally exists to hide.
+              child: AppUpdateGate(
+                // AppLockGate overlays the biometric lock above EVERYTHING
+                // (including the share sheet + any open dialog) and re-locks on
+                // background. Sits inside the builder so it's below the root
+                // Navigator — the lock screen's sign-out dialog still resolves.
+                child: AppLockGate(
+                  child: ShareIntentBootstrap(
+                    // Global "tap a blank area to dismiss the keyboard". iOS has
+                    // no system button to hide the soft keyboard (Android's back
+                    // gesture does), so without this a user can get stuck with
+                    // the keyboard covering the UI on any screen that lacks an
+                    // obvious "done" affordance.
+                    child: _DismissKeyboardOnTap(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
         ),
       ),
     );

@@ -1,4 +1,3 @@
-
 import '../../../core/storage/versioned_prefs_cache.dart';
 import 'credential_models.dart';
 import 'project_models.dart';
@@ -40,12 +39,12 @@ class VaultCache extends VersionedPrefsCache<VaultCacheEntry> {
   @override
   VaultCacheEntry fromBody(Map<String, dynamic> body, DateTime savedAt) {
     return VaultCacheEntry(
-      projects: VersionedPrefsCache.objectList(body['projects'])
-          .map(Project.fromJson)
-          .toList(),
-      schemas: VersionedPrefsCache.objectList(body['schemas'])
-          .map(CredentialSchema.fromJson)
-          .toList(),
+      projects: VersionedPrefsCache.objectList(
+        body['projects'],
+      ).map(Project.fromJson).toList(),
+      schemas: VersionedPrefsCache.objectList(
+        body['schemas'],
+      ).map(CredentialSchema.fromJson).toList(),
       savedAt: savedAt,
     );
   }

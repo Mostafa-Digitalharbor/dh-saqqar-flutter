@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/format/compact_number.dart';
 import '../../../../core/i18n/app_localizations.dart';
-import '../../../../core/i18n/app_strings.dart';
 import '../../../../shared/extensions/context_extensions.dart';
 import '../../data/app_pulse_payloads.dart';
 import '../../data/interactive_card_kind.dart';
@@ -60,27 +59,51 @@ class InventoryPulseCard extends StatelessWidget {
         PulseStatGrid(
           tiles: [
             pulseScalarStatTile(
-                context, payload.productCount, tr.pulseInventoryProductCount),
+              context,
+              payload.productCount,
+              tr.pulseInventoryProductCount,
+            ),
             _totalTile(context, payload.inventoryValue, tr.pulseInventoryValue),
             pulseBucketStatTile(
-                context, payload.lowStock, tr.pulseInventoryLowStock,
-                tone: PulseTone.danger),
-            pulseBucketStatTile(context, payload.demandShortage,
-                tr.pulseInventoryDemandShortage,
-                tone: PulseTone.danger),
-            pulseBucketStatTile(context, payload.stagnantStock,
-                tr.pulseInventoryStagnantStock,
-                tone: PulseTone.warn),
+              context,
+              payload.lowStock,
+              tr.pulseInventoryLowStock,
+              tone: PulseTone.danger,
+            ),
             pulseBucketStatTile(
-                context, payload.missingData, tr.pulseInventoryMissingData,
-                tone: PulseTone.warn),
+              context,
+              payload.demandShortage,
+              tr.pulseInventoryDemandShortage,
+              tone: PulseTone.danger,
+            ),
             pulseBucketStatTile(
-                context, payload.overstock, tr.pulseInventoryOverstock,
-                tone: PulseTone.warn),
+              context,
+              payload.stagnantStock,
+              tr.pulseInventoryStagnantStock,
+              tone: PulseTone.warn,
+            ),
             pulseBucketStatTile(
-                context, payload.fastReorder, tr.pulseInventoryFastReorder),
+              context,
+              payload.missingData,
+              tr.pulseInventoryMissingData,
+              tone: PulseTone.warn,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.overstock,
+              tr.pulseInventoryOverstock,
+              tone: PulseTone.warn,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.fastReorder,
+              tr.pulseInventoryFastReorder,
+            ),
             pulseScalarStatTile(
-                context, payload.salesDays, tr.pulseInventorySalesDays),
+              context,
+              payload.salesDays,
+              tr.pulseInventorySalesDays,
+            ),
           ],
         ),
       ],
@@ -108,13 +131,13 @@ class InventoryPulseCard extends StatelessWidget {
   /// number it belongs to. `inventory_value` is left out: its rows are the
   /// whole product catalogue, a report rather than a list to scan in a card.
   List<(String, PulseBucket)> _sections(AppStrings tr) => [
-        (tr.pulseInventoryLowStock, payload.lowStock),
-        (tr.pulseInventoryDemandShortage, payload.demandShortage),
-        (tr.pulseInventoryStagnantStock, payload.stagnantStock),
-        (tr.pulseInventoryOverstock, payload.overstock),
-        (tr.pulseInventoryFastReorder, payload.fastReorder),
-        (tr.pulseInventoryMissingData, payload.missingData),
-      ];
+    (tr.pulseInventoryLowStock, payload.lowStock),
+    (tr.pulseInventoryDemandShortage, payload.demandShortage),
+    (tr.pulseInventoryStagnantStock, payload.stagnantStock),
+    (tr.pulseInventoryOverstock, payload.overstock),
+    (tr.pulseInventoryFastReorder, payload.fastReorder),
+    (tr.pulseInventoryMissingData, payload.missingData),
+  ];
 
   /// The one tile in this card whose value isn't a plain count — it formats
   /// a currency-scale total via [compactCount], so it can't be expressed as
@@ -123,7 +146,10 @@ class InventoryPulseCard extends StatelessWidget {
   Widget _totalTile(BuildContext context, PulseBucket bucket, String label) {
     if (!bucket.available) {
       return pulseStatTile(
-          context.tr.pulseUnavailable, label, color: context.saqqar.muted);
+        context.tr.pulseUnavailable,
+        label,
+        color: context.saqqar.muted,
+      );
     }
     final total = bucket.total;
     if (total == null) {

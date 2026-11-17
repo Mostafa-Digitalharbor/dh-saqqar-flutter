@@ -11,11 +11,7 @@ import '../../../shared/widgets/tappable_surface.dart';
 /// Pill-shaped floating action button used on the Conversations screen.
 /// Gradient fill + cyan glow shadow + leading [AppIcons.plus] glyph.
 class GradientFab extends StatelessWidget {
-  const GradientFab({
-    super.key,
-    required this.onPressed,
-    required this.label,
-  });
+  const GradientFab({super.key, required this.onPressed, required this.label});
 
   final VoidCallback onPressed;
   final String label;
@@ -27,7 +23,12 @@ class GradientFab extends StatelessWidget {
       radius: AppRadius.pillR,
       onTap: onPressed,
       child: Ink(
-        padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s18, AppSpacing.s14, AppSpacing.s22, AppSpacing.s14),
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          AppSpacing.s18,
+          AppSpacing.s14,
+          AppSpacing.s22,
+          AppSpacing.s14,
+        ),
         decoration: BoxDecoration(
           gradient: AppGradients.primaryCta,
           borderRadius: AppRadius.pillR,
@@ -42,7 +43,11 @@ class GradientFab extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(AppIcons.plus, color: AppColors.onBrand, size: AppIconSizes.action),
+            const Icon(
+              AppIcons.plus,
+              color: AppColors.onBrand,
+              size: AppIconSizes.action,
+            ),
             const SizedBox(width: AppSpacing.s8),
             // `mainAxisSize.min` keeps the pill hugging its label, but it
             // does NOT stop the label itself from exceeding the incoming

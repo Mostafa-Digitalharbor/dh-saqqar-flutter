@@ -1,8 +1,8 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/i18n/app_strings.dart';
+import 'support/app_strings_source.dart';
 
 /// Guards the invariant that makes `app_strings.dart` trustworthy: the
 /// English and Arabic tables must define exactly the same keys.
@@ -36,13 +36,12 @@ import 'package:saqqar_app/core/i18n/app_strings.dart';
 /// placeholder mismatch that did not exist, and, worse, would have hidden any
 /// real mismatch living past an English line break.
 String? _valueOf(String body, String key) => RegExp(
-      "'$key'\\s*:\\s*(.+?)(?=\\n\\s*'[a-z0-9_]+'\\s*:|\\n\\s*\\}\$)",
-      dotAll: true,
-    ).firstMatch(body)?.group(1);
+  "'$key'\\s*:\\s*(.+?)(?=\\n\\s*'[a-z0-9_]+'\\s*:|\\n\\s*\\}\$)",
+  dotAll: true,
+).firstMatch(body)?.group(1);
 
 void main() {
-  final source =
-      File('lib/core/i18n/app_strings.dart').readAsStringSync();
+  final source = appStringsSource();
 
   /// Extracts the body of a top-level `const Map<String, String> _<name>`
   /// by brace-matching from its opening `{`.
@@ -117,21 +116,26 @@ void main() {
     for (final k in enSet)
       for (final c in pluralCategories)
         if (k.endsWith('_$c'))
-          if (enSet.contains('${k.substring(0, k.length - c.length - 1)}_other') &&
+          if (enSet.contains(
+                '${k.substring(0, k.length - c.length - 1)}_other',
+              ) &&
               enSet.contains('${k.substring(0, k.length - c.length - 1)}_one'))
             k.substring(0, k.length - c.length - 1),
   };
 
-  bool isPluralForm(String key) => pluralCategories
-      .any((c) => key.endsWith('_$c') && pluralBases.contains(
-          key.substring(0, key.length - c.length - 1)));
+  bool isPluralForm(String key) => pluralCategories.any(
+    (c) =>
+        key.endsWith('_$c') &&
+        pluralBases.contains(key.substring(0, key.length - c.length - 1)),
+  );
 
   test('every English key has an Arabic translation', () {
     final missing = enSet.difference(arSet).toList()..sort();
     expect(
       missing,
       isEmpty,
-      reason: 'These keys exist in `_en` but not `_ar`, so an Arabic user '
+      reason:
+          'These keys exist in `_en` but not `_ar`, so an Arabic user '
           'sees English for them. Add an Arabic entry for each:\n'
           '${missing.join('\n')}',
     );
@@ -142,7 +146,8 @@ void main() {
     expect(
       orphans,
       isEmpty,
-      reason: 'These keys exist in `_ar` but not `_en`. Since `_en` is the '
+      reason:
+          'These keys exist in `_ar` but not `_en`. Since `_en` is the '
           'fallback table, an `_ar`-only key is unreachable from any getter '
           '— either the English entry was dropped or the key is dead:\n'
           '${orphans.join('\n')}',
@@ -161,7 +166,8 @@ void main() {
       expect(
         duplicates.toList()..sort(),
         isEmpty,
-        reason: 'Duplicate keys in `_$table` — the later entry silently '
+        reason:
+            'Duplicate keys in `_$table` — the later entry silently '
             'wins over the earlier one.',
       );
     }
@@ -170,8 +176,7 @@ void main() {
     expectNoDuplicates(arKeys, 'ar');
   });
 
-  test('every key referenced by a getter is defined in the English table',
-      () {
+  test('every key referenced by a getter is defined in the English table', () {
     // `_t('key')` falls through to returning the raw `key` string when it
     // resolves nowhere — which leaks an identifier like `sign_in_subtitle`
     // into the UI instead of copy. Catch the typo here instead of on screen.
@@ -182,26 +187,27 @@ void main() {
     // its literal is a BASE name and has to be expanded before the lookup.
     // Scanning only `_t`/`_f` would leave every pluralized string unguarded
     // — and a plural key is six entries, six chances to typo one.
-    final referenced = RegExp(r"_[tf]\(\s*'([A-Za-z][A-Za-z0-9_]*)'")
-        .allMatches(source)
-        .map((m) => m.group(1)!)
-        .toSet()
-      ..addAll(RegExp(r"_p\(\s*'([A-Za-z][A-Za-z0-9_]*)'")
-          .allMatches(source)
-          .expand((m) => pluralCategories.map((c) => '${m.group(1)!}_$c')));
+    final referenced =
+        RegExp(
+          r"_[tf]\(\s*'([A-Za-z][A-Za-z0-9_]*)'",
+        ).allMatches(source).map((m) => m.group(1)!).toSet()..addAll(
+          RegExp(r"_p\(\s*'([A-Za-z][A-Za-z0-9_]*)'")
+              .allMatches(source)
+              .expand((m) => pluralCategories.map((c) => '${m.group(1)!}_$c')),
+        );
 
     final undefined = referenced.difference(enSet).toList()..sort();
     expect(
       undefined,
       isEmpty,
-      reason: 'These keys are read via `_t(...)` but have no `_en` entry, '
+      reason:
+          'These keys are read via `_t(...)` but have no `_en` entry, '
           'so `_t` would render the raw key string to the user:\n'
           '${undefined.join('\n')}',
     );
   });
 
-  test('a translation keeps every placeholder its English source declares',
-      () {
+  test('a translation keeps every placeholder its English source declares', () {
     // `_f` substitutes `{name}` slots. If `_ar` drops one, nothing throws —
     // the sentence just renders without the user's value ("Resend in  s",
     // "منذ  د"), which reads as a rendering glitch and is impossible to
@@ -237,8 +243,7 @@ void main() {
         }
         continue;
       }
-      if (enSlots.length != arSlots.length ||
-          !enSlots.containsAll(arSlots)) {
+      if (enSlots.length != arSlots.length || !enSlots.containsAll(arSlots)) {
         mismatches.add(
           '$key — en: ${enSlots.toList()..sort()}, '
           'ar: ${arSlots.toList()..sort()}',
@@ -249,7 +254,8 @@ void main() {
     expect(
       mismatches,
       isEmpty,
-      reason: 'These Arabic templates declare a different placeholder set '
+      reason:
+          'These Arabic templates declare a different placeholder set '
           'than their English source, so a value goes missing (or a raw '
           '{slot} renders) for Arabic users:\n${mismatches.join('\n')}',
     );
@@ -264,15 +270,21 @@ void main() {
     // `zero`/`two`/`few`/`many` are exactly the forms an English-speaking
     // author forgets. Completeness is the contract `_p` documents; this is
     // the test that holds it.
-    expect(pluralBases, isNotEmpty,
-        reason: 'The scan found no plural key families — did the `_<category>` '
-            'suffix convention change?');
+    expect(
+      pluralBases,
+      isNotEmpty,
+      reason:
+          'The scan found no plural key families — did the `_<category>` '
+          'suffix convention change?',
+    );
 
     final gaps = <String>[];
     for (final base in pluralBases.toList()..sort()) {
       for (final c in pluralCategories) {
-        if (!enSet.contains('${base}_$c')) gaps.add('_en is missing ${base}_$c');
-        if (!arSet.contains('${base}_$c')) gaps.add('_ar is missing ${base}_$c');
+        if (!enSet.contains('${base}_$c'))
+          gaps.add('_en is missing ${base}_$c');
+        if (!arSet.contains('${base}_$c'))
+          gaps.add('_ar is missing ${base}_$c');
       }
     }
     expect(gaps, isEmpty, reason: gaps.join('\n'));
@@ -303,7 +315,8 @@ void main() {
     expect(
       drifted,
       isEmpty,
-      reason: 'These English plural forms differ from `_other` but English '
+      reason:
+          'These English plural forms differ from `_other` but English '
           'can never select them, so the wording is dead on arrival. Either '
           'copy `_other` into them, or — if the distinction is real — it '
           'belongs somewhere a call site can actually reach:\n'
@@ -321,7 +334,8 @@ void main() {
     expect(
       stale,
       isEmpty,
-      reason: 'These keys exist both as a flat entry and as a plural family. '
+      reason:
+          'These keys exist both as a flat entry and as a plural family. '
           'The flat one is leftover from before the conversion — delete it '
           'and point its caller at the `_p` getter:\n${stale.join('\n')}',
     );
@@ -363,7 +377,8 @@ void main() {
     expect(
       offenders,
       isEmpty,
-      reason: 'These Arabic strings use Arabic-Indic digits (٠-٩) while the '
+      reason:
+          'These Arabic strings use Arabic-Indic digits (٠-٩) while the '
           'rest of the table — and every number `_f` interpolates — uses '
           'Western digits, so the two render side by side on one '
           'screen:\n${offenders.join('\n')}',
@@ -453,7 +468,8 @@ void main() {
     expect(
       offenders,
       isEmpty,
-      reason: 'These `_ar` entries contain no Arabic script, so an Arabic '
+      reason:
+          'These `_ar` entries contain no Arabic script, so an Arabic '
           'user reads Latin text for them. Translate each one, or — if it is '
           'a trademark, a domain or a syntax example — add it to the '
           '`untranslatable` map above with the reason:\n'
@@ -495,7 +511,8 @@ void main() {
     expect(
       stale,
       isEmpty,
-      reason: 'These keys are exempted from the Arabic-script check but no '
+      reason:
+          'These keys are exempted from the Arabic-script check but no '
           'longer exist in `_ar`. Drop them from both lists:\n'
           '${stale.join('\n')}',
     );
@@ -514,7 +531,6 @@ void main() {
     }
   });
 
-
   test('no getter picks its copy with an inline `_isArabic` ternary', () {
     // `_t` / `_f` read from the `_en` and `_ar` tables, which is what every
     // rule in this file inspects. A getter written as
@@ -530,7 +546,7 @@ void main() {
     // Arabic" never reaches it. The class doc has warned about this since
     // the interpolated getters were migrated — two survived the migration
     // anyway, which is the argument for a rule over a comment.
-    final src = File('lib/core/i18n/app_strings.dart').readAsLinesSync();
+    final src = appStringsSource().split('\n');
     final hits = <String>[];
     for (var i = 0; i < src.length; i++) {
       final line = src[i];
@@ -543,15 +559,18 @@ void main() {
         continue;
       }
       if (RegExp(r'_isArabic\s*\?').hasMatch(line)) {
-        hits.add('  lib/core/i18n/app_strings.dart:${i + 1}\n      '
-            '${line.trim()}');
+        hits.add(
+          '  lib/core/i18n/app_strings.dart:${i + 1}\n      '
+          '${line.trim()}',
+        );
       }
     }
 
     expect(
       hits,
       isEmpty,
-      reason: 'Copy chosen by an inline `_isArabic` ternary:\n'
+      reason:
+          'Copy chosen by an inline `_isArabic` ternary:\n'
           '${hits.join('\n')}\n\n'
           'Fix: add the key to BOTH `_en` and `_ar` and read it with `_t` '
           '(plain) or `_f` (with `{placeholder}` substitution). Only then '
@@ -564,8 +583,10 @@ void main() {
     // `lookup`. An unknown key must degrade to the server's own label
     // rather than surfacing an underscore_case identifier.
     final tr = AppStrings(const Locale('ar'));
-    expect(tr.lookup('definitely_not_a_real_key', fallback: 'Server label'),
-        'Server label');
+    expect(
+      tr.lookup('definitely_not_a_real_key', fallback: 'Server label'),
+      'Server label',
+    );
     expect(tr.lookup('', fallback: 'Server label'), 'Server label');
     // A known key still resolves to real Arabic copy.
     expect(tr.lookup('credUrl'), isNotEmpty);

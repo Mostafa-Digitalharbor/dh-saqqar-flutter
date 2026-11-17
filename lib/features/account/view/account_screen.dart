@@ -1,36 +1,44 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../core/i18n/app_localizations.dart';
 import '../../../core/i18n/view_model/locale_cubit.dart';
 import '../../../core/routing/route_names.dart';
-import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_sizes.dart';
-import '../../../core/theme/view_model/theme_cubit.dart';
-import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/page_scaffold.dart';
+import '../../../shared/fig/fig.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/delete_account_helper.dart';
 import '../../../shared/widgets/sign_out_helper.dart';
-import '../../../shared/widgets/skeleton_block.dart';
 import '../../auth/view_model/auth_cubit.dart';
 import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/usage_api.dart';
 import '../../billing/view_model/plan_cubit.dart';
 import '../../billing/view_model/saqqar_features_cubit.dart';
-import '../widgets/widgets.dart';
+import '../../notifications/view_model/notifications_settings_cubit.dart';
+import '../../push/data/devices_api.dart';
+import '../../security/view_model/app_lock_cubit.dart';
+import '../../../core/i18n/app_localizations.dart';
+import '../../../core/constants/asset_paths.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/network/api_error_mapper.dart';
+import '../../../core/error/app_failure.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../billing/data/plan_copy.dart';
 
-/// Account tab — identity hero (with stats line), preferences, change
-/// password, and sign out. Pull-to-refresh re-fetches `/auth/me/` so the
-/// user's identity + counts stay current; skeleton placeholders paint
-/// in place of the cards while the round-trip is in flight.
-///
-/// The Storybook entry is hidden behind a long-press on the username
-/// inside [ProfileHero] (it's a dev surface, not a user feature).
+part 'account_screen_identity.dart';
+part 'account_screen_rows.dart';
+part 'account_screen_personal.dart';
+part 'account_screen_security.dart';
+part 'account_screen_preferences.dart';
+part 'account_screen_devices.dart';
+
+/// Profile — dark gradient header, identity card, four stat tiles and the
+/// accordion of account sections (Personal information, Change password,
+/// Preferences, Manage devices, Workspace, Billing), then Sign out and
+/// Delete account.
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
 
@@ -38,16 +46,16 @@ class AccountScreen extends StatefulWidget {
   State<AccountScreen> createState() => _AccountScreenState();
 }
 
+enum _Section { personal, password, prefs, devices, workspace, billing }
+
 class _AccountScreenState extends State<AccountScreen>
     with WidgetsBindingObserver {
+  _Section? _open;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Pull real token usage on open so the usage bars populate WITHOUT the
-    // user having to open a chat first (the snapshot path only fills
-    // PlanCubit once a conversation polls). Best-effort — a failure leaves
-    // the CurrentPlanCard /plans/ fallback in place.
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetchUsage());
   }
 
@@ -59,19 +67,9 @@ class _AccountScreenState extends State<AccountScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Re-read the plan the moment the app comes back to the foreground.
-    //
-    // This is the closing half of the web-checkout hand-off: subscribing
-    // sends the user out to saqqaar.com in the browser, and they return to an
-    // app that fetched its plan once, on open. Without this they land back on
-    // "Free" with the usage bars they left behind, having just paid — which
-    // reads as the payment not having worked. There is no callback to wait
-    // for; coming back IS the signal.
     if (state == AppLifecycleState.resumed) unawaited(_fetchUsage());
   }
 
-  /// Best-effort `GET /usage/` → feed [PlanCubit]. Silent on failure; the
-  /// Account screen already degrades to the public /plans/ catalogue.
   Future<void> _fetchUsage() async {
     if (!mounted) return;
     final usageApi = context.read<UsageApi>();
@@ -80,314 +78,207 @@ class _AccountScreenState extends State<AccountScreen>
     try {
       final usage = await usageApi.fetch();
       planCubit.update(usage.plan);
-      // Same response carries `saqqar_features`; hand it over so the tools
-      // sheet doesn't have to make its own round-trip.
       featuresCubit.update(usage.saqqarFeatures);
     } catch (_) {
-      // Leave the existing PlanCubit state (snapshot-derived or null).
+      // Non-critical: the card just keeps its last known plan.
     }
   }
 
+  void _toggle(_Section s) => setState(() => _open = _open == s ? null : s);
+
   @override
   Widget build(BuildContext context) {
-    final mode = context.watch<ThemeCubit>().state;
-    final locale = context.watch<LocaleCubit>().state;
-    final authState = context.watch<AuthCubit>().state;
-    final user = authState.user;
-    final isReloading = authState.isLoading;
-
-    final identityLabel = user == null
-        ? context.tr.sampleUsername
-        : (user.email.isNotEmpty ? user.email : user.username);
-
-    return PageScaffold(
-      title: context.tr.tabAccount,
-      // Username + product affiliation as the subtitle so the brand row
-      // up top reads as "Saqqar / Account / who you are" — three
-      // pieces of orienting context in one glance.
-      subtitle: '$identityLabel · ${context.tr.workspace}',
-      // Pull-to-refresh re-fetches /auth/me/ — the AuthCubit emits
-      // AuthStatus.loading while in flight, which we use below to swap
-      // the cards for skeleton placeholders.
-      onRefresh: () async {
-        await context.read<AuthCubit>().bootstrap();
-        await _fetchUsage();
-      },
-      children: isReloading
-          ? _accountSkeletonChildren()
-          : [
-              ProfileHero(
-                onLongPress: () => context.pushNamed(RouteNames.storybook),
-              ),
-              const SizedBox(height: AppSpacing.s14),
-              // Plan & usage — split into two entry points (moved off the
-              // profile so Account stays scannable): "See plans" → the
-              // pricing catalogue, "Usage" → the per-window usage bars on
-              // their own screen.
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.s14),
-                child: Row(
-                  children: [
-                    // "See plans" leads to the pricing catalogue — hidden
-                    // while sales are web-only. "Usage" stays (it's what you
-                    // already have, not an offer) and fills the row.
-                    if (showPaidUpsell) ...[
-                      Expanded(
-                        child: GhostButton(
-                          label: context.tr.accountSeePlans,
-                          icon: AppIcons.premium,
-                          expand: true,
-                          onPressed: () =>
-                              context.pushNamed(RouteNames.pricing),
+    final auth = context.watch<AuthCubit>().state;
+    final user = auth.user;
+    final counts = auth.counts;
+    final plan = context.watch<PlanCubit>().state;
+    final planName = (plan == null || plan.name.isEmpty)
+        ? context.tr.figStandardUser
+        : PlanCopy.nameFor(
+            context.tr,
+            slug: plan.slug,
+            fallback: plan.name,
+          ).toUpperCase();
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: figLightStatusBar,
+      child: Scaffold(
+        backgroundColor: Fig.pageGrey,
+        body: FigBackdrop(
+          stretch: 1.12,
+          child: SafeArea(
+            bottom: false,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await context.read<AuthCubit>().bootstrap();
+                await _fetchUsage();
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 40),
+                children: [
+                  FigPageHeader(
+                    title: context.tr.figProfile,
+                    subtitle:
+                        context.tr.figManageYourAccountWorkspaceAndBilling,
+                    onBack: () => context.canPop()
+                        ? context.pop()
+                        : context.go(RouteNames.homePath),
+                  ),
+                  const SizedBox(height: AppSpacing.s22),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s24,
+                    ),
+                    child: Column(
+                      children: [
+                        _IdentityCard(
+                          name: user?.displayName ?? '',
+                          email: user?.email ?? '',
+                          plan: planName,
+                          onLongPress: () =>
+                              context.pushNamed(RouteNames.storybook),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.s10),
-                    ],
-                    Expanded(
-                      child: GhostButton(
-                        label: context.tr.accountUsage,
-                        icon: AppIcons.barChart,
-                        expand: true,
-                        onPressed: () => context.pushNamed(RouteNames.usage),
-                      ),
+                        const SizedBox(height: AppSpacing.s10),
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _Stat(
+                                counts.conversations,
+                                context.tr.figConversations,
+                              ),
+                              const SizedBox(width: AppSpacing.s8),
+                              _Stat(
+                                counts.credentials,
+                                context.tr.figCredentials,
+                              ),
+                              const SizedBox(width: AppSpacing.s8),
+                              _Stat(counts.approvals, context.tr.figApprovals),
+                              const SizedBox(width: AppSpacing.s8),
+                              _Stat(counts.artifacts, context.tr.figArtifacts),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.s10),
+                        _Accordion(
+                          icon: LucideIcons.userRound,
+                          title: context.tr.figPersonalInformation,
+                          subtitle: context.tr.figTheDetailsYouGaveWhenYou,
+                          open: _open == _Section.personal,
+                          onTap: () => _toggle(_Section.personal),
+                          child: _PersonalInfo(
+                            name: user?.displayName ?? '',
+                            email: user?.email ?? '',
+                          ),
+                        ),
+                        _Accordion(
+                          icon: LucideIcons.keyboard,
+                          title: context.tr.figChangePassword,
+                          subtitle:
+                              context.tr.figUpdateThePasswordYouSignInWith,
+                          open: _open == _Section.password,
+                          onTap: () => _toggle(_Section.password),
+                          child: _ChangePassword(
+                            onDone: () => setState(() => _open = null),
+                          ),
+                        ),
+                        _Accordion(
+                          icon: LucideIcons.languages,
+                          title: context.tr.figPreferences,
+                          subtitle:
+                              context.tr.figLanguageAppLockAndNotifications,
+                          open: _open == _Section.prefs,
+                          onTap: () => _toggle(_Section.prefs),
+                          child: const _Preferences(),
+                        ),
+                        _Accordion(
+                          icon: LucideIcons.monitor,
+                          title: context.tr.figManageDevices,
+                          subtitle: context.tr.figSeeWhereYouReSignedIn,
+                          open: _open == _Section.devices,
+                          onTap: () => _toggle(_Section.devices),
+                          child: const _Devices(),
+                        ),
+                        _Accordion(
+                          icon: LucideIcons.network,
+                          title: context.tr.figWorkspace,
+                          subtitle: context.tr.figToolsThatWorkOnYourOdoo,
+                          open: _open == _Section.workspace,
+                          onTap: () => _toggle(_Section.workspace),
+                          child: Column(
+                            children: [
+                              _SubRow(
+                                LucideIcons.layoutGrid,
+                                context.tr.figSaqqarApps,
+                                () =>
+                                    context.push(RouteNames.workspaceAppsPath),
+                              ),
+                              _SubRow(
+                                LucideIcons.cloud,
+                                context.tr.figManagedOdooTrial,
+                                () => context.push(RouteNames.trialPath),
+                              ),
+                              _SubRow(
+                                LucideIcons.database,
+                                context.tr.figDataExplorer,
+                                () => context.push(RouteNames.dataExplorerPath),
+                                last: true,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (showPaidUpsell || showBillingRecords)
+                          _Accordion(
+                            icon: LucideIcons.receiptText,
+                            title: context.tr.figBilling,
+                            subtitle: context.tr.figYourPlanPaymentsAndReceipts,
+                            open: _open == _Section.billing,
+                            onTap: () => _toggle(_Section.billing),
+                            child: Column(
+                              children: [
+                                _SubRow(
+                                  LucideIcons.gem,
+                                  context.tr.figPlansPricing,
+                                  () => context.push(RouteNames.pricingPath),
+                                  last: !showBillingRecords,
+                                ),
+                                if (showBillingRecords)
+                                  _SubRow(
+                                    LucideIcons.receiptText,
+                                    context.tr.figBillingHistory,
+                                    () => context.push(
+                                      RouteNames.billingHistoryPath,
+                                    ),
+                                    last: true,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: AppSpacing.s14),
+                        _DangerRow(
+                          label: context.tr.figSignOut,
+                          icon: LucideIcons.logOut,
+                          onTap: () => showSignOutFlow(context),
+                        ),
+                        if (user != null) ...[
+                          const SizedBox(height: AppSpacing.s18),
+                          _DangerRow(
+                            label: context.tr.figDeleteAccount,
+                            icon: LucideIcons.trash2,
+                            onTap: () => showDeleteAccountFlow(context),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              // Personal information (Gap I) — edit first/last name; email
-              // stays read-only. Only shown once the user is hydrated.
-              if (user != null) ...[
-                const PersonalInfoCard(),
-                const SizedBox(height: AppSpacing.s14),
-              ],
-              PreferencesCard(mode: mode, locale: locale),
-              const SizedBox(height: AppSpacing.s14),
-              const ChangePasswordCard(),
-              const SizedBox(height: AppSpacing.s14),
-              // Destinations, grouped.
-              //
-              // These were seven identical full-width pills stacked down the
-              // screen — "Manage devices", "Saqqar Apps", "Managed Odoo
-              // trial", "Data explorer", "Billing history", "Buy tokens" —
-              // with nothing to distinguish an account setting from a tool
-              // from a purchase, and no clue what any of them did. A returning
-              // user skims past it; a new one has no reason to tap anything.
-              //
-              // Grouping turns one list of seven into three of one-to-three,
-              // and the per-row descriptions are what make them discoverable:
-              // "Data explorer" means nothing on its own, "Read your models
-              // and records directly" means something immediately.
-              //
-              // Devices sits first, headerless, because it continues the
-              // thought the two cards above it started (your details, your
-              // password → your devices) rather than starting a new one.
-              AccountLinkGroup(
-                links: [
-                  AccountLink(
-                    icon: AppIcons.devices,
-                    title: context.tr.devicesManage,
-                    subtitle: context.tr.devicesSubtitle,
-                    onTap: () => context.pushNamed(RouteNames.devices),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.s14),
-              // Meeting transcription (§4.1) is deliberately NOT listed here.
-              //
-              // Withdrawn at the product owner's request (2026-07-28): the
-              // backend side is not being built for now, so the entry point
-              // comes out of the UI rather than shipping a door that opens
-              // onto a feature nobody is finishing. The screen, cubit, API
-              // client and route are all left in place — this is a hidden
-              // entrance, not a demolition, so restoring it is adding a row
-              // back to the Workspace group below.
-              //
-              // The route is unreachable in the app with this gone, and it is
-              // not registered as a deep link, so nothing else surfaces it.
-              AccountLinkGroup(
-                title: context.tr.accountGroupWorkspace,
-                subtitle: context.tr.accountGroupWorkspaceHint,
-                icon: AppIcons.grid,
-                tint: context.saqqar.brandPurple,
-                links: [
-                  // Saqqar Apps — guided setups (§1).
-                  AccountLink(
-                    icon: AppIcons.grid,
-                    title: context.tr.appsTitle,
-                    subtitle: context.tr.appsSubtitle,
-                    tint: context.saqqar.brandPurple,
-                    onTap: () => context.pushNamed(RouteNames.apps),
-                  ),
-                  // Managed Odoo trial (§2).
-                  AccountLink(
-                    icon: AppIcons.rocket,
-                    title: context.tr.trialTitle,
-                    subtitle: context.tr.trialSubtitle,
-                    tint: context.saqqar.brandPurple,
-                    onTap: () => context.pushNamed(RouteNames.trial),
-                  ),
-                  // Read-only Odoo data explorer (§4.2).
-                  AccountLink(
-                    icon: AppIcons.table,
-                    title: context.tr.dataExplorerTitle,
-                    subtitle: context.tr.dataExplorerSubtitle,
-                    tint: context.saqqar.brandPurple,
-                    onTap: () => context.pushNamed(RouteNames.dataExplorer),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s14),
-              // Billing — the plan catalogue (§L) and payment history (§3).
-              //
-              // "Buy tokens" used to sit here and open the in-app Paymob
-              // checkout. It is gone for two independent reasons: selling
-              // digital content in-app needs store billing on both platforms,
-              // and it was built against `GET /billing/plans/`, a two-entry
-              // SAR catalogue that does not match what saqqaar.com actually
-              // sells (five tiers, USD — see docs/STORE_PAYMENTS_COMPLIANCE).
-              // Its replacement shows the real catalogue and hands off to the
-              // web to pay.
-              if (showPaidUpsell || showBillingRecords) ...[
-                AccountLinkGroup(
-                  title: context.tr.accountGroupBilling,
-                  // Every titled group carries a line of its own; a heading
-                  // sitting bare above its rows reads as a missing string
-                  // next to the Workspace group directly above it.
-                  subtitle: context.tr.accountGroupBillingHint,
-                  icon: AppIcons.wallet,
-                  links: [
-                    // Shown on every platform, including where prices are
-                    // suppressed. The screen behind it self-censors down to a
-                    // feature comparison — and a user who has just hit their
-                    // limit needs to know what a bigger plan would give them
-                    // even if the app can't sell it. Hiding the row entirely
-                    // left iOS with a limit message and no explanation of it.
-                    AccountLink(
-                      icon: AppIcons.premium,
-                      title: context.tr.pricingPlansTitle,
-                      subtitle: showPaidUpsell
-                          ? context.tr.pricingPlansSubtitle
-                          : context.tr.pricingPlansSubtitlePlain,
-                      onTap: () => context.pushNamed(RouteNames.pricing),
-                    ),
-                    // Not gated with the rest: a receipt for money already
-                    // taken is account information, and this is the only
-                    // place in the app the money is visible at all.
-                    if (showBillingRecords)
-                      AccountLink(
-                        icon: AppIcons.receipt,
-                        title: context.tr.billingHistoryTitle,
-                        subtitle: context.tr.billingHistorySubtitle,
-                        onTap: () =>
-                            context.pushNamed(RouteNames.billingHistory),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.s14),
-              ],
-              GhostButton(
-                label: context.tr.signOut,
-                icon: AppIcons.signOut,
-                tone: GhostButtonTone.danger,
-                expand: true,
-                // showSignOutFlow handles the confirm dialog, blocking
-                // loading dialog, vault-cache clear, logout, and toast.
-                // Auth-gate redirect routes to /sign-in afterwards.
-                onPressed: () => showSignOutFlow(context),
-              ),
-              // Account deletion — App/Play Store policy requires an in-app
-              // path to permanently delete the account and all its data.
-              // Only shown once the user is hydrated (no point offering it
-              // before we know who's signed in). Visually subordinate to
-              // sign-out: a plain text-weight danger action, not a filled
-              // button, so it doesn't compete with the primary affordances.
-              if (user != null) ...[
-                const SizedBox(height: AppSpacing.s8),
-                TextButton.icon(
-                  onPressed: () => showDeleteAccountFlow(context),
-                  icon: Icon(AppIcons.trash,
-                      size: AppIconSizes.small, color: context.saqqar.danger),
-                  label: Text(
-                    context.tr.deleteAccount,
-                    style: TextStyle(color: context.saqqar.danger),
-                  ),
-                ),
-              ],
-              // Product attribution. Lived inside the identity card until
-              // 2026-07-25, where it was a seventh line of muted text
-              // competing with the user's own details. A footer belongs at
-              // the foot of the screen.
-              const SizedBox(height: AppSpacing.s18),
-              Center(
-                child: Text(
-                  context.tr.poweredByDigitalHarbor,
-                  style: context.text.labelSmall?.copyWith(
-                    color: context.saqqar.muted.withValues(alpha: AppAlphas.a75),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s8),
-            ],
-    );
-  }
-}
-
-/// Card-shaped shimmer placeholders painted in place of the real cards
-/// (ProfileHero / PreferencesCard / ChangePasswordCard / sign-out) while
-/// the AuthCubit is reloading. Heights mimic each real card so the
-/// layout doesn't jump when the data arrives.
-///
-/// Free function instead of a widget because `PageScaffold.children`
-/// expects a flat `List<Widget>` — wrapping in a widget would force a
-/// nested `Column` and break the existing spacing rhythm.
-List<Widget> _accountSkeletonChildren() {
-  return const [
-    _SkeletonCard(height: AppSkeletonSizes.card),
-    SizedBox(height: AppSpacing.s14),
-    _SkeletonCard(height: AppSkeletonSizes.cardTall),
-    SizedBox(height: AppSpacing.s14),
-    _SkeletonCard(height: AppSkeletonSizes.cardHero),
-    SizedBox(height: AppSpacing.s14),
-    _SkeletonCard(height: AppSkeletonSizes.cardShort),
-  ];
-}
-
-/// One shimmer card — outer GlassCard-shaped container with a few
-/// internal SkeletonBlocks to suggest "this is a card with content
-/// loading inside" rather than a flat grey rectangle. Subtle enough
-/// not to look like an actual card the user might tap.
-class _SkeletonCard extends StatelessWidget {
-  const _SkeletonCard({required this.height});
-
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    // Short cards (button-height placeholders) can't fit the 3-block
-    // layout — render a single fill block instead so the Column doesn't
-    // overflow.
-    final isCompact = height < AppSkeletonSizes.cardCompactCutoff;
-    return Container(
-      height: height,
-      padding: EdgeInsets.all(isCompact ? AppSpacing.s10 : AppSpacing.s16),
-      decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelSoft)),
-        borderRadius: AppRadius.cardR,
-        border: Border.all(color: s.cardBorder),
-      ),
-      child: isCompact
-          ? const SkeletonBlock()
-          : const Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                SkeletonBlock(width: AppSkeletonSizes.title, height: AppSkeletonSizes.titleLine),
-                SkeletonBlock(height: AppSkeletonSizes.bodyLine),
-                SkeletonBlock(width: AppSkeletonSizes.preview, height: AppSkeletonSizes.bodyLine),
-              ],
             ),
+          ),
+        ),
+      ),
     );
   }
 }
+
+// ── Section bodies ──────────────────────────────────────────────────────

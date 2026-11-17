@@ -21,13 +21,13 @@ class PlanBadge extends StatelessWidget {
     return Container(
       padding: dense
           ? const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s8,
-            vertical: AppSpacing.s2,
-          )
+              horizontal: AppSpacing.s8,
+              vertical: AppSpacing.s2,
+            )
           : const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s10,
-            vertical: AppSpacing.s4,
-          ),
+              horizontal: AppSpacing.s10,
+              vertical: AppSpacing.s4,
+            ),
       decoration: BoxDecoration(
         color: s.brandCyan.withValues(alpha: AppAlphas.a12),
         borderRadius: AppRadius.pillR,
@@ -36,10 +36,7 @@ class PlanBadge extends StatelessWidget {
       child: Text(
         name,
         style: (dense ? context.text.labelSmall : context.text.labelMedium)
-            ?.copyWith(
-          color: s.brandCyan,
-          fontWeight: FontWeight.w800,
-        ),
+            ?.copyWith(color: s.brandCyan, fontWeight: FontWeight.w800),
       ),
     );
   }

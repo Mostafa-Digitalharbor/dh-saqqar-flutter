@@ -14,7 +14,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/format/compact_number.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
-import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/message_token_chip.dart';
 import 'package:saqqar_app/features/conversations/data/conversation_models.dart';
@@ -129,7 +128,10 @@ void main() {
 
       final en = AppStrings(const Locale('en'));
       await _pumpChip(tester, tokens);
-      expect(find.text(compactCount(tokens.total, en)), findsOneWidget);
+      expect(
+        find.text(en.tokensChipLabel(compactCount(tokens.total, en))),
+        findsOneWidget,
+      );
 
       // Arabic gets Arabic units, not a hardcoded "k" — that is the whole
       // reason this does not reuse the web's formatter.

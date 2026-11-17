@@ -51,7 +51,6 @@ enum ApiExceptionKind {
   timeout, // connect/receive/send timeout
   badResponse, // 4xx / 5xx
   cancelled, // request was cancelled
-
   /// The bytes arrived and were not the JSON they claimed to be — a proxy
   /// truncated the body, gzip cut off mid-object, or a Django debug page came
   /// back under an `application/json` header.

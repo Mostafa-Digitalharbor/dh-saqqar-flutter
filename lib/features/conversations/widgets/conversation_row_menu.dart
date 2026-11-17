@@ -28,7 +28,11 @@ class ConversationRowMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<ConversationAction>(
       tooltip: context.tr.conversationActions,
-      icon: Icon(AppIcons.more, color: context.saqqar.muted, size: AppIconSizes.action),
+      icon: Icon(
+        AppIcons.more,
+        color: context.saqqar.muted,
+        size: AppIconSizes.action,
+      ),
       onSelected: onAction,
       itemBuilder: (context) => [
         PopupMenuItem(

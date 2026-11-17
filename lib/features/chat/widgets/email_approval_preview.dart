@@ -95,14 +95,17 @@ class EmailApprovalPreview extends StatelessWidget {
     // Subject and body are legitimately empty (the tool schema allows it) —
     // a placeholder says so rather than leaving a blank header or silently
     // dropping the "Message" row entirely.
-    final displaySubject =
-        subject.isEmpty ? tr.emailPreviewEmptySubject : subject;
+    final displaySubject = subject.isEmpty
+        ? tr.emailPreviewEmptySubject
+        : subject;
     final displayBody = body.isEmpty ? tr.emailPreviewEmptyBody : body;
     return Container(
       margin: const EdgeInsets.only(top: AppSpacing.s10),
       padding: const EdgeInsets.all(AppSpacing.s12),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelCard)),
+        color: s.surface2.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelCard),
+        ),
         borderRadius: AppRadius.buttonR,
         border: Border.all(color: s.border),
       ),
@@ -111,7 +114,11 @@ class EmailApprovalPreview extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIcons.mail, size: AppIconSizes.compact, color: s.brandCyan),
+              Icon(
+                AppIcons.mail,
+                size: AppIconSizes.compact,
+                color: s.brandCyan,
+              ),
               const SizedBox(width: AppSpacing.s8),
               Expanded(
                 child: AutoDirectionText(

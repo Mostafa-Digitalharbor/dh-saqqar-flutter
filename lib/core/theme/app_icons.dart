@@ -60,6 +60,7 @@ class AppIcons {
   static const IconData fileDown = LucideIcons.fileDown;
   static const IconData warning = LucideIcons.circleAlert;
   static const IconData send = LucideIcons.send;
+
   /// Filled square — composer "Stop generating" button while the agent is
   /// streaming. Mirrors the web's stop control replacing Send.
   static const IconData stop = LucideIcons.square;

@@ -89,8 +89,10 @@ class LoggingInterceptor extends Interceptor {
       if (options.data != null && !_isFormData(options.data)) {
         buf.writeln('│ body: ${_formatBody(options.data, redact: true)}');
       } else if (_isFormData(options.data)) {
-        buf.writeln('│ body: <FormData ${(options.data as FormData).files.length} file(s), '
-            '${(options.data as FormData).fields.length} field(s)>');
+        buf.writeln(
+          '│ body: <FormData ${(options.data as FormData).files.length} file(s), '
+          '${(options.data as FormData).fields.length} field(s)>',
+        );
       }
       buf.write('└── $_bar');
       debugPrint(buf.toString());
@@ -99,7 +101,10 @@ class LoggingInterceptor extends Interceptor {
   }
 
   @override
-  void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
     if (kDebugMode) {
       final ms = _stopMs(response.requestOptions);
       final opts = response.requestOptions;

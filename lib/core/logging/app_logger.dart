@@ -41,13 +41,14 @@ enum LogLevel {
 /// `AppLogger.warn` / `AppLogger.error` call so it can forward them to
 /// Sentry / Firebase Crashlytics / Bugsnag — without coupling the rest
 /// of the app to a specific provider.
-typedef CrashReporter = void Function(
-  LogLevel level,
-  String tag,
-  String message, {
-  Object? error,
-  StackTrace? stackTrace,
-});
+typedef CrashReporter =
+    void Function(
+      LogLevel level,
+      String tag,
+      String message, {
+      Object? error,
+      StackTrace? stackTrace,
+    });
 
 class AppLogger {
   AppLogger._();
@@ -86,8 +87,7 @@ class AppLogger {
     String message, {
     Object? error,
     StackTrace? stackTrace,
-  }) =>
-      _log(LogLevel.warn, tag, message, error: error, stackTrace: stackTrace);
+  }) => _log(LogLevel.warn, tag, message, error: error, stackTrace: stackTrace);
 
   static void error(
     String tag,
@@ -136,8 +136,9 @@ class AppLogger {
   static String _shortenStack(String raw) {
     final lines = raw.split('\n');
     if (lines.length <= 6) return raw;
-    return [...lines.take(6), '    … ${lines.length - 6} more frames'].join(
-      '\n    ',
-    );
+    return [
+      ...lines.take(6),
+      '    … ${lines.length - 6} more frames',
+    ].join('\n    ');
   }
 }

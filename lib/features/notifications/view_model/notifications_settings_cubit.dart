@@ -7,8 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// toggled OFF the app unregisters the device server-side (via the push
 /// service) so the backend stops sending; ON re-registers it.
 class NotificationsSettingsCubit extends Cubit<bool> {
-  NotificationsSettingsCubit(this._prefs)
-      : super(_prefs.getBool(_key) ?? true);
+  NotificationsSettingsCubit(this._prefs) : super(_prefs.getBool(_key) ?? true);
 
   static const _key = 'saqqar.notifications.push_enabled';
 

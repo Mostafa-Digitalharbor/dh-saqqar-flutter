@@ -27,11 +27,10 @@ import 'vault_state.dart';
 /// time. That keeps the cubit context-free AND guarantees the message
 /// follows the user's current locale even if they switch language after
 /// the cubit emitted.
-class VaultCubit extends Cubit<VaultState>
-    with ActionOutcomeCubit<VaultState> {
+class VaultCubit extends Cubit<VaultState> with ActionOutcomeCubit<VaultState> {
   VaultCubit({required VaultRepository repository})
-      : _repo = repository,
-        super(const VaultState());
+    : _repo = repository,
+      super(const VaultState());
 
   static const _tag = 'VaultCubit';
 
@@ -54,9 +53,11 @@ class VaultCubit extends Cubit<VaultState>
   /// refresh in place via [refresh].
   Future<void> load() async {
     if (state.data is DataLoading<VaultData>) return;
-    emit(state.copyWith(
-      data: DataLoading<VaultData>(previous: state.data.dataOrNull),
-    ));
+    emit(
+      state.copyWith(
+        data: DataLoading<VaultData>(previous: state.data.dataOrNull),
+      ),
+    );
     try {
       final results = await Future.wait([
         _repo.listProjects(),
@@ -64,29 +65,33 @@ class VaultCubit extends Cubit<VaultState>
       ]);
       final projects = results[0] as List<Project>;
       final schemas = results[1] as List<CredentialSchema>;
-      emit(state.copyWith(
-        data: DataSuccess(
-          VaultData(
-            projects: projects,
-            schemas: schemas,
-            credentialsByEnv:
-                state.data.dataOrNull?.credentialsByEnv ?? const {},
+      emit(
+        state.copyWith(
+          data: DataSuccess(
+            VaultData(
+              projects: projects,
+              schemas: schemas,
+              credentialsByEnv:
+                  state.data.dataOrNull?.credentialsByEnv ?? const {},
+            ),
           ),
         ),
-      ));
+      );
     } catch (e, st) {
       AppLogger.error(_tag, 'load() failed', error: e, stackTrace: st);
       final failure = ApiErrorMapper.toFailure(e);
-      emit(state.copyWith(
-        data: DataFailure<VaultData>(
-          error: failure,
-          previous: state.data.dataOrNull,
+      emit(
+        state.copyWith(
+          data: DataFailure<VaultData>(
+            error: failure,
+            previous: state.data.dataOrNull,
+          ),
+          actionFailure: VaultActionFailure(
+            action: VaultAction.load,
+            failure: failure,
+          ),
         ),
-        actionFailure: VaultActionFailure(
-          action: VaultAction.load,
-          failure: failure,
-        ),
-      ));
+      );
     }
   }
 
@@ -112,14 +117,13 @@ class VaultCubit extends Cubit<VaultState>
         'hydrateFromCache() · ${snapshot.projects.length} projects, '
         'saved ${snapshot.savedAt.toIso8601String()}',
       );
-      emit(state.copyWith(
-        data: DataSuccess(
-          VaultData(
-            projects: snapshot.projects,
-            schemas: snapshot.schemas,
+      emit(
+        state.copyWith(
+          data: DataSuccess(
+            VaultData(projects: snapshot.projects, schemas: snapshot.schemas),
           ),
         ),
-      ));
+      );
     }
     // CRITICAL: always fire a fresh fetch after hydrating the cache.
     // Without this, the cached snapshot masks any server-side changes
@@ -152,11 +156,13 @@ class VaultCubit extends Cubit<VaultState>
       block: () async {
         final project = await _repo.createProject(name: name);
         final current = _requireData('createProject');
-        emit(state.copyWith(
-          data: DataSuccess(
-            current.copyWith(projects: [...current.projects, project]),
+        emit(
+          state.copyWith(
+            data: DataSuccess(
+              current.copyWith(projects: [...current.projects, project]),
+            ),
           ),
-        ));
+        );
       },
     );
   }
@@ -192,7 +198,7 @@ class VaultCubit extends Cubit<VaultState>
         final remaining = data.projects.where((p) => p.id != id).toList();
         final envIds =
             data.projectById(id)?.environments.map((e) => e.id).toSet() ??
-                const <String>{};
+            const <String>{};
         final cache = {
           for (final entry in data.credentialsByEnv.entries)
             if (!envIds.contains(entry.key)) entry.key: entry.value,
@@ -224,24 +230,26 @@ class VaultCubit extends Cubit<VaultState>
           autoApprove: autoApprove,
         );
         final current = _requireData('createEnvironment');
-        emit(state.copyWith(
-          data: DataSuccess(
-            current.copyWith(
-              projects: [
-                for (final p in current.projects)
-                  if (p.id == projectId)
-                    Project(
-                      id: p.id,
-                      name: p.name,
-                      slug: p.slug,
-                      environments: [...p.environments, env],
-                    )
-                  else
-                    p,
-              ],
+        emit(
+          state.copyWith(
+            data: DataSuccess(
+              current.copyWith(
+                projects: [
+                  for (final p in current.projects)
+                    if (p.id == projectId)
+                      Project(
+                        id: p.id,
+                        name: p.name,
+                        slug: p.slug,
+                        environments: [...p.environments, env],
+                      )
+                    else
+                      p,
+                ],
+              ),
             ),
           ),
-        ));
+        );
       },
     );
   }
@@ -340,9 +348,11 @@ class VaultCubit extends Cubit<VaultState>
     try {
       final list = await _repo.listEnvironmentCredentials(envId);
       final cache = {...current.credentialsByEnv, envId: list};
-      emit(state.copyWith(
-        data: DataSuccess(current.copyWith(credentialsByEnv: cache)),
-      ));
+      emit(
+        state.copyWith(
+          data: DataSuccess(current.copyWith(credentialsByEnv: cache)),
+        ),
+      );
     } catch (e, st) {
       AppLogger.warn(
         _tag,
@@ -350,12 +360,14 @@ class VaultCubit extends Cubit<VaultState>
         error: e,
         stackTrace: st,
       );
-      emit(state.copyWith(
-        actionFailure: VaultActionFailure(
-          action: VaultAction.loadCredentials,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          actionFailure: VaultActionFailure(
+            action: VaultAction.loadCredentials,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -386,11 +398,15 @@ class VaultCubit extends Cubit<VaultState>
           if (c.kind != kind) c,
         full,
       ];
-      emit(state.copyWith(
-        data: DataSuccess(latest.copyWith(
-          credentialsByEnv: {...latest.credentialsByEnv, envId: next},
-        )),
-      ));
+      emit(
+        state.copyWith(
+          data: DataSuccess(
+            latest.copyWith(
+              credentialsByEnv: {...latest.credentialsByEnv, envId: next},
+            ),
+          ),
+        ),
+      );
     } catch (e, st) {
       // Non-fatal: the form falls back to empty fields and the user can
       // still overwrite the credential. Surface a typed failure for the
@@ -401,12 +417,14 @@ class VaultCubit extends Cubit<VaultState>
         error: e,
         stackTrace: st,
       );
-      emit(state.copyWith(
-        actionFailure: VaultActionFailure(
-          action: VaultAction.loadCredentials,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          actionFailure: VaultActionFailure(
+            action: VaultAction.loadCredentials,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -434,11 +452,15 @@ class VaultCubit extends Cubit<VaultState>
             if (c.kind != kind) c,
           saved,
         ];
-        emit(state.copyWith(
-          data: DataSuccess(current.copyWith(
-            credentialsByEnv: {...current.credentialsByEnv, envId: next},
-          )),
-        ));
+        emit(
+          state.copyWith(
+            data: DataSuccess(
+              current.copyWith(
+                credentialsByEnv: {...current.credentialsByEnv, envId: next},
+              ),
+            ),
+          ),
+        );
       },
     );
   }
@@ -459,11 +481,15 @@ class VaultCubit extends Cubit<VaultState>
         final existing =
             current.credentialsByEnv[envId] ?? const <Credential>[];
         final next = existing.where((c) => c.kind != kind).toList();
-        emit(state.copyWith(
-          data: DataSuccess(current.copyWith(
-            credentialsByEnv: {...current.credentialsByEnv, envId: next},
-          )),
-        ));
+        emit(
+          state.copyWith(
+            data: DataSuccess(
+              current.copyWith(
+                credentialsByEnv: {...current.credentialsByEnv, envId: next},
+              ),
+            ),
+          ),
+        );
       },
     );
   }
@@ -477,8 +503,7 @@ class VaultCubit extends Cubit<VaultState>
   Object? get currentActionToast => state.actionToast;
 
   @override
-  VaultState clearedActionFailure() =>
-      state.copyWith(clearActionFailure: true);
+  VaultState clearedActionFailure() => state.copyWith(clearActionFailure: true);
 
   @override
   VaultState clearedActionToast() => state.copyWith(clearActionToast: true);
@@ -496,16 +521,16 @@ class VaultCubit extends Cubit<VaultState>
     VaultToast? successToast,
   }) async {
     if (state.actionInFlight) {
-      AppLogger.warn(_tag, '${action.name} skipped — another mutation in flight');
+      AppLogger.warn(
+        _tag,
+        '${action.name} skipped — another mutation in flight',
+      );
       return false;
     }
     emit(state.copyWith(actionInFlight: true, clearActionFailure: true));
     try {
       await block();
-      emit(state.copyWith(
-        actionInFlight: false,
-        actionToast: successToast,
-      ));
+      emit(state.copyWith(actionInFlight: false, actionToast: successToast));
       // Snapshot the post-mutation state to the offline cache so the
       // next cold start sees the new project / env / credential even
       // before the live fetch returns.
@@ -513,13 +538,15 @@ class VaultCubit extends Cubit<VaultState>
       return true;
     } catch (e, st) {
       AppLogger.warn(_tag, '${action.name} failed', error: e, stackTrace: st);
-      emit(state.copyWith(
-        actionInFlight: false,
-        actionFailure: VaultActionFailure(
-          action: action,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          actionInFlight: false,
+          actionFailure: VaultActionFailure(
+            action: action,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -546,17 +573,16 @@ class VaultCubit extends Cubit<VaultState>
     }
     final optimistic = mutate(current);
     final seq = ++_optimisticSeq;
-    emit(state.copyWith(
-      data: DataSuccess(optimistic),
-      actionInFlight: true,
-      clearActionFailure: true,
-    ));
+    emit(
+      state.copyWith(
+        data: DataSuccess(optimistic),
+        actionInFlight: true,
+        clearActionFailure: true,
+      ),
+    );
     try {
       await commit();
-      emit(state.copyWith(
-        actionInFlight: false,
-        actionToast: successToast,
-      ));
+      emit(state.copyWith(actionInFlight: false, actionToast: successToast));
       _persistCurrentSnapshot();
       return true;
     } catch (e, st) {
@@ -574,14 +600,16 @@ class VaultCubit extends Cubit<VaultState>
       // and only surface the failure; the newer mutation owns the rollback of
       // its own slice if IT fails too.
       final isLatest = seq == _optimisticSeq;
-      emit(state.copyWith(
-        data: isLatest ? DataSuccess(current) : state.data,
-        actionInFlight: false,
-        actionFailure: VaultActionFailure(
-          action: action,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          data: isLatest ? DataSuccess(current) : state.data,
+          actionInFlight: false,
+          actionFailure: VaultActionFailure(
+            action: action,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -600,9 +628,6 @@ class VaultCubit extends Cubit<VaultState>
   void _persistCurrentSnapshot() {
     final data = state.data.dataOrNull;
     if (data == null) return;
-    _repo.persistSnapshot(
-      projects: data.projects,
-      schemas: data.schemas,
-    );
+    _repo.persistSnapshot(projects: data.projects, schemas: data.schemas);
   }
 }

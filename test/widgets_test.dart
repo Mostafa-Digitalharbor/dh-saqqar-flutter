@@ -7,7 +7,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
-import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/attachment_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_avatar.dart';
@@ -366,10 +365,10 @@ void main() {
       // — which hands its children unbounded width, so none of them could ever
       // wrap — that overflowed a 320 px screen by 26 px once the timestamp
       // became the long form ("Aug 9, 2026 at 1:00 PM"). See `MessageMeta`.
-      expect(
-        find.textContaining('12:04', findRichText: true),
-        findsOneWidget,
-      );
+      // The redesigned bubbles (figma-design / Chat-Screen) carry no
+      // timestamp — just the "You" label above the blue bubble.
+      expect(find.text('You'), findsOneWidget);
+      expect(find.textContaining('12:04', findRichText: true), findsNothing);
     });
 
     testWidgets('MessageBubble hides timestamp when showTime is false', (

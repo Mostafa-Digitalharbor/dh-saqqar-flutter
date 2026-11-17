@@ -71,16 +71,16 @@ class VoiceSupportDraft extends Equatable {
   /// The server uses it as the summary only when [summary] is empty, so it is
   /// both a fallback and the verbatim record of the report.
   Map<String, Object?> toTicketPayload({required String transcript}) => {
-        if (title.isNotEmpty) 'title': title,
-        if (priority.isNotEmpty) 'priority': priority,
-        if (summary.isNotEmpty) 'summary': summary,
-        if (transcript.isNotEmpty) 'transcript': transcript,
-        if (steps.isNotEmpty) 'reproduction_steps': steps,
-        if (questions.isNotEmpty) 'questions': questions,
-        if (reply.isNotEmpty) 'customer_reply': reply,
-        if (module.isNotEmpty) 'module': module,
-        if (category.isNotEmpty) 'category': category,
-      };
+    if (title.isNotEmpty) 'title': title,
+    if (priority.isNotEmpty) 'priority': priority,
+    if (summary.isNotEmpty) 'summary': summary,
+    if (transcript.isNotEmpty) 'transcript': transcript,
+    if (steps.isNotEmpty) 'reproduction_steps': steps,
+    if (questions.isNotEmpty) 'questions': questions,
+    if (reply.isNotEmpty) 'customer_reply': reply,
+    if (module.isNotEmpty) 'module': module,
+    if (category.isNotEmpty) 'category': category,
+  };
 
   /// Reads the draft, wherever the server put it and whichever spelling it
   /// used.
@@ -120,16 +120,16 @@ class VoiceSupportDraft extends Equatable {
 
   @override
   List<Object?> get props => [
-        title,
-        module,
-        category,
-        priority,
-        summary,
-        diagnosis,
-        questions,
-        steps,
-        reply,
-      ];
+    title,
+    module,
+    category,
+    priority,
+    summary,
+    diagnosis,
+    questions,
+    steps,
+    reply,
+  ];
 }
 
 /// What `POST /api/v1/voice-support/ticket/` created.
@@ -170,8 +170,7 @@ class VoiceSupportTicket extends Equatable {
 
   /// True when the fallback fired and this is a project task, not a helpdesk
   /// ticket. Reads [target] as well as [kind] so either field alone answers.
-  bool get isProjectTask =>
-      kind == kindTask || target == targetProjectTask;
+  bool get isProjectTask => kind == kindTask || target == targetProjectTask;
 
   static const String kindTask = 'task';
   static const String targetProjectTask = 'project.task';
@@ -182,10 +181,10 @@ class VoiceSupportTicket extends Equatable {
       ticketId: id is int
           ? id
           : id is num
-              ? id.toInt()
-              // A string id is not in the contract, but costs one line to
-              // accept and would otherwise read as "nothing was created".
-              : int.tryParse(_str(id)),
+          ? id.toInt()
+          // A string id is not in the contract, but costs one line to
+          // accept and would otherwise read as "nothing was created".
+          : int.tryParse(_str(id)),
       name: _str(json['name']),
       target: _str(json['target']),
       kind: _str(json['kind']),

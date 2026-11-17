@@ -50,12 +50,10 @@ class ChatPlanBanner extends StatelessWidget {
         icon: AppIcons.warning,
         title: tr.quotaExceededTitle,
         body: isBalance
-            ? (showPaidUpsell
-                ? tr.quotaBalanceBody
-                : tr.quotaBalanceBodyPlain)
+            ? (showPaidUpsell ? tr.quotaBalanceBody : tr.quotaBalanceBodyPlain)
             : (showPaidUpsell
-                ? tr.quotaExceededBody(word)
-                : tr.quotaExceededBodyPlain(word)),
+                  ? tr.quotaExceededBody(word)
+                  : tr.quotaExceededBodyPlain(word)),
         action: showPaidUpsell
             ? GhostButton(
                 label: tr.quotaUpgradeCta,
@@ -72,8 +70,8 @@ class ChatPlanBanner extends StatelessWidget {
       final wire = identical(near, plan!.day)
           ? 'day'
           : identical(near, plan!.week)
-              ? 'week'
-              : 'month';
+          ? 'week'
+          : 'month';
       return AccentBanner(
         color: s.warning,
         icon: AppIcons.warning,
@@ -85,4 +83,3 @@ class ChatPlanBanner extends StatelessWidget {
     return const SizedBox.shrink();
   }
 }
-

@@ -76,7 +76,7 @@ class _EnvironmentMultiSelectSheetState
     // binds within one project, so listing every project's envs was wrong.
     final projects =
         context.watch<VaultCubit>().state.data.dataOrNull?.projects ??
-            const <Project>[];
+        const <Project>[];
     Project? project;
     for (final p in projects) {
       if (p.id == widget.projectId) {
@@ -97,7 +97,10 @@ class _EnvironmentMultiSelectSheetState
           ),
           child: Text(
             context.tr.envMultiSubtitle,
-            style: context.text.bodySmall?.copyWith(color: s.muted, height: AppLineHeights.compact),
+            style: context.text.bodySmall?.copyWith(
+              color: s.muted,
+              height: AppLineHeights.compact,
+            ),
           ),
         ),
         if (project != null && envs.isNotEmpty)
@@ -132,7 +135,7 @@ class _EnvironmentMultiSelectSheetState
           label: _selected.isEmpty
               ? context.tr.envMultiApply
               : '${context.tr.envMultiApply} · '
-                  '${context.tr.envMultiSelectedCount(_selected.length)}',
+                    '${context.tr.envMultiSelectedCount(_selected.length)}',
           expand: true,
           onPressed: () => Navigator.of(context).pop(_selected.toList()),
         ),
@@ -184,7 +187,11 @@ class _EnvCheckRow extends StatelessWidget {
                 ),
               ),
               child: checked
-                  ? const Icon(AppIcons.check, size: AppIconSizes.inline, color: AppColors.onBrand)
+                  ? const Icon(
+                      AppIcons.check,
+                      size: AppIconSizes.inline,
+                      color: AppColors.onBrand,
+                    )
                   : null,
             ),
             const SizedBox(width: AppSpacing.s12),
@@ -204,14 +211,14 @@ class _EnvCheckRow extends StatelessWidget {
                       if (env.readOnly)
                         MiniChip(context.tr.readOnlyBadge, color: s.muted),
                       if (env.autoApprove)
-                        MiniChip(context.tr.autoApproveBadge,
-                            color: s.warning),
+                        MiniChip(context.tr.autoApproveBadge, color: s.warning),
                       if (env.slug.isNotEmpty)
                         Text(
                           env.slug,
                           textDirection: TextDirection.ltr,
-                          style: context.text.bodySmall
-                              ?.copyWith(color: s.muted),
+                          style: context.text.bodySmall?.copyWith(
+                            color: s.muted,
+                          ),
                         ),
                     ],
                   ),

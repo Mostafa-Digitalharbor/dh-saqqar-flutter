@@ -12,8 +12,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/saqqar_logo.dart';
-import '../../../shared/widgets/sheet_drag_handle.dart';
+import '../../../shared/fig/fig.dart';
 import '../data/chat_view_models.dart';
 import 'message_token_chip.dart';
 import '../../inbox/data/artifact_downloader.dart';
@@ -21,8 +20,8 @@ import '../view/attachment_viewer_screen.dart';
 import 'artifact_pill.dart';
 import 'attachment_chip.dart';
 import 'chat_markdown.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../shared/widgets/sheet_action_row.dart';
+import '../../../core/constants/asset_paths.dart';
 
 /// Spec §8 — two distinct render paths for one message:
 ///
@@ -50,8 +49,9 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return isUser ? _UserBubble(message: message, showTime: showTime)
-                  : _AgentMessage(message: message, showTime: showTime);
+    return isUser
+        ? _UserBubble(message: message, showTime: showTime)
+        : _AgentMessage(message: message, showTime: showTime);
   }
 }
 
@@ -63,59 +63,69 @@ class _UserBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onLongPress: () => _showMessageActions(context, message),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.s14,
-              vertical: AppSpacing.s11,
-            ),
-            decoration: BoxDecoration(
-              // Cyan-soft fill matches `--brand-cyan-soft` in the
-              // mockup; opacity stepped per theme so the bubble
-              // doesn't get washed out in light mode.
-              color: s.brandCyan
-                  .withValues(alpha: context.alpha(AppAlphaPairs.tint)),
-              border: Border.all(
-                color: s.brandCyan.withValues(alpha: AppAlphas.a30),
-              ),
-              borderRadius:
-                  AppRadius.userBubbleR.resolve(Directionality.of(context)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ChatMarkdown(data: message.content, isUser: true),
-                _MessageAttachments(
-                  attachments: message.attachments,
-                  spacing: AppSpacing.s8,
-                ),
-              ],
+        Padding(
+          padding: const EdgeInsetsDirectional.only(
+            end: 46,
+            bottom: AppSpacing.s4,
+          ),
+          child: Text(
+            context.tr.youLabel,
+            style: Fig.t(
+              context,
+              size: 10,
+              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
         ),
-        if (showTime) ...[
-          const SizedBox(height: AppSpacing.s5),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: AppSpacing.s6),
-            child: MessageMeta(
-              leading: TextSpan(text: context.tr.youLabel),
-              time: message.time,
-              align: TextAlign.end,
-              style: context.text.labelSmall?.copyWith(
-                color: s.muted,
-                fontSize: AppFontSizes.metaLine,
-                fontWeight: FontWeight.w500,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Flexible(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onLongPress: () => _showMessageActions(context, message),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 11,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2373E9),
+                    borderRadius: BorderRadiusDirectional.only(
+                      topStart: Radius.circular(16),
+                      bottomStart: Radius.circular(16),
+                      bottomEnd: Radius.circular(16),
+                      topEnd: Radius.circular(4),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ChatMarkdown(data: message.content, isUser: true),
+                      _MessageAttachments(
+                        attachments: message.attachments,
+                        spacing: AppSpacing.s8,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              dotColor: s.muted.withValues(alpha: AppAlphas.a70),
             ),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.s8),
+            ClipOval(
+              child: Image.asset(
+                AssetPaths.avatar,
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -133,67 +143,95 @@ class _AgentMessage extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onLongPress: () => _copyMessage(context, message),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Meta line: SAQQÂR logo + middle-dot + (optional time).
-          // The logo is small (14 dp) so it sits inline with the
-          // adjacent muted timestamp without dominating the meta row.
-          MessageMeta(
-            leading: const WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: SaqqarLogo(height: AppLogoSizes.inline),
+          ClipOval(
+            child: Image.asset(
+              AssetPaths.orb,
+              width: 36,
+              height: 36,
+              fit: BoxFit.cover,
             ),
-            time: showTime ? message.time : null,
-            style: context.text.labelSmall?.copyWith(
-              color: s.muted,
-              fontSize: AppFontSizes.pillLabel,
-              fontWeight: FontWeight.w500,
-            ),
-            dotColor: s.muted.withValues(alpha: AppAlphas.a70),
-            // Only where the timestamp is: both belong to the message as a
-            // whole, and a cost hanging under a grouped follow-up bubble
-            // would read as the cost of that fragment alone.
-            trailing: showTime && message.tokens != null
-                ? WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: MessageTokenChip(tokens: message.tokens!),
-                  )
-                : null,
           ),
-          const SizedBox(height: AppSpacing.s6),
-          // Optional tool name (sits above the body so the user knows
-          // which tool produced this message). Bubble-less style.
-          if (message.toolName != null) ...[
-            Row(
-              mainAxisSize: MainAxisSize.min,
+          const SizedBox(width: AppSpacing.s10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(AppIcons.bolt, size: AppIconSizes.metaTight, color: s.muted),
-                const SizedBox(width: AppSpacing.s4),
-                // Flexible + ellipsis so an unusually long tool name can't
-                // push this meta row past the screen edge.
-                Flexible(
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s4),
                   child: Text(
-                    message.toolName!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.labelSmall?.copyWith(
-                      color: s.muted,
-                      fontWeight: FontWeight.w600,
-                      fontSize: AppFontSizes.chipLabel,
-                      letterSpacing: AppLetterSpacing.tight,
+                    context.tr.figSaqqarAssistant,
+                    style: Fig.t(
+                      context,
+                      size: 10,
+                      weight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.8),
                     ),
                   ),
                 ),
+                if (message.toolName != null) ...[
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        AppIcons.bolt,
+                        size: AppIconSizes.metaTight,
+                        color: s.muted,
+                      ),
+                      const SizedBox(width: AppSpacing.s4),
+                      Flexible(
+                        child: Text(
+                          message.toolName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.text.labelSmall?.copyWith(
+                            color: s.muted,
+                            fontWeight: FontWeight.w600,
+                            fontSize: AppFontSizes.chipLabel,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s6),
+                ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Fig.navyDeep.withValues(alpha: 0.9),
+                    borderRadius: const BorderRadiusDirectional.only(
+                      topStart: Radius.circular(4),
+                      topEnd: Radius.circular(16),
+                      bottomStart: Radius.circular(16),
+                      bottomEnd: Radius.circular(16),
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.07),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ChatMarkdown(data: message.content, isUser: false),
+                      _MessageAttachments(
+                        attachments: message.attachments,
+                        spacing: AppSpacing.s10,
+                      ),
+                    ],
+                  ),
+                ),
+                if (showTime && message.tokens != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.s6),
+                    child: MessageTokenChip(tokens: message.tokens!),
+                  ),
               ],
             ),
-            const SizedBox(height: AppSpacing.s6),
-          ],
-          // Body — bubble-less, just raw markdown.
-          ChatMarkdown(data: message.content, isUser: false),
-          _MessageAttachments(
-            attachments: message.attachments,
-            spacing: AppSpacing.s10,
           ),
         ],
       ),
@@ -261,11 +299,17 @@ class MessageMeta extends StatelessWidget {
         children: [
           leading,
           if (label != null) ...[
-            TextSpan(text: ' · ', style: TextStyle(color: dotColor)),
+            TextSpan(
+              text: ' · ',
+              style: TextStyle(color: dotColor),
+            ),
             TextSpan(text: label),
           ],
           if (extra != null) ...[
-            TextSpan(text: ' · ', style: TextStyle(color: dotColor)),
+            TextSpan(
+              text: ' · ',
+              style: TextStyle(color: dotColor),
+            ),
             extra,
           ],
         ],
@@ -315,10 +359,7 @@ Future<void> _showMessageActions(
   }
 }
 
-Future<void> _shareMessage(
-  BuildContext context,
-  ChatMessage message,
-) async {
+Future<void> _shareMessage(BuildContext context, ChatMessage message) async {
   if (message.content.trim().isEmpty) return;
   final subject = context.tr.shareMessageSubject;
   // Skip on the share-plus return value — Android always reports
@@ -355,19 +396,15 @@ class _MessageActionsSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SheetDragHandle(),
-            const SizedBox(height: AppSpacing.s18),
             SheetActionRow(
               icon: AppIcons.copy,
               label: tr.copyAction,
-              onTap: () =>
-                  Navigator.of(context).pop(_MessageAction.copy),
+              onTap: () => Navigator.of(context).pop(_MessageAction.copy),
             ),
             SheetActionRow(
               icon: AppIcons.share,
               label: tr.shareMessage,
-              onTap: () =>
-                  Navigator.of(context).pop(_MessageAction.share),
+              onTap: () => Navigator.of(context).pop(_MessageAction.share),
             ),
             const SizedBox(height: AppSpacing.s4),
             // Subtle hint so the user knows the source — keeps the sheet
@@ -403,10 +440,7 @@ class _MessageActionsSheet extends StatelessWidget {
 /// bury the rest of the conversation, so past a single attachment they
 /// become fixed-size cards you scroll sideways through.
 class _MessageAttachments extends StatelessWidget {
-  const _MessageAttachments({
-    required this.attachments,
-    required this.spacing,
-  });
+  const _MessageAttachments({required this.attachments, required this.spacing});
 
   final List<ChatAttachment> attachments;
 

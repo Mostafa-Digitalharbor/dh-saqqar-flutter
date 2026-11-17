@@ -112,4 +112,3 @@ class DevicesApi {
     await _dio.delete<void>(ApiEndpoints.deviceDetail(id));
   }
 }
-

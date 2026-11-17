@@ -43,7 +43,12 @@ class ChatSnapshotDiskCache {
       _dir = d;
       return d;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'could not open cache dir', error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'could not open cache dir',
+        error: e,
+        stackTrace: st,
+      );
       return null;
     }
   }
@@ -128,7 +133,8 @@ class ChatSnapshotDiskCache {
       ];
       if (files.length <= _maxFiles) return;
       files.sort(
-          (a, b) => a.statSync().modified.compareTo(b.statSync().modified));
+        (a, b) => a.statSync().modified.compareTo(b.statSync().modified),
+      );
       for (final f in files.take(files.length - _maxFiles)) {
         try {
           await f.delete();

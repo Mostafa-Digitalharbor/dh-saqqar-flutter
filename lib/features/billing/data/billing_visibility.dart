@@ -43,8 +43,10 @@ import 'package:flutter/foundation.dart';
 /// ship prices and an external purchase link straight into App Review, and the
 /// person running that command is exactly the person who won't remember. The
 /// safe value has to be the one you get by typing nothing.
-const String _kWebSubscribeRaw =
-    String.fromEnvironment('SAQQAR_WEB_SUBSCRIBE', defaultValue: '');
+const String _kWebSubscribeRaw = String.fromEnvironment(
+  'SAQQAR_WEB_SUBSCRIBE',
+  defaultValue: '',
+);
 
 /// iOS off, everything else on. See `docs/STORE_PAYMENTS_COMPLIANCE.md` §3–4:
 /// Apple enforces the anti-steering rule in 3.1.1 strictly and the exceptions
@@ -53,10 +55,10 @@ const String _kWebSubscribeRaw =
 bool get _platformDefault => !Platform.isIOS;
 
 bool get kShowWebSubscribe => switch (_kWebSubscribeRaw) {
-      'true' => true,
-      'false' => false,
-      _ => _platformDefault,
-    };
+  'true' => true,
+  'false' => false,
+  _ => _platformDefault,
+};
 
 /// Gates prices, the "Subscribe on the web" CTAs, the pricing catalogue, and
 /// the upgrade nudge on the over-quota banner.

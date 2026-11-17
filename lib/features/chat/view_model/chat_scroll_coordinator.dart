@@ -92,9 +92,9 @@ class ChatScrollCoordinator extends ChangeNotifier {
     required int Function() loadedVisibleCount,
     required ChatPagingSource Function() paging,
     required VoidCallback onLoadFailure,
-  })  : _loadedVisibleCount = loadedVisibleCount,
-        _paging = paging,
-        _onLoadFailure = onLoadFailure {
+  }) : _loadedVisibleCount = loadedVisibleCount,
+       _paging = paging,
+       _onLoadFailure = onLoadFailure {
     controller.addListener(_onScrollChanged);
     // Before the first build, so the opening frame renders the lane at the
     // width it had when the user left — which is what makes the saved offset
@@ -276,8 +276,10 @@ class ChatScrollCoordinator extends ChangeNotifier {
     // already been torn down, which is the case on the `dispose` path.
     _sampleOffset();
     if (!_hasRememberedOffset) return;
-    _savedPlaces[conversationId] =
-        LanePlace(offset: _rememberedOffset, window: window);
+    _savedPlaces[conversationId] = LanePlace(
+      offset: _rememberedOffset,
+      window: window,
+    );
   }
 
   /// Recomputes [_rememberedOffset] if the lane is still attached.
@@ -291,8 +293,9 @@ class ChatScrollCoordinator extends ChangeNotifier {
     final position = _position;
     if (position == null) return;
     _hasRememberedOffset = true;
-    _rememberedOffset =
-        position.extentBefore < _atNewestSlack ? null : position.pixels;
+    _rememberedOffset = position.extentBefore < _atNewestSlack
+        ? null
+        : position.pixels;
   }
 
   /// Jumps to the last-seen offset for this conversation (or to the latest

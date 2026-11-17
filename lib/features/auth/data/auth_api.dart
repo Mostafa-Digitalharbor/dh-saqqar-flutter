@@ -84,7 +84,8 @@ class AuthApi {
   }) async {
     const tag = 'AppleSignIn';
     final body = <String, dynamic>{'id_token': idToken};
-    final hasName = (firstName != null && firstName.isNotEmpty) ||
+    final hasName =
+        (firstName != null && firstName.isNotEmpty) ||
         (lastName != null && lastName.isNotEmpty);
     if (hasName) {
       body['user'] = {
@@ -397,4 +398,3 @@ class AuthApi {
     return AuthSession(token: token, user: AuthUser.fromJson(user));
   }
 }
-

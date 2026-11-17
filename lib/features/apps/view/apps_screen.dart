@@ -1,83 +1,69 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/i18n/app_strings.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/state/data_state.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_sizes.dart';
-import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/fig/fig.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/colored_icon_box.dart';
-import '../../../shared/widgets/data_state_refreshable_view.dart';
-import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/filter_pill.dart';
 import '../data/app_package_models.dart';
 import '../data/apps_api.dart';
 import '../view_model/apps_cubit.dart';
 import '../widgets/app_launch_dialog.dart';
-import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
 
-/// Saqqar Apps gallery (API_MOBILE_NEW_ENDPOINTS.md §1) — a grid of guided
-/// packages. Tapping a tile launches a package-tagged conversation and
-/// routes into it so the user lands on the agent's seeded opening message.
+/// Saqqar Apps gallery in the redesigned look: dark header, group chips,
+/// glass search and white package cards with a "Set up →" affordance.
 ///
-/// Reached as a full-screen detail route from Account. The [AppsCubit] is
-/// provided per-route by the router so its lifetime matches the screen.
+/// Two presentations share this screen: the **Apps tab** (title "Apps", group
+/// chips, floating nav from the shell) and the **Workspace → Saqqar Apps**
+/// page ([workspace] = true: back button, "WORKSPACE" eyebrow, no chips).
 class AppsScreen extends StatefulWidget {
-  const AppsScreen({super.key});
+  const AppsScreen({super.key, this.workspace = false});
+
+  final bool workspace;
 
   @override
   State<AppsScreen> createState() => _AppsScreenState();
 }
 
 class _AppsScreenState extends State<AppsScreen> {
-  /// Slug currently being launched — drives the blocking overlay and stops
-  /// a double-tap from firing two launch calls.
   String? _launchingSlug;
-
-  /// Active group filter, or `null` for "All". Client-side: the catalogue is
-  /// a handful of packages that already arrived in one response, so filtering
-  /// it locally is instant and works offline from the cached list.
   String? _group;
+  final _search = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => context.read<AppsCubit>().load());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => context.read<AppsCubit>().load(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
   }
 
   Future<void> _launch(SaqqarApp app) async {
-    if (_launchingSlug != null) return; // one launch at a time
-
-    // Ask WHERE before opening anything. Tapping a package used to drop the
-    // user straight into a chat whose first message was the agent asking
-    // which database to use — a question this screen can answer from a list
-    // instead of making them type a name.
+    if (_launchingSlug != null) return;
     final choice = await AppLaunchDialog.show(context, app: app);
-    // Null means dismissed. Distinct from a choice with no environment,
-    // which is the supported "decide later in chat" path.
     if (choice == null || !mounted) return;
-
     setState(() => _launchingSlug = app.slug);
     try {
       final conversationId = await context.read<AppsApi>().launch(
-            app.slug,
-            environmentId: choice.environmentId,
-          );
+        app.slug,
+        environmentId: choice.environmentId,
+      );
       if (!mounted) return;
       setState(() => _launchingSlug = null);
-      // Replace-free push so Back returns to the gallery, matching how the
-      // Chats list opens a conversation. Fire-and-forget — we don't act on
-      // the pushed route's pop result.
       unawaited(context.push(RouteNames.chatPath(conversationId)));
     } catch (e) {
       if (!mounted) return;
@@ -91,302 +77,200 @@ class _AppsScreenState extends State<AppsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(title: Text(context.tr.appsTitle)),
-      body: AmbientBackground(
-        child: Stack(
-          children: [
-            BlocBuilder<AppsCubit, DataState<List<SaqqarApp>>>(
-              builder: (context, state) {
-                return DataStateRefreshableView<List<SaqqarApp>>(
-                  state: state,
-                  onRefresh: () => context.read<AppsCubit>().refresh(),
-                  onData: (context, apps) {
-                    // No client-side trim. `GET /apps/` applies the web
-                    // gallery's own visibility gate as of 2026-08-09, so the
-                    // catalogue it sends IS the catalogue — and a package the
-                    // backend adds now appears here with no mobile release.
-                    if (apps.isEmpty) {
-                      // Scrollable so pull-to-refresh still works on empty.
-                      return ListView(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.s16,
-                          AppSpacing.s48,
-                          AppSpacing.s16,
-                          AppSpacing.s28,
-                        ),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          EmptyState(
-                            icon: AppIcons.grid,
-                            title: context.tr.appsEmptyTitle,
-                            body: context.tr.appsEmptyBody,
-                          ),
-                        ],
-                      );
-                    }
-                    // Group filter, web parity. The pill set is derived from
-                    // the data rather than hardcoded, so a group the backend
-                    // introduces gets a pill without a mobile release — and
-                    // a group it retires stops showing an empty filter.
-                    final tr = context.tr;
-                    final groups = <String>{
-                      for (final a in apps)
-                        if (a.group.trim().isNotEmpty) a.group.trim(),
-                    }.toList()
-                      // Sorted by the label the user actually reads, not by
-                      // the server's English. Sorting the raw values put the
-                      // Arabic pills in an order with no relation to their
-                      // own alphabet — المحاسبة · المالية · التكاملات, which
-                      // is A-C-F in a language that does not use A-C-F.
-                      ..sort((a, b) => tr.appGroup(a).compareTo(tr.appGroup(b)));
-                    // A selection that no longer matches anything (the
-                    // catalogue changed under a pull-to-refresh) falls back
-                    // to All instead of showing a permanently empty grid.
-                    final active =
-                        groups.contains(_group) ? _group : null;
-                    final visible = active == null
-                        ? apps
-                        : [for (final a in apps) if (a.group == active) a];
+  static const _tints = [
+    (Color(0xFFE2EAFB), Fig.blueSoft),
+    (Color(0xFFE2F5EF), Color(0xFF1FA37A)),
+    (Color(0xFFFBEFE0), Color(0xFFB8741A)),
+  ];
 
-                    return _AppsGrid(
-                      apps: visible,
-                      onLaunch: _launch,
-                      groups: groups,
-                      activeGroup: active,
-                      onGroupChanged: (g) => setState(() => _group = g),
-                    );
-                  },
-                );
-              },
-            ),
-            // Blocking overlay while a launch round-trips. Non-dismissible;
-            // the launch either routes away or restores the grid on error.
-            if (_launchingSlug != null)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: AppColors.scrimBase.withValues(alpha: AppAlphas.a35),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(
-                          strokeWidth: AppStrokeWidths.spinnerThick,
-                          color: s.brandCyan,
-                        ),
-                        const SizedBox(height: AppSpacing.s14),
-                        Text(
-                          context.tr.appsOpening,
-                          style: context.text.bodyMedium
-                              ?.copyWith(color: AppColors.onBrand),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+  IconData _icon(SaqqarApp a) {
+    final k = '${a.slug} ${a.name}'.toLowerCase();
+    if (k.contains('zatca') || k.contains('invoice')) {
+      return LucideIcons.fileText;
+    }
+    if (k.contains('whatsapp') || k.contains('chat')) {
+      return LucideIcons.messageSquare;
+    }
+    if (k.contains('chart') || k.contains('account')) {
+      return LucideIcons.building2;
+    }
+    if (k.contains('stock') || k.contains('inventory')) {
+      return LucideIcons.package;
+    }
+    if (k.contains('pulse') || k.contains('report')) {
+      return LucideIcons.chartNoAxesColumn;
+    }
+    return LucideIcons.layoutGrid;
   }
-}
-
-class _AppsGrid extends StatelessWidget {
-  const _AppsGrid({
-    required this.apps,
-    required this.onLaunch,
-    required this.groups,
-    required this.activeGroup,
-    required this.onGroupChanged,
-  });
-
-  final List<SaqqarApp> apps;
-  final ValueChanged<SaqqarApp> onLaunch;
-
-  /// Distinct groups present in the catalogue, sorted. Empty when the
-  /// backend sends none, in which case the pill row is omitted entirely
-  /// rather than showing a lone "All" that filters nothing.
-  final List<String> groups;
-
-  /// `null` = All.
-  final String? activeGroup;
-  final ValueChanged<String?> onGroupChanged;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Two columns on phones, three once there's room (tablets / large
-        // phones landscape). Keeps tiles a comfortable tap size either way.
-        final crossAxisCount = constraints.maxWidth >= 640 ? 3 : 2;
-
-        // A grid cell's height comes from its width via the aspect ratio, so
-        // it is fixed with respect to the user's text scale — but the tile's
-        // content is not. The 44 px icon, the two-line name and the meta row
-        // are all unshrinkable, and at 1.3× text they need ~143 px inside the
-        // 138 px cell a 320 px-wide screen produces: a RenderFlex overflow on
-        // the smallest supported phone with the OS text slider two notches up.
-        //
-        // Dividing the ratio by the text scale makes the cell grow at exactly
-        // the rate the copy inside it does. Clamped at 1.6 because the tile
-        // stops gaining anything past that — `Expanded` has already absorbed
-        // the slack — and an unclamped 2.0+ accessibility setting would leave
-        // one tile taller than the viewport.
-        final textScale =
-            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6);
-        final grid = GridView.builder(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.s16,
-            AppSpacing.s16,
-            AppSpacing.s16,
-            AppSpacing.s28,
-          ),
-          physics: const AlwaysScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.82 / textScale,
-          ),
-          itemCount: apps.length,
-          itemBuilder: (context, i) =>
-              _AppTile(app: apps[i], onTap: () => onLaunch(apps[i])),
-        );
-
-        // Nothing to filter with — one group, or none at all. A pill row
-        // offering only "All" is a control that cannot do anything.
-        if (groups.length < 2) return grid;
-
-        return Column(
-          children: [
-            // Pinned above the grid, as on web, so the active filter stays
-            // visible while the user scrolls the results.
-            SizedBox(
-              height: AppControlSizes.filterStripHeight,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  AppSpacing.s10,
-                  AppSpacing.s16,
-                  AppSpacing.s6,
-                ),
-                children: [
-                  FilterPill(
-                    label: context.tr.appGroupAll,
-                    selected: activeGroup == null,
-                    onTap: () => onGroupChanged(null),
-                  ),
-                  for (final g in groups) ...[
-                    const SizedBox(width: AppSpacing.s8),
-                    FilterPill(
-                      // Translated by value — the taxonomy is a closed set,
-                      // so the pills follow the UI language even though the
-                      // server sends them in English only.
-                      label: context.tr.appGroup(g),
-                      selected: activeGroup == g,
-                      onTap: () => onGroupChanged(g),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Expanded(child: grid),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _AppTile extends StatelessWidget {
-  const _AppTile({required this.app, required this.onTap});
-
-  final SaqqarApp app;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final accent = _parseAccent(app.accent, s.brandCyan);
-    return Material(
-      color: s.cardBg,
-      borderRadius: AppRadius.cardR,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.s14),
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.cardR,
-            border: Border.all(color: s.cardBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final tr = context.tr;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: figLightStatusBar,
+      child: Scaffold(
+        backgroundColor: Fig.pageGrey,
+        body: FigBackdrop(
+          child: Stack(
             children: [
-              // Accent-tinted icon square. Uses a group-mapped Material icon
-              // (the server's inline SVG isn't rendered yet), tinted with the
-              // server-supplied accent so each tile keeps its brand colour.
-              ColoredIconBox(
-                icon: _iconForGroup(app.group),
-                color: accent,
-                size: AppIconSizes.feature,
-                radius: AppRadius.button,
-                iconSize: AppIconSizes.boxGlyphLarge,
-              ),
-              const SizedBox(height: AppSpacing.s12),
-              // Localized through the app's slug, falling back to the
-              // server's English. `/api/v1/apps/` serves one language, so
-              // without this the whole grid stays English on an Arabic phone.
-              Text(
-                app.displayName(context.tr),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.s4),
-              Expanded(
-                child: Text(
-                  app.displayTagline(context.tr),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.bodySmall?.copyWith(color: s.muted),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s8),
-              Row(
-                children: [
-                  // The GROUP, matching the web card's chip (FINANCE /
-                  // INTEGRATIONS / ACCOUNTING) and the filter pills above.
-                  // Falls back to `category` when the server sends no group,
-                  // so the meta row never goes blank.
-                  if (app.group.isNotEmpty || app.category.isNotEmpty)
-                    Expanded(
-                      child: Text(
-                        app.group.isNotEmpty
-                            ? app.displayGroup(context.tr).toUpperCase()
-                            : app.displayCategory(context.tr),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.text.labelSmall?.copyWith(
-                          color: accent,
-                          fontWeight: FontWeight.w600,
+              SafeArea(
+                bottom: false,
+                child: BlocBuilder<AppsCubit, DataState<List<SaqqarApp>>>(
+                  builder: (context, state) {
+                    final apps = state.dataOrPrevious ?? const <SaqqarApp>[];
+                    final groups =
+                        <String>{
+                          for (final a in apps)
+                            if (a.group.trim().isNotEmpty) a.group.trim(),
+                        }.toList()..sort(
+                          (a, b) => tr.appGroup(a).compareTo(tr.appGroup(b)),
+                        );
+                    final active = groups.contains(_group) ? _group : null;
+                    final q = _search.text.trim().toLowerCase();
+                    final visible = [
+                      for (final a in apps)
+                        if ((active == null || a.group == active) &&
+                            (q.isEmpty ||
+                                a.displayName(tr).toLowerCase().contains(q) ||
+                                a.displayTagline(tr).toLowerCase().contains(q)))
+                          a,
+                    ];
+                    return FigTopFade(
+                      child: RefreshIndicator(
+                        onRefresh: () => context.read<AppsCubit>().refresh(),
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 140),
+                          children: [
+                            if (widget.workspace)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: AppSpacing.s18,
+                                  left: 0,
+                                ),
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Transform.translate(
+                                    offset: const Offset(-12, 0),
+                                    child: FigBackButton(
+                                      onTap: () => context.canPop()
+                                          ? context.pop()
+                                          : context.go(RouteNames.homePath),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              const SizedBox(height: 54),
+                            if (widget.workspace)
+                              Text(
+                                context.tr.figWorkspace2,
+                                style: Fig.t(
+                                  context,
+                                  size: 9,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            Text(
+                              widget.workspace
+                                  ? context.tr.figSaqqarApps
+                                  : context.tr.figApps,
+                              style: Fig.t(
+                                context,
+                                size: widget.workspace ? 26 : 32,
+                                weight: widget.workspace
+                                    ? FontWeight.w600
+                                    : FontWeight.w700,
+                                color: Colors.white,
+                                height: 1.2,
+                              ),
+                            ),
+                            if (!widget.workspace) ...[
+                              Text(
+                                context.tr.figReadyMadeSaqqarAgentsForCommon,
+                                style: Fig.t(
+                                  context,
+                                  size: 9.5,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.s18),
+                              if (groups.length > 1)
+                                SizedBox(
+                                  height: 36,
+                                  child: ListView(
+                                    scrollDirection: Axis.horizontal,
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      _Chip(
+                                        label: tr.appGroupAll,
+                                        active: active == null,
+                                        onTap: () =>
+                                            setState(() => _group = null),
+                                      ),
+                                      for (final g in groups)
+                                        _Chip(
+                                          label: tr.appGroup(g),
+                                          active: active == g,
+                                          onTap: () =>
+                                              setState(() => _group = g),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              SizedBox(height: groups.length > 1 ? 24 : 6),
+                            ] else
+                              const SizedBox(height: AppSpacing.s28),
+                            _SearchPill(
+                              controller: _search,
+                              onChanged: (_) => setState(() {}),
+                            ),
+                            const SizedBox(height: AppSpacing.s18),
+                            if (state is DataLoading<List<SaqqarApp>> &&
+                                apps.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 60),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            else if (visible.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 50),
+                                child: Center(
+                                  child: Text(
+                                    tr.appsEmptyTitle,
+                                    style: Fig.t(
+                                      context,
+                                      size: 14,
+                                      color: Fig.muted,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              for (var i = 0; i < visible.length; i++)
+                                _AppCard(
+                                  title: visible[i].displayName(tr),
+                                  body: visible[i].displayTagline(tr),
+                                  icon: _icon(visible[i]),
+                                  tint: _tints[i % _tints.length],
+                                  onTap: () => _launch(visible[i]),
+                                ),
+                          ],
                         ),
                       ),
-                    ),
-                  if (app.envRequired)
-                    Tooltip(
-                      message: context.tr.appsNeedsEnv,
-                      child: Icon(AppIcons.server, size: AppIconSizes.inline, color: s.muted),
-                    ),
-                ],
+                    );
+                  },
+                ),
               ),
+              if (_launchingSlug != null)
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                ),
             ],
           ),
         ),
@@ -395,57 +279,205 @@ class _AppTile extends StatelessWidget {
   }
 }
 
-/// Group taxonomy → a definitely-present icon. The server also sends an
-/// inline SVG, but the app bundles no SVG renderer, so this keeps each tile
-/// visually distinct without a new dependency.
-///
-/// Keyed through [AppStrings.taxonomyKey], the same normalization the label
-/// lookup uses — a padded or differently-cased `Finance` must not translate
-/// correctly and then draw the generic grid glyph.
-IconData _iconForGroup(String group) {
-  switch (AppStrings.taxonomyKey(group)) {
-    case 'accounting':
-      return AppIcons.calculator;
-    case 'finance':
-      return AppIcons.bank;
-    case 'integrations':
-      return AppIcons.puzzle;
-    // The rest of the ERP taxonomy the catalogue can grow into. Same reason
-    // the labels are pre-translated: a new group otherwise arrives as a wall
-    // of identical grid glyphs, which is what the tile icon exists to avoid.
-    case 'sales':
-    case 'crm':
-      return AppIcons.barChart;
-    case 'purchasing':
-    case 'inventory':
-    case 'manufacturing':
-      return AppIcons.projects;
-    case 'hr':
-      return AppIcons.user;
-    case 'marketing':
-      return AppIcons.send;
-    case 'operations':
-    case 'automation':
-      return AppIcons.bolt;
-    case 'productivity':
-      return AppIcons.sparkles;
-    case 'reporting':
-    case 'data':
-      return AppIcons.table;
-    case 'compliance':
-    case 'security':
-      return AppIcons.shieldCheck;
-    default:
-      return AppIcons.grid;
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label, required this.active, required this.onTap});
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: AppSpacing.s8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? null : const Color(0xFFE4E6EE),
+            gradient: active ? Fig.primaryGradient : null,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Text(
+            label,
+            style: Fig.t(
+              context,
+              size: 12.5,
+              color: active ? Colors.white : const Color(0xFF4A4F63),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
-/// Parses a `#RRGGBB` (or `#AARRGGBB`) hex string into a [Color], falling
-/// back to [fallback] on anything malformed rather than throwing.
-Color _parseAccent(String hex, Color fallback) {
-  var h = hex.trim().replaceFirst('#', '');
-  if (h.length == 6) h = 'FF$h';
-  if (h.length != 8) return fallback;
-  final value = int.tryParse(h, radix: 16);
-  return value == null ? fallback : Color(value);
+class _SearchPill extends StatelessWidget {
+  const _SearchPill({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 54,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s18),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.24),
+        borderRadius: BorderRadius.circular(27),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            LucideIcons.search,
+            size: 18,
+            color: Colors.white.withValues(alpha: 0.85),
+          ),
+          const SizedBox(width: AppSpacing.s12),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              cursorColor: Colors.white,
+              style: Fig.t(context, size: 14, color: Colors.white),
+              decoration: InputDecoration(
+                isCollapsed: true,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                hintText: context.tr.figSearch,
+                hintStyle: Fig.t(
+                  context,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: 0.92),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppCard extends StatelessWidget {
+  const _AppCard({
+    required this.title,
+    required this.body,
+    required this.icon,
+    required this.tint,
+    required this.onTap,
+  });
+
+  final String title;
+  final String body;
+  final IconData icon;
+  final (Color, Color) tint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s18),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 18, 20, 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: const Color(0xFFE3E7F4)),
+            boxShadow: [
+              BoxShadow(
+                color: Fig.slate.withValues(alpha: 0.10),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: tint.$1,
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(icon, size: 20, color: tint.$2),
+                  ),
+                  const SizedBox(width: AppSpacing.s14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Fig.t(
+                            context,
+                            size: 13,
+                            weight: FontWeight.w700,
+                            color: Fig.ink,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.s7),
+                        Text(
+                          body,
+                          style: Fig.t(
+                            context,
+                            size: 12.5,
+                            color: Fig.mutedGrey,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s8),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        context.tr.figSetUp,
+                        style: Fig.t(
+                          context,
+                          size: 9.5,
+                          weight: FontWeight.w700,
+                          color: Fig.blue,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s6),
+                    Icon(
+                      Directionality.of(context) == TextDirection.rtl
+                          ? LucideIcons.arrowLeft
+                          : LucideIcons.arrowRight,
+                      size: 13,
+                      color: Fig.blue,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

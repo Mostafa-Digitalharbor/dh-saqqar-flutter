@@ -77,12 +77,12 @@ class PlanFeatures extends Equatable {
   /// Generic lookup by wire key — lets callers gate on a server-named
   /// feature without a hardcoded field reference. Unknown keys are `false`.
   bool enabled(String key) => switch (key) {
-        'voice' => voice,
-        'postgres' => postgres,
-        'github' => github,
-        'server_shell' => serverShell,
-        _ => flags[key] ?? false,
-      };
+    'voice' => voice,
+    'postgres' => postgres,
+    'github' => github,
+    'server_shell' => serverShell,
+    _ => flags[key] ?? false,
+  };
 
   /// Whether the server expressed an opinion about [key] at all.
   bool has(String key) => flags.containsKey(key);
@@ -200,18 +200,18 @@ class PlanSnapshot extends Equatable {
 
   @override
   List<Object?> get props => [
-        slug,
-        name,
-        exempt,
-        day,
-        week,
-        month,
-        features,
-        status,
-        cycle,
-        expiresAt,
-        tokenBalance,
-      ];
+    slug,
+    name,
+    exempt,
+    day,
+    week,
+    month,
+    features,
+    status,
+    cycle,
+    expiresAt,
+    tokenBalance,
+  ];
 }
 
 /// Why a send is blocked: a usage window that will roll over, or a token

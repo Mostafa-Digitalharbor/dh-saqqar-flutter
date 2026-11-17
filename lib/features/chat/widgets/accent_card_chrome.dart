@@ -42,7 +42,12 @@ class AccentCardChrome extends StatelessWidget {
   /// Inset for the card body. Larger on the start edge because the accent rail
   /// occupies the first 4 px and the text would otherwise crowd it.
   static const EdgeInsetsDirectional contentPadding =
-      EdgeInsetsDirectional.fromSTEB(AppSpacing.s18, AppSpacing.s14, AppSpacing.s14, AppSpacing.s14);
+      EdgeInsetsDirectional.fromSTEB(
+        AppSpacing.s18,
+        AppSpacing.s14,
+        AppSpacing.s14,
+        AppSpacing.s14,
+      );
 
   /// Width of the accent rail.
   static const double railWidth = 4;
@@ -52,7 +57,9 @@ class AccentCardChrome extends StatelessWidget {
     final s = context.saqqar;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelOpaque)),
+        color: s.surface.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelOpaque),
+        ),
         borderRadius: AppRadius.bubbleR,
         border: Border.all(color: s.cardBorder),
       ),

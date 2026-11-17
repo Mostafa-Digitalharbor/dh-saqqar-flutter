@@ -44,7 +44,11 @@ class SocialAuthButtons extends StatelessWidget {
           const SizedBox(height: AppSpacing.s12),
           _SocialButton(
             label: tr.authContinueWithApple,
-            logo: Icon(AppIcons.apple, size: AppIconSizes.socialLogo, color: s.text),
+            logo: Icon(
+              AppIcons.apple,
+              size: AppIconSizes.socialLogo,
+              color: s.text,
+            ),
             onPressed: loading ? null : cubit.continueWithApple,
           ),
         ],
@@ -70,8 +74,9 @@ class _SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final disabled = onPressed == null;
-    final fillColor =
-        s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSoft));
+    final fillColor = s.surface2.withValues(
+      alpha: context.alpha(AppAlphaPairs.panelSoft),
+    );
 
     return Semantics(
       button: true,
@@ -82,7 +87,9 @@ class _SocialButton extends StatelessWidget {
         child: TappableSurface(
           onTap: onPressed,
           child: Container(
-            constraints: const BoxConstraints(minHeight: AppControlSizes.socialButtonMin),
+            constraints: const BoxConstraints(
+              minHeight: AppControlSizes.socialButtonMin,
+            ),
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s16,
               vertical: AppSpacing.s8,
@@ -155,12 +162,7 @@ class _GoogleLogoPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     final stroke = w * 0.22;
-    final rect = Rect.fromLTWH(
-      stroke / 2,
-      stroke / 2,
-      w - stroke,
-      h - stroke,
-    );
+    final rect = Rect.fromLTWH(stroke / 2, stroke / 2, w - stroke, h - stroke);
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
@@ -188,10 +190,7 @@ class _GoogleLogoPainter extends CustomPainter {
     final bar = Paint()
       ..color = _blue
       ..style = PaintingStyle.fill;
-    canvas.drawRect(
-      Rect.fromLTWH(w * 0.52, h * 0.40, w * 0.46, stroke),
-      bar,
-    );
+    canvas.drawRect(Rect.fromLTWH(w * 0.52, h * 0.40, w * 0.46, stroke), bar);
   }
 
   @override

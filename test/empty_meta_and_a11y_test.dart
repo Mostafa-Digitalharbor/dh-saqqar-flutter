@@ -22,7 +22,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
-import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/routing/route_names.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/push/data/devices_api.dart';
@@ -54,25 +53,22 @@ GoRouter _shellRouter() {
   Widget body(String label) =>
       Scaffold(body: Center(child: Text('$label-body')));
   return GoRouter(
-    initialLocation: RouteNames.chatsPath,
+    initialLocation: RouteNames.homePath,
     routes: [
       ShellRoute(
         builder: (_, __, child) => HomeShell(child: child),
         routes: [
           GoRoute(
-            path: RouteNames.chatsPath,
-            name: RouteNames.chats,
-            builder: (_, __) => body('chats'),
+            path: RouteNames.homePath,
+            builder: (_, __) => body('home'),
           ),
           GoRoute(
-            path: RouteNames.vaultPath,
-            name: RouteNames.vault,
-            builder: (_, __) => body('vault'),
+            path: RouteNames.appsPath,
+            builder: (_, __) => body('apps'),
           ),
           GoRoute(
-            path: RouteNames.accountPath,
-            name: RouteNames.account,
-            builder: (_, __) => body('account'),
+            path: RouteNames.tasksPath,
+            builder: (_, __) => body('tasks'),
           ),
         ],
       ),
@@ -150,20 +146,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tr = AppStrings(const Locale('en'));
-      // Chats is the selected tab, so its label renders visually anyway.
-      // The other two are the regression: icon-only, no accessible name.
-      expect(find.bySemanticsLabel(tr.tabChats), findsWidgets);
-      expect(
-        find.bySemanticsLabel(tr.tabVault),
-        findsWidgets,
-        reason: 'unselected Companies tab exposes no accessible name',
-      );
-      expect(
-        find.bySemanticsLabel(tr.tabAccount),
-        findsWidgets,
-        reason: 'unselected Account tab exposes no accessible name',
-      );
+      // Home is the selected tab; the rest are icon-only pills — the
+      // regression this guards is an unlabelled icon button.
+      for (final label in ['Home', 'Chat', 'Apps', 'Tasks']) {
+        expect(
+          find.bySemanticsLabel(label),
+          findsWidgets,
+          reason: 'the $label tab exposes no accessible name',
+        );
+      }
 
       handle.dispose();
     });

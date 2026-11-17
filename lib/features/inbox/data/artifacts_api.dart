@@ -35,4 +35,3 @@ class ArtifactsApi {
     return Artifact.fromJson(obj);
   }
 }
-

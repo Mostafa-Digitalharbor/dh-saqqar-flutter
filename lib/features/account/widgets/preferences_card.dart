@@ -18,11 +18,7 @@ import '../../../core/theme/app_sizes.dart';
 /// Theme + language preferences card. Reads/writes the two top-level
 /// Cubits ([ThemeCubit], [LocaleCubit]).
 class PreferencesCard extends StatelessWidget {
-  const PreferencesCard({
-    super.key,
-    required this.mode,
-    required this.locale,
-  });
+  const PreferencesCard({super.key, required this.mode, required this.locale});
 
   final AppThemeMode mode;
   final Locale? locale;
@@ -97,8 +93,8 @@ class PreferencesCard extends StatelessWidget {
             onSelectionChanged: (selection) {
               final value = selection.first;
               context.read<LocaleCubit>().setLocale(
-                    value == UiStrings.localeSystemCode ? null : Locale(value),
-                  );
+                value == UiStrings.localeSystemCode ? null : Locale(value),
+              );
             },
           ),
           const SizedBox(height: AppSpacing.s18),
@@ -111,20 +107,23 @@ class PreferencesCard extends StatelessWidget {
           // can unlock before it's saved.
           BlocBuilder<AppLockCubit, AppLockState>(
             builder: (context, lock) {
-              return SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                secondary: Icon(AppIcons.lock, color: s.brandCyan),
-                title: Text(context.tr.appLockSettingTitle),
-                subtitle: Text(
-                  lock.available
-                      ? context.tr.appLockSettingSubtitle
-                      : context.tr.appLockUnavailable,
-                  style: context.text.bodySmall?.copyWith(color: s.muted),
+              return Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: Icon(AppIcons.lock, color: s.brandCyan),
+                  title: Text(context.tr.appLockSettingTitle),
+                  subtitle: Text(
+                    lock.available
+                        ? context.tr.appLockSettingSubtitle
+                        : context.tr.appLockUnavailable,
+                    style: context.text.bodySmall?.copyWith(color: s.muted),
+                  ),
+                  value: lock.enabled,
+                  onChanged: lock.available
+                      ? (value) => _toggleLock(context, value)
+                      : null,
                 ),
-                value: lock.enabled,
-                onChanged: lock.available
-                    ? (value) => _toggleLock(context, value)
-                    : null,
               );
             },
           ),
@@ -132,16 +131,19 @@ class PreferencesCard extends StatelessWidget {
           // the backend stops sending; ON re-registers it.
           BlocBuilder<NotificationsSettingsCubit, bool>(
             builder: (context, enabled) {
-              return SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                secondary: Icon(AppIcons.bell, color: s.brandCyan),
-                title: Text(context.tr.notificationsSettingTitle),
-                subtitle: Text(
-                  context.tr.notificationsSettingSubtitle,
-                  style: context.text.bodySmall?.copyWith(color: s.muted),
+              return Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: Icon(AppIcons.bell, color: s.brandCyan),
+                  title: Text(context.tr.notificationsSettingTitle),
+                  subtitle: Text(
+                    context.tr.notificationsSettingSubtitle,
+                    style: context.text.bodySmall?.copyWith(color: s.muted),
+                  ),
+                  value: enabled,
+                  onChanged: (value) => _toggleNotifications(context, value),
                 ),
-                value: enabled,
-                onChanged: (value) => _toggleNotifications(context, value),
               );
             },
           ),
@@ -157,9 +159,9 @@ class PreferencesCard extends StatelessWidget {
     if (value) {
       final code =
           context.read<LocaleCubit>().state?.languageCode ==
-                  UiStrings.localeArabicCode
-              ? UiStrings.localeArabicCode
-              : UiStrings.localeEnglishCode;
+              UiStrings.localeArabicCode
+          ? UiStrings.localeArabicCode
+          : UiStrings.localeEnglishCode;
       await push.start(localeCode: code);
     } else {
       await push.stop();
@@ -170,9 +172,10 @@ class PreferencesCard extends StatelessWidget {
     // Resolved before the await because `context.tr` is unsafe once the
     // cubit's state change has rebuilt this subtree.
     final failedMsg = context.tr.appLockEnableFailed;
-    final enabled = await context
-        .read<AppLockCubit>()
-        .setEnabled(value, reason: context.tr.appLockReason);
+    final enabled = await context.read<AppLockCubit>().setEnabled(
+      value,
+      reason: context.tr.appLockReason,
+    );
     // Turning ON requires a successful auth; surface a toast if it didn't
     // take so the switch snapping back isn't mysterious. No messenger
     // capture needed — `AppToast.show` resolves one itself and no-ops when

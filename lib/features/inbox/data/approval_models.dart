@@ -202,7 +202,8 @@ class Approval extends Equatable {
 
   factory Approval.fromJson(Map<String, dynamic> json) {
     final ml = json['model_label'];
-    final payload = (json['payload'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final payload =
+        (json['payload'] as Map?)?.cast<String, dynamic>() ?? const {};
     // Documented as a field on the approval object; also accepted from the
     // payload, because every other delete-specific value (record_ids, model)
     // lives there and one of the two placements will be what actually ships.
@@ -221,37 +222,40 @@ class Approval extends Equatable {
               json['conversation'] as Map<String, dynamic>,
             )
           : null,
-      modelLabelEn:
-          ml is Map ? ml[UiStrings.localeEnglishCode] as String? : null,
-      modelLabelAr:
-          ml is Map ? ml[UiStrings.localeArabicCode] as String? : null,
+      modelLabelEn: ml is Map
+          ? ml[UiStrings.localeEnglishCode] as String?
+          : null,
+      modelLabelAr: ml is Map
+          ? ml[UiStrings.localeArabicCode] as String?
+          : null,
       recordCount: (json['record_count'] as num?)?.toInt(),
       // Non-String (or blank) means "the server didn't tell us", and is
       // normalized to null so `decide` omits the key entirely rather than
       // posting an empty confirmation the server would reject anyway.
-      confirmPhrase:
-          phrase is String && phrase.trim().isNotEmpty ? phrase.trim() : null,
+      confirmPhrase: phrase is String && phrase.trim().isNotEmpty
+          ? phrase.trim()
+          : null,
       batchScoped: payload['batch_scope'] == true,
     );
   }
 
   @override
   List<Object?> get props => [
-        id,
-        actionType,
-        status,
-        prompt,
-        payload,
-        resolutionNote,
-        createdAt,
-        resolvedAt,
-        conversation,
-        modelLabelEn,
-        modelLabelAr,
-        recordCount,
-        confirmPhrase,
-        batchScoped,
-      ];
+    id,
+    actionType,
+    status,
+    prompt,
+    payload,
+    resolutionNote,
+    createdAt,
+    resolvedAt,
+    conversation,
+    modelLabelEn,
+    modelLabelAr,
+    recordCount,
+    confirmPhrase,
+    batchScoped,
+  ];
 
   static DateTime? _parseDate(Object? value) {
     if (value is String && value.isNotEmpty) {

@@ -57,7 +57,6 @@ import 'package:saqqar_app/shared/widgets/primary_button.dart';
 import 'package:saqqar_app/shared/widgets/responsive_content.dart';
 import 'package:saqqar_app/shared/widgets/saqqar_logo.dart';
 import 'package:saqqar_app/shared/widgets/sheet_action_row.dart';
-import 'package:saqqar_app/shared/widgets/sheet_drag_handle.dart';
 import 'package:saqqar_app/shared/widgets/skeleton_block.dart';
 import 'package:saqqar_app/shared/widgets/stat_tile.dart';
 import 'package:saqqar_app/shared/widgets/status_pill.dart';
@@ -197,7 +196,6 @@ void main() {
           color: AppColors.brandCyan,
           child: SizedBox(height: 80, width: double.infinity),
         ),
-    'SheetDragHandle': () => const SheetDragHandle(),
     'StatTile': () => const StatTile(value: '24,515', label: kLongArabic),
     'StatusPill': () => const StatusPill(label: kLongEnglish),
     'StatusPill pulsing': () => const StatusPill(

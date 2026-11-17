@@ -79,13 +79,13 @@ class Attachment extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        originalName,
-        mimeType,
-        sizeBytes,
-        kind,
-        status,
-        url,
-        createdAt,
-      ];
+    id,
+    originalName,
+    mimeType,
+    sizeBytes,
+    kind,
+    status,
+    url,
+    createdAt,
+  ];
 }

@@ -39,8 +39,10 @@ class PreviewBanner extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: context.text.labelSmall
-                  ?.copyWith(color: s.warning, height: AppLineHeights.compact),
+              style: context.text.labelSmall?.copyWith(
+                color: s.warning,
+                height: AppLineHeights.compact,
+              ),
             ),
           ),
         ],

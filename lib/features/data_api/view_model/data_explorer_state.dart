@@ -31,14 +31,14 @@ enum DataOp {
   /// vocabulary (technical terms), so they stay English in both locales — same
   /// convention as the rest of `UiStrings`.
   String get label => switch (this) {
-        DataOp.count => 'count',
-        DataOp.search => 'search',
-        DataOp.readGroup => 'read-group',
-        DataOp.read => 'read',
-        DataOp.fields => 'fields',
-        DataOp.sql => 'sql',
-        DataOp.reportEntities => 'report-entities',
-      };
+    DataOp.count => 'count',
+    DataOp.search => 'search',
+    DataOp.readGroup => 'read-group',
+    DataOp.read => 'read',
+    DataOp.fields => 'fields',
+    DataOp.sql => 'sql',
+    DataOp.reportEntities => 'report-entities',
+  };
 
   /// A starter request body shown when the op is picked. Guidance only —
   /// the user edits it; the exact keys should be confirmed against
@@ -135,13 +135,13 @@ class DataExplorerState extends Equatable {
 
   @override
   List<Object?> get props => [
-        environments,
-        loadingEnvs,
-        selectedEnvId,
-        operation,
-        running,
-        result,
-        envError,
-        queryError,
-      ];
+    environments,
+    loadingEnvs,
+    selectedEnvId,
+    operation,
+    running,
+    result,
+    envError,
+    queryError,
+  ];
 }

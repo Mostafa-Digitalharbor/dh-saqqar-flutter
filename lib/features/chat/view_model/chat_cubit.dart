@@ -13,6 +13,10 @@ import '../../conversations/data/conversations_repository.dart';
 import '../../inbox/data/approval_models.dart';
 import '../../../core/state/action_outcome.dart';
 import 'chat_state.dart';
+part 'chat_cubit_adopt.dart';
+part 'chat_cubit_polling.dart';
+part 'chat_cubit_older.dart';
+part 'chat_cubit_internals.dart';
 
 /// ViewModel for a single chat screen.
 ///
@@ -33,11 +37,15 @@ import 'chat_state.dart';
 class ChatCubit extends Cubit<ChatState>
     with ActionOutcomeCubit<ChatState>
     implements QuietBloc {
+  /// `emit` for the part-file extensions, which cannot call the `@protected`
+  /// original.
+  void _emit(ChatState s) => emit(s);
+
   ChatCubit({
     required this.conversationId,
     required ConversationsRepository repository,
-  })  : _repo = repository,
-        super(const ChatState());
+  }) : _repo = repository,
+       super(const ChatState());
 
   static const _tag = 'ChatCubit';
   static const _runningInterval = Duration(milliseconds: 1500);
@@ -218,10 +226,12 @@ class ChatCubit extends Cubit<ChatState>
         state.data.dataOrNull ?? _repo.cachedSnapshot(conversationId);
     if (existing != null) {
       _oldestCursor = existing.oldestCursor;
-      emit(state.copyWith(
-        data: DataSuccess(existing),
-        hasMoreOlder: _hasMoreFrom(existing),
-      ));
+      emit(
+        state.copyWith(
+          data: DataSuccess(existing),
+          hasMoreOlder: _hasMoreFrom(existing),
+        ),
+      );
     } else {
       // Show the loading skeleton IMMEDIATELY (synchronously), BEFORE the
       // disk read — otherwise the screen sits on `DataIdle` during the
@@ -233,10 +243,12 @@ class ChatCubit extends Cubit<ChatState>
       final disk = await _repo.diskCachedSnapshot(conversationId);
       if (disk != null && state.data.dataOrNull == null) {
         _oldestCursor = disk.oldestCursor;
-        emit(state.copyWith(
-          data: DataSuccess(disk),
-          hasMoreOlder: _hasMoreFrom(disk),
-        ));
+        emit(
+          state.copyWith(
+            data: DataSuccess(disk),
+            hasMoreOlder: _hasMoreFrom(disk),
+          ),
+        );
       }
     }
     try {
@@ -279,34 +291,20 @@ class ChatCubit extends Cubit<ChatState>
       if (!_hasPagedBack) unawaited(prefetchOlder());
     } catch (e, st) {
       AppLogger.error(_tag, 'load() failed', error: e, stackTrace: st);
-      emit(state.copyWith(
-        data: DataFailure<ConversationSnapshot>(
-          error: ApiErrorMapper.toFailure(e),
-          previous: state.data.dataOrNull,
+      emit(
+        state.copyWith(
+          data: DataFailure<ConversationSnapshot>(
+            error: ApiErrorMapper.toFailure(e),
+            previous: state.data.dataOrNull,
+          ),
+          actionFailure: ChatActionFailure(
+            action: ChatAction.load,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-        actionFailure: ChatActionFailure(
-          action: ChatAction.load,
-          failure: ApiErrorMapper.toFailure(e),
-        ),
-      ));
+      );
     }
   }
-
-  /// Whether older history exists, straight from the server's
-  /// `has_more_before`.
-  ///
-  /// This used to be inferred — "did the page come back as full as we asked?"
-  /// — which is only a proxy, and it broke at the server's 500-row `limit`
-  /// ceiling: a capped response looks identical to "that's the whole
-  /// transcript", so paging reported *done* while thousands of messages
-  /// remained. The server knows the answer; ask it.
-  ///
-  /// Falls back to the old heuristic only for a snapshot decoded from an
-  /// on-disk cache written before this field existed.
-  bool _hasMoreFrom(ConversationSnapshot snapshot) =>
-      snapshot.oldestCursor != null
-          ? snapshot.hasMoreBefore
-          : snapshot.messages.length >= _initialLimit;
 
   /// Manual refresh — the polling tick's code path, asked WITHOUT `?since=`.
   ///
@@ -343,59 +341,6 @@ class ChatCubit extends Cubit<ChatState>
   Future<bool> setTaskPrep(bool value) =>
       _patchConversationFlag(taskPrep: value);
 
-  Future<bool> _patchConversationFlag({
-    bool? autoApprove,
-    bool? taskPrep,
-  }) async {
-    final current = state.data.dataOrNull;
-    if (current == null) return false;
-    // Optimistic: paint the new value in the snapshot before the
-    // server round-trip lands so the toggle responds instantly.
-    final optimistic = current.copyWith(
-      conversation: current.conversation.copyWith(
-        autoApprove: autoApprove ?? current.conversation.autoApprove,
-        taskPrep: taskPrep ?? current.conversation.taskPrep,
-      ),
-    );
-    emit(state.copyWith(data: DataSuccess(optimistic)));
-    try {
-      final patched = await _repo.patch(
-        id: conversationId,
-        autoApprove: autoApprove,
-        taskPrep: taskPrep,
-      );
-      // Log the echoed conversation so a divergence between what we
-      // sent and what the server kept is visible during sync issues.
-      AppLogger.info(
-        _tag,
-        'PATCH echoed conversation: autoApprove=${patched.autoApprove}, '
-            'taskPrep=${patched.taskPrep}',
-      );
-      // Pull the canonical snapshot so any server-side coercion (e.g.
-      // the server normalising auto_approve when the env is read_only)
-      // wins over the optimistic value.
-      await _pollOnce();
-      return true;
-    } catch (e, st) {
-      AppLogger.warn(
-        _tag,
-        '_patchConversationFlag(autoApprove=$autoApprove, '
-            'taskPrep=$taskPrep) failed',
-        error: e,
-        stackTrace: st,
-      );
-      // Rollback the optimistic change.
-      emit(state.copyWith(data: DataSuccess(current)));
-      emit(state.copyWith(
-        actionFailure: ChatActionFailure(
-          action: ChatAction.patch,
-          failure: ApiErrorMapper.toFailure(e),
-        ),
-      ));
-      return false;
-    }
-  }
-
   /// Pause polling — call when the chat goes off-screen (route pop,
   /// app backgrounded). Safe to call multiple times.
   void pause() {
@@ -416,51 +361,6 @@ class ChatCubit extends Cubit<ChatState>
     _pollOnce();
   }
 
-  void _schedulePoll() {
-    _pollTimer?.cancel();
-    if (_paused || _disposed) return;
-    // Once the server admits it's running, that flag is the better signal and
-    // the post-send grace has done its job.
-    if (state.isRunning) _replyGraceLeft = 0;
-    final fast = state.isRunning || _replyGraceLeft > 0;
-    // Spending the budget here rather than in `_pollOnce` means a send that
-    // never produces a run — dropped server-side, stopped by the user — winds
-    // back down to the idle cadence instead of polling at 1.5 s forever.
-    if (!state.isRunning && _replyGraceLeft > 0) _replyGraceLeft--;
-    _pollTimer = Timer(fast ? _runningInterval : _idleInterval, _pollOnce);
-  }
-
-  /// One snapshot fetch, merged into state.
-  ///
-  /// [full] drops `?since=` so the server answers with the whole newest
-  /// window rather than the rows after our cursor — what [refresh] wants, and
-  /// what the 1.5 s tick must never do.
-  Future<void> _pollOnce({bool full = false}) async {
-    if (_paused || _disposed) return;
-    final cursor = full ? null : state.data.dataOrNull?.cursor;
-    try {
-      final snapshot = await _repo.getSnapshot(
-        conversationId,
-        since: cursor,
-        limit: full ? _initialLimit : null,
-      );
-      // No per-tick logging here. This runs every 1.5 s while the agent is
-      // running; the interpolated message was being BUILT on every tick even
-      // in release (arguments are evaluated before `AppLogger.info` can
-      // no-op), so a diagnostic left over from a since-fixed toggle-sync bug
-      // was costing a string allocation ~40×/min forever. Re-add behind
-      // `kDebugMode` if the flags ever need watching again.
-      _mergeSnapshot(snapshot);
-    } catch (e, st) {
-      AppLogger.warn(_tag, 'poll failed', error: e, stackTrace: st);
-      // Don't surface a toast for poll failures — they're high-frequency.
-      // The next tick will retry. If polling stays broken the user can
-      // pull-to-refresh, which calls load() and surfaces the error.
-    } finally {
-      _schedulePoll();
-    }
-  }
-
   /// Merges a delta snapshot into the cubit state. The contract per
   /// SAQQAR_MOBILE_API.md §4.3 is:
   ///   * **messages**: APPEND when `delta=true`, REPLACE when `delta=false`.
@@ -470,185 +370,6 @@ class ChatCubit extends Cubit<ChatState>
   ///
   /// "REPLACE in full" is conditioned on the response having actually
   /// SPOKEN about the field — see [_approvalsFor].
-
-  /// Adopts [incoming] while keeping the transcript and the paging position
-  /// this cubit already holds, then caches and emits it.
-  ///
-  /// Both "keep what we have" branches of [_mergeSnapshot] need the identical
-  /// six preserved fields and differ only in which [messages] survive. They
-  /// were written out twice, which is the exact hazard the first of them
-  /// documents: a hand-rolled snapshot silently drops every field it does not
-  /// happen to list, and that is how `quotaExceeded` was lost — the server
-  /// blocked a send for being over cap, the quota banner painted, and 1.5 s
-  /// later the first poll wiped the flag and re-enabled Send.
-  ///
-  /// `copyWith` on the INCOMING snapshot is what fixes that: a new snapshot
-  /// field is carried by default and can only be lost deliberately. Writing
-  /// the list once means the second branch cannot fall behind the first.
-  void _adoptPreserving(
-    ConversationSnapshot incoming,
-    ConversationSnapshot current,
-    List<Message> messages,
-  ) {
-    final preserved = incoming.copyWith(
-      messages: messages,
-      approvals: _approvalsFor(incoming, current),
-      carriesApprovals: true,
-      // Deliberately the OLD cursor even when rows were stitched in: it is the
-      // low-water mark of what we have definitely seen, so the next delta
-      // re-delivers anything the window missed. Duplicates are deduped on
-      // append; a skipped row would never come back.
-      cursor: current.cursor,
-      delta: false,
-      // A poll asks for the DEFAULT window, so its `oldest_cursor` points at
-      // the newest page — adopting it would rewind our paging position and
-      // make the next "load earlier" re-fetch history we already have. Ours
-      // describes how far back the user has actually read.
-      oldestCursor: current.oldestCursor,
-      hasMoreBefore: current.hasMoreBefore,
-    );
-    emit(state.copyWith(data: DataSuccess(preserved)));
-    _repo.cacheSnapshot(conversationId, preserved);
-  }
-
-  void _mergeSnapshot(ConversationSnapshot incoming) {
-    final current = state.data.dataOrNull;
-    if (current == null || !incoming.delta) {
-      // Defensive: a NON-delta poll response that carries FEWER messages
-      // than we've already loaded must not shrink the transcript back to a
-      // server default page — that would silently throw away the older
-      // history the user just paged in (a cause of "Load earlier" seeming
-      // to do nothing / needing a refresh). Keep our messages + cursor,
-      // adopt the fresh conversation/approvals/etc. from the poll.
-      if (current != null &&
-          !incoming.delta &&
-          incoming.messages.length < current.messages.length) {
-        // A window with NO messages at all says nothing about the transcript,
-        // so it can't be the newest page and there is nothing to stitch. It
-        // reaches the `overlaps` test as `0 < 0` — false — and used to fall
-        // through to "adopt verbatim", replacing a loaded conversation with an
-        // empty one. Keep every row we hold and take the rest of the snapshot.
-        if (incoming.messages.isEmpty) {
-          _adoptPreserving(incoming, current, current.messages);
-          return;
-        }
-        final held = {
-          for (final m in current.messages)
-            if (m.id.isNotEmpty) m.id,
-        };
-        // Rows in the fresh window that we don't already hold. Keeping the
-        // longer transcript must not also mean *discarding the newest page*:
-        // on a chat whose cache held 95 rows, the fresh 40-row window was
-        // thrown away whole and the screen opened on a nine-minute-old tail
-        // until a delta poll healed it up to 15 s later — the "I have to
-        // refresh a few times to see the reply" shape, from the open side.
-        //
-        // Only stitched when the window OVERLAPS what we hold. No shared row
-        // means more than a page arrived while we were away, and appending
-        // would leave a silent hole in the middle of the transcript; the
-        // honest answer there is to adopt the fresh window and let the user
-        // page back for the rest.
-        final fresh = [
-          for (final m in incoming.messages)
-            if (m.id.isEmpty || !held.contains(m.id)) m,
-        ];
-        final overlaps = fresh.length < incoming.messages.length;
-        if (overlaps) {
-          _adoptPreserving(
-            incoming,
-            current,
-            fresh.isEmpty ? current.messages : [...current.messages, ...fresh],
-          );
-          return;
-        }
-      }
-      // First snapshot or full refresh — adopt verbatim, and reset the paging
-      // position with it: this IS the newest window now.
-      _oldestCursor = incoming.oldestCursor;
-      final adopted = incoming.carriesApprovals || current == null
-          ? incoming
-          : incoming.copyWith(
-              approvals: current.approvals,
-              carriesApprovals: true,
-            );
-      emit(state.copyWith(
-        data: DataSuccess(adopted),
-        hasMoreOlder: _hasMoreFrom(adopted),
-      ));
-      _repo.cacheSnapshot(conversationId, adopted);
-      return;
-    }
-    // Append new messages to the existing list, skipping any row whose id
-    // we already hold. The server returns rows newer than `?since=`, but a
-    // poll can be IN FLIGHT when `sendMessage`/`stopGeneration` adopts a
-    // full snapshot (both reschedule a poll) — that in-flight delta was
-    // requested against the OLD cursor, so it re-delivers the just-adopted
-    // rows and, without this guard, they'd appear as duplicate bubbles until
-    // the next full refresh. Empty ids (defensive fallback for a malformed
-    // server row) can't be deduped, so they always append — same as before.
-    final existingIds = {
-      for (final m in current.messages)
-        if (m.id.isNotEmpty) m.id,
-    };
-    final appended = [
-      for (final m in incoming.messages)
-        if (m.id.isEmpty || !existingIds.contains(m.id)) m,
-    ];
-    // Same reasoning as the `preserved` branch above — derive from the
-    // incoming snapshot so no server field is dropped on a delta merge.
-    //
-    // `delta: false` on the RESULT is deliberate. `delta` describes how a
-    // payload arrived, not what the conversation is, and the merged object is
-    // the client's complete transcript — nothing outside this method ever
-    // reads it off stored state (every other reader inspects a freshly
-    // fetched response). Leaving it `true` would also make the first merged
-    // snapshot unequal to the full one `load()` adopted purely on transport
-    // metadata, costing one pointless rebuild on every chat open.
-    final merged = incoming.copyWith(
-      messages: appended.isEmpty
-          ? current.messages
-          : [...current.messages, ...appended],
-      approvals: _approvalsFor(incoming, current),
-      carriesApprovals: true,
-      cursor: incoming.cursor ?? current.cursor,
-      delta: false,
-      // Same reasoning as the `preserved` branch: a delta poll describes the
-      // newest rows, not how far back we've paged.
-      oldestCursor: current.oldestCursor,
-      hasMoreBefore: current.hasMoreBefore,
-    );
-    emit(state.copyWith(data: DataSuccess(merged)));
-    // Keep the cache current so re-opening this chat paints the appended
-    // rows too, not just the first page from initial load.
-    _repo.cacheSnapshot(conversationId, merged);
-  }
-
-  /// The approvals a merge result should carry.
-  ///
-  /// §4.3 says every non-message list is REPLACED on every response, delta
-  /// included, and that is still what happens whenever the response contains
-  /// an `approvals` key — an explicit `[]` clears the card the instant the
-  /// server says nothing is pending, so a decision made here, on the web, or
-  /// by a batch scope drops off exactly as fast as it did before.
-  ///
-  /// The one case that changes is the response that never mentions approvals
-  /// at all. Replacing there is not honouring the contract, it is inventing an
-  /// answer the server did not give — and the answer it invents is "nothing is
-  /// pending", which is the one that hides the card.
-  ///
-  /// That distinction is load-bearing rather than theoretical, because of how
-  /// this screen polls. Every tick after the first asks with `?since=`, so a
-  /// deployment whose delta response omits the key can raise an approval, have
-  /// it land in one snapshot, and have the next tick 1.5 s later wipe it —
-  /// forever, since the poll never asks for a full snapshot again. From the
-  /// user's side the agent stops with no explanation and the approval card
-  /// never appears; pull-to-refresh ([load]) is the only thing that shows it,
-  /// and only until the next tick.
-  List<Approval> _approvalsFor(
-    ConversationSnapshot incoming,
-    ConversationSnapshot current,
-  ) =>
-      incoming.carriesApprovals ? incoming.approvals : current.approvals;
 
   /// Fetches ONE page of older messages via `?before=<oldestCursor>` and
   /// PREPENDS it to the transcript we already hold.
@@ -689,110 +410,8 @@ class ChatCubit extends Cubit<ChatState>
   /// and the next page is only fetched when the view says the headroom is
   /// running down. Self-chaining here would quietly walk the whole
   /// conversation into memory on a chat the user opened to read one message.
-  Future<void> prefetchOlder({int? rows}) => _pageOlder(silent: true, rows: rows);
-
-  /// One backwards page, shared by the user-driven and page-ahead paths.
-  Future<void> _pageOlder({required bool silent, int? rows}) {
-    final inFlight = _olderPageInFlight;
-    if (inFlight != null) {
-      // A page is already on the wire. Ride it rather than issuing a second
-      // request for the same cursor — but if the user is now waiting on what
-      // started as a background fetch, promote it to a visible one so the
-      // header explains the wait.
-      if (!silent && !state.isLoadingOlder) {
-        emit(state.copyWith(isLoadingOlder: true));
-      }
-      return inFlight;
-    }
-    if (!state.hasMoreOlder) return Future<void>.value();
-    if (state.data.dataOrNull == null) return Future<void>.value();
-    final cursor = _oldestCursor;
-    if (cursor == null || cursor.isEmpty) {
-      // A server too old to send `oldest_cursor`. Stop rather than fall back
-      // to growing `limit` — that path is what stranded history in the first
-      // place, and every deployment we target sends the cursor.
-      AppLogger.warn(_tag, 'loadOlder: no oldest_cursor; paging disabled');
-      emit(state.copyWith(isLoadingOlder: false, hasMoreOlder: false));
-      return Future<void>.value();
-    }
-    if (!silent) emit(state.copyWith(isLoadingOlder: true));
-    final future = _fetchOlderPage(cursor: cursor, silent: silent, rows: rows)
-        .whenComplete(() => _olderPageInFlight = null);
-    _olderPageInFlight = future;
-    return future;
-  }
-
-  Future<void> _fetchOlderPage({
-    required String cursor,
-    int? rows,
-    required bool silent,
-  }) async {
-    try {
-      final page = await _repo.getSnapshotOffIsolate(
-        conversationId,
-        before: cursor,
-        limit: _requestRows(rows),
-      );
-      // The paging position can move while a page is on the wire — a full
-      // refresh adopts the newest window and rewinds the cursor. Landing this
-      // page anyway would splice a fragment of old history onto a transcript
-      // that no longer joins onto it.
-      if (_oldestCursor != cursor) return;
-      // Re-read the snapshot rather than closing over the one we started
-      // with: a poll may have appended new messages during the fetch, and
-      // building from the stale copy would drop them.
-      final base = state.data.dataOrNull;
-      if (base == null) return;
-      // Dedupe defensively: a cursor sitting exactly on a boundary can
-      // re-deliver its own row, and a duplicate bubble is worse than a
-      // missing one.
-      final existingIds = {
-        for (final m in base.messages)
-          if (m.id.isNotEmpty) m.id,
-      };
-      final older = [
-        for (final m in page.messages)
-          if (m.id.isEmpty || !existingIds.contains(m.id)) m,
-      ];
-      // An empty page means we're at the start whatever the flag says.
-      final more = older.isEmpty ? false : page.hasMoreBefore;
-      if (older.isNotEmpty) _hasPagedBack = true;
-      _oldestCursor = page.oldestCursor ?? _oldestCursor;
-      // Keep OUR snapshot as the base — `page` carries only the older window
-      // and would otherwise drop the newer messages, approvals and artifacts
-      // we already hold.
-      final merged = base.copyWith(
-        messages: [...older, ...base.messages],
-        oldestCursor: _oldestCursor,
-        hasMoreBefore: more,
-      );
-      emit(state.copyWith(
-        data: DataSuccess(merged),
-        isLoadingOlder: false,
-        hasMoreOlder: more,
-      ));
-      _repo.cacheSnapshot(conversationId, merged);
-    } catch (e, st) {
-      AppLogger.warn(_tag, 'loadOlder failed', error: e, stackTrace: st);
-      if (silent) {
-        // Nobody is waiting on this one. Leaving the bank empty is the whole
-        // consequence; the next user-driven step reports the problem.
-        emit(state.copyWith(isLoadingOlder: false));
-        return;
-      }
-      // Records the failure as well as clearing the spinner. Clearing it
-      // alone left the user tapping "Load earlier", watching the spinner
-      // stop, and seeing no new messages and no reason — indistinguishable
-      // from "you've reached the beginning".
-      emit(state.copyWith(
-        isLoadingOlder: false,
-        actionFailure: ChatActionFailure(
-          action: ChatAction.load,
-          failure: ApiErrorMapper.toFailure(e),
-        ),
-      ));
-    }
-  }
+  Future<void> prefetchOlder({int? rows}) =>
+      _pageOlder(silent: true, rows: rows);
 
   // ── Sending ─────────────────────────────────────────────────────────
 
@@ -808,12 +427,8 @@ class ChatCubit extends Cubit<ChatState>
     String? model,
   }) async {
     if (state.isSending) return false;
-    final attachmentIds =
-        state.stagedAttachments.map((a) => a.id).toList();
-    emit(state.copyWith(
-      isSending: true,
-      clearActionFailure: true,
-    ));
+    final attachmentIds = state.stagedAttachments.map((a) => a.id).toList();
+    emit(state.copyWith(isSending: true, clearActionFailure: true));
     try {
       final snapshot = await _repo.sendMessage(
         conversationId: conversationId,
@@ -822,13 +437,15 @@ class ChatCubit extends Cubit<ChatState>
         taskPrep: taskPrep,
         model: model,
       );
-      emit(state.copyWith(
-        data: DataSuccess(snapshot),
-        stagedAttachments: const [],
-        clearStagedAttachments: true,
-        isSending: false,
-        actionToast: ChatToast.messageSent,
-      ));
+      emit(
+        state.copyWith(
+          data: DataSuccess(snapshot),
+          stagedAttachments: const [],
+          clearStagedAttachments: true,
+          isSending: false,
+          actionToast: ChatToast.messageSent,
+        ),
+      );
       _repo.cacheSnapshot(conversationId, snapshot);
       // Immediately bump the polling cadence to "running" speed since
       // the agent is now processing the message we just sent — even though
@@ -838,13 +455,15 @@ class ChatCubit extends Cubit<ChatState>
       return true;
     } catch (e, st) {
       AppLogger.warn(_tag, 'sendMessage failed', error: e, stackTrace: st);
-      emit(state.copyWith(
-        isSending: false,
-        actionFailure: ChatActionFailure(
-          action: ChatAction.send,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          isSending: false,
+          actionFailure: ChatActionFailure(
+            action: ChatAction.send,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -861,23 +480,27 @@ class ChatCubit extends Cubit<ChatState>
       _replyGraceLeft = 0;
       // Next poll will pick up the flipped flag — no explicit state
       // mutation here.
-      emit(state.copyWith(
-        isStopping: false,
-        actionToast: ChatToast.generationStopped,
-      ));
+      emit(
+        state.copyWith(
+          isStopping: false,
+          actionToast: ChatToast.generationStopped,
+        ),
+      );
       // Fire-and-forget — we don't need to await the next snapshot to
       // return success; the polling loop will keep state fresh.
       unawaited(_pollOnce());
       return true;
     } catch (e, st) {
       AppLogger.warn(_tag, 'stopGeneration failed', error: e, stackTrace: st);
-      emit(state.copyWith(
-        isStopping: false,
-        actionFailure: ChatActionFailure(
-          action: ChatAction.stop,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          isStopping: false,
+          actionFailure: ChatActionFailure(
+            action: ChatAction.stop,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -913,13 +536,15 @@ class ChatCubit extends Cubit<ChatState>
     } catch (e, st) {
       AppLogger.warn(_tag, 'resumeRun failed', error: e, stackTrace: st);
       if (_disposed) return false;
-      emit(state.copyWith(
-        isResuming: false,
-        actionFailure: ChatActionFailure(
-          action: ChatAction.resume,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          isResuming: false,
+          actionFailure: ChatActionFailure(
+            action: ChatAction.resume,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -939,10 +564,12 @@ class ChatCubit extends Cubit<ChatState>
         conversationId: conversationId,
         files: files,
       );
-      emit(state.copyWith(
-        stagedAttachments: [...state.stagedAttachments, ...uploaded],
-        isUploading: false,
-      ));
+      emit(
+        state.copyWith(
+          stagedAttachments: [...state.stagedAttachments, ...uploaded],
+          isUploading: false,
+        ),
+      );
       for (final a in uploaded) {
         if (a.status == AttachmentStatus.pending) {
           _startAttachmentStatusPoll(a.id);
@@ -950,15 +577,21 @@ class ChatCubit extends Cubit<ChatState>
       }
       return true;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'uploadAttachments failed',
-          error: e, stackTrace: st);
-      emit(state.copyWith(
-        isUploading: false,
-        actionFailure: ChatActionFailure(
-          action: ChatAction.uploadAttachment,
-          failure: ApiErrorMapper.toFailure(e),
+      AppLogger.warn(
+        _tag,
+        'uploadAttachments failed',
+        error: e,
+        stackTrace: st,
+      );
+      emit(
+        state.copyWith(
+          isUploading: false,
+          actionFailure: ChatActionFailure(
+            action: ChatAction.uploadAttachment,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -968,60 +601,12 @@ class ChatCubit extends Cubit<ChatState>
   /// next sendMessage's attachment_ids).
   void removeStagedAttachment(String attachmentId) {
     _attachmentTimers.remove(attachmentId)?.cancel();
-    emit(state.copyWith(
-      stagedAttachments: state.stagedAttachments
-          .where((a) => a.id != attachmentId)
-          .toList(),
-    ));
-  }
-
-  /// Polls one attachment's `/status/` endpoint until it flips out of
-  /// `pending`. Caps at [_attachmentPollTimeout] — beyond that, the
-  /// user gets a "taking longer than expected" hint and can still send.
-  void _startAttachmentStatusPoll(String attachmentId) {
-    _attachmentTimers[attachmentId]?.cancel();
-    final deadline = DateTime.now().add(_attachmentPollTimeout);
-    _attachmentTimers[attachmentId] = Timer.periodic(
-      _attachmentPollInterval,
-      (timer) async {
-        if (_disposed) {
-          timer.cancel();
-          return;
-        }
-        try {
-          final fresh = await _repo.getAttachmentStatus(
-            conversationId: conversationId,
-            attachmentId: attachmentId,
-          );
-          // Replace the matching staged row in place.
-          emit(state.copyWith(
-            stagedAttachments: [
-              for (final a in state.stagedAttachments)
-                if (a.id == attachmentId) fresh else a,
-            ],
-          ));
-          if (fresh.status != AttachmentStatus.pending) {
-            timer.cancel();
-            _attachmentTimers.remove(attachmentId);
-            if (fresh.status == AttachmentStatus.ready) {
-              emit(state.copyWith(actionToast: ChatToast.attachmentReady));
-            }
-          }
-        } catch (e, st) {
-          AppLogger.warn(
-            _tag,
-            'attachment status poll failed (id=$attachmentId)',
-            error: e,
-            stackTrace: st,
-          );
-          // Don't tear down the timer on a transient failure — try again
-          // next tick. Stop after the deadline.
-          if (DateTime.now().isAfter(deadline)) {
-            timer.cancel();
-            _attachmentTimers.remove(attachmentId);
-          }
-        }
-      },
+    emit(
+      state.copyWith(
+        stagedAttachments: state.stagedAttachments
+            .where((a) => a.id != attachmentId)
+            .toList(),
+      ),
     );
   }
 
@@ -1039,20 +624,28 @@ class ChatCubit extends Cubit<ChatState>
         credentialName: credentialName,
         credentialKind: credentialKind,
       );
-      emit(state.copyWith(
-        data: DataSuccess(snapshot),
-        actionToast: ChatToast.pendingActionDismissed,
-      ));
+      emit(
+        state.copyWith(
+          data: DataSuccess(snapshot),
+          actionToast: ChatToast.pendingActionDismissed,
+        ),
+      );
       return true;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'dismissPendingAction failed',
-          error: e, stackTrace: st);
-      emit(state.copyWith(
-        actionFailure: ChatActionFailure(
-          action: ChatAction.dismissPendingAction,
-          failure: ApiErrorMapper.toFailure(e),
+      AppLogger.warn(
+        _tag,
+        'dismissPendingAction failed',
+        error: e,
+        stackTrace: st,
+      );
+      emit(
+        state.copyWith(
+          actionFailure: ChatActionFailure(
+            action: ChatAction.dismissPendingAction,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -1064,14 +657,20 @@ class ChatCubit extends Cubit<ChatState>
       await _pollOnce();
       return true;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'setActiveCredential failed',
-          error: e, stackTrace: st);
-      emit(state.copyWith(
-        actionFailure: ChatActionFailure(
-          action: ChatAction.setActiveCredential,
-          failure: ApiErrorMapper.toFailure(e),
+      AppLogger.warn(
+        _tag,
+        'setActiveCredential failed',
+        error: e,
+        stackTrace: st,
+      );
+      emit(
+        state.copyWith(
+          actionFailure: ChatActionFailure(
+            action: ChatAction.setActiveCredential,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -1087,11 +686,11 @@ class ChatCubit extends Cubit<ChatState>
     final nextDisabled = enabled
         ? previous.disabledCredentials.where((n) => n != name).toList()
         : [...previous.disabledCredentials, name];
-    emit(state.copyWith(
-      data: DataSuccess(
-        previous.copyWith(disabledCredentials: nextDisabled),
+    emit(
+      state.copyWith(
+        data: DataSuccess(previous.copyWith(disabledCredentials: nextDisabled)),
       ),
-    ));
+    );
     try {
       await _repo.toggleCredential(
         id: conversationId,
@@ -1100,16 +699,17 @@ class ChatCubit extends Cubit<ChatState>
       );
       return true;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'toggleCredential failed',
-          error: e, stackTrace: st);
+      AppLogger.warn(_tag, 'toggleCredential failed', error: e, stackTrace: st);
       // Rollback.
-      emit(state.copyWith(
-        data: DataSuccess(previous),
-        actionFailure: ChatActionFailure(
-          action: ChatAction.toggleCredential,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          data: DataSuccess(previous),
+          actionFailure: ChatActionFailure(
+            action: ChatAction.toggleCredential,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -1119,20 +719,28 @@ class ChatCubit extends Cubit<ChatState>
   Future<bool> shareConversation() async {
     try {
       final result = await _repo.share(conversationId);
-      emit(state.copyWith(
-        lastShareUrl: result.url,
-        actionToast: ChatToast.shareLinkCopied,
-      ));
+      emit(
+        state.copyWith(
+          lastShareUrl: result.url,
+          actionToast: ChatToast.shareLinkCopied,
+        ),
+      );
       return true;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'shareConversation failed',
-          error: e, stackTrace: st);
-      emit(state.copyWith(
-        actionFailure: ChatActionFailure(
-          action: ChatAction.share,
-          failure: ApiErrorMapper.toFailure(e),
+      AppLogger.warn(
+        _tag,
+        'shareConversation failed',
+        error: e,
+        stackTrace: st,
+      );
+      emit(
+        state.copyWith(
+          actionFailure: ChatActionFailure(
+            action: ChatAction.share,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -1150,12 +758,14 @@ class ChatCubit extends Cubit<ChatState>
       return true;
     } catch (e, st) {
       AppLogger.warn(_tag, 'revokeShare failed', error: e, stackTrace: st);
-      emit(state.copyWith(
-        actionFailure: ChatActionFailure(
-          action: ChatAction.revokeShare,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          actionFailure: ChatActionFailure(
+            action: ChatAction.revokeShare,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }
@@ -1169,8 +779,7 @@ class ChatCubit extends Cubit<ChatState>
   Object? get currentActionToast => state.actionToast;
 
   @override
-  ChatState clearedActionFailure() =>
-      state.copyWith(clearActionFailure: true);
+  ChatState clearedActionFailure() => state.copyWith(clearActionFailure: true);
 
   @override
   ChatState clearedActionToast() => state.copyWith(clearActionToast: true);

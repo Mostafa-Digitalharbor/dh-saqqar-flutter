@@ -136,8 +136,7 @@ class _TranscriptBody extends StatelessWidget {
     final messages = transcript.messages
         .where(
           (m) =>
-              (m.role == MessageRole.user ||
-                  m.role == MessageRole.assistant) &&
+              (m.role == MessageRole.user || m.role == MessageRole.assistant) &&
               m.content.trim().isNotEmpty,
         )
         .toList();
@@ -227,8 +226,12 @@ class _SharedMessage extends StatelessWidget {
               vertical: AppSpacing.s11,
             ),
             decoration: BoxDecoration(
-              color: s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tint)),
-              border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a30)),
+              color: s.brandCyan.withValues(
+                alpha: context.alpha(AppAlphaPairs.tint),
+              ),
+              border: Border.all(
+                color: s.brandCyan.withValues(alpha: AppAlphas.a30),
+              ),
               borderRadius: AppRadius.userBubbleR,
             ),
             child: ChatMarkdown(data: message.content, isUser: true),

@@ -218,7 +218,9 @@ class _Avatar extends StatelessWidget {
         shape: BoxShape.circle,
         // 0.10 was invisible against the light card. This reads as a halo in
         // both themes without competing with the gradient disc inside it.
-        color: s.brandCyan.withValues(alpha: context.alpha(AppAlphaPairs.tintAvatar)),
+        color: s.brandCyan.withValues(
+          alpha: context.alpha(AppAlphaPairs.tintAvatar),
+        ),
       ),
       child: Container(
         width: AppBoxSizes.profileAvatar,
@@ -245,11 +247,10 @@ class _Avatar extends StatelessWidget {
 /// 1 px rule used to separate the card's three regions.
 class _Hairline extends StatelessWidget {
   @override
-  Widget build(BuildContext context) =>
-      Container(
-        height: AppBorderWidths.hairline,
-        color: context.saqqar.cardBorder,
-      );
+  Widget build(BuildContext context) => Container(
+    height: AppBorderWidths.hairline,
+    color: context.saqqar.cardBorder,
+  );
 }
 
 /// Web-parity meta line: "Joined 2026-05-18 · Last login 2026-05-18 22:39".
@@ -303,9 +304,12 @@ class _AccountMetaLine extends StatelessWidget {
             children: [
               for (var i = 0; i < parts.length; i++) ...[
                 if (i > 0)
-                  Text('·',
-                      style: style?.copyWith(
-                          color: s.muted.withValues(alpha: AppAlphas.a70))),
+                  Text(
+                    '·',
+                    style: style?.copyWith(
+                      color: s.muted.withValues(alpha: AppAlphas.a70),
+                    ),
+                  ),
                 Text(parts[i], style: style),
               ],
             ],

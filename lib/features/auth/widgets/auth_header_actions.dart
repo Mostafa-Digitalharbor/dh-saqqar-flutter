@@ -37,9 +37,9 @@ class AuthHeaderActions extends StatelessWidget {
     };
     final isArabic =
         locale?.languageCode == UiStrings.localeArabicCode ||
-            (locale == null &&
-                Localizations.localeOf(context).languageCode ==
-                    UiStrings.localeArabicCode);
+        (locale == null &&
+            Localizations.localeOf(context).languageCode ==
+                UiStrings.localeArabicCode);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -111,7 +111,9 @@ class _HeaderIconButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelMuted)),
+        color: s.surface.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelMuted),
+        ),
         shape: StadiumBorder(
           side: BorderSide(color: color.withValues(alpha: AppAlphas.a32)),
         ),

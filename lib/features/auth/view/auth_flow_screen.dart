@@ -1,35 +1,31 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/error/app_failure.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
-import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_sizes.dart';
-import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
-import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/fig/fig.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/labeled_divider.dart';
-import '../../../shared/widgets/primary_button.dart';
-import '../../../shared/widgets/saqqar_logo.dart';
-import '../../app_update/view/update_nudge_banner.dart';
 import '../data/auth_api.dart';
 import '../data/social_auth_service.dart';
 import '../view_model/auth_cubit.dart';
 import '../view_model/auth_flow_cubit.dart';
-import '../widgets/auth_header_actions.dart';
-import '../widgets/social_auth_buttons.dart';
-import '../../../core/theme/app_radius.dart';
+import '../../../core/constants/asset_paths.dart';
+import '../../../core/theme/app_icons.dart';
+import '../../../core/theme/app_sizes.dart';
+part 'auth_flow_signin.dart';
+part 'auth_flow_signup.dart';
+part 'auth_flow_otp.dart';
+part 'auth_flow_reset.dart';
 
-/// Email-OTP auth flow (Gap D). One screen, nine steps, driven by
-/// [AuthFlowCubit]. `/sign-up` enters at [AuthFlowStep.signUpEmail] and
-/// `/sign-in` at [AuthFlowStep.signInEmail]; every other step is reached by
-/// in-flow navigation. On any terminal success the cubit adopts the session
-/// and the router gate routes to /chats.
+/// Email-OTP auth flow, restyled to the 2026-11 Figma set. One screen driven
+/// by [AuthFlowCubit]; every step shares the dark-to-light gradient backdrop,
+/// glass fields and the blue pill CTA. `/sign-up` enters at
+/// [AuthFlowStep.signUpEmail] and `/sign-in` at [AuthFlowStep.signInEmail].
 class AuthFlowScreen extends StatelessWidget {
   const AuthFlowScreen({super.key, required this.initial});
 
@@ -54,1117 +50,257 @@ class _AuthFlowView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Decorative blobs (the soft circles) were retired on user request
-      // 2026-07-06 for a cleaner login — plain ambient backdrop, with the
-      // logo now framed by an elegant card (see below).
-      body: AmbientBackground(
-        withBlobs: false,
-        child: SafeArea(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: figLightStatusBar,
+      child: Scaffold(
+        backgroundColor: Fig.pageGrey,
+        body: FigBackdrop(
           child: BlocConsumer<AuthFlowCubit, AuthFlowState>(
             listenWhen: (a, b) =>
                 (a.failure != b.failure && b.failure != null) ||
                 (a.noticeKey != b.noticeKey && b.noticeKey != null),
             listener: (context, state) {
-              // Success notice (e.g. password set — sign in now).
               if (state.noticeKey != null) {
                 AppToast.show(
                   context,
-                  message: context.tr.lookup(
-                    state.noticeKey!,
-                    fallback: '',
-                  ),
+                  message: context.tr.lookup(state.noticeKey!, fallback: ''),
                   variant: ToastVariant.success,
                 );
                 return;
               }
-              // A 401 here means the user typed a wrong password — NOT that
-              // their session ended. Surface the auth-specific wording
-              // instead of the generic "your session ended" the mapper
-              // returns for UnauthorizedFailure.
               final failure = ApiErrorMapper.toFailure(state.failure);
               final message = failure is UnauthorizedFailure
                   ? context.tr.authInvalidCredentials
                   : ApiErrorMapper.message(context, failure);
+              // A wrong OTP is shown inline on the boxes (red, as in the
+              // mock) — everything else is a toast.
+              if (state.isOtpStep) return;
               AppToast.show(
                 context,
                 message: message,
                 variant: ToastVariant.error,
               );
             },
-            builder: (context, state) {
-              return Column(
-                children: [
-                  // Language (EN ↔ AR) + theme (light ↔ dark) toggles pinned
-                  // to the top — reachable before signing in, when the
-                  // account preferences card isn't yet available.
-                  const AuthHeaderActions(),
-                  // The update nudge lives in [PageScaffold], which this
-                  // screen does not use — it builds a bare Scaffold. So a
-                  // signed-OUT user on a stale build saw nothing at all,
-                  // which is the state a fresh tester is in for the whole
-                  // time they are deciding whether to sign in. The blocking
-                  // wall already covered this screen (AppUpdateGate wraps the
-                  // entire app); only the dismissible nudge was missing.
-                  const UpdateNudgeBanner(),
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.s24,
-                          AppSpacing.s8,
-                          AppSpacing.s24,
-                          AppSpacing.s24,
-                        ),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: AppLayoutWidths.authCard),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // App brand logo above the form — shown on every
-                              // auth step, framed by an elegant card (matches
-                              // the splash). SaqqarLogo tints itself (white on
-                              // the dark auth backdrop, navy on light).
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: AppSpacing.s28),
-                                child: Center(child: _AuthLogoCard()),
-                              ),
-                              // Key by step so each step's StatefulWidget body
-                              // gets a fresh element (controllers reset) on
-                              // navigation, but is preserved across loading
-                              // rebuilds within a step.
-                              _bodyFor(state.step),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+            builder: _body,
           ),
         ),
       ),
     );
   }
 
-  Widget _bodyFor(AuthFlowStep step) {
-    return switch (step) {
-      AuthFlowStep.signUpEmail => const _SignUpEmailBody(key: ValueKey('su_email')),
-      AuthFlowStep.signUpOtp => const _OtpBody(
-          key: ValueKey('su_otp'),
+  Widget _body(BuildContext context, AuthFlowState state) {
+    final cubit = context.read<AuthFlowCubit>();
+    switch (state.step) {
+      case AuthFlowStep.signInEmail:
+      case AuthFlowStep.signInPassword:
+        return const _SignInPage(key: ValueKey('si'));
+      case AuthFlowStep.signUpEmail:
+      case AuthFlowStep.signUpProfile:
+        return const _SignUpPage(key: ValueKey('su'));
+      case AuthFlowStep.signUpOtp:
+        return _OtpPage(
+          key: const ValueKey('su_otp'),
           kind: _OtpKind.signup,
-        ),
-      AuthFlowStep.signUpProfile =>
-        const _ProfileBody(key: ValueKey('su_profile')),
-      AuthFlowStep.signInEmail => const _SignInEmailBody(key: ValueKey('si_email')),
-      AuthFlowStep.signInOtp => const _OtpBody(
-          key: ValueKey('si_otp'),
+          onBack: () => cubit.goTo(AuthFlowStep.signUpEmail),
+        );
+      case AuthFlowStep.signInOtp:
+        return _OtpPage(
+          key: const ValueKey('si_otp'),
           kind: _OtpKind.signin,
-        ),
-      AuthFlowStep.signInPassword =>
-        const _PasswordBody(key: ValueKey('si_pwd')),
-      AuthFlowStep.resetEmail => const _ResetEmailBody(key: ValueKey('rs_email')),
-      AuthFlowStep.resetOtp => const _OtpBody(
-          key: ValueKey('rs_otp'),
+          onBack: () => cubit.goTo(AuthFlowStep.signInEmail),
+        );
+      case AuthFlowStep.resetEmail:
+        return const _ResetEmailPage(key: ValueKey('rs'));
+      case AuthFlowStep.resetOtp:
+        return _OtpPage(
+          key: const ValueKey('rs_otp'),
           kind: _OtpKind.reset,
-        ),
-      AuthFlowStep.resetNewPassword =>
-        const _ResetPasswordBody(key: ValueKey('rs_pwd')),
-    };
-  }
-}
-
-/// Elegant frame around the brand logo on the auth screen — mirrors the
-/// splash's framed mark: a faint surface fill, a hairline border, generously
-/// rounded corners and a soft shadow, sized snugly to the logo. Theme-aware
-/// via [context.saqqar].
-class _AuthLogoCard extends StatelessWidget {
-  const _AuthLogoCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s30,
-        vertical: AppSpacing.s24,
-      ),
-      decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.splashFill)),
-        borderRadius: AppRadius.heroPlateR,
-        border: Border.all(color: s.cardBorder),
-        boxShadow: s.glassShadow,
-      ),
-      child: const SaqqarLogo(height: AppLogoSizes.hero),
-    );
+          onBack: () => cubit.goTo(AuthFlowStep.resetEmail),
+        );
+      case AuthFlowStep.resetNewPassword:
+        return const _NewPasswordPage(key: ValueKey('rs_pwd'));
+    }
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Shared scaffolding
+// Shared page frame
 // ─────────────────────────────────────────────────────────────────────────
 
-/// Title + subtitle header shared by every step.
-/// The email input, in the four places the flow asks for one.
-///
-/// It was written out four times. Three copies were identical; the fourth —
-/// password reset — had lost `autofillHints`, so that one screen alone did
-/// not offer the saved address, on the screen a user reaches precisely
-/// because they cannot remember their credentials. Nothing about that is
-/// visible while the four blocks sit hundreds of lines apart.
-class _EmailField extends StatelessWidget {
-  const _EmailField({
-    required this.controller,
-    required this.errorText,
-    this.onSubmitted,
-    this.textInputAction = TextInputAction.go,
+/// Back / pill row + big white title + muted subtitle, then [children] in a
+/// scroll view. [titleGap] is the distance from the top bar to the title —
+/// the sign-in/up pages sit tighter than the OTP/reset pages in the mock.
+/// Dark-header page frame shared by auth and the setup wizard.
+class AuthFrame extends StatelessWidget {
+  const AuthFrame({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.children,
+    this.onBack,
+    this.pillLabel,
+    this.onPill,
+    this.titleGap = 25,
+    this.subtitleGap = 10,
+    this.bodyGap = 44,
+    this.footer,
+    this.progress,
+    this.hPad = 24,
   });
 
-  final TextEditingController controller;
-  final String? errorText;
+  /// 0..1 — draws the wizard progress bar under the back button.
+  final double? progress;
+  final double hPad;
 
-  /// Fired on the keyboard's action key. Null where the field is followed by
-  /// another input, in which case [textInputAction] should be `next`.
-  final VoidCallback? onSubmitted;
-
-  final TextInputAction textInputAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    return AppTextField(
-      label: tr.email,
-      controller: controller,
-      hint: tr.authEmailPlaceholder,
-      errorText: errorText,
-      keyboardType: TextInputType.emailAddress,
-      textInputAction: textInputAction,
-      autofillHints: const [AutofillHints.email],
-      onSubmitted: onSubmitted == null ? null : (_) => onSubmitted!(),
-    );
-  }
-}
-
-/// The email already established earlier in the flow, shown read-only so the
-/// user can see which account they are completing without being able to
-/// change it out from under the step.
-class _SignedInEmailField extends StatelessWidget {
-  const _SignedInEmailField({required this.email});
-
-  final String email;
-
-  @override
-  Widget build(BuildContext context) => AppTextField(
-        label: context.tr.email,
-        initialValue: email,
-        enabled: false,
-      );
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.title, required this.subtitle});
   final String title;
   final String subtitle;
+  final List<Widget> children;
+  final VoidCallback? onBack;
+  final String? pillLabel;
+  final VoidCallback? onPill;
+  final double titleGap;
+  final double subtitleGap;
+  final double bodyGap;
+  final String? footer;
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: context.text.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.s6),
-        Text(subtitle, style: context.text.bodyMedium?.copyWith(color: s.muted)),
-        const SizedBox(height: AppSpacing.s26),
-      ],
-    );
-  }
-}
-
-/// Divider with a centered label + a full-width ghost button below — the
-/// "Already have an account? / Sign in instead" footer pattern.
-class _Footer extends StatelessWidget {
-  const _Footer({
-    required this.label,
-    required this.actionLabel,
-    required this.onAction,
-  });
-
-  final String label;
-  final String actionLabel;
-  final VoidCallback onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: AppSpacing.s22),
-        LabeledDivider(label: label),
-        const SizedBox(height: AppSpacing.s18),
-        GhostButton(label: actionLabel, expand: true, onPressed: onAction),
-      ],
-    );
-  }
-}
-
-/// "Check your email" recipient chip + "Use different email" action.
-class _EmailChip extends StatelessWidget {
-  const _EmailChip({required this.email, required this.onUseDifferent});
-  final String email;
-  final VoidCallback onUseDifferent;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s12, AppSpacing.s10, AppSpacing.s8, AppSpacing.s10),
-      decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panel)),
-        borderRadius: AppRadius.buttonR,
-        border: Border.all(color: s.cardBorder),
-      ),
-      // A `Row` here overflowed by 66 px on a 320 px phone, in English at
-      // 1.0× — the smallest, plainest cell in the matrix. `Expanded` made the
-      // address yield all its slack, but the button beside it is not a flex
-      // child: "USE DIFFERENT EMAIL" claims its intrinsic width whatever is
-      // left, and on a narrow screen that is more than the row has.
-      //
-      // `Wrap` fixes the direction of the negotiation. The address keeps one
-      // line and ellipsises inside the width it is actually given; the button
-      // drops to a second line when the two cannot share one. On any screen
-      // wide enough — every phone above 320 px with a short address — they
-      // still sit side by side, so the design is unchanged where it fit.
-      child: LayoutBuilder(
-        builder: (context, constraints) => Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: AppSpacing.s4,
-          children: [
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(hPad, 26, hPad, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(AppIcons.mail,
-                      size: AppIconSizes.small, color: s.brandCyan),
-                  const SizedBox(width: AppSpacing.s10),
-                  Flexible(
-                    child: Text(
-                      email,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  SizedBox(
+                    height: 50,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (onBack != null)
+                          Transform.translate(
+                            offset: const Offset(-10, 0),
+                            child: FigBackButton(onTap: onBack),
+                          )
+                        else
+                          const SizedBox.shrink(),
+                        if (pillLabel != null)
+                          FigTopPill(label: pillLabel!, onTap: onPill!),
+                      ],
                     ),
                   ),
+                  if (progress != null) ...[
+                    const SizedBox(height: AppSpacing.s22),
+                    _ProgressBar(value: progress!),
+                  ],
+                  SizedBox(height: titleGap),
+                  Text(
+                    title,
+                    style: Fig.t(
+                      context,
+                      size: 32,
+                      color: Colors.white,
+                      height: 1.17,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  SizedBox(height: subtitleGap),
+                  Text(
+                    subtitle,
+                    // White with a soft shadow: the last lines of the subtitle
+                    // sit where the glow turns light, and plain white blends
+                    // into it there.
+                    style:
+                        Fig.t(
+                          context,
+                          size: 14,
+                          color: Colors.white,
+                          height: 1.3,
+                        ).copyWith(
+                          shadows: const [
+                            Shadow(color: Fig.shadowInk, blurRadius: 6),
+                          ],
+                        ),
+                  ),
+                  SizedBox(height: bodyGap),
+                  ...children,
                 ],
               ),
             ),
-            TextButton(
-              onPressed: onUseDifferent,
-              child: Text(context.tr.authUseDifferentEmail.toUpperCase()),
+          ),
+          if (footer != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.s14),
+              child: Text(
+                footer!,
+                style: Fig.t(context, size: 10, color: Fig.muted),
+              ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
-/// "Didn't get the code? Resend in 53s" row with an owned 60-second
-/// countdown that re-arms on resend.
-class _ResendRow extends StatefulWidget {
-  const _ResendRow({required this.onResend});
-  final VoidCallback onResend;
+class _ProgressBar extends StatelessWidget {
+  const _ProgressBar({required this.value});
 
-  @override
-  State<_ResendRow> createState() => _ResendRowState();
-}
-
-class _ResendRowState extends State<_ResendRow> {
-  static const _cooldown = 60;
-  int _remaining = _cooldown;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _start();
-  }
-
-  /// One second per tick of the resend countdown. The label counts down in
-  /// whole seconds, so a finer tick would just burn rebuilds.
-  static const _tick = Duration(seconds: 1);
-
-  void _start() {
-    _timer?.cancel();
-    setState(() => _remaining = _cooldown);
-    _timer = Timer.periodic(_tick, (t) {
-      if (!mounted) return;
-      if (_remaining <= 1) {
-        t.cancel();
-        setState(() => _remaining = 0);
-      } else {
-        setState(() => _remaining--);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  final double value;
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    final tr = context.tr;
-    final ready = _remaining <= 0;
-    // Two translated phrases plus a TextButton's own 16 px insets sit
-    // tight at 320 px — "لم يصلك الرمز؟" + "إعادة الإرسال الآن" reaches the
-    // edge before any text scaling. `Flexible` on both lets the prompt
-    // ellipsize rather than overflow, and keeps the action reachable.
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Flexible(
-          child: Text(
-            tr.authDidntGetCode,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.text.labelMedium?.copyWith(color: s.muted),
+    return Container(
+      height: 6,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      alignment: AlignmentDirectional.centerStart,
+      child: FractionallySizedBox(
+        widthFactor: value,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Fig.blueStrong,
+            borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: AppSpacing.s6),
-        if (ready)
-          Flexible(
-            child: TextButton(
-              onPressed: () {
-                widget.onResend();
-                _start();
-              },
-              child: Text(
-                tr.authResendNow,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          )
-        else
-          Flexible(
-            child: Text(
-              tr.authResendIn(_remaining),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.labelMedium?.copyWith(
-                color: s.text,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
 
 bool _looksLikeEmail(String v) => v.contains('@') && v.contains('.');
 
+/// 8+ chars with a digit, a symbol, a lowercase and an uppercase letter.
+bool _strongPassword(String v) =>
+    v.length >= 8 &&
+    RegExp(r'[0-9]').hasMatch(v) &&
+    RegExp(r'[a-z]').hasMatch(v) &&
+    RegExp(r'[A-Z]').hasMatch(v) &&
+    RegExp(r'[^A-Za-z0-9]').hasMatch(v);
+
 // ─────────────────────────────────────────────────────────────────────────
-// Sign-up branch
+// Sign in
 // ─────────────────────────────────────────────────────────────────────────
 
-class _SignUpEmailBody extends StatefulWidget {
-  const _SignUpEmailBody({super.key});
-  @override
-  State<_SignUpEmailBody> createState() => _SignUpEmailBodyState();
-}
+// ─────────────────────────────────────────────────────────────────────────
+// Sign up
+// ─────────────────────────────────────────────────────────────────────────
 
-class _SignUpEmailBodyState extends State<_SignUpEmailBody> {
-  late final TextEditingController _email;
-  String? _error;
+// ─────────────────────────────────────────────────────────────────────────
+// OTP
+// ─────────────────────────────────────────────────────────────────────────
 
-  @override
-  void initState() {
-    super.initState();
-    _email = TextEditingController(
-      text: context.read<AuthFlowCubit>().state.email,
-    );
-  }
-
-  @override
-  void dispose() {
-    _email.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final tr = context.tr;
-    final email = _email.text.trim();
-    if (email.isEmpty) {
-      setState(() => _error = tr.emailRequired);
-      return;
-    }
-    if (!_looksLikeEmail(email)) {
-      setState(() => _error = tr.emailInvalid);
-      return;
-    }
-    setState(() => _error = null);
-    context.read<AuthFlowCubit>().submitSignUpEmail(email);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final loading = context.select<AuthFlowCubit, bool>((c) => c.state.loading);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Header(title: tr.authSignUpEmailTitle, subtitle: tr.authSignUpEmailSubtitle),
-        _EmailField(
-          controller: _email,
-          errorText: _error,
-          onSubmitted: _submit,
-        ),
-        const SizedBox(height: AppSpacing.s16),
-        PrimaryButton(
-          label: tr.authContinueWithEmail,
-          icon: context.arrowForward,
-          loading: loading,
-          expand: true,
-          onPressed: loading ? null : _submit,
-        ),
-        const SocialAuthButtons(),
-        _Footer(
-          label: tr.alreadyHaveAccount,
-          actionLabel: tr.authSignInInstead,
-          onAction: () => context.read<AuthFlowCubit>().toSignIn(),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProfileBody extends StatefulWidget {
-  const _ProfileBody({super.key});
-  @override
-  State<_ProfileBody> createState() => _ProfileBodyState();
-}
-
-class _ProfileBodyState extends State<_ProfileBody> {
-  final _first = TextEditingController();
-  final _last = TextEditingController();
-  final _password = TextEditingController();
-  final _confirm = TextEditingController();
-  String? _firstError;
-  String? _passwordError;
-  String? _confirmError;
-
-  @override
-  void dispose() {
-    _first.dispose();
-    _last.dispose();
-    _password.dispose();
-    _confirm.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final tr = context.tr;
-    final first = _first.text.trim();
-    final pwd = _password.text;
-    final confirm = _confirm.text;
-    String? fErr;
-    String? pErr;
-    String? cErr;
-    if (first.isEmpty) fErr = tr.authNameRequired;
-    if (pwd.length < 8) pErr = tr.passwordTooShort;
-    if (confirm != pwd) cErr = tr.authPasswordsMismatch;
-    setState(() {
-      _firstError = fErr;
-      _passwordError = pErr;
-      _confirmError = cErr;
-    });
-    if (fErr != null || pErr != null || cErr != null) return;
-    context.read<AuthFlowCubit>().completeSignUp(
-          firstName: first,
-          lastName: _last.text.trim(),
-          password: pwd,
-        );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final cubit = context.watch<AuthFlowCubit>();
-    final loading = cubit.state.loading;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Header(title: tr.authProfileTitle, subtitle: tr.authProfileSubtitle),
-        _SignedInEmailField(email: cubit.state.email),
-        const SizedBox(height: AppSpacing.s14),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: AppTextField(
-                label: tr.authFirstName,
-                controller: _first,
-                errorText: _firstError,
-                textInputAction: TextInputAction.next,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.s12),
-            Expanded(
-              child: AppTextField(
-                label: tr.authLastName,
-                controller: _last,
-                textInputAction: TextInputAction.next,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.s14),
-        AppPasswordField(
-          label: tr.password,
-          hint: tr.authPasswordPlaceholder,
-          controller: _password,
-          errorText: _passwordError,
-        ),
-        const SizedBox(height: AppSpacing.s14),
-        AppPasswordField(
-          label: tr.confirmPassword,
-          hint: tr.authConfirmPlaceholder,
-          controller: _confirm,
-          errorText: _confirmError,
-          onSubmitted: (_) => _submit(),
-        ),
-        const SizedBox(height: AppSpacing.s16),
-        PrimaryButton(
-          label: tr.authCreateAccountBtn,
-          icon: context.arrowForward,
-          loading: loading,
-          expand: true,
-          onPressed: loading ? null : _submit,
-        ),
-        _Footer(
-          label: tr.alreadyHaveAccount,
-          actionLabel: tr.authSignInInstead,
-          onAction: () => context.read<AuthFlowCubit>().toSignIn(),
-        ),
-      ],
-    );
-  }
+extension on Text {
+  Widget withUnderline() => DefaultTextStyle.merge(
+    style: const TextStyle(decoration: TextDecoration.underline),
+    child: this,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Sign-in branch
+// Reset password
 // ─────────────────────────────────────────────────────────────────────────
-
-class _SignInEmailBody extends StatefulWidget {
-  const _SignInEmailBody({super.key});
-  @override
-  State<_SignInEmailBody> createState() => _SignInEmailBodyState();
-}
-
-class _SignInEmailBodyState extends State<_SignInEmailBody> {
-  late final TextEditingController _email;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _email = TextEditingController(
-      text: context.read<AuthFlowCubit>().state.email,
-    );
-  }
-
-  @override
-  void dispose() {
-    _email.dispose();
-    super.dispose();
-  }
-
-  bool _validate() {
-    final tr = context.tr;
-    final email = _email.text.trim();
-    if (email.isEmpty) {
-      setState(() => _error = tr.emailRequired);
-      return false;
-    }
-    if (!_looksLikeEmail(email)) {
-      setState(() => _error = tr.emailInvalid);
-      return false;
-    }
-    setState(() => _error = null);
-    return true;
-  }
-
-  void _continueWithEmail() {
-    if (!_validate()) return;
-    context.read<AuthFlowCubit>().submitSignInEmail(_email.text.trim());
-  }
-
-  void _continueWithPassword() {
-    context.read<AuthFlowCubit>().rememberEmail(_email.text.trim());
-    context.read<AuthFlowCubit>().goTo(AuthFlowStep.signInPassword);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final loading = context.select<AuthFlowCubit, bool>((c) => c.state.loading);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Header(title: tr.authWelcomeBackTitle, subtitle: tr.authWelcomeBackSubtitle),
-        _EmailField(
-          controller: _email,
-          errorText: _error,
-          onSubmitted: _continueWithEmail,
-        ),
-        const SizedBox(height: AppSpacing.s16),
-        PrimaryButton(
-          label: tr.authContinueWithEmail,
-          icon: context.arrowForward,
-          loading: loading,
-          expand: true,
-          onPressed: loading ? null : _continueWithEmail,
-        ),
-        const SizedBox(height: AppSpacing.s6),
-        TextButton(
-          onPressed: loading ? null : _continueWithPassword,
-          child: Text(tr.authContinueWithPassword),
-        ),
-        const SocialAuthButtons(),
-        _Footer(
-          label: tr.newToSaqqar,
-          actionLabel: tr.authCreateAnAccount,
-          onAction: () => context.read<AuthFlowCubit>().toSignUp(),
-        ),
-      ],
-    );
-  }
-}
-
-class _PasswordBody extends StatefulWidget {
-  const _PasswordBody({super.key});
-  @override
-  State<_PasswordBody> createState() => _PasswordBodyState();
-}
-
-class _PasswordBodyState extends State<_PasswordBody> {
-  late final TextEditingController _email;
-  final _password = TextEditingController();
-  String? _emailError;
-  String? _passwordError;
-
-  @override
-  void initState() {
-    super.initState();
-    _email = TextEditingController(
-      text: context.read<AuthFlowCubit>().state.email,
-    );
-  }
-
-  @override
-  void dispose() {
-    _email.dispose();
-    _password.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final tr = context.tr;
-    final email = _email.text.trim();
-    final pwd = _password.text;
-    String? eErr;
-    String? pErr;
-    if (email.isEmpty) {
-      eErr = tr.emailRequired;
-    } else if (!_looksLikeEmail(email) && email != 'test') {
-      eErr = tr.emailInvalid;
-    }
-    if (pwd.isEmpty) pErr = tr.passwordTooShort;
-    setState(() {
-      _emailError = eErr;
-      _passwordError = pErr;
-    });
-    if (eErr != null || pErr != null) return;
-    context.read<AuthFlowCubit>().submitPasswordLogin(email: email, password: pwd);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final loading = context.select<AuthFlowCubit, bool>((c) => c.state.loading);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Header(title: tr.authPasswordTitle, subtitle: tr.authPasswordSubtitle),
-        _EmailField(
-          controller: _email,
-          errorText: _emailError,
-          textInputAction: TextInputAction.next,
-        ),
-        const SizedBox(height: AppSpacing.s14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Text(
-                tr.password.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.labelSmall?.copyWith(
-                  color: context.saqqar.muted,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: AppLetterSpacing.caps,
-                ),
-              ),
-            ),
-            Flexible(
-              child: TextButton(
-                onPressed: () {
-                  context
-                      .read<AuthFlowCubit>()
-                      .rememberEmail(_email.text.trim());
-                  context.read<AuthFlowCubit>().goTo(AuthFlowStep.resetEmail);
-                },
-                child: Text(
-                  tr.authForgotPassword.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ],
-        ),
-        AppPasswordField(
-          hint: tr.authPasswordEnterPlaceholder,
-          controller: _password,
-          errorText: _passwordError,
-          onSubmitted: (_) => _submit(),
-        ),
-        const SizedBox(height: AppSpacing.s16),
-        PrimaryButton(
-          label: tr.authLoginBtn,
-          icon: context.arrowForward,
-          loading: loading,
-          expand: true,
-          onPressed: loading ? null : _submit,
-        ),
-        const SizedBox(height: AppSpacing.s6),
-        TextButton(
-          onPressed: () {
-            context.read<AuthFlowCubit>().rememberEmail(_email.text.trim());
-            context.read<AuthFlowCubit>().goTo(AuthFlowStep.signInEmail);
-          },
-          child: Text(tr.authContinueWithEmailInstead),
-        ),
-        _Footer(
-          label: tr.newToSaqqar,
-          actionLabel: tr.authCreateAnAccount,
-          onAction: () => context.read<AuthFlowCubit>().toSignUp(),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Reset branch
-// ─────────────────────────────────────────────────────────────────────────
-
-class _ResetEmailBody extends StatefulWidget {
-  const _ResetEmailBody({super.key});
-  @override
-  State<_ResetEmailBody> createState() => _ResetEmailBodyState();
-}
-
-class _ResetEmailBodyState extends State<_ResetEmailBody> {
-  late final TextEditingController _email;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _email = TextEditingController(
-      text: context.read<AuthFlowCubit>().state.email,
-    );
-  }
-
-  @override
-  void dispose() {
-    _email.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final tr = context.tr;
-    final email = _email.text.trim();
-    if (email.isEmpty || !_looksLikeEmail(email)) {
-      setState(() => _error = tr.emailInvalid);
-      return;
-    }
-    setState(() => _error = null);
-    context.read<AuthFlowCubit>().submitResetEmail(email);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final loading = context.select<AuthFlowCubit, bool>((c) => c.state.loading);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Header(title: tr.authResetTitle, subtitle: tr.authResetSubtitle),
-        _EmailField(
-          controller: _email,
-          errorText: _error,
-          onSubmitted: _submit,
-        ),
-        const SizedBox(height: AppSpacing.s16),
-        PrimaryButton(
-          label: tr.authSendResetCode,
-          icon: context.arrowForward,
-          loading: loading,
-          expand: true,
-          onPressed: loading ? null : _submit,
-        ),
-        _Footer(
-          label: tr.authRememberItNow,
-          actionLabel: tr.authBackToSignIn,
-          onAction: () => context.read<AuthFlowCubit>().toSignIn(),
-        ),
-      ],
-    );
-  }
-}
-
-class _ResetPasswordBody extends StatefulWidget {
-  const _ResetPasswordBody({super.key});
-  @override
-  State<_ResetPasswordBody> createState() => _ResetPasswordBodyState();
-}
-
-class _ResetPasswordBodyState extends State<_ResetPasswordBody> {
-  final _password = TextEditingController();
-  final _confirm = TextEditingController();
-  String? _passwordError;
-  String? _confirmError;
-
-  @override
-  void dispose() {
-    _password.dispose();
-    _confirm.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final tr = context.tr;
-    final pwd = _password.text;
-    final confirm = _confirm.text;
-    String? pErr;
-    String? cErr;
-    if (pwd.length < 8) pErr = tr.passwordTooShort;
-    if (confirm != pwd) cErr = tr.authPasswordsMismatch;
-    setState(() {
-      _passwordError = pErr;
-      _confirmError = cErr;
-    });
-    if (pErr != null || cErr != null) return;
-    context.read<AuthFlowCubit>().completeReset(pwd);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final cubit = context.watch<AuthFlowCubit>();
-    final loading = cubit.state.loading;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Header(title: tr.authNewPasswordTitle, subtitle: tr.authNewPasswordSubtitle),
-        _SignedInEmailField(email: cubit.state.email),
-        const SizedBox(height: AppSpacing.s14),
-        AppPasswordField(
-          label: tr.authNewPasswordLabel,
-          hint: tr.authPasswordPlaceholder,
-          controller: _password,
-          errorText: _passwordError,
-        ),
-        const SizedBox(height: AppSpacing.s14),
-        AppPasswordField(
-          label: tr.authConfirmNewPasswordLabel,
-          hint: tr.authConfirmNewPlaceholder,
-          controller: _confirm,
-          errorText: _confirmError,
-          onSubmitted: (_) => _submit(),
-        ),
-        const SizedBox(height: AppSpacing.s16),
-        PrimaryButton(
-          label: tr.authSetNewPasswordBtn,
-          icon: context.arrowForward,
-          loading: loading,
-          expand: true,
-          onPressed: loading ? null : _submit,
-        ),
-        _Footer(
-          label: tr.authRememberItNow,
-          actionLabel: tr.authBackToSignIn,
-          onAction: () => context.read<AuthFlowCubit>().toSignIn(),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// OTP body (shared by the three "Check your email" steps)
-// ─────────────────────────────────────────────────────────────────────────
-
-enum _OtpKind { signup, signin, reset }
-
-class _OtpBody extends StatefulWidget {
-  const _OtpBody({super.key, required this.kind});
-  final _OtpKind kind;
-
-  @override
-  State<_OtpBody> createState() => _OtpBodyState();
-}
-
-class _OtpBodyState extends State<_OtpBody> {
-  final _code = TextEditingController();
-  String? _error;
-
-  @override
-  void dispose() {
-    _code.dispose();
-    super.dispose();
-  }
-
-  void _verify() {
-    final tr = context.tr;
-    final code = _code.text.trim();
-    if (code.length != 6) {
-      setState(() => _error = tr.authCodeRequired);
-      return;
-    }
-    setState(() => _error = null);
-    final cubit = context.read<AuthFlowCubit>();
-    switch (widget.kind) {
-      case _OtpKind.signup:
-        cubit.verifySignUpOtp(code);
-      case _OtpKind.signin:
-        cubit.verifySignInOtp(code);
-      case _OtpKind.reset:
-        cubit.verifyResetOtp(code);
-    }
-  }
-
-  void _useDifferentEmail() {
-    final cubit = context.read<AuthFlowCubit>();
-    switch (widget.kind) {
-      case _OtpKind.signup:
-        cubit.goTo(AuthFlowStep.signUpEmail);
-      case _OtpKind.signin:
-        cubit.goTo(AuthFlowStep.signInEmail);
-      case _OtpKind.reset:
-        cubit.goTo(AuthFlowStep.resetEmail);
-    }
-  }
-
-  String get _verifyLabel {
-    final tr = context.tr;
-    return widget.kind == _OtpKind.signin ? tr.authVerifyAndSignIn : tr.authVerifyCode;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tr = context.tr;
-    final s = context.saqqar;
-    final cubit = context.watch<AuthFlowCubit>();
-    final loading = cubit.state.loading;
-    final email = cubit.state.email;
-
-    // Footer differs by branch: signup/signin invite the opposite action,
-    // reset offers "back to sign in".
-    final (footerLabel, footerActionLabel, VoidCallback footerAction) =
-        switch (widget.kind) {
-      _OtpKind.signup => (
-          tr.alreadyHaveAccount,
-          tr.authSignInInstead,
-          () => context.read<AuthFlowCubit>().toSignIn(),
-        ),
-      _OtpKind.signin => (
-          tr.newToSaqqar,
-          tr.authCreateAnAccount,
-          () => context.read<AuthFlowCubit>().toSignUp(),
-        ),
-      _OtpKind.reset => (
-          tr.authRememberItNow,
-          tr.authBackToSignIn,
-          () => context.read<AuthFlowCubit>().toSignIn(),
-        ),
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Header(title: tr.authCheckEmailTitle, subtitle: tr.authCheckEmailSubtitle),
-        _EmailChip(email: email, onUseDifferent: _useDifferentEmail),
-        const SizedBox(height: AppSpacing.s18),
-        AppTextField(
-          label: tr.authOtpLabel,
-          controller: _code,
-          hint: tr.authOtpPlaceholder,
-          errorText: _error,
-          keyboardType: TextInputType.number,
-          textInputAction: TextInputAction.go,
-          autofillHints: const [AutofillHints.oneTimeCode],
-          onSubmitted: (_) => _verify(),
-        ),
-        const SizedBox(height: AppSpacing.s6),
-        Text(
-          tr.authOtpHint,
-          style: context.text.labelSmall?.copyWith(color: s.muted),
-        ),
-        const SizedBox(height: AppSpacing.s16),
-        PrimaryButton(
-          label: _verifyLabel,
-          icon: context.arrowForward,
-          loading: loading,
-          expand: true,
-          onPressed: loading ? null : _verify,
-        ),
-        const SizedBox(height: AppSpacing.s12),
-        _ResendRow(onResend: () => context.read<AuthFlowCubit>().resend()),
-        // Sign-in OTP also offers a password fallback.
-        if (widget.kind == _OtpKind.signin) ...[
-          const SizedBox(height: AppSpacing.s4),
-          TextButton(
-            onPressed: () =>
-                context.read<AuthFlowCubit>().goTo(AuthFlowStep.signInPassword),
-            child: Text(tr.authContinueWithPasswordInstead),
-          ),
-        ],
-        _Footer(
-          label: footerLabel,
-          actionLabel: footerActionLabel,
-          onAction: footerAction,
-        ),
-      ],
-    );
-  }
-}

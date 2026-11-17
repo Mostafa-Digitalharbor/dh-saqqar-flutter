@@ -51,8 +51,12 @@ class ImageDownscaler {
       );
       return result ?? path;
     } catch (e, st) {
-      AppLogger.warn('ImageDownscaler', 'shrink failed for $path',
-          error: e, stackTrace: st);
+      AppLogger.warn(
+        'ImageDownscaler',
+        'shrink failed for $path',
+        error: e,
+        stackTrace: st,
+      );
       return path;
     }
   }

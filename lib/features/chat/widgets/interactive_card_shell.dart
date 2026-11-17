@@ -80,7 +80,9 @@ class CardChoiceChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? s.brandCyan.withValues(alpha: AppAlphas.a16)
-              : s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelCard)),
+              : s.surface2.withValues(
+                  alpha: context.alpha(AppAlphaPairs.panelCard),
+                ),
           borderRadius: AppRadius.pillR,
           border: Border.all(
             color: selected

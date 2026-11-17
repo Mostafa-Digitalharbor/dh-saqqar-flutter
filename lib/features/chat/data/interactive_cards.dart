@@ -104,16 +104,16 @@ class ClarifyQuestion extends Equatable {
   final int? defaultIndex;
 
   factory ClarifyQuestion.fromJson(Map<String, dynamic> json) {
-    final options = _list(json['options'])
-        .map(_str)
-        .where((e) => e.isNotEmpty)
-        .toList();
+    final options = _list(
+      json['options'],
+    ).map(_str).where((e) => e.isNotEmpty).toList();
     final raw = _int(json['default']);
     return ClarifyQuestion(
       question: _str(json['question']),
       options: options,
-      defaultIndex:
-          raw != null && raw >= 0 && raw < options.length ? raw : null,
+      defaultIndex: raw != null && raw >= 0 && raw < options.length
+          ? raw
+          : null,
     );
   }
 
@@ -327,9 +327,9 @@ class ReportBuilderPayload extends Equatable {
 
   /// Lenses to offer once [typeKey] is chosen. Shared lenses always apply.
   List<ReportLens> lensesFor(String? typeKey) => [
-        ...sharedLenses,
-        if (typeKey != null) ...?lensesByType[typeKey],
-      ];
+    ...sharedLenses,
+    if (typeKey != null) ...?lensesByType[typeKey],
+  ];
 
   /// Record families that get the secondary multi-select (Appendix A.2).
   static const entityFamilies = {'customers', 'vendors', 'employees'};
@@ -374,14 +374,18 @@ class ReportBuilderPayload extends Equatable {
   static List<ReportLens> _lenses(Object? raw) {
     Iterable<Map<String, dynamic>> maps;
     if (raw is List) {
-      maps = raw.whereType<Map<dynamic, dynamic>>().map((e) => e.cast<String, dynamic>());
+      maps = raw.whereType<Map<dynamic, dynamic>>().map(
+        (e) => e.cast<String, dynamic>(),
+      );
     } else if (raw is Map) {
       maps = raw.entries
           .where((e) => e.value is Map)
-          .map((e) => {
-                'key': e.key.toString(),
-                ...(e.value as Map).cast<String, dynamic>(),
-              });
+          .map(
+            (e) => {
+              'key': e.key.toString(),
+              ...(e.value as Map).cast<String, dynamic>(),
+            },
+          );
     } else {
       return const [];
     }
@@ -389,8 +393,13 @@ class ReportBuilderPayload extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [types, periods, formats, lensesByType, sharedLenses];
+  List<Object?> get props => [
+    types,
+    periods,
+    formats,
+    lensesByType,
+    sharedLenses,
+  ];
 }
 
 /// One record from `GET /api/v1/report-entities/`.

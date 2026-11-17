@@ -34,10 +34,10 @@ class AppUpdateCubit extends Cubit<AppUpdateState> {
     required this.platform,
     PlayUpdateService? play,
     this.minRecheckInterval = const Duration(hours: 6),
-  })  : _api = api,
-        _prefs = prefs,
-        _play = play,
-        super(const AppUpdateState());
+  }) : _api = api,
+       _prefs = prefs,
+       _play = play,
+       super(const AppUpdateState());
 
   final AppUpdateApi _api;
   final SharedPreferences _prefs;
@@ -101,7 +101,8 @@ class AppUpdateCubit extends Cubit<AppUpdateState> {
           // A dismissal is scoped to the build it was made about. Tapping
           // "later" on 1.2.5 must not also silence 1.2.6 — otherwise the first
           // "later" a user ever taps mutes the nudge permanently.
-          dismissed: next.decision == AppUpdateDecision.optional &&
+          dismissed:
+              next.decision == AppUpdateDecision.optional &&
               target != null &&
               _prefs.getInt(_dismissedBuildKey) == target,
         ),

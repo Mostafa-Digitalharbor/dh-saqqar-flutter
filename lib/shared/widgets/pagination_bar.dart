@@ -91,8 +91,9 @@ class PaginationBar extends StatelessWidget {
               // two flex children would split the row evenly and truncate
               // the summary early beside a short "Page 1 of 2".
               ConstrainedBox(
-                constraints:
-                    BoxConstraints(maxWidth: constraints.maxWidth * 0.6),
+                constraints: BoxConstraints(
+                  maxWidth: constraints.maxWidth * 0.6,
+                ),
                 child: controls,
               ),
             ],

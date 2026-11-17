@@ -61,16 +61,17 @@ class InlineAddForm extends StatelessWidget {
     // Rebuilds on each keystroke so the button enables the moment the field
     // stops being blank. Scoped to the button alone: a `setState` on the
     // host would rebuild the whole sheet, list included, per character.
-    Widget button({required bool expand}) => ValueListenableBuilder<
-        TextEditingValue>(
-      valueListenable: controller,
-      builder: (context, value, _) => PrimaryButton(
-        label: buttonLabel,
-        expand: expand,
-        onPressed:
-            enabled && value.text.trim().isNotEmpty ? onSubmit : null,
-      ),
-    );
+    Widget button({required bool expand}) =>
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (context, value, _) => PrimaryButton(
+            label: buttonLabel,
+            expand: expand,
+            onPressed: enabled && value.text.trim().isNotEmpty
+                ? onSubmit
+                : null,
+          ),
+        );
 
     // Measured against the width this form ACTUALLY gets, not the device's.
     // Both call sites live inside a `Dialog`, which on a 320 px screen keeps
@@ -81,8 +82,10 @@ class InlineAddForm extends StatelessWidget {
     // the surrounding chrome may be narrower than the screen.
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Larger text needs the room as much as a narrow screen does.
         final stack =
-            breakpointForWidth(constraints.maxWidth).isTinyOrBelow;
+            breakpointForWidth(constraints.maxWidth).isTinyOrBelow ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.2;
         if (!stack) {
           return Row(
             children: [

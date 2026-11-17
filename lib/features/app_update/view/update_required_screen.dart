@@ -38,8 +38,9 @@ class UpdateRequiredScreen extends StatelessWidget {
       icon: AppIcons.download,
       title: tr.updateRequiredTitle,
       body: tr.updateRequiredBody,
-      footnote:
-          latestVersion.isEmpty ? null : tr.updateNewVersion(latestVersion),
+      footnote: latestVersion.isEmpty
+          ? null
+          : tr.updateNewVersion(latestVersion),
       actions: [
         PrimaryButton(
           label: tr.updateAction,

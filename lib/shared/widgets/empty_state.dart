@@ -61,7 +61,10 @@ class EmptyState extends StatelessWidget {
                 ),
               ),
             ],
-            if (action != null) ...[const SizedBox(height: AppSpacing.s16), action!],
+            if (action != null) ...[
+              const SizedBox(height: AppSpacing.s16),
+              action!,
+            ],
           ],
         ),
       ),

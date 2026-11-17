@@ -79,7 +79,8 @@ class AuthInterceptor extends QueuedInterceptor {
     // user explicitly asked us to stop. Surfaces the error normally
     // but keeps the session alive otherwise.
     final body = err.response?.data;
-    final isTokenInvalid = body is Map<String, dynamic> && body['auth'] == false;
+    final isTokenInvalid =
+        body is Map<String, dynamic> && body['auth'] == false;
 
     if (isUnauthorized && !isAuthEndpoint && isTokenInvalid) {
       await _store.clear();

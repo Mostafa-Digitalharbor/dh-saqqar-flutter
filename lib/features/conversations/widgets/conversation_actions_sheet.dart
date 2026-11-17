@@ -5,7 +5,6 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/conversation_models.dart';
 import 'conversation_action.dart';
 import '../../../shared/widgets/sheet_action_row.dart';
@@ -78,8 +77,6 @@ class ConversationActionsSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SheetDragHandle(),
-              const SizedBox(height: AppSpacing.s18),
               Text(
                 tr.longPressActionsTitle,
                 style: context.text.labelSmall?.copyWith(
@@ -111,9 +108,7 @@ class ConversationActionsSheet extends StatelessWidget {
                       SheetActionRow(
                         // Shows the ACTION, not the state — see the same
                         // pairing in `conversation_row_menu.dart`.
-                        icon: isPinned
-                            ? AppIcons.pinOff
-                            : AppIcons.pin,
+                        icon: isPinned ? AppIcons.pinOff : AppIcons.pin,
                         label: isPinned
                             ? tr.unpinConversation
                             : tr.pinConversation,
@@ -163,4 +158,3 @@ class ConversationActionsSheet extends StatelessWidget {
     );
   }
 }
-

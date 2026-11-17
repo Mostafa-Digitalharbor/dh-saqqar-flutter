@@ -24,7 +24,9 @@ class ConversationCardSkeleton extends StatelessWidget {
         AppSpacing.s14,
       ),
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelSkeleton)),
+        color: s.surface.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelSkeleton),
+        ),
         // `conversationCardR`, not `modalR`: this stands in for
         // `ConversationCard`, whose corner is 16. It was 18, so every row
         // visibly changed shape at the moment the real list arrived.
@@ -40,17 +42,31 @@ class ConversationCardSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SkeletonBlock(width: AppSkeletonSizes.previewLong, height: AppSkeletonSizes.titleLine),
+                SkeletonBlock(
+                  width: AppSkeletonSizes.previewLong,
+                  height: AppSkeletonSizes.titleLine,
+                ),
                 SizedBox(height: AppSpacing.s10),
                 SkeletonBlock(height: AppSkeletonSizes.subtitleLine),
                 SizedBox(height: AppSpacing.s6),
-                SkeletonBlock(width: AppSkeletonSizes.previewShort, height: AppSkeletonSizes.subtitleLine),
+                SkeletonBlock(
+                  width: AppSkeletonSizes.previewShort,
+                  height: AppSkeletonSizes.subtitleLine,
+                ),
                 SizedBox(height: AppSpacing.s12),
                 Row(
                   children: [
-                    SkeletonBlock(width: AppSkeletonSizes.chipShort, height: AppSkeletonSizes.chipLine, radius: AppRadius.pill),
+                    SkeletonBlock(
+                      width: AppSkeletonSizes.chipShort,
+                      height: AppSkeletonSizes.chipLine,
+                      radius: AppRadius.pill,
+                    ),
                     SizedBox(width: AppSpacing.s8),
-                    SkeletonBlock(width: AppSkeletonSizes.chipWide, height: AppSkeletonSizes.chipLine, radius: AppRadius.pill),
+                    SkeletonBlock(
+                      width: AppSkeletonSizes.chipWide,
+                      height: AppSkeletonSizes.chipLine,
+                      radius: AppRadius.pill,
+                    ),
                   ],
                 ),
               ],

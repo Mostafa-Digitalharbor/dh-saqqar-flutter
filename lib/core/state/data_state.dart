@@ -28,9 +28,9 @@ sealed class DataState<T> extends Equatable {
   /// For "do I have anything at all to show the user?" — which is what a
   /// refresh path wants — use [dataOrPrevious].
   T? get dataOrNull => switch (this) {
-        DataSuccess<T>(data: final d) => d,
-        _ => null,
-      };
+    DataSuccess<T>(data: final d) => d,
+    _ => null,
+  };
 
   /// The freshest data available, *including* the stale copy that a loading
   /// or failed state carries forward.
@@ -44,11 +44,11 @@ sealed class DataState<T> extends Equatable {
   /// data, the next poll sees nothing, paints a skeleton, fails again, and
   /// stores `previous: null`. Reach for this getter in that decision.
   T? get dataOrPrevious => switch (this) {
-        DataSuccess<T>(data: final d) => d,
-        DataLoading<T>(previous: final p) => p,
-        DataFailure<T>(previous: final p) => p,
-        DataIdle<T>() => null,
-      };
+    DataSuccess<T>(data: final d) => d,
+    DataLoading<T>(previous: final p) => p,
+    DataFailure<T>(previous: final p) => p,
+    DataIdle<T>() => null,
+  };
 
   bool get isLoading => this is DataLoading<T>;
   bool get isSuccess => this is DataSuccess<T>;
@@ -91,10 +91,7 @@ final class DataSuccess<T> extends DataState<T> {
 /// Fetch failed. [message] is the user-facing, localized string ready to
 /// render. [error] is the raw exception kept for logging / retry context.
 final class DataFailure<T> extends DataState<T> {
-  const DataFailure({
-    required this.error,
-    this.previous,
-  });
+  const DataFailure({required this.error, this.previous});
 
   /// The thrown object, kept raw so the *view* decides the wording.
   ///

@@ -224,6 +224,7 @@ flutter:
 
   assets:
     - assets/img/
+    - assets/design/
 
   # Bundled UI faces — Space Grotesk for Latin locales, Tajawal for Arabic
   # (IBM Plex Sans Arabic behind both as a fallback), JetBrains Mono for
@@ -242,6 +243,9 @@ flutter:
     # Latin/English face — Space Grotesk (variable), the primary family in
     # every non-Arabic locale. One variable file — Flutter maps `fontWeight`
     # onto its `wght` axis automatically.
+    - family: HankenGrotesk
+      fonts:
+        - asset: assets/fonts/HankenGrotesk-Variable.ttf
     - family: SpaceGrotesk
       fonts:
         - asset: assets/fonts/SpaceGrotesk-Variable.ttf

@@ -48,16 +48,16 @@ class AppLockState extends Equatable {
 /// Pure device-level preference (SharedPreferences) — NOT cleared on
 /// sign-out, since it protects the device, not a session.
 class AppLockCubit extends Cubit<AppLockState> {
-  AppLockCubit({
-    required SharedPreferences prefs,
-    required BiometricAuth auth,
-  })  : _prefs = prefs,
-        _auth = auth,
-        super(AppLockState(
+  AppLockCubit({required SharedPreferences prefs, required BiometricAuth auth})
+    : _prefs = prefs,
+      _auth = auth,
+      super(
+        AppLockState(
           enabled: prefs.getBool(_key) ?? false,
           // Engage the lock immediately on cold start when enabled.
           locked: prefs.getBool(_key) ?? false,
-        )) {
+        ),
+      ) {
     _probeAvailability();
   }
 

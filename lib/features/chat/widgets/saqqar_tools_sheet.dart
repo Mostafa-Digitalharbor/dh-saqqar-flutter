@@ -243,7 +243,11 @@ class _SaqqarToolsSheetState extends State<SaqqarToolsSheet> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(AppIcons.shield, size: AppIconSizes.compact, color: context.saqqar.muted),
+            Icon(
+              AppIcons.shield,
+              size: AppIconSizes.compact,
+              color: context.saqqar.muted,
+            ),
             const SizedBox(width: AppSpacing.s8),
             Expanded(
               child: Text(

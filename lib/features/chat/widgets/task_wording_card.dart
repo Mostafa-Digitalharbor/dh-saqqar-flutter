@@ -170,15 +170,13 @@ class _TaskWordingCardState extends State<TaskWordingCard> {
               PrimaryButton(
                 label: tr.promptUseDraft,
                 minHeight: AppControlSizes.buttonMin,
-                onPressed:
-                    busy ? null : () => widget.onUse(_text),
+                onPressed: busy ? null : () => widget.onUse(_text),
               ),
               PrimaryButton(
                 label: tr.promptRunNow,
                 icon: AppIcons.send,
                 minHeight: AppControlSizes.buttonMin,
-                onPressed:
-                    busy ? null : () => widget.onRun(_text),
+                onPressed: busy ? null : () => widget.onRun(_text),
               ),
             ],
           ),

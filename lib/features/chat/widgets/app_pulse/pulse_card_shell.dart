@@ -86,10 +86,10 @@ class PulseCardShell extends StatelessWidget {
   /// The chip row and the free-text box, in that order — one block, so
   /// [toolsFirst] can move both without the two ever separating.
   List<Widget> get _tools => [
-        PulseDeepActionChips(actions: deepActions, onSend: onSend),
-        if (pulseFreeTextAction(kind) != null)
-          PulseFreeTextAction(kind: kind, onSend: onSend),
-      ];
+    PulseDeepActionChips(actions: deepActions, onSend: onSend),
+    if (pulseFreeTextAction(kind) != null)
+      PulseFreeTextAction(kind: kind, onSend: onSend),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -158,18 +158,17 @@ class PulseCardShell extends StatelessWidget {
 }
 
 IconData _iconFor(InteractiveCardKind kind) => switch (kind) {
-      InteractiveCardKind.factory => AppIcons.factory,
-      InteractiveCardKind.inventory => AppIcons.warehouse,
-      InteractiveCardKind.finance => AppIcons.bank,
-      InteractiveCardKind.purchasing => AppIcons.purchasing,
-      InteractiveCardKind.qualityGuard => AppIcons.shieldCheck,
-      InteractiveCardKind.accountant => AppIcons.calculator,
-      InteractiveCardKind.hr => AppIcons.hr,
-      InteractiveCardKind.promptClarify ||
-      InteractiveCardKind.reportBuilder ||
-      InteractiveCardKind.promptSuggestion =>
-        AppIcons.grid,
-    };
+  InteractiveCardKind.factory => AppIcons.factory,
+  InteractiveCardKind.inventory => AppIcons.warehouse,
+  InteractiveCardKind.finance => AppIcons.bank,
+  InteractiveCardKind.purchasing => AppIcons.purchasing,
+  InteractiveCardKind.qualityGuard => AppIcons.shieldCheck,
+  InteractiveCardKind.accountant => AppIcons.calculator,
+  InteractiveCardKind.hr => AppIcons.hr,
+  InteractiveCardKind.promptClarify ||
+  InteractiveCardKind.reportBuilder ||
+  InteractiveCardKind.promptSuggestion => AppIcons.grid,
+};
 
 class _PulseError extends StatelessWidget {
   const _PulseError({required this.message});

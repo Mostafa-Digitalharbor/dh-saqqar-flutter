@@ -14,10 +14,11 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'support/app_strings_source.dart';
 
 /// The ONLY file allowed to mention deep-think, and why.
 const _allowed = {
-  'lib/features/conversations/data/conversation_models.dart':
+  'lib/features/conversations/data/conversation_models_conversation.dart':
       'parse-and-ignore: the server still sends `deep_think`',
 };
 
@@ -30,12 +31,13 @@ typedef _Hit = ({String path, int number, String text});
 /// to sit here…") and a naive grep would flag every explanation.
 List<_Hit> _scanLib() {
   final out = <_Hit>[];
-  final files = Directory('lib')
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.dart'))
-      .toList()
-    ..sort((a, b) => a.path.compareTo(b.path));
+  final files =
+      Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
 
   for (final file in files) {
     final path = file.path.replaceAll(r'\', '/');
@@ -73,7 +75,8 @@ void main() {
     expect(
       hits,
       isEmpty,
-      reason: 'Deep think was removed with the web toggle (§2). These lines '
+      reason:
+          'Deep think was removed with the web toggle (§2). These lines '
           'bring it back:\n'
           '${hits.map((h) => '  ${h.path}:${h.number}\n      '
               '${h.text.trim()}').join('\n')}\n\n'
@@ -95,8 +98,9 @@ void main() {
   test('its persisted preference key is gone too', () {
     // `saqqar.deepThink` in SharedPreferences would keep a dead value alive
     // across upgrades and confuse anyone reading a device dump.
-    final uiStrings =
-        File('lib/core/constants/ui_strings.dart').readAsStringSync();
+    final uiStrings = File(
+      'lib/core/constants/ui_strings.dart',
+    ).readAsStringSync();
 
     expect(uiStrings.contains('saqqar.deepThink'), isFalse);
     expect(
@@ -107,7 +111,7 @@ void main() {
   });
 
   test('the i18n tables carry task-prep copy and no deep-think copy', () {
-    final strings = File('lib/core/i18n/app_strings.dart').readAsStringSync();
+    final strings = appStringsSource();
 
     expect(strings.contains("'deep_think'"), isFalse);
     expect(strings.contains("'deep_think_title'"), isFalse);

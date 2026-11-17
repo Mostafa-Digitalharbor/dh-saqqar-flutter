@@ -18,9 +18,9 @@ import 'data_explorer_state.dart';
 /// server returns — no guessed request schema baked in.
 class DataExplorerCubit extends Cubit<DataExplorerState> {
   DataExplorerCubit({required ProjectsApi projects, required OdooDataApi data})
-      : _projects = projects,
-        _data = data,
-        super(const DataExplorerState());
+    : _projects = projects,
+      _data = data,
+      super(const DataExplorerState());
 
   static const _tag = 'DataExplorerCubit';
   static const _encoder = JsonEncoder.withIndent('  ');
@@ -42,12 +42,14 @@ class DataExplorerCubit extends Cubit<DataExplorerState> {
               readOnly: e.readOnly,
             ),
       ];
-      emit(state.copyWith(
-        environments: envs,
-        loadingEnvs: false,
-        selectedEnvId:
-            state.selectedEnvId ?? (envs.isNotEmpty ? envs.first.id : null),
-      ));
+      emit(
+        state.copyWith(
+          environments: envs,
+          loadingEnvs: false,
+          selectedEnvId:
+              state.selectedEnvId ?? (envs.isNotEmpty ? envs.first.id : null),
+        ),
+      );
     } catch (e, st) {
       AppLogger.warn(_tag, 'loadEnvironments failed', error: e, stackTrace: st);
       emit(state.copyWith(loadingEnvs: false, envError: e));
@@ -71,7 +73,9 @@ class DataExplorerCubit extends Cubit<DataExplorerState> {
     if (op.needsBody) {
       try {
         final parsed = jsonDecode(bodyText);
-        if (parsed is! Map) throw const FormatException('body must be a JSON object');
+        if (parsed is! Map) {
+          throw const FormatException('body must be a JSON object');
+        }
         body = parsed.cast<String, dynamic>();
       } on FormatException catch (e) {
         emit(state.copyWith(queryError: e, result: ''));

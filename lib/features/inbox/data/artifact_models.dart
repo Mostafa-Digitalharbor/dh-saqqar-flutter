@@ -89,8 +89,7 @@ class Artifact extends Equatable {
       mimeType: json['mime_type'] as String? ?? 'application/octet-stream',
       url: json['url'] as String? ?? '',
       filePath: json['file_path'] as String?,
-      metadata: (json['metadata'] as Map?)?.cast<String, dynamic>() ??
-          const {},
+      metadata: (json['metadata'] as Map?)?.cast<String, dynamic>() ?? const {},
       createdAt: _parseDate(json['created_at']),
       conversation: json['conversation'] is Map<String, dynamic>
           ? ArtifactConversationRef.fromJson(
@@ -102,16 +101,16 @@ class Artifact extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        kind,
-        mimeType,
-        url,
-        filePath,
-        metadata,
-        createdAt,
-        conversation,
-      ];
+    id,
+    name,
+    kind,
+    mimeType,
+    url,
+    filePath,
+    metadata,
+    createdAt,
+    conversation,
+  ];
 
   static DateTime? _parseDate(Object? value) {
     if (value is String && value.isNotEmpty) {

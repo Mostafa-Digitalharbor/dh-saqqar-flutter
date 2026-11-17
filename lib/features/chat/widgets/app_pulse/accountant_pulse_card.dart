@@ -63,7 +63,10 @@ class AccountantPulseCard extends StatelessWidget {
               for (final key in AccountantPulsePayload.checkKeys)
                 if (payload.checks[key] case final bucket?)
                   pulseBucketStatTile(
-                      context, bucket, tr.pulseAccountantCheck(key)),
+                    context,
+                    bucket,
+                    tr.pulseAccountantCheck(key),
+                  ),
             ],
           ),
       ],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/i18n/app_localizations.dart';
-import '../../../../core/i18n/app_strings.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_sizes.dart';
 import '../../../../shared/extensions/context_extensions.dart';
@@ -23,8 +22,7 @@ String pulseAppTitle(AppStrings tr, InteractiveCardKind kind) {
     InteractiveCardKind.hr => 'hr_assistant',
     InteractiveCardKind.promptClarify ||
     InteractiveCardKind.reportBuilder ||
-    InteractiveCardKind.promptSuggestion =>
-      '',
+    InteractiveCardKind.promptSuggestion => '',
   };
   return tr.lookup('app_name_$key', fallback: kind.wire);
 }
@@ -62,10 +60,10 @@ PulseCell pulseBucketCountCell(BuildContext context, PulseBucket bucket) {
 enum PulseTone { none, warn, danger }
 
 Color? _toneColor(BuildContext context, PulseTone tone) => switch (tone) {
-      PulseTone.none => null,
-      PulseTone.warn => context.saqqar.warning,
-      PulseTone.danger => context.saqqar.danger,
-    };
+  PulseTone.none => null,
+  PulseTone.warn => context.saqqar.warning,
+  PulseTone.danger => context.saqqar.danger,
+};
 
 /// One boxed metric in a pulse card — the web's `.fc-stat`: a hairline box
 /// with the number over its label, both aligned to the reading edge.
@@ -179,10 +177,7 @@ class PulseStatGrid extends StatelessWidget {
             runSpacing: _gap,
             children: [
               for (final tile in tiles)
-                SizedBox(
-                  width: AppControlSizes.pulseStatTileMin,
-                  child: tile,
-                ),
+                SizedBox(width: AppControlSizes.pulseStatTileMin, child: tile),
             ],
           );
         }

@@ -11,10 +11,10 @@ enum AppThemeMode { light, dark, system }
 
 extension AppThemeModeX on AppThemeMode {
   ThemeMode get materialMode => switch (this) {
-        AppThemeMode.light => ThemeMode.light,
-        AppThemeMode.dark => ThemeMode.dark,
-        AppThemeMode.system => ThemeMode.system,
-      };
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+    AppThemeMode.system => ThemeMode.system,
+  };
 
   String get storageValue => name;
 
@@ -34,7 +34,7 @@ extension AppThemeModeX on AppThemeMode {
 /// constructor injection).
 class ThemeCubit extends Cubit<AppThemeMode> {
   ThemeCubit(this._prefs)
-      : super(AppThemeModeX.parse(_prefs.getString(_kThemePrefKey)));
+    : super(AppThemeModeX.parse(_prefs.getString(_kThemePrefKey)));
 
   final SharedPreferences _prefs;
 

@@ -26,4 +26,3 @@ class RemoteI18nApi {
     return strings.map((key, value) => MapEntry(key, value.toString()));
   }
 }
-

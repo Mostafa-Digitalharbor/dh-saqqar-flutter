@@ -44,10 +44,7 @@ class TaskWordingHintBar extends StatelessWidget {
           ),
           // Secondary on purpose: continuing unchanged is the safe default,
           // and a second filled button would read as two competing asks.
-          TextButton(
-            onPressed: onDismiss,
-            child: Text(tr.promptHintDismiss),
-          ),
+          TextButton(onPressed: onDismiss, child: Text(tr.promptHintDismiss)),
         ],
       ),
     );

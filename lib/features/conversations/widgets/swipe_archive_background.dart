@@ -39,8 +39,9 @@ class _SwipeBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsetsDirectional.symmetric(horizontal: AppSpacing.s20),
+      padding: const EdgeInsetsDirectional.symmetric(
+        horizontal: AppSpacing.s20,
+      ),
       decoration: BoxDecoration(
         color: base.withValues(alpha: AppAlphas.a18),
         borderRadius: AppRadius.modalR,

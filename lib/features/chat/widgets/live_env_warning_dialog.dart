@@ -67,100 +67,95 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
     return AppDialogShell(
       accent: AppDialogShell.dangerAccent(context),
       child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.s22,
-                      AppSpacing.s22,
-                      AppSpacing.s22,
-                      AppSpacing.s18,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s22,
+          AppSpacing.s22,
+          AppSpacing.s22,
+          AppSpacing.s18,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Align, not decoration — the Column is
+            // `CrossAxisAlignment.stretch`, whose tight
+            // full-width constraint overrides the box's own
+            // `size: 46` and renders it as a wide bar. Same fix
+            // and same reason as `ConfirmDialog`.
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: ColoredIconBox(
+                icon: AppIcons.warning,
+                color: s.danger,
+                size: AppIconSizes.dialogHero,
+                radius: AppRadius.input,
+                iconSize: AppIconSizes.boxGlyphLarge,
+                backgroundAlpha: 0.14,
+                borderAlpha: 0.28,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s14),
+            Text(
+              context.tr.liveWarningTitle(widget.environmentName),
+              style: context.text.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: AppLetterSpacing.heading,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s8),
+            Text(
+              context.tr.liveWarningBody(
+                widget.environmentName,
+                widget.projectName,
+              ),
+              style: context.text.bodyMedium?.copyWith(
+                color: s.muted,
+                height: AppLineHeights.body,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s14),
+            InkWell(
+              borderRadius: AppRadius.buttonR,
+              onTap: () => setState(() => _dontAskAgain = !_dontAskAgain),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _dontAskAgain,
+                      onChanged: (v) =>
+                          setState(() => _dontAskAgain = v ?? false),
+                      activeColor: s.brandCyan,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Align, not decoration — the Column is
-                        // `CrossAxisAlignment.stretch`, whose tight
-                        // full-width constraint overrides the box's own
-                        // `size: 46` and renders it as a wide bar. Same fix
-                        // and same reason as `ConfirmDialog`.
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: ColoredIconBox(
-                            icon: AppIcons.warning,
-                            color: s.danger,
-                            size: AppIconSizes.dialogHero,
-                            radius: AppRadius.input,
-                            iconSize: AppIconSizes.boxGlyphLarge,
-                            backgroundAlpha: 0.14,
-                            borderAlpha: 0.28,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s14),
-                        Text(
-                          context.tr.liveWarningTitle(widget.environmentName),
-                          style: context.text.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: AppLetterSpacing.heading,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s8),
-                        Text(
-                          context.tr.liveWarningBody(
-                            widget.environmentName,
-                            widget.projectName,
-                          ),
-                          style: context.text.bodyMedium?.copyWith(
-                            color: s.muted,
-                            height: AppLineHeights.body,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s14),
-                        InkWell(
-                          borderRadius: AppRadius.buttonR,
-                          onTap: () =>
-                              setState(() => _dontAskAgain = !_dontAskAgain),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  value: _dontAskAgain,
-                                  onChanged: (v) => setState(
-                                    () => _dontAskAgain = v ?? false,
-                                  ),
-                                  activeColor: s.brandCyan,
-                                ),
-                                const SizedBox(width: AppSpacing.s4),
-                                Expanded(
-                                  child: Text(
-                                    context.tr.dontAskAgain,
-                                    style: context.text.bodySmall?.copyWith(
-                                      color: s.text,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s14),
-                        DialogActions(
-                          cancel: GhostButton(
-                            label: context.tr.cancel,
-                            onPressed: () => Navigator.of(
-                              context,
-                            ).pop(LiveAckResult.cancel),
-                          ),
-                          confirm: PrimaryButton(
-                            label: context.tr.sendToLive,
-                            icon: AppIcons.send,
-                            onPressed: () => Navigator.of(context).pop(
-                              _dontAskAgain
-                                  ? LiveAckResult.confirmGlobal
-                                  : LiveAckResult.confirmOnce,
-                            ),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: AppSpacing.s4),
+                    Expanded(
+                      child: Text(
+                        context.tr.dontAskAgain,
+                        style: context.text.bodySmall?.copyWith(color: s.text),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s14),
+            DialogActions(
+              cancel: GhostButton(
+                label: context.tr.cancel,
+                onPressed: () =>
+                    Navigator.of(context).pop(LiveAckResult.cancel),
+              ),
+              confirm: PrimaryButton(
+                label: context.tr.sendToLive,
+                icon: AppIcons.send,
+                onPressed: () => Navigator.of(context).pop(
+                  _dontAskAgain
+                      ? LiveAckResult.confirmGlobal
+                      : LiveAckResult.confirmOnce,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

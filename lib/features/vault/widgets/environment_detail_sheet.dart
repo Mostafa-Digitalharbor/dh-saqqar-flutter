@@ -9,7 +9,6 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../../shared/widgets/sheet_drag_handle.dart';
 import '../data/credential_models.dart';
 import '../data/project_models.dart';
 import '../data/vault_persona_service.dart';
@@ -66,7 +65,6 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
   /// shell / GitHub). Restored per environment on open, like the web.
   bool _developerMode = false;
 
-
   @override
   void initState() {
     super.initState();
@@ -74,16 +72,17 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
     // Restore the audience chosen for THIS environment last time. Read
     // synchronously in initState so the first build already has the right
     // tab count — deciding it a frame later would rebuild the TabController.
-    _developerMode =
-        context.read<VaultPersonaService>().isDeveloper(widget.environmentId);
+    _developerMode = context.read<VaultPersonaService>().isDeveloper(
+      widget.environmentId,
+    );
     // Lazy-fetch the env's credentials — the projects-list endpoint
     // doesn't include them so the credential forms would otherwise
     // render against an empty cache. Safe to call multiple times.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context
-          .read<VaultCubit>()
-          .loadEnvironmentCredentials(widget.environmentId);
+      context.read<VaultCubit>().loadEnvironmentCredentials(
+        widget.environmentId,
+      );
     });
   }
 
@@ -112,9 +111,10 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
         ?.environmentById(widget.environmentId)
         ?.name;
     if (current != null && trimmed == current) return;
-    context
-        .read<VaultCubit>()
-        .updateEnvironment(id: widget.environmentId, name: trimmed);
+    context.read<VaultCubit>().updateEnvironment(
+      id: widget.environmentId,
+      name: trimmed,
+    );
   }
 
   @override
@@ -126,7 +126,8 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
     final project = env != null ? data?.projectById(env.projectId) : null;
 
     final schemas = data?.schemas ?? const <CredentialSchema>[];
-    final maxHeight = MediaQuery.sizeOf(context).height * AppFractions.sheetTall;
+    final maxHeight =
+        MediaQuery.sizeOf(context).height * AppFractions.sheetTall;
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
 
     if (env == null) {
@@ -164,8 +165,6 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SheetDragHandle(),
-                const SizedBox(height: AppSpacing.s14),
                 // Header — breadcrumb ("Project › Env") on the start side,
                 // explicit X close on the end side. Matches the web layout
                 // exactly. The bold env title sits below the breadcrumb.
@@ -179,16 +178,18 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                         children: [
                           Row(
                             children: [
-                              Icon(AppIcons.server,
-                                  size: AppIconSizes.dense, color: s.muted),
+                              Icon(
+                                AppIcons.server,
+                                size: AppIconSizes.dense,
+                                color: s.muted,
+                              ),
                               const SizedBox(width: AppSpacing.s6),
                               Flexible(
                                 child: Text(
                                   '$projectName › ${env.name}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style:
-                                      context.text.labelMedium?.copyWith(
+                                  style: context.text.labelMedium?.copyWith(
                                     color: s.muted,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: AppLetterSpacing.label,
@@ -238,9 +239,9 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
                     if (dev == _developerMode) return;
                     setState(() => _developerMode = dev);
                     context.read<VaultPersonaService>().setDeveloper(
-                          widget.environmentId,
-                          developer: dev,
-                        );
+                      widget.environmentId,
+                      developer: dev,
+                    );
                   },
                 ),
                 const SizedBox(height: AppSpacing.s14),
@@ -323,10 +324,7 @@ class _EnvironmentDetailSheetState extends State<EnvironmentDetailSheet> {
 /// web's audience switch above the credential tabs — user mode hides the
 /// technical kinds, developer mode reveals them.
 class _AudienceToggle extends StatelessWidget {
-  const _AudienceToggle({
-    required this.developerMode,
-    required this.onChanged,
-  });
+  const _AudienceToggle({required this.developerMode, required this.onChanged});
 
   final bool developerMode;
   final ValueChanged<bool> onChanged;
@@ -343,8 +341,18 @@ class _AudienceToggle extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _segment(context, label: context.tr.credModeUser, selected: !developerMode, onTap: () => onChanged(false)),
-          _segment(context, label: context.tr.credModeDeveloper, selected: developerMode, onTap: () => onChanged(true)),
+          _segment(
+            context,
+            label: context.tr.credModeUser,
+            selected: !developerMode,
+            onTap: () => onChanged(false),
+          ),
+          _segment(
+            context,
+            label: context.tr.credModeDeveloper,
+            selected: developerMode,
+            onTap: () => onChanged(true),
+          ),
         ],
       ),
     );

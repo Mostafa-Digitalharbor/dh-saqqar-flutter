@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/format/file_kind.dart';
-import '../../conversations/data/conversation_models.dart'
-    show MessageTokens;
+import '../../conversations/data/conversation_models.dart' show MessageTokens;
 import '../../inbox/data/approval_models.dart' show kDeleteOperation;
 
 /// View models for the chat surface — the shapes its widgets render.
@@ -27,11 +26,7 @@ import '../../inbox/data/approval_models.dart' show kDeleteOperation;
 /// off it.
 enum ChatMessageRole { user, assistant, tool, system }
 
-
 enum ChatApprovalStatus { pending, approved, rejected }
-
-
-
 
 class ChatMessage {
   const ChatMessage({
@@ -166,9 +161,6 @@ class ChatAttachment {
   bool get isAgentGenerated => source == AttachmentSource.generatedOutput;
 }
 
-
-
-
 class ChatApproval {
   const ChatApproval({
     required this.id,
@@ -248,11 +240,9 @@ class ChatApproval {
   ///     granted earlier already cleared this one.
   bool get canBatchApprove =>
       actionType == kOdooWrite &&
-      !batchScoped && payload['operation'] != kDeleteOperation;
+      !batchScoped &&
+      payload['operation'] != kDeleteOperation;
 }
-
-
-
 
 class ChatArtifact {
   const ChatArtifact({

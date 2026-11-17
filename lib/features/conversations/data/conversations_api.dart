@@ -419,12 +419,8 @@ class ConversationsApi {
     required String attachmentId,
   }) async {
     final res = await _dio.get<Map<String, dynamic>>(
-      ApiEndpoints.conversationAttachmentStatus(
-        conversationId,
-        attachmentId,
-      ),
+      ApiEndpoints.conversationAttachmentStatus(conversationId, attachmentId),
     );
     return Attachment.fromJson(res.data!);
   }
 }
-

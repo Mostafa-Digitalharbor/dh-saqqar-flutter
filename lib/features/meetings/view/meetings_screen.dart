@@ -116,8 +116,10 @@ class _StartForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(context.tr.meetingsIntro,
-            style: context.text.bodyMedium?.copyWith(color: s.muted)),
+        Text(
+          context.tr.meetingsIntro,
+          style: context.text.bodyMedium?.copyWith(color: s.muted),
+        ),
         const SizedBox(height: AppSpacing.s18),
         AppTextField(
           label: context.tr.meetingsUrlLabel,
@@ -180,8 +182,9 @@ class _SessionView extends StatelessWidget {
                 icon: AppIcons.stopCircle,
                 tone: GhostButtonTone.danger,
                 expand: true,
-                onPressed:
-                    (state.busy || !session.isActive) ? null : cubit.stop,
+                onPressed: (state.busy || !session.isActive)
+                    ? null
+                    : cubit.stop,
               ),
             ),
             const SizedBox(width: AppSpacing.s10),
@@ -258,14 +261,19 @@ class _TextBlock extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: context.text.labelMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: context.text.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               if (onRefresh != null)
                 IconButton(
                   visualDensity: VisualDensity.compact,
-                  icon: Icon(AppIcons.refresh, size: AppIconSizes.regular, color: s.muted),
+                  icon: Icon(
+                    AppIcons.refresh,
+                    size: AppIconSizes.regular,
+                    color: s.muted,
+                  ),
                   onPressed: onRefresh,
                 ),
             ],
@@ -274,9 +282,12 @@ class _TextBlock extends StatelessWidget {
           SelectableText(
             body,
             style: mono
-                ? context.text.bodySmall
-                    ?.copyWith(fontFamily: AppTypography.fontMono)
-                : context.text.bodyMedium?.copyWith(height: AppLineHeights.reading),
+                ? context.text.bodySmall?.copyWith(
+                    fontFamily: AppTypography.fontMono,
+                  )
+                : context.text.bodyMedium?.copyWith(
+                    height: AppLineHeights.reading,
+                  ),
           ),
         ],
       ),

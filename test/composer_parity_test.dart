@@ -1,23 +1,19 @@
-// docs/WEB_UI_PARITY_GAPS.md §2 / §3 / §5 — the reshaped composer bar.
+// The redesigned composer bar (figma-design / Chat-Screen).
 //
-// Target layout, left → right:
-//   [ ＋ tools ] [🎤]  —spacer—  [badges] [→ send]
-//   [ Task prep ] [ Auto-approve ]
+// Layout: a dark glass card — "Ask me anything …" over a row of round
+// controls:
+//   [ 📎 attach ] [ ⛓ tools ]   —spacer—   [ 🎤 ] [ ↑ send ]
 //
-// No deep-think anywhere (web removed it), no loose slash button (folded into
-// the ＋ sheet), and — since 2026-08-06 — no paperclip either.
-//
-// The paperclip used to be kept as a deliberate divergence from web, on the
-// argument that hiding upload behind a menu costs a tap. That argument lost:
-// the ＋ sheet's FIRST row is "Upload file", so the two controls sat next to
-// each other firing the identical action. A user reading the bar sees two
-// affordances and reasonably assumes they do different things.
+// Task prep / Auto-approve no longer sit in the bar: they moved to the ⋮
+// "Saqqar Tools" sheet (see `tools_sheet.dart`), which is where the design
+// puts them. Deep-think stays gone (web removed it) and there is no loose
+// slash button.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
-import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/theme/app_icons.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_composer.dart';
@@ -25,11 +21,13 @@ import 'package:saqqar_app/features/chat/widgets/chat_composer.dart';
 Future<void> _pumpComposer(
   WidgetTester tester, {
   Locale locale = const Locale('en'),
-  bool taskPrep = false,
-  bool taskPrepAvailable = true,
   bool withTools = true,
-  ValueChanged<bool>? onTaskPrepChanged,
+  bool voice = true,
   VoidCallback? onTools,
+  VoidCallback? onAttach,
+  VoidCallback? onSend,
+  VoidCallback? onStartRecording,
+  TextEditingController? controller,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -41,24 +39,25 @@ Future<void> _pumpComposer(
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [Locale('en'), Locale('ar')],
-      theme: AppTheme.light(locale),
+      theme: AppTheme.dark(locale),
       home: Scaffold(
         body: Align(
           alignment: Alignment.bottomCenter,
           child: ChatComposer(
-            controller: TextEditingController(),
+            controller: controller ?? TextEditingController(),
             attachments: const [],
-            onAttach: () {},
+            onAttach: onAttach ?? () {},
             onTools: withTools ? (onTools ?? () {}) : null,
             onRemoveAttachment: (_) {},
             onPreviewAttachment: (_) {},
-            onSend: () {},
-            taskPrep: taskPrep,
-            taskPrepAvailable: taskPrepAvailable,
+            onSend: onSend ?? () {},
+            voiceEnabled: voice,
+            taskPrep: false,
+            taskPrepAvailable: true,
             autoApprove: false,
-            onTaskPrepChanged: onTaskPrepChanged ?? (_) {},
+            onTaskPrepChanged: (_) {},
             onAutoApproveChanged: (_) {},
-            onStartRecording: () {},
+            onStartRecording: onStartRecording ?? () {},
             onStopRecording: () {},
             onDiscardRecording: () {},
           ),
@@ -71,107 +70,83 @@ Future<void> _pumpComposer(
 
 void main() {
   final en = AppStrings(const Locale('en'));
-  final ar = AppStrings(const Locale('ar'));
 
-  testWidgets('shows the ＋ tools button and the two mode toggles',
+  testWidgets('shows the placeholder and the four round controls',
       (tester) async {
     await _pumpComposer(tester);
 
-    expect(find.byIcon(AppIcons.plus), findsOneWidget);
-    expect(find.text(en.taskPrep), findsOneWidget);
-    expect(find.text(en.autoApprove), findsOneWidget);
+    expect(find.text('Ask me anything ...'), findsOneWidget);
+    expect(find.byIcon(LucideIcons.paperclip), findsOneWidget);
+    expect(find.byIcon(LucideIcons.workflow), findsOneWidget);
+    expect(find.byIcon(LucideIcons.mic), findsOneWidget);
+    expect(find.byIcon(LucideIcons.arrowUpToLine), findsOneWidget);
   });
 
-  testWidgets('there is NO second upload control beside the ＋',
-      (tester) async {
-    // Upload lives in the ＋ sheet, once. A paperclip here would be a
-    // duplicate door into the same room.
+  testWidgets('the mode toggles no longer live in the bar', (tester) async {
     await _pumpComposer(tester);
 
-    expect(find.byIcon(AppIcons.attach), findsNothing);
+    expect(find.text(en.taskPrep), findsNothing);
+    expect(find.text(en.autoApprove), findsNothing);
   });
 
-  testWidgets('no deep-think control survives anywhere in the bar',
-      (tester) async {
+  testWidgets('no deep-think and no loose slash control', (tester) async {
     await _pumpComposer(tester);
 
-    // The English label the toggle used to carry. Asserted through the
-    // rendered tree rather than the source so a stray re-add of the widget
-    // (with a new key) still trips this.
     expect(find.text('Deep think'), findsNothing);
     expect(find.byIcon(AppIcons.sparkles), findsNothing);
-  });
-
-  testWidgets('the loose slash button is gone (it moved into the ＋ sheet)',
-      (tester) async {
-    await _pumpComposer(tester);
-
     expect(find.byIcon(AppIcons.slash), findsNothing);
   });
 
-  testWidgets('tapping ＋ opens the tools menu', (tester) async {
+  testWidgets('the paperclip fires onAttach', (tester) async {
+    var attached = 0;
+    await _pumpComposer(tester, onAttach: () => attached++);
+
+    await tester.tap(find.byIcon(LucideIcons.paperclip));
+    await tester.pump();
+
+    expect(attached, 1);
+  });
+
+  testWidgets('the workflow button opens the tools menu', (tester) async {
     var opened = 0;
     await _pumpComposer(tester, onTools: () => opened++);
 
-    await tester.tap(find.byIcon(AppIcons.plus));
+    await tester.tap(find.byIcon(LucideIcons.workflow));
     await tester.pump();
 
     expect(opened, 1);
   });
 
-  testWidgets('a null onTools hides the ＋ entirely', (tester) async {
+  testWidgets('a null onTools hides the tools button entirely',
+      (tester) async {
     await _pumpComposer(tester, withTools: false);
 
-    expect(find.byIcon(AppIcons.plus), findsNothing);
-    // The rest of the bar is unaffected — the send button still resolves.
-    expect(find.text(en.taskPrep), findsOneWidget);
+    expect(find.byIcon(LucideIcons.workflow), findsNothing);
+    expect(find.byIcon(LucideIcons.paperclip), findsOneWidget);
   });
 
-  testWidgets('the Task-prep toggle reports its new value', (tester) async {
-    final flips = <bool>[];
-    await _pumpComposer(
-      tester,
-      taskPrep: false,
-      onTaskPrepChanged: flips.add,
-    );
+  testWidgets('the mic is hidden when voice is locked on the plan',
+      (tester) async {
+    await _pumpComposer(tester, voice: false);
 
-    await tester.tap(find.text(en.taskPrep));
+    expect(find.byIcon(LucideIcons.mic), findsNothing);
+  });
+
+  testWidgets('send is inert until there is something to send',
+      (tester) async {
+    var sent = 0;
+    final controller = TextEditingController();
+    await _pumpComposer(tester, onSend: () => sent++, controller: controller);
+
+    await tester.tap(find.byIcon(LucideIcons.arrowUpToLine));
     await tester.pump();
+    expect(sent, 0);
 
-    expect(flips, [true]);
-  });
-
-  testWidgets('an ineligible plan hides the toggle AND its active badge',
-      (tester) async {
-    // `taskPrep: true` with `taskPrepAvailable: false` is the state a user
-    // lands in when the server says their plan lacks the feature but their
-    // stored preference is on. Neither the toggle nor the "mode is engaged"
-    // badge may claim otherwise.
-    await _pumpComposer(
-      tester,
-      taskPrep: true,
-      taskPrepAvailable: false,
-    );
-
-    expect(find.text(en.taskPrep), findsNothing);
-    expect(find.byIcon(AppIcons.lightbulb), findsNothing);
-    // Auto-approve is gated separately and must survive.
-    expect(find.text(en.autoApprove), findsOneWidget);
-  });
-
-  testWidgets('an active Task prep shows the pulsing mode badge',
-      (tester) async {
-    await _pumpComposer(tester, taskPrep: true);
-
-    // Two: the badge next to Send and the toggle's own glyph.
-    expect(find.byIcon(AppIcons.lightbulb), findsNWidgets(2));
-  });
-
-  testWidgets('Arabic renders the exact web-team strings', (tester) async {
-    await _pumpComposer(tester, locale: const Locale('ar'));
-
-    expect(ar.taskPrep, 'تجهيز المهمة');
-    expect(find.text(ar.taskPrep), findsOneWidget);
+    controller.text = 'hello';
+    await tester.pump();
+    await tester.tap(find.byIcon(LucideIcons.arrowUpToLine));
+    await tester.pump();
+    expect(sent, 1);
   });
 
   testWidgets('renders inside a 320 px viewport without overflowing',
@@ -180,7 +155,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await _pumpComposer(tester, locale: const Locale('ar'), taskPrep: true);
+    await _pumpComposer(tester, locale: const Locale('ar'));
 
     expect(tester.takeException(), isNull);
   });

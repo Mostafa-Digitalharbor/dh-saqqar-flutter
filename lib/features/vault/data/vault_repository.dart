@@ -25,9 +25,9 @@ class VaultRepository {
     required ProjectsApi projectsApi,
     required CredentialsApi credentialsApi,
     VaultCache? cache,
-  })  : _projects = projectsApi,
-        _credentials = credentialsApi,
-        _cache = cache;
+  }) : _projects = projectsApi,
+       _credentials = credentialsApi,
+       _cache = cache;
 
   static const _tag = 'VaultRepository';
 
@@ -92,7 +92,7 @@ class VaultRepository {
     AppLogger.info(
       _tag,
       'createEnvironment(projectId=$projectId, name=$name, '
-          'isLive=$isLive, readOnly=$readOnly, autoApprove=$autoApprove)',
+      'isLive=$isLive, readOnly=$readOnly, autoApprove=$autoApprove)',
     );
     return _projects.createEnvironment(
       projectId: projectId,
@@ -113,7 +113,7 @@ class VaultRepository {
     AppLogger.info(
       _tag,
       'updateEnvironment(id=$id, name=$name, isLive=$isLive, '
-          'readOnly=$readOnly, autoApprove=$autoApprove)',
+      'readOnly=$readOnly, autoApprove=$autoApprove)',
     );
     return _projects.updateEnvironment(
       id: id,

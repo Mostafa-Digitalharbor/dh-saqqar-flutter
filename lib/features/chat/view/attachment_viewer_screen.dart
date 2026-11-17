@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:pdfx/pdfx.dart';
 
@@ -14,6 +15,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
+import '../../../shared/fig/fig.dart';
 import '../../../shared/widgets/app_toast.dart';
 
 /// What the viewer can render natively. Anything outside this set is a
@@ -152,6 +154,15 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
         widget.sizeLabel,
     ].join(' · ');
 
+    if (isImage) {
+      return _ImageViewer(
+        file: widget.file,
+        name: widget.name,
+        subtitle: subtitle,
+        onOpenExternally: _openExternally,
+      );
+    }
+
     return Scaffold(
       backgroundColor: isImage ? AppColors.imageBackdrop : s.bg,
       appBar: AppBar(
@@ -178,7 +189,11 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.text.labelSmall?.copyWith(
-                  color: isImage ? AppColors.onImageBackdrop.withValues(alpha: AppAlphas.deemphasis) : s.muted,
+                  color: isImage
+                      ? AppColors.onImageBackdrop.withValues(
+                          alpha: AppAlphas.deemphasis,
+                        )
+                      : s.muted,
                   fontSize: AppFontSizes.caption,
                 ),
               ),
@@ -381,7 +396,11 @@ class _UnsupportedBody extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: s.brandCyan.withValues(alpha: AppAlphas.a10),
               ),
-              child: Icon(AppIcons.fileText, size: AppIconSizes.tile, color: s.brandCyan),
+              child: Icon(
+                AppIcons.fileText,
+                size: AppIconSizes.tile,
+                color: s.brandCyan,
+              ),
             ),
             const SizedBox(height: AppSpacing.s16),
             Text(
@@ -417,6 +436,266 @@ class _UnsupportedBody extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The redesigned fullscreen image viewer (figma-design / Fullscreen image
+/// viewer): save + counter + close up top, file name and meta, the picture,
+/// a zoom read-out, the thumbnail strip and the gesture hints.
+class _ImageViewer extends StatefulWidget {
+  const _ImageViewer({
+    required this.file,
+    required this.name,
+    required this.subtitle,
+    required this.onOpenExternally,
+  });
+
+  final File file;
+  final String name;
+  final String subtitle;
+  final VoidCallback onOpenExternally;
+
+  @override
+  State<_ImageViewer> createState() => _ImageViewerState();
+}
+
+class _ImageViewerState extends State<_ImageViewer> {
+  final TransformationController _tc = TransformationController();
+  Offset _doubleTapAt = Offset.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _tc.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
+
+  int get _zoomPct => (_tc.value.getMaxScaleOnAxis() * 100).round();
+
+  void _zoomTo(double scale) {
+    final c = _doubleTapAt;
+    _tc.value = scale <= 1
+        ? Matrix4.identity()
+        : (Matrix4.identity()
+            ..translateByDouble(-c.dx * (scale - 1), -c.dy * (scale - 1), 0, 1)
+            ..scaleByDouble(scale, scale, 1, 1));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const white = Colors.white;
+    return Scaffold(
+      backgroundColor: const Color(0xFF07080C),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: widget.onOpenExternally,
+                    child: Tooltip(
+                      message: context.tr.viewerOpenExternally,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: white, width: 1.5),
+                        ),
+                        child: const Icon(
+                          LucideIcons.arrowDownToLine,
+                          size: 18,
+                          color: white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        context.tr.fig1Of1,
+                        style: Fig.t(
+                          context,
+                          size: 15,
+                          weight: FontWeight.w600,
+                          color: white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.maybePop(context),
+                    child: Tooltip(
+                      message: context.tr.close,
+                      child: const SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: Icon(LucideIcons.x, size: 24, color: white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 30, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Fig.t(
+                      context,
+                      size: 20,
+                      weight: FontWeight.w500,
+                      color: white,
+                    ),
+                  ),
+                  if (widget.subtitle.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.s4),
+                    Text(
+                      widget.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Fig.t(
+                        context,
+                        size: 12.5,
+                        color: white.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.s34),
+                child: GestureDetector(
+                  onDoubleTapDown: (d) => _doubleTapAt = d.localPosition,
+                  onDoubleTap: () => _zoomTo(_zoomPct > 100 ? 1 : 2.5),
+                  child: InteractiveViewer(
+                    transformationController: _tc,
+                    minScale: 1,
+                    maxScale: 5,
+                    child: Center(
+                      child: Image.file(
+                        widget.file,
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stack) =>
+                            _UnsupportedBody(
+                              onOpenExternally: widget.onOpenExternally,
+                              message: context.tr.viewerLoadFailed,
+                            ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+              child: Row(
+                children: [
+                  const _RoundGhost(icon: LucideIcons.arrowLeftToLine),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(LucideIcons.zoomIn, size: 20, color: white),
+                        const SizedBox(width: AppSpacing.s8),
+                        Text(
+                          '$_zoomPct%',
+                          style: Fig.t(context, size: 15, color: white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const _RoundGhost(icon: LucideIcons.arrowRightToLine),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.s22),
+              child: Center(
+                child: Container(
+                  width: 54,
+                  height: 46,
+                  padding: const EdgeInsets.all(AppSpacing.s2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Fig.blueBright, width: 2),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: Image.file(
+                      widget.file,
+                      fit: BoxFit.cover,
+                      cacheWidth: 160,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+              child: Column(
+                children: [
+                  Text(
+                    context.tr.figSwipeToBrowsePinchOrDouble,
+                    textAlign: TextAlign.center,
+                    style: Fig.t(
+                      context,
+                      size: 12,
+                      color: white.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                  Text(
+                    context.tr.figDragToPanWhenZoomed,
+                    textAlign: TextAlign.center,
+                    style: Fig.t(
+                      context,
+                      size: 12,
+                      color: const Color(0xFF6F7FB0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoundGhost extends StatelessWidget {
+  const _RoundGhost({required this.icon});
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, size: 18, color: Colors.white.withValues(alpha: 0.4)),
     );
   }
 }

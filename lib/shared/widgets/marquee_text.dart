@@ -167,16 +167,14 @@ class _MarqueeTextState extends State<MarqueeText>
 
   @override
   Widget build(BuildContext context) {
-    final effectiveStyle =
-        widget.style ?? DefaultTextStyle.of(context).style;
+    final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
     final direction = Directionality.of(context);
     final textScaler = MediaQuery.textScalerOf(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
-        final textSize =
-            _measureText(effectiveStyle, direction, textScaler);
+        final textSize = _measureText(effectiveStyle, direction, textScaler);
         final textWidth = textSize.width;
         final textHeight = textSize.height;
 
@@ -202,8 +200,8 @@ class _MarqueeTextState extends State<MarqueeText>
         }
 
         final cycleDistance = textWidth + widget.gap;
-        final motionMs =
-            (cycleDistance / widget.pixelsPerSecond * 1000).toInt();
+        final motionMs = (cycleDistance / widget.pixelsPerSecond * 1000)
+            .toInt();
         final delayMs = widget.startDelay.inMilliseconds;
         final cycleDuration = Duration(milliseconds: motionMs + delayMs);
         final delayFraction = delayMs / (motionMs + delayMs);
@@ -226,43 +224,43 @@ class _MarqueeTextState extends State<MarqueeText>
               maxHeight: textHeight,
               alignment: AlignmentDirectional.centerStart,
               child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                final raw = _controller.value;
-                // Hold at 0 during the delay portion of the cycle, then
-                // ramp 0→1 over the remaining portion.
-                final t = raw < delayFraction
-                    ? 0.0
-                    : (raw - delayFraction) / (1 - delayFraction);
-                final dx = (isRtl ? cycleDistance : -cycleDistance) * t;
-                return Transform.translate(
-                  offset: Offset(dx, 0),
-                  child: child,
-                );
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                textDirection: direction,
-                children: [
-                  Text(
-                    widget.text,
-                    style: widget.style,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.visible,
-                  ),
-                  SizedBox(width: widget.gap),
-                  Text(
-                    widget.text,
-                    style: widget.style,
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.visible,
-                  ),
-                ],
+                animation: _controller,
+                builder: (context, child) {
+                  final raw = _controller.value;
+                  // Hold at 0 during the delay portion of the cycle, then
+                  // ramp 0→1 over the remaining portion.
+                  final t = raw < delayFraction
+                      ? 0.0
+                      : (raw - delayFraction) / (1 - delayFraction);
+                  final dx = (isRtl ? cycleDistance : -cycleDistance) * t;
+                  return Transform.translate(
+                    offset: Offset(dx, 0),
+                    child: child,
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  textDirection: direction,
+                  children: [
+                    Text(
+                      widget.text,
+                      style: widget.style,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                    SizedBox(width: widget.gap),
+                    Text(
+                      widget.text,
+                      style: widget.style,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           ),
         );
       },

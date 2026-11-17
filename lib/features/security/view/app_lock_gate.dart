@@ -23,8 +23,7 @@ class AppLockGate extends StatefulWidget {
   State<AppLockGate> createState() => _AppLockGateState();
 }
 
-class _AppLockGateState extends State<AppLockGate>
-    with WidgetsBindingObserver {
+class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -67,7 +66,8 @@ class _AppLockGateState extends State<AppLockGate>
       (c) => c.state.isAuthenticated,
     );
     // Is the opaque lock currently covering the app?
-    final showLock = authed &&
+    final showLock =
+        authed &&
         context.select<AppLockCubit, bool>(
           (c) => c.state.enabled && c.state.locked,
         );
@@ -79,10 +79,7 @@ class _AppLockGateState extends State<AppLockGate>
         // only, leaving the content reachable to assistive tech. No effect
         // when unlocked (`excluding: false`), so the normal experience is
         // byte-for-byte unchanged.
-        ExcludeSemantics(
-          excluding: showLock,
-          child: widget.child,
-        ),
+        ExcludeSemantics(excluding: showLock, child: widget.child),
         if (showLock) const Positioned.fill(child: AppLockScreen()),
       ],
     );

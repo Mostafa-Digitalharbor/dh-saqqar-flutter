@@ -44,7 +44,9 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
       children: [
         DecoratedBox(
           decoration: BoxDecoration(
-            color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelStrong)),
+            color: s.surface2.withValues(
+              alpha: context.alpha(AppAlphaPairs.panelStrong),
+            ),
             borderRadius: AppRadius.inputR,
             border: Border.all(color: s.cardBorder),
           ),
@@ -57,13 +59,23 @@ class SearchAndFiltersBar<T> extends StatelessWidget {
               hintStyle: context.text.bodyMedium?.copyWith(color: s.muted),
               filled: false,
               isCollapsed: false,
-              contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
-              prefixIcon: Icon(AppIcons.search, size: AppIconSizes.regular, color: s.muted),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.s12,
+              ),
+              prefixIcon: Icon(
+                AppIcons.search,
+                size: AppIconSizes.regular,
+                color: s.muted,
+              ),
               suffixIcon: query.isEmpty
                   ? null
                   : IconButton(
                       tooltip: context.tr.clearSearch,
-                      icon: Icon(AppIcons.close, size: AppIconSizes.regular, color: s.muted),
+                      icon: Icon(
+                        AppIcons.close,
+                        size: AppIconSizes.regular,
+                        color: s.muted,
+                      ),
                       onPressed: () {
                         controller.clear();
                         onQueryChanged('');

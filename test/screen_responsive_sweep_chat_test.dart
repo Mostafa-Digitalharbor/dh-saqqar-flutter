@@ -22,9 +22,12 @@
 // `responsive_sweep_test.dart` already stresses them with hostile children.
 
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -66,6 +69,7 @@ import 'package:saqqar_app/shared/widgets/primary_button.dart';
 import 'package:saqqar_app/features/vault/view_model/vault_cubit.dart';
 import 'package:saqqar_app/core/state/data_state.dart';
 
+import 'design/shot_harness.dart' show loadFonts, shotDir;
 import 'support/responsive_harness.dart';
 
 // ── Seeded content ───────────────────────────────────────────────────────
@@ -473,6 +477,75 @@ void main() {
           ),
         ),
       );
+
+  // Design screenshots (only when SHOT_DIR is set) — see test/design/.
+  group('design shots', () {
+    Future<void> snap(WidgetTester tester, String name, String id,
+        {Future<void> Function(WidgetTester)? act}) async {
+      await loadFonts();
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      tester.view.devicePixelRatio = 2;
+      tester.view.physicalSize = const Size(750, 1624);
+      tester.view.padding = const FakeViewPadding(top: 88, bottom: 68);
+      tester.view.viewPadding = const FakeViewPadding(top: 88, bottom: 68);
+      addTearDown(() {
+        tester.binding.setSurfaceSize(null);
+        tester.view.reset();
+      });
+      final key = GlobalKey();
+      await tester.pumpWidget(RepaintBoundary(
+        key: key,
+        child: buildHarness(
+          ChatScreen(conversationId: id),
+          locale: const Locale('en'),
+          scale: 1.0,
+          wrap: (app) => appChrome(chatProviders()(app), prefs),
+        ),
+      ));
+      await tester.runAsync(() async {
+        final ctx = tester.element(find.byType(Scaffold).first);
+        for (final a in const [
+          'assets/design/orb.png',
+          'assets/design/avatar.png',
+        ]) {
+          await precacheImage(AssetImage(a), ctx);
+        }
+      });
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+      if (act != null) {
+        await act(tester);
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump(const Duration(milliseconds: 600));
+      }
+      await tester.runAsync(() async {
+        final b = key.currentContext!.findRenderObject()!
+            as RenderRepaintBoundary;
+        final img = await b.toImage(pixelRatio: 1);
+        final data = await img.toByteData(format: ui.ImageByteFormat.png);
+        final f = File('${shotDir}/$name.png');
+        await f.parent.create(recursive: true);
+        await f.writeAsBytes(data!.buffer.asUint8List());
+      });
+    }
+
+    testWidgets('chat populated', (tester) async {
+      await snap(tester, 'chat_populated', 'c1');
+    });
+    testWidgets('chat new', (tester) async {
+      await snap(tester, 'chat_new', 'new');
+    });
+    testWidgets('chats drawer', (tester) async {
+      await snap(tester, 'drawer_chats', 'c1', act: (t) async {
+        await t.tap(find.byIcon(LucideIcons.menu));
+      });
+    });
+    testWidgets('workspace drawer', (tester) async {
+      await snap(tester, 'drawer_workspace', 'c1', act: (t) async {
+        await t.tap(find.byIcon(LucideIcons.info));
+      });
+    });
+  }, skip: Platform.environment['SHOT_DIR'] == null);
 
   group('ChatScreen — the surface the app exists for', () {
     testWidgets('survives the matrix with a populated transcript',

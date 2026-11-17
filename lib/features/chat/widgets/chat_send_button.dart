@@ -54,9 +54,7 @@ class ChatSendButton extends StatelessWidget {
       // outlined ring + foreground text-tinted square reads as
       // "interactive control" without alarm semantics.
       return Tooltip(
-        message: stopping
-            ? context.tr.stopping
-            : context.tr.stopGeneration,
+        message: stopping ? context.tr.stopping : context.tr.stopGeneration,
         child: TappableSurface(
           radius: AppRadius.pillR,
           onTap: stopping
@@ -70,7 +68,10 @@ class ChatSendButton extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               color: s.surface3,
-              border: Border.all(color: s.cardBorder, width: AppBorderWidths.medium),
+              border: Border.all(
+                color: s.cardBorder,
+                width: AppBorderWidths.medium,
+              ),
               shape: BoxShape.circle,
             ),
             child: stopping

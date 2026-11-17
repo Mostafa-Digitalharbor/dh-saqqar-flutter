@@ -46,48 +46,48 @@ class AppFontSizes {
   /// Uppercase status caps and count badges — the smallest type in the app.
   /// The chat header's RUNNING/AUTO chips, the artifact tile's kind badge,
   /// the attachment type stamp, the unread count bubble.
-  static const double microCaps = 9;
+  static const double microCaps = 12;
 
   /// Chip and badge labels. The most-typed size in the app before this class
   /// existed, at 22 call sites.
-  static const double chipLabel = 10;
+  static const double chipLabel = 12;
 
   /// A dense meta line — the message footer's "You · 14:32", the command
   /// palette's section header.
-  static const double metaLine = 10.5;
+  static const double metaLine = 12.5;
 
   /// Caption and secondary label. Same value as the theme's `labelSmall`,
   /// named separately because it is also reached for as an *override* on a
   /// larger style.
-  static const double caption = 11;
+  static const double caption = 13;
 
   /// The secondary text inside a pill — the thinking pill's step count and
   /// duration, an empty-suggestion card's subtitle.
-  static const double pillLabel = 11.5;
+  static const double pillLabel = 13;
 
   /// Footnote and code plate. Same value as the theme's `labelMedium`.
-  static const double footnote = 12;
+  static const double footnote = 13;
 
   /// The primary text inside a pill — the thinking pill's title, a
   /// suggestion strip's label.
-  static const double pillTitle = 12.5;
+  static const double pillTitle = 13.5;
 
   // ── Body scale ─────────────────────────────────────────────────────────
 
   /// Compact body copy. Same value as the theme's `bodySmall`.
-  static const double dense = 13;
+  static const double dense = 14;
 
   /// A suggestion card's title — one step above [dense] because it sits
   /// directly above [pillLabel] copy and needs to out-rank it.
-  static const double cardTitle = 13.5;
+  static const double cardTitle = 14.5;
 
   /// Body copy. Same value as the theme's `bodyMedium` / `labelLarge`.
-  static const double body = 14;
+  static const double body = 15;
 
   /// Sustained reading: the composer's input and rendered markdown body.
   /// Deliberately a step above [body] — this is the text a user reads for
   /// minutes rather than glances at.
-  static const double reading = 15;
+  static const double reading = 16;
 
   // ── Avatar initials ────────────────────────────────────────────────────
   //
@@ -131,20 +131,20 @@ class AppFontSizes {
   static const double headlineMedium = 20;
   static const double headlineSmall = 18;
 
-  static const double titleLarge = 16;
-  static const double titleMedium = 15;
-  static const double titleSmall = 14;
+  static const double titleLarge = 17;
+  static const double titleMedium = 16;
+  static const double titleSmall = 15;
 
-  static const double bodyLarge = 16;
-  static const double bodyMedium = 14;
-  static const double bodySmall = 13;
+  static const double bodyLarge = 17;
+  static const double bodyMedium = 15;
+  static const double bodySmall = 14;
 
-  static const double labelLarge = 14;
-  static const double labelMedium = 12;
-  static const double labelSmall = 11;
+  static const double labelLarge = 15;
+  static const double labelMedium = 13;
+  static const double labelSmall = 12;
 
   /// Monospace plates — code blocks, inline code, command output.
-  static const double mono = 12;
+  static const double mono = 13;
 }
 
 /// Icon sizes.
@@ -1176,48 +1176,64 @@ class AppAlphaPairs {
   static const panel = AlphaPair(dark: AppAlphas.a50, light: AppAlphas.a85);
 
   /// A ghost button's ground, and the auth screen's card.
-  static const panelSoft =
-      AlphaPair(dark: AppAlphas.a45, light: AppAlphas.a85);
+  static const panelSoft = AlphaPair(dark: AppAlphas.a45, light: AppAlphas.a85);
 
   /// The auth header's action bar.
-  static const panelMuted =
-      AlphaPair(dark: AppAlphas.a55, light: AppAlphas.a82);
+  static const panelMuted = AlphaPair(
+    dark: AppAlphas.a55,
+    light: AppAlphas.a82,
+  );
 
   /// A suggestion strip, a conversations list row.
-  static const panelPlain =
-      AlphaPair(dark: AppAlphas.a55, light: AppAlphas.a85);
+  static const panelPlain = AlphaPair(
+    dark: AppAlphas.a55,
+    light: AppAlphas.a85,
+  );
 
   /// A filter pill, a tool activity card, a message-bubble skeleton.
-  static const panelDense =
-      AlphaPair(dark: AppAlphas.a55, light: AppAlphas.a86);
+  static const panelDense = AlphaPair(
+    dark: AppAlphas.a55,
+    light: AppAlphas.a86,
+  );
 
   /// An email preview, an interactive card shell, the voice-support card.
-  static const panelCard =
-      AlphaPair(dark: AppAlphas.a55, light: AppAlphas.a90);
+  static const panelCard = AlphaPair(dark: AppAlphas.a55, light: AppAlphas.a90);
 
   /// A chat header control, a run-progress card, a date separator's chip.
-  static const panelSheet =
-      AlphaPair(dark: AppAlphas.a55, light: AppAlphas.a92);
+  static const panelSheet = AlphaPair(
+    dark: AppAlphas.a55,
+    light: AppAlphas.a92,
+  );
 
   /// The search-and-filters bar.
-  static const panelStrong =
-      AlphaPair(dark: AppAlphas.a62, light: AppAlphas.a86);
+  static const panelStrong = AlphaPair(
+    dark: AppAlphas.a62,
+    light: AppAlphas.a86,
+  );
 
   /// A conversation-card / credential-row skeleton's ground.
-  static const panelSkeleton =
-      AlphaPair(dark: AppAlphas.a62, light: AppAlphas.a88);
+  static const panelSkeleton = AlphaPair(
+    dark: AppAlphas.a62,
+    light: AppAlphas.a88,
+  );
 
   /// An accent card's chrome, and a project-card skeleton.
-  static const panelOpaque =
-      AlphaPair(dark: AppAlphas.a62, light: AppAlphas.a92);
+  static const panelOpaque = AlphaPair(
+    dark: AppAlphas.a62,
+    light: AppAlphas.a92,
+  );
 
   /// The chat header's own background.
-  static const panelHeader =
-      AlphaPair(dark: AppAlphas.a62, light: AppAlphas.a95);
+  static const panelHeader = AlphaPair(
+    dark: AppAlphas.a62,
+    light: AppAlphas.a95,
+  );
 
   /// A chat date separator's rule.
-  static const panelSeparator =
-      AlphaPair(dark: AppAlphas.a65, light: AppAlphas.a92);
+  static const panelSeparator = AlphaPair(
+    dark: AppAlphas.a65,
+    light: AppAlphas.a92,
+  );
 
   // ── Near-opaque chrome ─────────────────────────────────────────────────
 
@@ -1238,26 +1254,31 @@ class AppAlphaPairs {
   static const tint = AlphaPair(dark: AppAlphas.a18, light: AppAlphas.a10);
 
   /// A profile hero's avatar ground.
-  static const tintAvatar =
-      AlphaPair(dark: AppAlphas.a18, light: AppAlphas.a16);
+  static const tintAvatar = AlphaPair(
+    dark: AppAlphas.a18,
+    light: AppAlphas.a16,
+  );
 
   /// A selected filter pill.
   static const tintPill = AlphaPair(dark: AppAlphas.a16, light: AppAlphas.a12);
 
   /// The update-available nudge banner.
-  static const tintBanner =
-      AlphaPair(dark: AppAlphas.a16, light: AppAlphas.a09);
+  static const tintBanner = AlphaPair(
+    dark: AppAlphas.a16,
+    light: AppAlphas.a09,
+  );
 
   /// The active bottom-nav destination.
   static const tintNav = AlphaPair(dark: AppAlphas.a14, light: AppAlphas.a10);
 
   /// A thinking pill's accent ground.
-  static const tintFaint =
-      AlphaPair(dark: AppAlphas.a10, light: AppAlphas.a08);
+  static const tintFaint = AlphaPair(dark: AppAlphas.a10, light: AppAlphas.a08);
 
   /// An artifact pill's ground.
-  static const tintFaintest =
-      AlphaPair(dark: AppAlphas.a10, light: AppAlphas.a06);
+  static const tintFaintest = AlphaPair(
+    dark: AppAlphas.a10,
+    light: AppAlphas.a06,
+  );
 
   // ── Glows and shadows ──────────────────────────────────────────────────
 
@@ -1268,8 +1289,10 @@ class AppAlphaPairs {
   static const glowNav = AlphaPair(dark: AppAlphas.a32, light: AppAlphas.a06);
 
   /// The splash screen's logo halo.
-  static const splashShadow =
-      AlphaPair(dark: AppAlphas.a35, light: AppAlphas.a05);
+  static const splashShadow = AlphaPair(
+    dark: AppAlphas.a35,
+    light: AppAlphas.a05,
+  );
 
   // ── Inputs ─────────────────────────────────────────────────────────────
 
@@ -1277,18 +1300,24 @@ class AppAlphaPairs {
   static const field = AlphaPair(dark: AppAlphas.a20, light: AppAlphas.a14);
 
   /// A text field's fill once focused.
-  static const fieldFocused =
-      AlphaPair(dark: AppAlphas.a22, light: AppAlphas.a16);
+  static const fieldFocused = AlphaPair(
+    dark: AppAlphas.a22,
+    light: AppAlphas.a16,
+  );
 
   // ── Splash ─────────────────────────────────────────────────────────────
 
   /// The splash wordmark's plate.
-  static const splashFill =
-      AlphaPair(dark: AppAlphas.a45, light: AppAlphas.a55);
+  static const splashFill = AlphaPair(
+    dark: AppAlphas.a45,
+    light: AppAlphas.a55,
+  );
 
   /// The splash plate's border.
-  static const splashBorder =
-      AlphaPair(dark: AppAlphas.a80, light: AppAlphas.a90);
+  static const splashBorder = AlphaPair(
+    dark: AppAlphas.a80,
+    light: AppAlphas.a90,
+  );
 }
 
 /// Maximum content widths — the caps that stop a layout from stretching
@@ -1772,6 +1801,9 @@ class AppScaleFractions {
   /// A pushed route's start scale in the shared scale+fade page transition —
   /// close enough to 1 that it reads as "arriving", not as a zoom.
   static const double routePush = 0.98;
+
+  /// A scale at rest: the end value every enter / exit tween settles on.
+  static const double settled = 1;
 }
 
 /// Tuning specific to [LaunchSplashScreen]'s one-off entrance sequence.

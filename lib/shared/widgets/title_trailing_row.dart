@@ -14,7 +14,7 @@ import '../../core/theme/app_sizes.dart';
 /// ```dart
 /// Row(children: [
 ///   Expanded(child: Text(title, maxLines: 1, overflow: ellipsis)),
-///   const SizedBox(width: 8),
+///   const SizedBox(width: AppSpacing.s8),
 ///   Text(relativeTime),   // ← or a status pill; either way, unbounded
 /// ])
 /// ```
@@ -73,12 +73,12 @@ class TitleTrailingRow extends StatelessWidget {
     this.trailingMaxFraction = AppFractions.trailingHalf,
     this.crossAxisAlignment = CrossAxisAlignment.center,
   }) : trailing = Text(
-          stamp,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          style: stampStyle,
-        );
+         stamp,
+         maxLines: 1,
+         overflow: TextOverflow.ellipsis,
+         softWrap: false,
+         style: stampStyle,
+       );
 
   /// The flexible leading content. Usually a single-line `Text`, but the
   /// chat sidebar passes a whole `Column` (title + preview) — anything that

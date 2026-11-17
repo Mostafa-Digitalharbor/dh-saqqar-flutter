@@ -4,6 +4,9 @@ import '../../../core/i18n/app_strings.dart';
 import '../../../core/format/wire_value.dart';
 import 'interactive_card_kind.dart';
 
+part 'pulse_actions_finance.dart';
+part 'pulse_actions_operations.dart';
+
 /// The action rows an app-pulse card offers — "Customer collection · 13
 /// overdue invoices · [Start collection]".
 ///
@@ -100,9 +103,9 @@ class PulseAction {
 
   /// Every button on the row, this one first — the order the web renders.
   List<PulseActionButton> get buttons => [
-        PulseActionButton(label: label, prompt: prompt, primary: primary),
-        ...extraButtons,
-      ];
+    PulseActionButton(label: label, prompt: prompt, primary: primary),
+    ...extraButtons,
+  ];
 
   @override
   bool operator ==(Object other) =>
@@ -116,8 +119,15 @@ class PulseAction {
       listEquals(other.extraButtons, extraButtons);
 
   @override
-  int get hashCode => Object.hash(title, main, cause, label, prompt, primary,
-      Object.hashAll(extraButtons));
+  int get hashCode => Object.hash(
+    title,
+    main,
+    cause,
+    label,
+    prompt,
+    primary,
+    Object.hashAll(extraButtons),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -217,543 +227,12 @@ List<PulseAction> pulseActions(
     InteractiveCardKind.hr => _counterDriven(payload, tr, 'hr'),
     InteractiveCardKind.promptClarify ||
     InteractiveCardKind.reportBuilder ||
-    InteractiveCardKind.promptSuggestion =>
-      const [],
+    InteractiveCardKind.promptSuggestion => const [],
   };
 }
 
 String _k(String kind, String row, String part) =>
     'pulse_act_${kind}_${row}_$part';
-
-// ── factory ──────────────────────────────────────────────────────────────
-//
-// ONE row per at-risk order carrying TWO buttons, which is the web's shape:
-// "Delivery date" then "Cover shortage", the second filled. Both continue
-// the conversation rather than acting — the agent reads the order, and any
-// document it then wants to write still goes through the approval card.
-List<PulseAction> _factory(Map<String, dynamic> payload, AppStrings tr) {
-  final out = <PulseAction>[];
-  for (final raw in _list(payload['top_risks'])) {
-    if (raw is! Map) continue;
-    final risk = raw.cast<String, dynamic>();
-    final order = _str(risk['order']);
-    if (order.isEmpty) continue;
-    final vars = {
-      'order': order,
-      'days': formatPulseNumber(risk['lead_days']),
-      'product': _str(risk['worst_product']),
-    };
-    out.add(PulseAction(
-      title: order,
-      main: _str(risk['customer']),
-      cause: tr.format(_k('factory', 'risk', 'cause'), vars),
-      label: tr.lookup(_k('factory', 'promise', 'label')),
-      prompt: tr.format(_k('factory', 'promise', 'prompt'), vars),
-      extraButtons: [
-        PulseActionButton(
-          label: tr.lookup(_k('factory', 'cover', 'label')),
-          prompt: tr.format(_k('factory', 'cover', 'prompt'), vars),
-          primary: true,
-        ),
-      ],
-    ));
-  }
-  return out;
-}
-
-// ── finance ──────────────────────────────────────────────────────────────
-List<PulseAction> _finance(Map<String, dynamic> payload, AppStrings tr) {
-  final rows = <PulseAction>[];
-  var hasPrimary = false;
-  PulseAction row(
-    String key, {
-    required String main,
-    String cause = '',
-    Map<String, Object?> labelVars = const {},
-  }) {
-    final primary = !hasPrimary;
-    hasPrimary = true;
-    return PulseAction(
-      title: tr.lookup(_k('finance', key, 'title')),
-      main: main,
-      cause: cause,
-      label: tr.format(_k('finance', key, 'label'), labelVars),
-      prompt: tr.lookup(_k('finance', key, 'prompt')),
-      primary: primary,
-    );
-  }
-
-  final receivables = _map(payload['receivables']);
-  final payables = _map(payload['payables']);
-  final drafts = _map(payload['drafts']);
-  final aging = _map(payload['collection_aging']);
-  final horizon = _map(payload['payment_horizon']);
-  final liquidity = _map(payload['liquidity_7d']);
-  final bank = payload['bank_reconciliation'];
-  final overdueCustomers = receivables['overdue'];
-  final dueVendors = payables['due_soon'];
-  final overdueVendors = payables['overdue'];
-
-  final hasAging = aging['available'] == true;
-  final hasHorizon = horizon['available'] == true;
-  final agingBuckets = [
-    aging['days_1_30'],
-    aging['days_31_60'],
-    aging['days_61_plus'],
-  ];
-  final agingOverdueCount = hasAging
-      ? agingBuckets.fold<int>(0, (sum, b) => sum + (_count(b) ?? 0))
-      : (_count(overdueCustomers) ?? 0);
-  final agingOverdueTotal =
-      hasAging ? _num(aging['total_overdue']) : _total(overdueCustomers);
-  final paymentBuckets7 = [
-    horizon['overdue'],
-    horizon['due_today'],
-    horizon['days_1_7'],
-  ];
-  final vendorDueCount = hasHorizon
-      ? paymentBuckets7.fold<int>(0, (sum, b) => sum + (_count(b) ?? 0))
-      : (_count(dueVendors) ?? 0) + (_count(overdueVendors) ?? 0);
-  final vendorDueTotal = hasHorizon
-      ? _num(horizon['total_due_7d'])
-      : (_total(dueVendors) ?? 0) + (_total(overdueVendors) ?? 0);
-  final cashGap = _num(liquidity['cash_gap']);
-  final hasLiquidity = liquidity['available'] == true && cashGap != null;
-
-  if (hasLiquidity && cashGap < 0) {
-    rows.add(row(
-      'gap',
-      main: tr.format(_k('finance', 'gap', 'main'),
-          {'amount': formatPulseNumber(cashGap.abs())}),
-      cause: tr.format(_k('finance', 'gap', 'cause'),
-          {'after': formatPulseNumber(liquidity['after_collection_gap'])}),
-    ));
-  }
-
-  final topCustomer = _first(overdueCustomers);
-  if (agingOverdueCount != 0 || (agingOverdueTotal ?? 0) != 0) {
-    final main = hasAging
-        ? tr.format(_k('finance', 'collect', 'main_aging'), {
-            'n': agingOverdueCount,
-            'b1': formatPulseNumber(_total(aging['days_1_30'])),
-            'b2': formatPulseNumber(_total(aging['days_31_60'])),
-            'b3': formatPulseNumber(_total(aging['days_61_plus'])),
-          })
-        : tr.format(_k('finance', 'collect', 'main_plain'), {
-            'n': agingOverdueCount,
-            'total': formatPulseNumber(agingOverdueTotal),
-          });
-    rows.add(row(
-      'collect',
-      main: main,
-      cause: _str(topCustomer['partner']).isEmpty
-          ? ''
-          : tr.format(_k('finance', 'collect', 'cause'), {
-              'name': _str(topCustomer['name']).isEmpty
-                  ? tr.lookup('pulse_act_no_number')
-                  : _str(topCustomer['name']),
-              'partner': _str(topCustomer['partner']),
-              'amount': formatPulseNumber(topCustomer['amount']),
-            }),
-    ));
-  }
-
-  final topVendor = _first(
-      (_count(overdueVendors) ?? 0) != 0 ? overdueVendors : dueVendors);
-  if (vendorDueCount != 0 ||
-      (vendorDueTotal ?? 0) != 0 ||
-      (hasHorizon && _int(horizon['total_due_30d']) != 0)) {
-    rows.add(row(
-      'pay',
-      main: hasHorizon
-          ? tr.format(_k('finance', 'pay', 'main_horizon'), {
-              'week': formatPulseNumber(horizon['total_due_7d']),
-              'month': formatPulseNumber(horizon['total_due_30d']),
-            })
-          : tr.format(_k('finance', 'pay', 'main_plain'), {
-              'n': vendorDueCount,
-              'total': formatPulseNumber(vendorDueTotal),
-            }),
-      // The horizon breakdown wins when the server sent one; the biggest
-      // single bill is the fallback — same precedence as the web's
-      // `horizonCause || (topVendor.partner ? … : "")`.
-      cause: hasHorizon
-          ? tr.format(_k('finance', 'pay', 'cause_horizon'), {
-              'late': formatPulseNumber(_total(horizon['overdue'])),
-              'today': formatPulseNumber(_total(horizon['due_today'])),
-              'week': formatPulseNumber(_total(horizon['days_1_7'])),
-            })
-          : (_str(topVendor['partner']).isEmpty
-              ? ''
-              : tr.format(_k('finance', 'pay', 'cause_vendor'), {
-                  'partner': _str(topVendor['partner']),
-                  'amount': formatPulseNumber(topVendor['amount']),
-                })),
-    ));
-  }
-
-  final bankCount = _count(bank);
-  if (bankCount != null && bankCount != 0) {
-    rows.add(row(
-      'bank',
-      main: tr.format(_k('finance', 'bank', 'main'), {'n': bankCount}),
-      cause: (_total(bank) ?? 0) == 0
-          ? ''
-          : tr.format(_k('finance', 'bank', 'cause'),
-              {'total': formatPulseNumber(_total(bank))}),
-    ));
-  }
-
-  final customerDrafts = _count(drafts['customer_invoices']) ?? 0;
-  final vendorDrafts = _count(drafts['vendor_bills']) ?? 0;
-  if (customerDrafts != 0 || vendorDrafts != 0) {
-    rows.add(row(
-      'drafts',
-      main: tr.format(_k('finance', 'drafts', 'main'),
-          {'customer': customerDrafts, 'vendor': vendorDrafts}),
-    ));
-  }
-  return rows;
-}
-
-// ── purchasing ───────────────────────────────────────────────────────────
-List<PulseAction> _purchasing(Map<String, dynamic> payload, AppStrings tr) {
-  final rows = <PulseAction>[];
-  final rfqs = payload['open_rfqs'];
-  final approval = payload['awaiting_approval'];
-  final latePo = payload['late_purchase_orders'];
-  final lateReceipts = payload['late_incoming_receipts'];
-  final toBill = payload['to_bill'];
-  final bills = _map(payload['vendor_bills']);
-  final billsSoon = bills['due_soon'];
-  final billsOverdue = bills['overdue'];
-  final billsDraft = bills['drafts'];
-
-  PulseAction row(String key,
-          {required String main, String cause = '', bool primary = false}) =>
-      PulseAction(
-        title: tr.lookup(_k('purchasing', key, 'title')),
-        main: main,
-        cause: cause,
-        label: tr.lookup(_k('purchasing', key, 'label')),
-        prompt: tr.lookup(_k('purchasing', key, 'prompt')),
-        primary: primary,
-      );
-
-  final lateTotal = (_count(latePo) ?? 0) + (_count(lateReceipts) ?? 0);
-  if (lateTotal != 0) {
-    final lateFirst = _str(_first(lateReceipts)['name']).isNotEmpty
-        ? _first(lateReceipts)
-        : _first(latePo);
-    rows.add(row(
-      'late',
-      main: tr.format(_k('purchasing', 'late', 'main'), {
-        'receipts': _count(lateReceipts) ?? 0,
-        'orders': _count(latePo) ?? 0,
-      }),
-      cause: _str(lateFirst['vendor']).isEmpty
-          ? ''
-          : tr.format(_k('purchasing', 'late', 'cause'), {
-              'name': [_str(lateFirst['name']), _str(lateFirst['origin'])]
-                      .firstWhere((s) => s.isNotEmpty,
-                          orElse: () => tr.lookup('pulse_act_no_number')),
-              'vendor': _str(lateFirst['vendor']),
-            }),
-      primary: true,
-    ));
-  }
-
-  if ((_count(approval) ?? 0) != 0) {
-    final first = _first(approval);
-    rows.add(row(
-      'approval',
-      main: tr.format(_k('purchasing', 'approval', 'main'), {
-        'n': _count(approval),
-        'total': formatPulseNumber(_total(approval)),
-      }),
-      cause: _str(first['vendor']).isEmpty
-          ? ''
-          : '${_str(first['name'])} / ${_str(first['vendor'])} / '
-              '${formatPulseNumber(first['amount'])}',
-    ));
-  }
-
-  if ((_count(rfqs) ?? 0) != 0) {
-    final first = _first(rfqs);
-    rows.add(row(
-      'rfq',
-      main: tr.format(_k('purchasing', 'rfq', 'main'),
-          {'n': _count(rfqs), 'total': formatPulseNumber(_total(rfqs))}),
-      cause: _str(first['vendor']).isEmpty
-          ? ''
-          : '${_str(first['name'])} / ${_str(first['vendor'])} / '
-              '${formatPulseNumber(first['amount'])}',
-    ));
-  }
-
-  if ((_count(toBill) ?? 0) != 0) {
-    rows.add(row(
-      'bill',
-      main: tr.format(_k('purchasing', 'bill', 'main'), {'n': _count(toBill)}),
-      cause: tr.lookup(_k('purchasing', 'bill', 'cause')),
-    ));
-  }
-
-  final overdueBills = _count(billsOverdue) ?? 0;
-  final soonBills = _count(billsSoon) ?? 0;
-  final draftBills = _count(billsDraft) ?? 0;
-  if (overdueBills != 0 || soonBills != 0 || draftBills != 0) {
-    final vendorBillTotal = (_total(billsSoon) ?? 0) + (_total(billsOverdue) ?? 0);
-    rows.add(row(
-      'bills',
-      main: tr.format(_k('purchasing', 'bills', 'main'), {
-        'overdue': overdueBills,
-        'soon': soonBills,
-        'draft': draftBills,
-      }),
-      cause: vendorBillTotal == 0
-          ? ''
-          : tr.format(_k('purchasing', 'bills', 'cause'),
-              {'total': formatPulseNumber(vendorBillTotal)}),
-    ));
-  }
-  return rows;
-}
-
-// ── inventory ────────────────────────────────────────────────────────────
-List<PulseAction> _inventory(Map<String, dynamic> payload, AppStrings tr) {
-  final rows = <PulseAction>[];
-
-  /// `firstProductLine` — "[CODE] Name / on hand 4 / forecast 9".
-  String productLine(Map<String, dynamic> item) {
-    final name = _str(item['name']);
-    if (name.isEmpty) return '';
-    final code = _str(item['code']).isEmpty ? '' : '[${_str(item['code'])}] ';
-    final onHand = item['qty_available'] == null
-        ? ''
-        : tr.format('pulse_act_inventory_on_hand',
-            {'qty': formatPulseNumber(item['qty_available'])});
-    final forecast = item['virtual_available'] == null
-        ? ''
-        : tr.format('pulse_act_inventory_forecast',
-            {'qty': formatPulseNumber(item['virtual_available'])});
-    return '$code$name$onHand$forecast';
-  }
-
-  PulseAction row(String key,
-          {required String main, String cause = '', bool primary = false}) =>
-      PulseAction(
-        title: tr.lookup(_k('inventory', key, 'title')),
-        main: main,
-        cause: cause,
-        label: tr.lookup(_k('inventory', key, 'label')),
-        prompt: tr.lookup(_k('inventory', key, 'prompt')),
-        primary: primary,
-      );
-
-  final demand = payload['demand_shortage'];
-  final low = payload['low_stock'];
-  final fast = payload['fast_reorder'];
-  final stagnant = payload['stagnant_stock'];
-  final overstock = payload['overstock'];
-  final missing = payload['missing_data'];
-
-  if ((_count(demand) ?? 0) != 0) {
-    rows.add(row(
-      'demand',
-      main: tr.format(_k('inventory', 'demand', 'main'), {'n': _count(demand)}),
-      cause: productLine(_first(demand)),
-      primary: true,
-    ));
-  }
-  if ((_count(low) ?? 0) != 0) {
-    rows.add(row(
-      'low',
-      main: tr.format(_k('inventory', 'low', 'main'), {'n': _count(low)}),
-      cause: productLine(_first(low)),
-    ));
-  }
-  if ((_count(fast) ?? 0) != 0) {
-    rows.add(row(
-      'fast',
-      main: tr.format(_k('inventory', 'fast', 'main'), {'n': _count(fast)}),
-      cause: productLine(_first(fast)),
-    ));
-  }
-  if ((_count(stagnant) ?? 0) != 0) {
-    rows.add(row(
-      'stagnant',
-      main: tr.format(_k('inventory', 'stagnant', 'main'), {
-        'n': _count(stagnant),
-        'total': formatPulseNumber(_total(stagnant)),
-      }),
-      cause: productLine(_first(stagnant)),
-    ));
-  }
-  if ((_count(overstock) ?? 0) != 0) {
-    rows.add(row(
-      'overstock',
-      main: tr.format(
-          _k('inventory', 'overstock', 'main'), {'n': _count(overstock)}),
-      cause: productLine(_first(overstock)),
-    ));
-  }
-  if ((_count(missing) ?? 0) != 0) {
-    final counts = _map(_map(missing)['counts']);
-    rows.add(row(
-      'missing',
-      main: tr.format(_k('inventory', 'missing', 'main'), {
-        'cost': _int(counts['missing_cost']),
-        'barcode': _int(counts['missing_barcode']),
-        'code': _int(counts['missing_code']),
-      }),
-      cause: tr.lookup(_k('inventory', 'missing', 'cause')),
-    ));
-  }
-  return rows;
-}
-
-// ── quality_guard ────────────────────────────────────────────────────────
-List<PulseAction> _qualityGuard(Map<String, dynamic> payload, AppStrings tr) {
-  final rows = <PulseAction>[];
-  // The sub-buckets live under `quality_gate` / `spec_guard`, and the flat
-  // numbers under `quality_stats` / `spec_stats` — the same two roots the
-  // web reads. Top-level keys are still honoured for the shape the doc
-  // documents.
-  final qStats = _map(payload['quality_stats']);
-  final gate = _map(payload['quality_gate']);
-  final measures = gate['measurements'];
-  final failed = gate['failed_checks'];
-  final points = _map(gate['control_points']);
-  final specStats = _map(payload['spec_stats']);
-  final specGuard = _map(payload['spec_guard']);
-  final cases = _list(specGuard['findings']);
-
-  final outOfSpec =
-      _num(payload['out_of_spec']) ?? _num(qStats['out_of_spec']) ?? 0;
-  final failedCount =
-      _num(payload['failed_checks']) ?? _num(qStats['failed_checks']) ?? 0;
-  final pending =
-      _num(payload['pending_checks']) ?? _num(qStats['pending_checks']) ?? 0;
-  final alerts =
-      _num(payload['quality_alerts']) ?? _num(qStats['quality_alerts']) ?? 0;
-
-  if (outOfSpec != 0) {
-    final first = _first(measures);
-    rows.add(PulseAction(
-      title: tr.lookup(_k('quality', 'measure', 'title')),
-      main: tr.format(_k('quality', 'measure', 'main'),
-          {'n': formatPulseNumber(outOfSpec)}),
-      cause: _str(first['product']).isEmpty
-          ? ''
-          : '${_str(first['product'])} / '
-              '${formatPulseNumber(first['measure'])}${_str(first['unit'])} / '
-              '${formatPulseNumber(first['lower'])}-'
-              '${formatPulseNumber(first['upper'])}',
-      label: tr.lookup(_k('quality', 'measure', 'label')),
-      prompt: tr.lookup(_k('quality', 'measure', 'prompt')),
-      primary: true,
-    ));
-  }
-
-  if (failedCount != 0 || pending != 0 || alerts != 0) {
-    final first = _first(failed);
-    final parts = [
-      _str(first['name']),
-      _str(first['product']),
-      _str(first['context'])
-    ].where((s) => s.isNotEmpty).toList();
-    rows.add(PulseAction(
-      title: tr.lookup(_k('quality', 'checks', 'title')),
-      main: tr.format(_k('quality', 'checks', 'main'), {
-        'failed': formatPulseNumber(failedCount),
-        'pending': formatPulseNumber(pending),
-        'alerts': formatPulseNumber(alerts),
-      }),
-      cause: parts.join(' / '),
-      label: tr.lookup(_k('quality', 'checks', 'label')),
-      prompt: tr.lookup(_k('quality', 'checks', 'prompt')),
-      primary: rows.isEmpty,
-    ));
-  }
-
-  if (cases.isNotEmpty && cases.first is Map) {
-    final first = (cases.first! as Map).cast<String, dynamic>();
-    final order = _str(first['order']);
-    rows.add(PulseAction(
-      title: tr.format(_k('quality', 'swap', 'title'),
-          {'risk': formatPulseNumber(first['risk_score'] ?? 0)}),
-      main: tr.format(_k('quality', 'swap', 'main'), {
-        'order': order,
-        'requested': _str(first['requested_product']),
-        'actual': _str(first['actual_product']),
-      }),
-      cause: tr.format(_k('quality', 'swap', 'cause'),
-          {'discount': formatPulseNumber(first['discount'])}),
-      label: tr.lookup(_k('quality', 'swap', 'label')),
-      prompt: tr.format(_k('quality', 'swap', 'prompt'), {'order': order}),
-      primary: rows.isEmpty,
-    ));
-    // "Find user" — the recorded actor behind that swap.
-    final changedBy = _str(first['changed_by']);
-    final changedAt = _str(first['changed_at']);
-    rows.add(PulseAction(
-      title: tr.lookup(_k('quality', 'actor', 'title')),
-      main: changedBy.isEmpty
-          ? tr.lookup(_k('quality', 'actor', 'main_empty'))
-          : (changedAt.isEmpty ? changedBy : '$changedBy / $changedAt'),
-      cause: tr.lookup(_k('quality', 'actor', 'cause')),
-      label: tr.lookup(_k('quality', 'actor', 'label')),
-      prompt: tr.lookup(_k('quality', 'actor', 'prompt')),
-    ));
-  }
-
-  final lowerCost = _num(payload['lower_cost_substitutes']) ??
-      _num(specStats['lower_cost_substitutes']) ??
-      0;
-  final undocumented = _num(payload['undocumented_substitutes']) ??
-      _num(specStats['undocumented_substitutes']) ??
-      0;
-  final costGap = _num(payload['cost_saving_total']) ??
-      _num(specStats['cost_saving_total']) ??
-      0;
-  if ((lowerCost != 0 || undocumented != 0 || costGap != 0) &&
-      rows.length < 5) {
-    rows.add(PulseAction(
-      title: tr.lookup(_k('quality', 'substitutes', 'title')),
-      main: tr.format(_k('quality', 'substitutes', 'main'), {
-        'lower': formatPulseNumber(lowerCost),
-        'undocumented': formatPulseNumber(undocumented),
-        'gap': formatPulseNumber(costGap),
-      }),
-      cause: tr.lookup(_k('quality', 'substitutes', 'cause')),
-      label: tr.lookup(_k('quality', 'substitutes', 'label')),
-      prompt: tr.lookup(_k('quality', 'substitutes', 'prompt')),
-      primary: rows.isEmpty,
-    ));
-  }
-
-  // The web gates this row on `control_points.available` — a database that
-  // can't answer must not be told its limits are missing.
-  final pointsAvailable =
-      points.isEmpty ? true : points['available'] != false;
-  final missingSpecs = _num(points['missing_specs']) ??
-      _num(payload['missing_numeric_specs']) ??
-      _num(qStats['missing_numeric_specs']) ??
-      0;
-  if (pointsAvailable && missingSpecs != 0 && rows.length < 4) {
-    rows.add(PulseAction(
-      title: tr.lookup(_k('quality', 'limits', 'title')),
-      main: tr.format(
-          _k('quality', 'limits', 'main'), {'n': formatPulseNumber(missingSpecs)}),
-      cause: tr.lookup(_k('quality', 'limits', 'cause')),
-      label: tr.lookup(_k('quality', 'limits', 'label')),
-      prompt: tr.lookup(_k('quality', 'limits', 'prompt')),
-      primary: rows.isEmpty,
-    ));
-  }
-  return rows;
-}
 
 // ── accountant + hr ──────────────────────────────────────────────────────
 //
@@ -812,10 +291,10 @@ List<String> pulseCounterActionKeys(String kind) =>
 
 /// The deep-dive chip keys for a card that has any.
 List<String> pulseDeepActionKeys(String kind) => switch (kind) {
-      'hr' => _hrDeep,
-      'inventory' => _inventoryDeep,
-      _ => _accountantDeep,
-    };
+  'hr' => _hrDeep,
+  'inventory' => _inventoryDeep,
+  _ => _accountantDeep,
+};
 
 List<PulseAction> _counterDriven(
   Map<String, dynamic> payload,
@@ -839,15 +318,17 @@ List<PulseAction> _counterDriven(
         : tr.lookup(_k(kind, key, 'label'), fallback: serverAction);
     final prompt = tr.lookup(_k(kind, key, 'prompt'));
     if (label.isEmpty || prompt.isEmpty) continue;
-    rows.add(PulseAction(
-      // The counter's own label is server-authored and already in the
-      // screen's language (rule 4) — it is the row's title as-is.
-      title: _str(counter['label']),
-      main: formatPulseNumber(counter['value']),
-      label: label,
-      prompt: prompt,
-      primary: rows.isEmpty,
-    ));
+    rows.add(
+      PulseAction(
+        // The counter's own label is server-authored and already in the
+        // screen's language (rule 4) — it is the row's title as-is.
+        title: _str(counter['label']),
+        main: formatPulseNumber(counter['value']),
+        label: label,
+        prompt: prompt,
+        primary: rows.isEmpty,
+      ),
+    );
   }
   return rows;
 }
@@ -877,13 +358,15 @@ List<PulseAction> pulseDeepActions(
     final label = tr.lookup('pulse_act_${name}_deep_${key}_label');
     final prompt = tr.lookup('pulse_act_${name}_deep_${key}_prompt');
     if (label.isEmpty || prompt.isEmpty || taken.contains(label)) continue;
-    out.add(PulseAction(
-      title: '',
-      main: '',
-      label: label,
-      prompt: prompt,
-      primary: out.isEmpty,
-    ));
+    out.add(
+      PulseAction(
+        title: '',
+        main: '',
+        label: label,
+        prompt: prompt,
+        primary: out.isEmpty,
+      ),
+    );
   }
   return out;
 }
@@ -917,27 +400,24 @@ String pulseEmptyStateText(InteractiveCardKind kind, AppStrings tr) {
 /// instead — while the inventory tracker reads an empty box as "everything
 /// on the move", the same prompt its Track-shipments chip sends.
 ({String hint, String label, String promptKey, String? emptyPromptKey})?
-    pulseFreeTextAction(
-  InteractiveCardKind kind,
-) =>
-        switch (kind) {
-          InteractiveCardKind.accountant => (
-              hint: 'pulse_act_accountant_explain_hint',
-              label: 'pulse_act_accountant_explain_label',
-              promptKey: 'pulse_act_accountant_explain_prompt',
-              emptyPromptKey: null,
-            ),
-          InteractiveCardKind.hr => (
-              hint: 'pulse_act_hr_explain_hint',
-              label: 'pulse_act_hr_explain_label',
-              promptKey: 'pulse_act_hr_explain_prompt',
-              emptyPromptKey: null,
-            ),
-          InteractiveCardKind.inventory => (
-              hint: 'pulse_act_inventory_track_hint',
-              label: 'pulse_act_inventory_track_label',
-              promptKey: 'pulse_act_inventory_track_prompt',
-              emptyPromptKey: 'pulse_act_inventory_deep_track_prompt',
-            ),
-          _ => null,
-        };
+pulseFreeTextAction(InteractiveCardKind kind) => switch (kind) {
+  InteractiveCardKind.accountant => (
+    hint: 'pulse_act_accountant_explain_hint',
+    label: 'pulse_act_accountant_explain_label',
+    promptKey: 'pulse_act_accountant_explain_prompt',
+    emptyPromptKey: null,
+  ),
+  InteractiveCardKind.hr => (
+    hint: 'pulse_act_hr_explain_hint',
+    label: 'pulse_act_hr_explain_label',
+    promptKey: 'pulse_act_hr_explain_prompt',
+    emptyPromptKey: null,
+  ),
+  InteractiveCardKind.inventory => (
+    hint: 'pulse_act_inventory_track_hint',
+    label: 'pulse_act_inventory_track_label',
+    promptKey: 'pulse_act_inventory_track_prompt',
+    emptyPromptKey: 'pulse_act_inventory_deep_track_prompt',
+  ),
+  _ => null,
+};

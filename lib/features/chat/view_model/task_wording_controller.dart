@@ -178,7 +178,8 @@ class TaskWordingController extends ChangeNotifier {
       return;
     }
     final key = taskWordingHintKey(text);
-    final show = query == null &&
+    final show =
+        query == null &&
         looksLikeLongTaskPrompt(text) &&
         key.isNotEmpty &&
         key != _dismissed;

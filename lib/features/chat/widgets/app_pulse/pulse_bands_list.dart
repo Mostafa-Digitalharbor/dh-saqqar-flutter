@@ -50,9 +50,7 @@ class PulseBandsList extends StatelessWidget {
             Wrap(
               spacing: AppSpacing.s16,
               runSpacing: AppSpacing.s8,
-              children: [
-                for (final band in bands.bands) _Band(band: band),
-              ],
+              children: [for (final band in bands.bands) _Band(band: band)],
             ),
         ],
       ),
@@ -75,8 +73,8 @@ class _Band extends StatelessWidget {
     final value = amount != null
         ? compactCount(amount.round(), context.tr)
         : count != null
-            ? '$count'
-            : '—';
+        ? '$count'
+        : '—';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

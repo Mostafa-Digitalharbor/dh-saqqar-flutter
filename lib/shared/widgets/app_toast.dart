@@ -55,8 +55,9 @@ class AppToast {
             label: action.label,
             onPressed: () {
               messenger.hideCurrentSnackBar();
-              WidgetsBinding.instance
-                  .addPostFrameCallback((_) => action.onPressed());
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => action.onPressed(),
+              );
             },
           );
 
@@ -71,7 +72,8 @@ class AppToast {
           right: AppSpacing.s16,
         ),
         padding: EdgeInsets.zero,
-        duration: duration ??
+        duration:
+            duration ??
             (variant == ToastVariant.error
                 ? AppDurations.toastDwellError
                 : AppDurations.toastDwell),
@@ -109,10 +111,10 @@ class _ToastContent extends StatelessWidget {
   }
 
   IconData get _icon => switch (variant) {
-        ToastVariant.success => AppIcons.success,
-        ToastVariant.error => AppIcons.error,
-        ToastVariant.info => AppIcons.info,
-      };
+    ToastVariant.success => AppIcons.success,
+    ToastVariant.error => AppIcons.error,
+    ToastVariant.info => AppIcons.info,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -162,16 +164,19 @@ class _ToastContent extends StatelessWidget {
                         title!,
                         style: (context.text.bodyMedium ?? const TextStyle())
                             .copyWith(
-                          color: c,
-                          fontWeight: FontWeight.w800,
-                          height: AppLineHeights.headingLoose,
-                        ),
+                              color: c,
+                              fontWeight: FontWeight.w800,
+                              height: AppLineHeights.headingLoose,
+                            ),
                       ),
                       const SizedBox(height: AppSpacing.s2),
                       Text(
                         message,
                         style: (context.text.bodySmall ?? const TextStyle())
-                            .copyWith(color: s.muted, height: AppLineHeights.label),
+                            .copyWith(
+                              color: s.muted,
+                              height: AppLineHeights.label,
+                            ),
                       ),
                     ] else
                       Text(

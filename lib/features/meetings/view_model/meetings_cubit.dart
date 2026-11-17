@@ -85,8 +85,8 @@ class MeetingsCubit extends Cubit<MeetingsState> {
     emit(state.copyWith(busy: true, clearError: true));
     try {
       final res = await _api.summarize(id);
-      final summary =
-          (res['summary'] ?? res['text'] ?? res['result'] ?? '').toString();
+      final summary = (res['summary'] ?? res['text'] ?? res['result'] ?? '')
+          .toString();
       emit(state.copyWith(summary: summary, busy: false));
     } catch (e, st) {
       AppLogger.warn(_tag, 'summarize failed', error: e, stackTrace: st);
@@ -104,8 +104,8 @@ class MeetingsCubit extends Cubit<MeetingsState> {
     emit(state.copyWith(busy: true, clearError: true));
     try {
       final res = await _api.chat(id, {'message': question.trim()});
-      final reply =
-          (res['reply'] ?? res['answer'] ?? res['text'] ?? '').toString();
+      final reply = (res['reply'] ?? res['answer'] ?? res['text'] ?? '')
+          .toString();
       emit(state.copyWith(chatReply: reply, busy: false));
     } catch (e, st) {
       AppLogger.warn(_tag, 'chat failed', error: e, stackTrace: st);

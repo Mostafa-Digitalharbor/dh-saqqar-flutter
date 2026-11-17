@@ -8,6 +8,7 @@ import 'package:saqqar_app/core/i18n/app_strings.dart';
 import 'package:saqqar_app/core/network/api_error_mapper.dart';
 import 'package:saqqar_app/core/network/api_exception.dart';
 import 'package:saqqar_app/core/network/error_interceptor.dart';
+import 'package:saqqar_app/features/chat/view_model/voice_note_recorder.dart';
 
 /// Guards the seam where a server error stops being English transport text
 /// and becomes localized copy: [ErrorInterceptor] → [ApiErrorMapper] → UI.
@@ -62,7 +63,8 @@ void main() {
       expect(
         e.message,
         isEmpty,
-        reason: 'Empty is what routes the mapper to localized fallback. '
+        reason:
+            'Empty is what routes the mapper to localized fallback. '
             'Seeding copy here re-breaks every non-English locale.',
       );
     });
@@ -94,8 +96,7 @@ void main() {
     });
   });
 
-  group('status codes that used to fall through to "something went wrong"',
-      () {
+  group('status codes that used to fall through to "something went wrong"', () {
     // 402 and 415 were unmapped, so both landed in UnknownFailure. For a
     // spent quota that is actively misleading — "try again" is the one
     // thing that cannot work — and for a rejected upload it withholds the
@@ -105,6 +106,41 @@ void main() {
       expect(ApiErrorMapper.toFailure(e), isA<QuotaExceededFailure>());
     });
 
+    test(
+      'a 403 that names the plan cap is a quota, not a permission',
+      () async {
+        final cap = await intercept(
+          status: 403,
+          body:
+              '{"error":"Your plan allows 2 project(s). Upgrade at /pricing/ '
+              'to add more."}',
+        );
+        expect(ApiErrorMapper.toFailure(cap), isA<QuotaExceededFailure>());
+        final plain = await intercept(status: 403, body: '{"error":"Denied"}');
+        expect(ApiErrorMapper.toFailure(plain), isA<ForbiddenFailure>());
+      },
+    );
+
+    test(
+      'the voice 403 stays locked although its text names the plan',
+      () async {
+        // The mapper reads the plan text as a quota, so the chat screen must
+        // not decide from the mapped failure.
+        final voice = await intercept(
+          status: 403,
+          body:
+              '{"error":"Voice input is available on the Pro and Max plans. '
+              'Upgrade at /pricing/."}',
+        );
+        expect(isVoiceLockedByPlan(voice), isTrue);
+        expect(
+          isVoiceLockedByPlan(await intercept(status: 500, body: '{}')),
+          isFalse,
+        );
+        expect(isVoiceLockedByPlan(StateError('x')), isFalse);
+      },
+    );
+
     test('402 renders the quota copy in both locales', () async {
       final e = await intercept(status: 402, body: '{"ok":false}');
       expect(ApiErrorMapper.messageForLocale(ar, e), ar.errorQuotaExceeded);
@@ -112,26 +148,26 @@ void main() {
       expect(ar.errorQuotaExceeded, isNot(en.errorQuotaExceeded));
     });
 
-    test('402 still prefers the server\'s own wording when it sent one',
-        () async {
-      // Only the server can name the actual cap or reset time.
-      final e = await intercept(
-        status: 402,
-        body: '{"ok":false,"error":"Daily limit reached. Resets at 00:00 UTC."}',
-      );
-      expect(
-        ApiErrorMapper.messageForLocale(en, e),
-        'Daily limit reached. Resets at 00:00 UTC.',
-      );
-    });
+    test(
+      '402 still prefers the server\'s own wording when it sent one',
+      () async {
+        // Only the server can name the actual cap or reset time.
+        final e = await intercept(
+          status: 402,
+          body:
+              '{"ok":false,"error":"Daily limit reached. Resets at 00:00 UTC."}',
+        );
+        expect(
+          ApiErrorMapper.messageForLocale(en, e),
+          'Daily limit reached. Resets at 00:00 UTC.',
+        );
+      },
+    );
 
     test('415 classifies as an unsupported-media failure', () async {
       final e = await intercept(status: 415, body: '{"ok":false}');
       expect(ApiErrorMapper.toFailure(e), isA<UnsupportedMediaFailure>());
-      expect(
-        ApiErrorMapper.messageForLocale(ar, e),
-        ar.errorUnsupportedMedia,
-      );
+      expect(ApiErrorMapper.messageForLocale(ar, e), ar.errorUnsupportedMedia);
     });
 
     test('neither leaks a technical server artifact', () async {
@@ -139,13 +175,13 @@ void main() {
       // body carries a traceback should fall back to clean copy.
       final e = await intercept(
         status: 402,
-        body: '{"ok":false,"error":"Traceback (most recent call last): '
+        body:
+            '{"ok":false,"error":"Traceback (most recent call last): '
             'psycopg2.errors.CheckViolation"}',
       );
       expect(ApiErrorMapper.messageForLocale(ar, e), ar.errorQuotaExceeded);
     });
   });
-
 
   group('a maintenance window says when to come back', () {
     // A deploy answers 503 with a `Retry-After`. Both halves of that used to
@@ -210,7 +246,11 @@ void main() {
     test('renders localized copy rather than passing as success', () async {
       final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
         ..httpClientAdapter = _StubAdapter(
-            200, '{"ok":false}', Headers.jsonContentType, const {})
+          200,
+          '{"ok":false}',
+          Headers.jsonContentType,
+          const {},
+        )
         ..interceptors.add(ErrorInterceptor());
 
       try {
@@ -225,18 +265,21 @@ void main() {
   });
 
   group('an Arabic user gets Arabic', () {
-    test('bodiless 5xx renders error_server, not the English default',
-        () async {
-      final e = await intercept(status: 502, body: '');
-      final msg = ApiErrorMapper.messageForLocale(ar, e);
-      expect(msg, ar.errorServer);
-      expect(
-        msg,
-        isNot(en.errorServer),
-        reason: 'Arabic and English copy must actually differ — if they are '
-            'equal the assertion above proves nothing.',
-      );
-    });
+    test(
+      'bodiless 5xx renders error_server, not the English default',
+      () async {
+        final e = await intercept(status: 502, body: '');
+        final msg = ApiErrorMapper.messageForLocale(ar, e);
+        expect(msg, ar.errorServer);
+        expect(
+          msg,
+          isNot(en.errorServer),
+          reason:
+              'Arabic and English copy must actually differ — if they are '
+              'equal the assertion above proves nothing.',
+        );
+      },
+    );
 
     test('nginx HTML 502 renders Arabic error_server', () async {
       final e = await intercept(
@@ -247,16 +290,18 @@ void main() {
       expect(ApiErrorMapper.messageForLocale(ar, e), ar.errorServer);
     });
 
-    test('a 409 with no server text renders error_conflict, never blank',
-        () async {
-      // `_fromApiException` hands `e.message` to ConflictFailure unguarded,
-      // so an empty message has to be caught by `_baseMessage`'s own check
-      // rather than rendering an empty line to the user.
-      final e = await intercept(status: 409, body: '');
-      final msg = ApiErrorMapper.messageForLocale(ar, e);
-      expect(msg, ar.errorConflict);
-      expect(msg, isNotEmpty);
-    });
+    test(
+      'a 409 with no server text renders error_conflict, never blank',
+      () async {
+        // `_fromApiException` hands `e.message` to ConflictFailure unguarded,
+        // so an empty message has to be caught by `_baseMessage`'s own check
+        // rather than rendering an empty line to the user.
+        final e = await intercept(status: 409, body: '');
+        final msg = ApiErrorMapper.messageForLocale(ar, e);
+        expect(msg, ar.errorConflict);
+        expect(msg, isNotEmpty);
+      },
+    );
 
     test('401 tells the user to sign in again, in Arabic', () async {
       final e = await intercept(
@@ -278,11 +323,12 @@ void main() {
     const artifacts = <String, String>{
       'django IntegrityError':
           'IntegrityError: duplicate key value violates unique constraint '
-              '"auth_user_email_key"',
+          '"auth_user_email_key"',
       'python traceback':
           'Traceback (most recent call last):\n  File "views.py", line 42, '
-              'in post\n    raise ValueError(x)',
-      'driver exception': 'psycopg2.OperationalError: FATAL: role "x" does '
+          'in post\n    raise ValueError(x)',
+      'driver exception':
+          'psycopg2.OperationalError: FATAL: role "x" does '
           'not exist',
       'ORM internals': 'django.db.utils.DataError: value too long',
       'object repr': '<class \'builtins.TypeError\'> at 0x7f3a9c2b1e40',
@@ -304,7 +350,8 @@ void main() {
           expect(
             msg,
             tr.errorServer,
-            reason: 'A 5xx carrying "$label" must fall back to error_server, '
+            reason:
+                'A 5xx carrying "$label" must fall back to error_server, '
                 'not render the artifact.',
           );
           expect(msg, isNot(contains(raw)));
@@ -319,7 +366,8 @@ void main() {
         ar,
         ApiException(
           kind: ApiExceptionKind.badResponse,
-          message: 'IntegrityError: duplicate key value violates unique '
+          message:
+              'IntegrityError: duplicate key value violates unique '
               'constraint "projects_name_key"',
           statusCode: 409,
         ),
@@ -341,7 +389,8 @@ void main() {
       expect(
         msg,
         'Conversation already running',
-        reason: 'The guard must screen artifacts, not real copy — over-'
+        reason:
+            'The guard must screen artifacts, not real copy — over-'
             'filtering would hide messages the backend wrote FOR the user.',
       );
     });
@@ -385,15 +434,15 @@ void main() {
       );
     });
 
-    test('it does NOT say "try again later" — retry replays the mismatch',
-        () {
+    test('it does NOT say "try again later" — retry replays the mismatch', () {
       for (final tr in [en, ar]) {
         final msg = ApiErrorMapper.messageForLocale(tr, const ParseFailure());
         expect(msg, tr.errorUnexpectedResponse);
         expect(
           msg,
           isNot(tr.errorServer),
-          reason: 'The server is healthy and answering — telling the user to '
+          reason:
+              'The server is healthy and answering — telling the user to '
               'wait and retry sends them into an infinite loop.',
         );
         expect(msg, isNotEmpty);
@@ -463,7 +512,8 @@ void main() {
           expect(
             text.split(RegExp(r'\s+')).length,
             greaterThanOrEqualTo(6),
-            reason: '$label reads "$text" — that names the problem and stops. '
+            reason:
+                '$label reads "$text" — that names the problem and stops. '
                 'Add what the user should do next.',
           );
         });
@@ -487,18 +537,25 @@ void main() {
           expect(
             entry.value,
             isNot(tr.errorUnknown),
-            reason: '${entry.key.name} still falls through to the generic '
+            reason:
+                '${entry.key.name} still falls through to the generic '
                 'copy — add its arm to ApiErrorMapper.',
           );
-          expect(entry.value.split(RegExp(r'\s+')).length,
-              greaterThanOrEqualTo(6),
-              reason: '${entry.key.name} must name the next step, not just '
-                  'the problem.');
+          expect(
+            entry.value.split(RegExp(r'\s+')).length,
+            greaterThanOrEqualTo(6),
+            reason:
+                '${entry.key.name} must name the next step, not just '
+                'the problem.',
+          );
         }
 
         // Three distinct problems, three distinct sentences: collapsing any
         // two would put a user on a path that cannot resolve their case.
-        expect(messages.values.toSet().length, SocialSignInProblem.values.length);
+        expect(
+          messages.values.toSet().length,
+          SocialSignInProblem.values.length,
+        );
       }
     });
 
@@ -507,12 +564,20 @@ void main() {
       // the same request will fail identically every time. Their copy has to
       // point somewhere else — a permission to request, a list to refresh.
       for (final tr in [en, ar]) {
-        expect(tr.errorForbidden.length, greaterThan(tr.errorServer.length),
-            reason: 'forbidden needs more than the generic server line: it '
-                'must say who can grant the permission');
-        expect(tr.errorNotFound.length, greaterThan(tr.errorCancelled.length),
-            reason: 'not-found must offer a way forward, not just report the '
-                'absence');
+        expect(
+          tr.errorForbidden.length,
+          greaterThan(tr.errorServer.length),
+          reason:
+              'forbidden needs more than the generic server line: it '
+              'must say who can grant the permission',
+        );
+        expect(
+          tr.errorNotFound.length,
+          greaterThan(tr.errorCancelled.length),
+          reason:
+              'not-found must offer a way forward, not just report the '
+              'absence',
+        );
       }
     });
   });
@@ -536,15 +601,14 @@ class _StubAdapter implements HttpClientAdapter {
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
-  ) async =>
-      ResponseBody.fromString(
-        body,
-        status,
-        headers: {
-          Headers.contentTypeHeader: [contentType],
-          for (final e in extraHeaders.entries) e.key: [e.value],
-        },
-      );
+  ) async => ResponseBody.fromString(
+    body,
+    status,
+    headers: {
+      Headers.contentTypeHeader: [contentType],
+      for (final e in extraHeaders.entries) e.key: [e.value],
+    },
+  );
 
   @override
   void close({bool force = false}) {}

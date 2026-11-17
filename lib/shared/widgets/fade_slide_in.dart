@@ -123,10 +123,7 @@ class _FadeSlideInState extends State<FadeSlideIn>
           opacity: _opacity.value,
           child: Transform.translate(
             offset: _slide.value,
-            child: Transform.scale(
-              scale: _scale.value,
-              child: child,
-            ),
+            child: Transform.scale(scale: _scale.value, child: child),
           ),
         );
       },

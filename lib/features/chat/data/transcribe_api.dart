@@ -30,10 +30,7 @@ class TranscribeApi {
   ///
   /// Throws [DioException] on transport / non-200 responses; the chat
   /// screen funnels those through [ApiErrorMapper] for the toast text.
-  Future<String> transcribe({
-    required File audio,
-    String? language,
-  }) async {
+  Future<String> transcribe({required File audio, String? language}) async {
     final filename = audio.uri.pathSegments.isNotEmpty
         ? audio.uri.pathSegments.last
         : 'voice.m4a';

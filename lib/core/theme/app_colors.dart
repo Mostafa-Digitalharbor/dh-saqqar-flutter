@@ -20,6 +20,10 @@ class AppColors {
   // Light theme
   static const lightBg = Color(0xFFF8FAFC);
   static const lightSurface = Color(0xFFFFFFFF);
+
+  /// Bottom-sheet fill in light mode: the cool grey the redesign's notch sheets
+  /// use, so every sheet in the app reads as one family.
+  static const sheetSurface = Color(0xFFEFF1F6);
   static const lightSurface2 = Color(0xFFF1F5F9);
   static const lightSurface3 = Color(0xFFE2E8F0);
   static const lightText = Color(0xFF0F172A);
@@ -41,9 +45,15 @@ class AppColors {
   static const danger = Color(0xFFEF4444);
 
   // Soft tints used by mini-chip, cyan plates, etc.
-  static final Color brandCyanSoftDark = brandCyan.withValues(alpha: AppAlphas.a18);
-  static final Color brandCyanSoftLight = brandCyan.withValues(alpha: AppAlphas.a14);
-  static final Color brandCyanBorder = brandCyan.withValues(alpha: AppAlphas.a30);
+  static final Color brandCyanSoftDark = brandCyan.withValues(
+    alpha: AppAlphas.a18,
+  );
+  static final Color brandCyanSoftLight = brandCyan.withValues(
+    alpha: AppAlphas.a14,
+  );
+  static final Color brandCyanBorder = brandCyan.withValues(
+    alpha: AppAlphas.a30,
+  );
 
   // Overlay (modal/sheet backdrop) — saqqaar.com app.css uses rgba(2,6,23,0.72).
   static const overlayDark = Color(0xB8020617);

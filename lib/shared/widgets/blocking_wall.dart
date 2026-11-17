@@ -100,8 +100,9 @@ class BlockingWall extends StatelessWidget {
                     const SizedBox(height: AppSpacing.s24),
                     Text(
                       title,
-                      style: context.text.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: context.text.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.s8),
@@ -114,8 +115,9 @@ class BlockingWall extends StatelessWidget {
                       const SizedBox(height: AppSpacing.s6),
                       Text(
                         footnote!,
-                        style:
-                            context.text.labelSmall?.copyWith(color: s.muted),
+                        style: context.text.labelSmall?.copyWith(
+                          color: s.muted,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],

@@ -228,7 +228,9 @@ class _SaqqarBrandHeader extends StatelessWidget {
                     child: agentRunning
                         ? const Padding(
                             key: ValueKey('agent-pulse'),
-                            padding: EdgeInsetsDirectional.only(start: AppSpacing.s8),
+                            padding: EdgeInsetsDirectional.only(
+                              start: AppSpacing.s8,
+                            ),
                             child: _AgentPulseDot(),
                           )
                         : const SizedBox.shrink(key: ValueKey('idle')),
@@ -241,7 +243,9 @@ class _SaqqarBrandHeader extends StatelessWidget {
                   // the two side elements.
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s8,
+                      ),
                       child: Directionality(
                         textDirection: appDir,
                         child: Text(
@@ -304,7 +308,11 @@ class _NotificationsBell extends StatelessWidget {
                   color: s.cardBg,
                   border: Border.all(color: s.cardBorder),
                 ),
-                child: Icon(AppIcons.bell, size: AppIconSizes.bell, color: s.text),
+                child: Icon(
+                  AppIcons.bell,
+                  size: AppIconSizes.bell,
+                  color: s.text,
+                ),
               ),
               // Unread COUNT badge (caps at "9+"). Hidden at zero.
               if (unread > 0)
@@ -316,12 +324,17 @@ class _NotificationsBell extends StatelessWidget {
                       minWidth: AppControlSizes.badgeMin,
                       minHeight: AppControlSizes.badgeMin,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s4,
+                    ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: s.danger,
                       borderRadius: AppRadius.pillR,
-                      border: Border.all(color: s.surface, width: AppBorderWidths.thick),
+                      border: Border.all(
+                        color: s.surface,
+                        width: AppBorderWidths.thick,
+                      ),
                     ),
                     child: Text(
                       unread > 9 ? '9+' : '$unread',
@@ -399,11 +412,15 @@ class _AgentPulseDotState extends State<_AgentPulseDot>
               width: AppBoxSizes.dot,
               height: AppBoxSizes.dot,
               decoration: BoxDecoration(
-                color: AppColors.brandCyan.withValues(alpha: AppAlphas.a55 + 0.45 * t),
+                color: AppColors.brandCyan.withValues(
+                  alpha: AppAlphas.a55 + 0.45 * t,
+                ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.brandCyan.withValues(alpha: AppAlphas.a35 * t),
+                    color: AppColors.brandCyan.withValues(
+                      alpha: AppAlphas.a35 * t,
+                    ),
                     blurRadius: AppShadowSizes.blurSubtle,
                     spreadRadius: AppShadowSizes.spreadThin,
                   ),

@@ -6,14 +6,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/network/api_error_mapper.dart';
-import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../features/auth/view_model/auth_cubit.dart';
 import '../../features/security/view_model/app_lock_cubit.dart';
 import '../session/local_session_caches.dart';
 import 'app_toast.dart';
 import 'blocking_progress_dialog.dart';
-import 'confirm_dialog.dart';
+import '../fig/account_confirm.dart';
 
 /// Single entry-point for "delete my Saqqar account" — the App/Play Store
 /// mandated in-app deletion path. Shows a destructive confirm, then a
@@ -27,14 +26,12 @@ import 'confirm_dialog.dart';
 /// silently signing them out would wrongly imply the account was gone.
 Future<bool> showDeleteAccountFlow(BuildContext context) async {
   final tr = context.tr;
-  final confirmed = await ConfirmDialog.show(
+  final confirmed = await showFigAccountConfirm(
     context,
-    title: tr.deleteAccountConfirmTitle,
-    body: tr.deleteAccountConfirmBody,
-    confirmLabel: tr.deleteAccount,
-    cancelLabel: tr.confirmNo,
-    icon: AppIcons.trash,
-    destructive: true,
+    title: context.tr.figDeleteYourAccount,
+    body: context.tr.figThisActionIsPermanentYourAccount,
+    confirmLabel: context.tr.figDeleteAccount,
+    requireText: 'DELETE',
   );
   if (!confirmed) return false;
   if (!context.mounted) return false;
@@ -46,8 +43,8 @@ Future<bool> showDeleteAccountFlow(BuildContext context) async {
   //
   // No-op when the lock is off: `confirm` returns true without prompting.
   final unlocked = await context.read<AppLockCubit>().confirm(
-        reason: tr.appLockConfirmDelete,
-      );
+    reason: tr.appLockConfirmDelete,
+  );
   if (!unlocked || !context.mounted) return false;
 
   // Capture references before any awaits — the auth-gate redirect rebuilds

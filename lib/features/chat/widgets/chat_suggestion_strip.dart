@@ -44,8 +44,9 @@ class ChatSuggestionStrip extends StatelessWidget {
     ];
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: context.saqqar.surface
-            .withValues(alpha: context.alpha(AppAlphaPairs.panelPlain)),
+        color: context.saqqar.surface.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelPlain),
+        ),
         border: Border(top: BorderSide(color: context.saqqar.border)),
       ),
       child: ResponsiveContent(
@@ -97,7 +98,11 @@ class _SuggestionChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(AppIcons.sparkles, size: AppIconSizes.dense, color: s.brandCyan),
+            Icon(
+              AppIcons.sparkles,
+              size: AppIconSizes.dense,
+              color: s.brandCyan,
+            ),
             const SizedBox(width: AppSpacing.s6),
             Text(
               label,

@@ -158,9 +158,7 @@ class ProjectsApi {
     final res = await _dio.get<Map<String, dynamic>>(
       ApiEndpoints.environmentCredential(environmentId, kind.wire),
     );
-    return Credential.fromJson(
-      res.data!['credential'] as Map<String, dynamic>,
-    );
+    return Credential.fromJson(res.data!['credential'] as Map<String, dynamic>);
   }
 
   /// `PUT /api/v1/environments/<id>/credentials/<kind>/` — upsert. Server
@@ -182,9 +180,7 @@ class ProjectsApi {
       ApiEndpoints.environmentCredential(environmentId, kind.wire),
       data: body,
     );
-    return Credential.fromJson(
-      res.data!['credential'] as Map<String, dynamic>,
-    );
+    return Credential.fromJson(res.data!['credential'] as Map<String, dynamic>);
   }
 
   /// `DELETE /api/v1/environments/<id>/credentials/<kind>/`
@@ -197,4 +193,3 @@ class ProjectsApi {
     );
   }
 }
-

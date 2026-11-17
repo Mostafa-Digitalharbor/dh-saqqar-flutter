@@ -24,7 +24,9 @@ class ProjectCardSkeleton extends StatelessWidget {
     final s = context.saqqar;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelOpaque)),
+        color: s.surface.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelOpaque),
+        ),
         borderRadius: AppRadius.cardR,
         border: Border.all(color: s.cardBorder),
       ),
@@ -40,21 +42,39 @@ class ProjectCardSkeleton extends StatelessWidget {
             ),
             child: Row(
               children: [
-                SkeletonBlock(width: AppSkeletonSizes.tileLarge, height: AppSkeletonSizes.tileLarge, radius: AppRadius.small),
+                SkeletonBlock(
+                  width: AppSkeletonSizes.tileLarge,
+                  height: AppSkeletonSizes.tileLarge,
+                  radius: AppRadius.small,
+                ),
                 SizedBox(width: AppSpacing.s12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SkeletonBlock(width: AppSkeletonSizes.title, height: AppSkeletonSizes.titleLine),
+                      SkeletonBlock(
+                        width: AppSkeletonSizes.title,
+                        height: AppSkeletonSizes.titleLine,
+                      ),
                       SizedBox(height: AppSpacing.s6),
-                      SkeletonBlock(width: AppSkeletonSizes.subtitleShort, height: AppSkeletonSizes.subtitleLine),
+                      SkeletonBlock(
+                        width: AppSkeletonSizes.subtitleShort,
+                        height: AppSkeletonSizes.subtitleLine,
+                      ),
                     ],
                   ),
                 ),
-                SkeletonBlock(width: AppSkeletonSizes.actionSquare, height: AppSkeletonSizes.actionSquare, radius: AppRadius.micro),
+                SkeletonBlock(
+                  width: AppSkeletonSizes.actionSquare,
+                  height: AppSkeletonSizes.actionSquare,
+                  radius: AppRadius.micro,
+                ),
                 SizedBox(width: AppSpacing.s8),
-                SkeletonBlock(width: AppSkeletonSizes.actionSquare, height: AppSkeletonSizes.actionSquare, radius: AppRadius.micro),
+                SkeletonBlock(
+                  width: AppSkeletonSizes.actionSquare,
+                  height: AppSkeletonSizes.actionSquare,
+                  radius: AppRadius.micro,
+                ),
               ],
             ),
           ),
@@ -69,19 +89,33 @@ class ProjectCardSkeleton extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  SkeletonBlock(width: AppSkeletonSizes.tile, height: AppSkeletonSizes.tile, radius: AppRadius.tight),
+                  SkeletonBlock(
+                    width: AppSkeletonSizes.tile,
+                    height: AppSkeletonSizes.tile,
+                    radius: AppRadius.tight,
+                  ),
                   SizedBox(width: AppSpacing.s12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SkeletonBlock(width: AppSkeletonSizes.subtitle, height: AppSkeletonSizes.denseLine),
+                        SkeletonBlock(
+                          width: AppSkeletonSizes.subtitle,
+                          height: AppSkeletonSizes.denseLine,
+                        ),
                         SizedBox(height: AppSpacing.s6),
-                        SkeletonBlock(width: AppSkeletonSizes.chip, height: AppSkeletonSizes.chipLine),
+                        SkeletonBlock(
+                          width: AppSkeletonSizes.chip,
+                          height: AppSkeletonSizes.chipLine,
+                        ),
                       ],
                     ),
                   ),
-                  SkeletonBlock(width: AppSkeletonSizes.actionSquare, height: AppSkeletonSizes.actionSquare, radius: AppRadius.micro),
+                  SkeletonBlock(
+                    width: AppSkeletonSizes.actionSquare,
+                    height: AppSkeletonSizes.actionSquare,
+                    radius: AppRadius.micro,
+                  ),
                 ],
               ),
             ),

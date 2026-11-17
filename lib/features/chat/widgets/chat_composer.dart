@@ -1,18 +1,17 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'dart:io';
 
-import '../../../core/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../shared/fig/fig.dart';
+
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/responsive_content.dart';
 import '../data/chat_view_models.dart';
 import 'attachment_chip.dart';
-import 'chat_send_button.dart';
 import 'voice_input_button.dart';
-import '../../../shared/widgets/tappable_surface.dart';
 
 /// Brief §4.5 composer — two-row layout inside a single rounded pill:
 ///
@@ -63,6 +62,7 @@ class ChatComposer extends StatelessWidget {
     this.stopping = false,
     this.focusNode,
     this.voiceEnabled = true,
+    this.onClearAttachments,
   });
 
   final TextEditingController controller;
@@ -163,24 +163,19 @@ class ChatComposer extends StatelessWidget {
   /// dead end. Defaults to `true` so we never hide it on an unknown plan.
   final bool voiceEnabled;
 
+  /// "Clear all" in the staged-files header. Null hides the link.
+  final VoidCallback? onClearAttachments;
+
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
     return SafeArea(
       top: false,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: s.surface,
-          border: Border(top: BorderSide(color: s.border)),
-        ),
+        decoration: const BoxDecoration(),
         child: ResponsiveContent(
           maxWidth: AppLayoutWidths.chatShell,
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.s12,
-            AppSpacing.s10,
-            AppSpacing.s12,
-            AppSpacing.s10,
-          ),
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -191,23 +186,74 @@ class ChatComposer extends StatelessWidget {
               // composer the same size for 1 attachment or 50, and the
               // overflow becomes a horizontal scroll instead of vertical
               // growth.
-              if (attachments.isNotEmpty)
+              if (attachments.isNotEmpty) ...[
                 Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.s10),
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          context.tr.figSelected(attachments.length),
+                          style: Fig.t(
+                            context,
+                            size: 14,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                      if (onClearAttachments != null)
+                        GestureDetector(
+                          onTap: onClearAttachments,
+                          child: Text(
+                            context.tr.figClearAll,
+                            style: Fig.t(
+                              context,
+                              size: 14,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: AppSpacing.s16),
+                      Flexible(
+                        child: GestureDetector(
+                          onTap: onAttach,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.plus,
+                                size: 15,
+                                color: Colors.white.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(width: AppSpacing.s4),
+                              Flexible(
+                                child: Text(
+                                  context.tr.figAddMore,
+                                  style: Fig.t(
+                                    context,
+                                    size: 14,
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s14),
                   child: SizedBox(
-                    // 72 chip + 10 top inset for the `×` that hangs off the
-                    // corner + 6 slack, so nothing clips against the viewport.
-                    height: AppControlSizes.attachmentStripHeight,
+                    height: 88,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      // End inset gives the last chip's `×` room to render
-                      // inside the viewport; directional so RTL flips it.
-                      padding: const EdgeInsetsDirectional.only(
-                        top: AppSpacing.s10,
-                        end: AppSpacing.s10,
-                      ),
                       itemCount: attachments.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.s8),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(width: AppSpacing.s10),
                       itemBuilder: (context, i) => _StagedAttachment(
                         attachment: attachments[i],
                         tooltip: context.tr.removeAttachment,
@@ -217,6 +263,7 @@ class ChatComposer extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
               // Addon authoring hint (Gap M) — when an addon `.zip` is staged,
               // tell the user Saqqar can read/edit/rebuild it. Driven purely
               // off the staged file names so it appears the moment they attach.
@@ -225,7 +272,11 @@ class ChatComposer extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: AppSpacing.s10),
                   child: Row(
                     children: [
-                      Icon(AppIcons.archive, size: AppIconSizes.inline, color: s.brandCyan),
+                      Icon(
+                        AppIcons.archive,
+                        size: AppIconSizes.inline,
+                        color: s.brandCyan,
+                      ),
                       const SizedBox(width: AppSpacing.s8),
                       Expanded(
                         child: Text(
@@ -239,21 +290,19 @@ class ChatComposer extends StatelessWidget {
                     ],
                   ),
                 ),
-              // ── Composer pill (textarea + bar) ─────────────────────
+              // ── Composer pill (redesign) ───────────────────────────
+              // Dark glass card: "Ask me anything …" over a row of round
+              // controls — attach, tools · mic, send. Task prep / Auto-approve
+              // now live in the ⋮ Saqqar Tools sheet.
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: s.surface2,
-                  borderRadius: AppRadius.composerR,
-                  border: Border.all(color: s.cardBorder),
+                  color: Colors.black.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.32),
+                  ),
                 ),
                 child: recording || transcribing
-                    // Recording / transcribing fully takes over the
-                    // composer pill — text field hidden, action bar
-                    // hidden, toggles hidden. User has exactly two
-                    // affordances: stop (commit) or discard (cancel).
-                    // Once transcribe lands, the screen flips
-                    // `recording=false` and the text returns with the
-                    // transcript appended.
                     ? RecordingOverlay(
                         elapsed: recordingElapsed,
                         transcribing: transcribing,
@@ -261,192 +310,116 @@ class ChatComposer extends StatelessWidget {
                         onDiscard: onDiscardRecording,
                       )
                     : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ── Top row: textarea ──────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.s14,
-                        AppSpacing.s10,
-                        AppSpacing.s14,
-                        0,
-                      ),
-                      child: TextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        minLines: 1,
-                        maxLines: 6,
-                        textInputAction: TextInputAction.newline,
-                        style: context.text.bodyMedium?.copyWith(
-                          fontSize: AppFontSizes.reading,
-                          height: AppLineHeights.compact,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: onStop != null
-                              ? context.tr.composerBusy
-                              : context.tr.composerHint,
-                          hintStyle: context.text.bodyMedium?.copyWith(
-                            color: s.muted,
-                            fontSize: AppFontSizes.reading,
-                            fontStyle: onStop != null
-                                ? FontStyle.italic
-                                : FontStyle.normal,
-                          ),
-                          // The hint shares the field's `maxLines: 6`, so it
-                          // grows the box exactly as typed text would. The
-                          // busy hint is a full sentence — "Saqqar is working
-                          // — type your next task; send unlocks when done." —
-                          // which at 320 px and 1.3× text wraps to four lines
-                          // and inflates an EMPTY composer to over half the
-                          // screen. Capping it lets a placeholder ellipsize
-                          // rather than push the chat off the top.
-                          hintMaxLines: 2,
-                          isCollapsed: true,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: AppSpacing.s6),
-                        ),
-                      ),
-                    ),
-                    // ── Action bar: attach (start) + send (end) ────────
-                    // Order swapped on 2026-05-19 per user feedback —
-                    // attach/send sit right under the text input, with
-                    // the toggle pills underneath them. Keeps the two
-                    // primary actions (write + send) visually grouped.
-                    //
-                    // Active-mode badges (deep-think + auto-approve) sit
-                    // just before the Send button when ON — small
-                    // pulsing dots that make the elevated modes
-                    // impossible to forget about (testers asked for an
-                    // animated indicator next to Send on 2026-05-23).
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.s6,
-                        AppSpacing.s4,
-                        AppSpacing.s6,
-                        0,
-                      ),
-                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // `＋` — Saqqar tools. Left-most control, matching
-                          // the web composer. Everything that isn't one of
-                          // the two hot actions (attach, mic) lives behind
-                          // it: prompt bank, Odoo tools, connections, and
-                          // the slash commands that used to sit out here.
-                          if (onTools != null)
-                            IconButton(
-                              onPressed: onTools,
-                              icon: Icon(AppIcons.plus,
-                                  color: s.muted, size: AppIconSizes.action),
-                              tooltip: context.tr.toolsTitle,
-                              visualDensity: VisualDensity.compact,
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(22, 20, 22, 0),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 56),
+                              child: TextField(
+                                controller: controller,
+                                focusNode: focusNode,
+                                minLines: 1,
+                                maxLines: 6,
+                                textInputAction: TextInputAction.newline,
+                                cursorColor: Colors.white,
+                                style: Fig.t(
+                                  context,
+                                  size: 15,
+                                  color: Colors.white,
+                                  height: 1.35,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: onStop != null
+                                      ? context.tr.composerBusy
+                                      : context.tr.figAskMeAnything,
+                                  hintStyle: Fig.t(
+                                    context,
+                                    size: 15,
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                  ),
+                                  hintMaxLines: 2,
+                                  isCollapsed: true,
+                                  filled: false,
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                ),
+                              ),
                             ),
-                          // NO separate paperclip. It duplicated the ＋
-                          // sheet's own "Upload file" row — two controls, one
-                          // action, sitting next to each other. Removed
-                          // 2026-08-06; [onAttach] is still the callback the
-                          // sheet's upload row fires, so nothing about the
-                          // attachment flow changed except the second door
-                          // into it.
-                          // Mic — opens the recording overlay. Same
-                          // gating as Send (offline / no env / mid-
-                          // generation) so the user can't start a
-                          // recording at a surface that isn't ready to
-                          // accept the transcript. Hidden entirely when
-                          // voice is locked on the plan (Gap C).
-                          if (voiceEnabled)
-                            VoiceInputButton(
-                              enabled: onSend != null && onStop == null,
-                              onStart: onStartRecording,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                            child: Row(
+                              children: [
+                                _RoundAction(
+                                  icon: LucideIcons.paperclip,
+                                  onTap: onAttach,
+                                ),
+                                const SizedBox(width: AppSpacing.s10),
+                                if (onTools != null)
+                                  _RoundAction(
+                                    icon: LucideIcons.workflow,
+                                    onTap: onTools,
+                                  ),
+                                const Spacer(),
+                                if (voiceEnabled) ...[
+                                  _RoundAction(
+                                    icon: LucideIcons.mic,
+                                    onTap: (onSend != null && onStop == null)
+                                        ? onStartRecording
+                                        : null,
+                                  ),
+                                  const SizedBox(width: AppSpacing.s10),
+                                ],
+                                ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: controller,
+                                  builder: (context, value, _) {
+                                    final hasContent =
+                                        value.text.trim().isNotEmpty ||
+                                        attachments.isNotEmpty;
+                                    final running = onStop != null;
+                                    final enabled = running
+                                        ? !stopping
+                                        : (hasContent && onSend != null);
+                                    return GestureDetector(
+                                      onTap: !enabled
+                                          ? null
+                                          : (running ? onStop : onSend),
+                                      child: Opacity(
+                                        opacity: enabled ? 1 : 0.55,
+                                        child: Container(
+                                          width: 46,
+                                          height: 46,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Fig.blueAction,
+                                                Color(0xFF1B4FD0),
+                                              ],
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            running
+                                                ? LucideIcons.square
+                                                : LucideIcons.arrowUpToLine,
+                                            size: 18,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
-                          const Spacer(),
-                          if (taskPrep && taskPrepAvailable) ...[
-                            _ActiveModeBadge(
-                              icon: AppIcons.lightbulb,
-                              color: s.brandPurple,
-                              tooltip: context.tr.taskPrepOn,
-                            ),
-                            const SizedBox(width: AppSpacing.s6),
-                          ],
-                          if (autoApprove) ...[
-                            _ActiveModeBadge(
-                              icon: AppIcons.shieldCheck,
-                              color: s.brandCyan,
-                              tooltip: context.tr.autoApproveOn,
-                            ),
-                            const SizedBox(width: AppSpacing.s6),
-                          ],
-                          // Send stays disabled until there's something to
-                          // send — typed text or a staged attachment — so an
-                          // empty tap never costs a wasted round-trip. The
-                          // ValueListenableBuilder watches only the text
-                          // controller, so keystrokes rebuild just this
-                          // button, not the whole screen. `onStop` (mid-
-                          // generation) always wins — the Stop control must
-                          // stay live regardless of composer content.
-                          ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: controller,
-                            builder: (context, value, _) {
-                              final hasContent =
-                                  value.text.trim().isNotEmpty ||
-                                      attachments.isNotEmpty;
-                              return ChatSendButton(
-                                onPressed:
-                                    hasContent ? onSend : null,
-                                onStop: onStop,
-                                stopping: stopping,
-                              );
-                            },
                           ),
                         ],
                       ),
-                    ),
-                    // ── Toggles row ────────────────────────────────────
-                    // Toggles get their own line so the full Arabic
-                    // labels ("تجهيز المهمة", "الموافقة التلقائية")
-                    // are always readable, no ellipsis. Wrap so a very
-                    // narrow screen can flow the second toggle down.
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.s8,
-                        AppSpacing.s2,
-                        AppSpacing.s8,
-                        AppSpacing.s8,
-                      ),
-                      child: Wrap(
-                        spacing: AppSpacing.s4,
-                        runSpacing: AppSpacing.s4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          if (taskPrepAvailable)
-                            _ComposerToggle(
-                              icon: AppIcons.lightbulb,
-                              label: context.tr.taskPrep,
-                              tooltip: context.tr.taskPrepTitle,
-                              value: taskPrep,
-                              activeColor: s.brandPurple,
-                              onChanged: onTaskPrepChanged,
-                            ),
-                          _ComposerToggle(
-                            // Auto-approve gets the track+thumb mini
-                            // switch per spec §9 — reads as "always-on
-                            // switch" rather than a one-shot tap, which
-                            // matches the semantics (flag stays on
-                            // until the user flips it).
-                            hasTrack: true,
-                            label: context.tr.autoApprove,
-                            value: autoApprove,
-                            activeColor: s.brandCyan,
-                            onChanged: onAutoApproveChanged,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
@@ -456,10 +429,38 @@ class ChatComposer extends StatelessWidget {
   }
 }
 
-/// Composer-side staged attachment — the chip itself plus a small `×` button
-/// in the top-right corner. Lets the user drop a single file from a batch
-/// without losing the others (vs. the previous single-file row that had one
-/// remove button at the trailing edge).
+class _RoundAction extends StatelessWidget {
+  const _RoundAction({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Opacity(
+        opacity: onTap == null ? 0.4 : 1,
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+          ),
+          child: Icon(
+            icon,
+            size: 19,
+            color: Colors.white.withValues(alpha: 0.8),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Composer-side staged file card: kind thumbnail, name, size and a small ×.
 class _StagedAttachment extends StatelessWidget {
   const _StagedAttachment({
     required this.attachment,
@@ -475,273 +476,72 @@ class _StagedAttachment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        AttachmentChip(
-          attachment: attachment,
-          compact: true,
-          onTap: onPreview,
+    final a = attachment;
+    final localImg =
+        a.isImage &&
+        a.imageUrl != null &&
+        a.imageUrl!.isNotEmpty &&
+        !a.imageUrl!.startsWith('http');
+    return GestureDetector(
+      onTap: onPreview,
+      child: Container(
+        width: 100,
+        padding: const EdgeInsets.fromLTRB(10, 10, 8, 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
         ),
-        PositionedDirectional(
-          top: -AppSpacing.s8,
-          end: -AppSpacing.s8,
-          child: Material(
-            color: s.surface,
-            shape: const CircleBorder(),
-            elevation: AppElevations.raised,
-            child: InkWell(
-              onTap: onRemove,
-              customBorder: const CircleBorder(),
-              child: Tooltip(
-                message: tooltip,
-                child: Container(
-                  width: AppBoxSizes.glyphSmall,
-                  height: AppBoxSizes.glyphSmall,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: s.border),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: localImg
+                        ? Image.file(
+                            File(a.imageUrl!),
+                            fit: BoxFit.cover,
+                            cacheWidth: 96,
+                            errorBuilder: (_, __, ___) =>
+                                _KindGlyph(attachment: a),
+                          )
+                        : _KindGlyph(attachment: a),
                   ),
-                  child: Icon(AppIcons.close, size: AppIconSizes.meta, color: s.muted),
                 ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Pulsing inline badge for an active chat-level mode (deep-think,
-/// auto-approve). Sits just before the Send button so the user can't
-/// miss that one of the elevated modes is engaged for this message —
-/// the pulse is intentionally loud (1.0 ↔ 0.6 opacity, 1100 ms cycle)
-/// because "I forgot auto-approve was ON" is a real footgun on a
-/// production Odoo connection.
-///
-/// The pulse runs [_attentionPulses] times and then HOLDS at its brightest
-/// ring instead of breathing forever. Deep-think and auto-approve are sticky
-/// settings, not transient states, so an endless pulse meant the chat screen
-/// — where users spend nearly all their time — never stopped producing
-/// frames for as long as either mode was on. Holding at peak keeps the badge
-/// exactly as loud as the pulse's most visible moment, so the warning is not
-/// weakened; only the repaint is.
-class _ActiveModeBadge extends StatefulWidget {
-  const _ActiveModeBadge({
-    required this.icon,
-    required this.color,
-    required this.tooltip,
-  });
-
-  final IconData icon;
-  final Color color;
-  final String tooltip;
-
-  @override
-  State<_ActiveModeBadge> createState() => _ActiveModeBadgeState();
-}
-
-class _ActiveModeBadgeState extends State<_ActiveModeBadge>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  /// Breaths to draw the eye before settling. Enough to register as motion
-  /// in peripheral vision; short enough that the screen goes quiet.
-  static const _attentionPulses = 4;
-  int _pulsesDone = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: AppDurations.breathe,
-    )..addStatusListener(_onHalfCycle);
-    _ctrl.forward();
-  }
-
-  /// One `forward` + one `reverse` is a full breath. Count the reverses so
-  /// we always settle from the same end, then park at 1.0 — the peak of the
-  /// ring, i.e. the badge's most visible state.
-  void _onHalfCycle(AnimationStatus status) {
-    if (status == AnimationStatus.completed) {
-      _ctrl.reverse();
-      return;
-    }
-    if (status != AnimationStatus.dismissed) return;
-    _pulsesDone++;
-    if (_pulsesDone >= _attentionPulses) {
-      _ctrl.value = 1.0; // hold bright; no further frames scheduled
-      return;
-    }
-    _ctrl.forward();
-  }
-
-  @override
-  void dispose() {
-    _ctrl
-      ..removeStatusListener(_onHalfCycle)
-      ..dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: widget.tooltip,
-      child: AnimatedBuilder(
-        animation: _ctrl,
-        builder: (context, _) {
-          final t = _ctrl.value; // 0 → 1 → 0
-          // Outer ring fades in/out for the "breathing" cue; the inner
-          // chip stays at full opacity so the icon remains legible at
-          // every point in the cycle.
-          final ringAlpha = 0.25 + (0.45 * t);
-          return Container(
-            width: AppBoxSizes.composerAction,
-            height: AppBoxSizes.composerAction,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: widget.color.withValues(alpha: AppAlphas.a14),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.color.withValues(alpha: ringAlpha),
-                  blurRadius: AppShadowSizes.blurGlow + (AppShadowSizes.blurGlowRange * t),
-                  spreadRadius: AppShadowSizes.spreadHairline + (AppShadowSizes.spreadGlowRange * t),
+                const Spacer(),
+                Tooltip(
+                  message: tooltip,
+                  child: GestureDetector(
+                    onTap: onRemove,
+                    behavior: HitTestBehavior.opaque,
+                    child: Icon(
+                      LucideIcons.x,
+                      size: 14,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
                 ),
               ],
             ),
-            child: Icon(widget.icon, size: AppIconSizes.compact, color: widget.color),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Compact toggle used inside the composer bar — two flavours per
-/// spec §9:
-///
-///   • **icon flavour** (pass [icon]) — used by Deep think. Renders as
-///     a pill with the icon + label, flips muted ↔ accent-tinted.
-///   • **track+thumb flavour** ([hasTrack] = true) — used by
-///     Auto-approve. Renders as label + mini-switch (26 × 14 track, 10
-///     × 10 thumb that slides from start to end on toggle).
-///
-/// Whole row is one tap target either way so the label is part of the
-/// hit area, not just the icon / switch.
-class _ComposerToggle extends StatelessWidget {
-  const _ComposerToggle({
-    this.icon,
-    this.hasTrack = false,
-    required this.label,
-    this.tooltip,
-    required this.value,
-    required this.activeColor,
-    required this.onChanged,
-  }) : assert(icon != null || hasTrack,
-            'Either icon or hasTrack must be supplied');
-
-  final IconData? icon;
-  final bool hasTrack;
-  final String label;
-
-  /// Long-press / hover explanation. Task prep gets one because "Task prep"
-  /// alone doesn't say what flipping it changes; the sentence the web shows
-  /// as a `title` attribute is the same copy.
-  final String? tooltip;
-  final bool value;
-  final Color activeColor;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final body = _buildBody(context);
-    final message = tooltip;
-    return message == null ? body : Tooltip(message: message, child: body);
-  }
-
-  Widget _buildBody(BuildContext context) {
-    final s = context.saqqar;
-    if (hasTrack) {
-      return TappableSurface(
-        radius: AppRadius.pillR,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onChanged(!value);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s8,
-            vertical: AppSpacing.s7,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Flexible so the label ellipsifies when the parent
-              // pillarow is too narrow for both toggles + send.
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  style: context.text.labelMedium?.copyWith(
-                    color: value ? activeColor : s.muted,
-                    fontSize: AppFontSizes.footnote,
-                    fontWeight:
-                        value ? FontWeight.w800 : FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.s6),
-              _MiniSwitch(value: value, activeColor: activeColor),
-            ],
-          ),
-        ),
-      );
-    }
-    return TappableSurface(
-      radius: AppRadius.pillR,
-      onTap: () => onChanged(!value),
-      child: AnimatedContainer(
-        duration: AppDurations.fast,
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s10,
-          vertical: AppSpacing.s7,
-        ),
-        decoration: BoxDecoration(
-          color: value
-              ? activeColor.withValues(alpha: AppAlphas.a14)
-              : Colors.transparent,
-          borderRadius: AppRadius.pillR,
-          border: Border.all(
-            color: value
-                ? activeColor.withValues(alpha: AppAlphas.a40)
-                : Colors.transparent,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: AppIconSizes.compact, color: value ? activeColor : s.muted),
-            const SizedBox(width: AppSpacing.s5),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-                style: context.text.labelMedium?.copyWith(
-                  color: value ? activeColor : s.muted,
-                  fontSize: AppFontSizes.footnote,
-                  fontWeight: value ? FontWeight.w800 : FontWeight.w600,
-                ),
+            const Spacer(),
+            Text(
+              a.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Fig.t(context, size: 12, color: Colors.white),
+            ),
+            Text(
+              a.size,
+              maxLines: 1,
+              style: Fig.t(
+                context,
+                size: 11,
+                color: Colors.white.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -751,52 +551,25 @@ class _ComposerToggle extends StatelessWidget {
   }
 }
 
-/// Spec §9 — 26 × 14 track with a 10 × 10 thumb that slides from start
-/// (off) to end (on). Used by the auto-approve composer toggle. Kept
-/// private to this file because the look is hand-tuned to nestle into
-/// the composer bar (a Material `Switch` would be too tall + chunky).
-class _MiniSwitch extends StatelessWidget {
-  const _MiniSwitch({required this.value, required this.activeColor});
-
-  final bool value;
-  final Color activeColor;
+class _KindGlyph extends StatelessWidget {
+  const _KindGlyph({required this.attachment});
+  final ChatAttachment attachment;
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return SizedBox(
-      width: AppControlSizes.toggleWidth,
-      height: AppControlSizes.toggleHeight,
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: value
-                  ? activeColor.withValues(alpha: AppAlphas.a85)
-                  : s.surface3,
-              borderRadius: AppRadius.pillR,
-              border: Border.all(
-                color: value ? activeColor : s.cardBorder,
-                width: AppBorderWidths.hairline,
-              ),
-            ),
-          ),
-          AnimatedPositionedDirectional(
-            duration: AppDurations.fast,
-            curve: Curves.easeOutCubic,
-            top: AppSpacing.s1,
-            start: value ? 13 : 1,
-            child: Container(
-              width: AppBoxSizes.dotLarge,
-              height: AppBoxSizes.dotLarge,
-              decoration: BoxDecoration(
-                color: value ? AppColors.onBrand : s.muted,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final n = attachment.name.toLowerCase();
+    final (IconData icon, Color c) = n.endsWith('.pdf')
+        ? (LucideIcons.fileText, Fig.fileRed)
+        : (n.endsWith('.doc') || n.endsWith('.docx'))
+        ? (LucideIcons.fileText, Fig.fileBlue)
+        : (n.endsWith('.xls') || n.endsWith('.xlsx') || n.endsWith('.csv'))
+        ? (LucideIcons.fileSpreadsheet, Fig.fileGreen)
+        : (n.endsWith('.zip') || n.endsWith('.tar') || n.endsWith('.gz'))
+        ? (LucideIcons.fileArchive, Fig.fileAmber)
+        : (LucideIcons.file, Colors.white70);
+    return ColoredBox(
+      color: c.withValues(alpha: 0.22),
+      child: Icon(icon, size: 15, color: c),
     );
   }
 }

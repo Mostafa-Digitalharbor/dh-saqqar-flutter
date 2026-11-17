@@ -32,24 +32,24 @@ class AppNotification {
   final bool read;
 
   AppNotification copyWith({bool? read}) => AppNotification(
-        id: id,
-        type: type,
-        title: title,
-        body: body,
-        receivedAt: receivedAt,
-        conversationId: conversationId,
-        read: read ?? this.read,
-      );
+    id: id,
+    type: type,
+    title: title,
+    body: body,
+    receivedAt: receivedAt,
+    conversationId: conversationId,
+    read: read ?? this.read,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type,
-        'title': title,
-        'body': body,
-        'received_at': receivedAt.toUtc().toIso8601String(),
-        if (conversationId != null) 'conversation_id': conversationId,
-        'read': read,
-      };
+    'id': id,
+    'type': type,
+    'title': title,
+    'body': body,
+    'received_at': receivedAt.toUtc().toIso8601String(),
+    if (conversationId != null) 'conversation_id': conversationId,
+    'read': read,
+  };
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
@@ -57,8 +57,8 @@ class AppNotification {
       type: json['type'] as String? ?? '',
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
-      receivedAt: DateTime.tryParse(json['received_at'] as String? ?? '')
-              ?.toLocal() ??
+      receivedAt:
+          DateTime.tryParse(json['received_at'] as String? ?? '')?.toLocal() ??
           DateTime.now(),
       conversationId: json['conversation_id'] as String?,
       read: json['read'] as bool? ?? false,

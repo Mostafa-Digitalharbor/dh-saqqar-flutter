@@ -140,40 +140,39 @@ class CredentialField extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'label': label,
-        'type': type.name,
-        'required': required,
-        'placeholder': placeholder,
-        'help': help,
-        if (options != null) 'options': options,
-        if (defaultValue != null) 'default': defaultValue,
-        if (labelKey != null) 'label_key': labelKey,
-        if (helpKey != null) 'help_key': helpKey,
-        if (labelKeyByAuthType != null)
-          'label_key_by_auth_type': labelKeyByAuthType,
-        if (placeholderKeyByAuthType != null)
-          'placeholder_key_by_auth_type': placeholderKeyByAuthType,
-        if (helpKeyByAuthType != null)
-          'help_key_by_auth_type': helpKeyByAuthType,
-      };
+    'name': name,
+    'label': label,
+    'type': type.name,
+    'required': required,
+    'placeholder': placeholder,
+    'help': help,
+    if (options != null) 'options': options,
+    if (defaultValue != null) 'default': defaultValue,
+    if (labelKey != null) 'label_key': labelKey,
+    if (helpKey != null) 'help_key': helpKey,
+    if (labelKeyByAuthType != null)
+      'label_key_by_auth_type': labelKeyByAuthType,
+    if (placeholderKeyByAuthType != null)
+      'placeholder_key_by_auth_type': placeholderKeyByAuthType,
+    if (helpKeyByAuthType != null) 'help_key_by_auth_type': helpKeyByAuthType,
+  };
 
   @override
   List<Object?> get props => [
-        name,
-        label,
-        type,
-        required,
-        placeholder,
-        help,
-        options,
-        defaultValue,
-        labelKey,
-        helpKey,
-        labelKeyByAuthType,
-        placeholderKeyByAuthType,
-        helpKeyByAuthType,
-      ];
+    name,
+    label,
+    type,
+    required,
+    placeholder,
+    help,
+    options,
+    defaultValue,
+    labelKey,
+    helpKey,
+    labelKeyByAuthType,
+    placeholderKeyByAuthType,
+    helpKeyByAuthType,
+  ];
 }
 
 /// Form descriptor for one [CredentialKind] — the contract for what the
@@ -192,7 +191,8 @@ class CredentialSchema {
 
   factory CredentialSchema.fromJson(Map<String, dynamic> json) {
     return CredentialSchema(
-      kind: CredentialKind.fromWire(json['kind'] as String?) ??
+      kind:
+          CredentialKind.fromWire(json['kind'] as String?) ??
           CredentialKind.xmlrpc,
       label: json['label'] as String? ?? '',
       fields: (json['fields'] as List? ?? [])
@@ -203,10 +203,10 @@ class CredentialSchema {
   }
 
   Map<String, dynamic> toJson() => {
-        'kind': kind.wire,
-        'label': label,
-        'fields': fields.map((f) => f.toJson()).toList(),
-      };
+    'kind': kind.wire,
+    'label': label,
+    'fields': fields.map((f) => f.toJson()).toList(),
+  };
 }
 
 /// A stored credential bundle. `payload` is only populated on the detail
@@ -243,12 +243,12 @@ class Credential extends Equatable {
   factory Credential.fromJson(Map<String, dynamic> json) {
     return Credential(
       name: json['name'] as String,
-      kind: CredentialKind.fromWire(json['kind'] as String?) ??
+      kind:
+          CredentialKind.fromWire(json['kind'] as String?) ??
           CredentialKind.xmlrpc,
       label: json['label'] as String? ?? '',
       isMemorized: json['is_memorized'] as bool? ?? false,
-      metadata: (json['metadata'] as Map?)?.cast<String, dynamic>() ??
-          const {},
+      metadata: (json['metadata'] as Map?)?.cast<String, dynamic>() ?? const {},
       lastVerifiedAt: _parseDate(json['last_verified_at']),
       payload: (json['payload'] as Map?)?.cast<String, dynamic>(),
     );
@@ -256,14 +256,14 @@ class Credential extends Equatable {
 
   @override
   List<Object?> get props => [
-        name,
-        kind,
-        label,
-        isMemorized,
-        metadata,
-        lastVerifiedAt,
-        payload,
-      ];
+    name,
+    kind,
+    label,
+    isMemorized,
+    metadata,
+    lastVerifiedAt,
+    payload,
+  ];
 
   static DateTime? _parseDate(Object? value) {
     if (value is String && value.isNotEmpty) {

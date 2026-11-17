@@ -13,7 +13,11 @@ import '../../../shared/widgets/saqqar_logo.dart';
 /// themes automatically, so the brand stays legible against whichever
 /// surface the chat is sitting on.
 class ChatAvatar extends StatelessWidget {
-  const ChatAvatar({super.key, required this.isUser, this.size = AppAvatarSizes.small});
+  const ChatAvatar({
+    super.key,
+    required this.isUser,
+    this.size = AppAvatarSizes.small,
+  });
 
   final bool isUser;
   final double size;

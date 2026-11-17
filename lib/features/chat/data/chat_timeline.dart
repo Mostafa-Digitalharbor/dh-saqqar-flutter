@@ -42,10 +42,7 @@ class SingleMessageEntry extends TimelineEntry {
 /// A multi-step agent turn: the intermediate "thinking" messages collapsed
 /// into a pill, plus the final reply rendered as a normal bubble below it.
 class AgentTurnEntry extends TimelineEntry {
-  const AgentTurnEntry({
-    required this.thinkingSteps,
-    required this.finalReply,
-  });
+  const AgentTurnEntry({required this.thinkingSteps, required this.finalReply});
 
   final List<ChatMessage> thinkingSteps;
   final ChatMessage finalReply;
@@ -162,10 +159,12 @@ List<TimelineEntry> buildChatTimeline(
     if (replyAt == 0) {
       out.add(SingleMessageEntry(run.first));
     } else {
-      out.add(AgentTurnEntry(
-        thinkingSteps: run.sublist(0, replyAt),
-        finalReply: run[replyAt],
-      ));
+      out.add(
+        AgentTurnEntry(
+          thinkingSteps: run.sublist(0, replyAt),
+          finalReply: run[replyAt],
+        ),
+      );
     }
     i = j;
   }

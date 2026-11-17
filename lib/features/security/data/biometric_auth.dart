@@ -9,7 +9,7 @@ import '../../../core/logging/app_logger.dart';
 /// enrolled, etc.) is swallowed into a plain `bool` in ONE place.
 class BiometricAuth {
   BiometricAuth([LocalAuthentication? auth])
-      : _auth = auth ?? LocalAuthentication();
+    : _auth = auth ?? LocalAuthentication();
 
   static const _tag = 'BiometricAuth';
 
@@ -51,8 +51,12 @@ class BiometricAuth {
         ),
       );
     } on PlatformException catch (e, st) {
-      AppLogger.warn(_tag, 'authenticate() platform error: ${e.code}',
-          error: e, stackTrace: st);
+      AppLogger.warn(
+        _tag,
+        'authenticate() platform error: ${e.code}',
+        error: e,
+        stackTrace: st,
+      );
       return false;
     } catch (e, st) {
       AppLogger.warn(_tag, 'authenticate() failed', error: e, stackTrace: st);

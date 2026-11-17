@@ -78,7 +78,11 @@ class GhostButton extends StatelessWidget {
                 builder: (context, constraints) {
                   final labelWidget = Text(
                     label,
-                    maxLines: 1,
+                    // Two lines, not one: a half-width dialog button
+                    // ("Decide later in chat") otherwise ellipsised the very
+                    // words that say what it does. The container's height is
+                    // a minimum, so it grows to fit.
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: (context.text.labelLarge ?? const TextStyle())

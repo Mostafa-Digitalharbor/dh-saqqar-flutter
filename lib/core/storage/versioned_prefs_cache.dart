@@ -60,7 +60,10 @@ abstract class VersionedPrefsCache<T> {
       // than cast so the failure reads as "wrong shape" in the log instead of
       // as an unhandled TypeError.
       if (decoded is! Map<String, dynamic>) {
-        AppLogger.debug(logTag, 'cache root is ${decoded.runtimeType} · dropping');
+        AppLogger.debug(
+          logTag,
+          'cache root is ${decoded.runtimeType} · dropping',
+        );
         unawaited(clear());
         return null;
       }
@@ -75,8 +78,12 @@ abstract class VersionedPrefsCache<T> {
       final savedAt = DateTime.tryParse(decoded['saved_at'] as String? ?? '');
       return fromBody(decoded, savedAt?.toLocal() ?? DateTime.now());
     } catch (e, st) {
-      AppLogger.warn(logTag, 'read() failed — dropping cache',
-          error: e, stackTrace: st);
+      AppLogger.warn(
+        logTag,
+        'read() failed — dropping cache',
+        error: e,
+        stackTrace: st,
+      );
       unawaited(clear());
       return null;
     }

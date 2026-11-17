@@ -42,8 +42,9 @@ class _TrialScreenState extends State<TrialScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => context.read<TrialCubit>().loadStatus());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => context.read<TrialCubit>().loadStatus(),
+    );
   }
 
   @override
@@ -63,12 +64,12 @@ class _TrialScreenState extends State<TrialScreen> {
     setState(() => _companyError = null);
     FocusScope.of(context).unfocus();
     context.read<TrialCubit>().submit(
-          TrialRequest(
-            companyName: company,
-            workEmail: _email.text,
-            phone: _phone.text,
-          ),
-        );
+      TrialRequest(
+        companyName: company,
+        workEmail: _email.text,
+        phone: _phone.text,
+      ),
+    );
   }
 
   @override
@@ -115,7 +116,10 @@ class _TrialScreenState extends State<TrialScreen> {
         );
       }
       return Center(
-        child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
+        child: CircularProgressIndicator(
+          strokeWidth: AppStrokeWidths.spinnerRegular,
+          color: s.muted,
+        ),
       );
     }
 
@@ -130,22 +134,19 @@ class _TrialScreenState extends State<TrialScreen> {
         switch (info.state) {
           TrialState.ready => _ReadyCard(info: info),
           TrialState.pending ||
-          TrialState.provisioning =>
-            _ProvisioningCard(info: info),
+          TrialState.provisioning => _ProvisioningCard(info: info),
           TrialState.failed => _FailedCard(
-              info: info,
-              onRetry: () => context.read<TrialCubit>().loadStatus(),
-            ),
-          TrialState.none ||
-          TrialState.unknown =>
-            _RequestForm(
-              company: _company,
-              email: _email,
-              phone: _phone,
-              companyError: _companyError,
-              submitting: state.submitting,
-              onSubmit: _submit,
-            ),
+            info: info,
+            onRetry: () => context.read<TrialCubit>().loadStatus(),
+          ),
+          TrialState.none || TrialState.unknown => _RequestForm(
+            company: _company,
+            email: _email,
+            phone: _phone,
+            companyError: _companyError,
+            submitting: state.submitting,
+            onSubmit: _submit,
+          ),
         },
       ],
     );
@@ -175,8 +176,10 @@ class _RequestForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(context.tr.trialIntro,
-            style: context.text.bodyMedium?.copyWith(color: s.muted)),
+        Text(
+          context.tr.trialIntro,
+          style: context.text.bodyMedium?.copyWith(color: s.muted),
+        ),
         const SizedBox(height: AppSpacing.s18),
         AppTextField(
           label: context.tr.trialCompanyName,
@@ -236,18 +239,27 @@ class _ProvisioningCard extends StatelessWidget {
           SizedBox(
             width: AppControlSizes.spinnerHero,
             height: AppControlSizes.spinnerHero,
-            child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerThick, color: s.brandCyan),
+            child: CircularProgressIndicator(
+              strokeWidth: AppStrokeWidths.spinnerThick,
+              color: s.brandCyan,
+            ),
           ),
           const SizedBox(height: AppSpacing.s16),
-          Text(title,
-              textAlign: TextAlign.center,
-              style: context.text.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800)),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: context.text.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: AppSpacing.s6),
           Text(
             context.tr.trialProvisioningBody,
             textAlign: TextAlign.center,
-            style: context.text.bodySmall?.copyWith(color: s.muted, height: AppLineHeights.compact),
+            style: context.text.bodySmall?.copyWith(
+              color: s.muted,
+              height: AppLineHeights.compact,
+            ),
           ),
         ],
       ),
@@ -310,8 +322,9 @@ class _ReadyCard extends StatelessWidget {
             Expanded(
               child: Text(
                 context.tr.trialReadyTitle,
-                style: context.text.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: context.text.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
@@ -331,7 +344,10 @@ class _ReadyCard extends StatelessWidget {
               if (info.db != null && info.db!.isNotEmpty)
                 _CredentialRow(label: context.tr.trialDb, value: info.db!),
               if (info.login != null && info.login!.isNotEmpty)
-                _CredentialRow(label: context.tr.trialLogin, value: info.login!),
+                _CredentialRow(
+                  label: context.tr.trialLogin,
+                  value: info.login!,
+                ),
               if (info.password != null && info.password!.isNotEmpty)
                 _CredentialRow(
                   label: context.tr.trialPassword,
@@ -351,8 +367,10 @@ class _ReadyCard extends StatelessWidget {
             Expanded(
               child: Text(
                 context.tr.trialCredentialsWarning,
-                style: context.text.labelSmall
-                    ?.copyWith(color: s.warning, height: AppLineHeights.compact),
+                style: context.text.labelSmall?.copyWith(
+                  color: s.warning,
+                  height: AppLineHeights.compact,
+                ),
               ),
             ),
           ],
@@ -431,9 +449,14 @@ class _CredentialRowState extends State<_CredentialRow> {
           if (widget.secret)
             IconButton(
               visualDensity: VisualDensity.compact,
-              icon: Icon(_hidden ? AppIcons.eye : AppIcons.eyeOff,
-                  size: AppIconSizes.listMark, color: s.muted),
-              tooltip: _hidden ? context.tr.showPassword : context.tr.hidePassword,
+              icon: Icon(
+                _hidden ? AppIcons.eye : AppIcons.eyeOff,
+                size: AppIconSizes.listMark,
+                color: s.muted,
+              ),
+              tooltip: _hidden
+                  ? context.tr.showPassword
+                  : context.tr.hidePassword,
               onPressed: () => setState(() => _hidden = !_hidden),
             ),
           IconButton(

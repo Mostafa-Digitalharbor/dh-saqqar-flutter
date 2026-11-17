@@ -80,7 +80,11 @@ class AppTheme {
       canvasColor: ext.bg,
       textTheme: textTheme,
       iconTheme: IconThemeData(color: ext.text, size: AppIconSizes.action),
-      dividerTheme: DividerThemeData(color: ext.border, thickness: AppBorderWidths.hairline, space: 1),
+      dividerTheme: DividerThemeData(
+        color: ext.border,
+        thickness: AppBorderWidths.hairline,
+        space: 1,
+      ),
       splashFactory: InkSparkle.splashFactory,
       visualDensity: VisualDensity.adaptivePlatformDensity,
 
@@ -94,7 +98,9 @@ class AppTheme {
       ),
 
       appBarTheme: AppBarTheme(
-        backgroundColor: ext.surface.withValues(alpha: AppAlphaPairs.appBar.resolve(isDark: isDark)),
+        backgroundColor: ext.surface.withValues(
+          alpha: AppAlphaPairs.appBar.resolve(isDark: isDark),
+        ),
         foregroundColor: ext.text,
         surfaceTintColor: Colors.transparent,
         elevation: AppElevations.none,
@@ -110,7 +116,12 @@ class AppTheme {
         systemOverlayStyle: isDark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
-        shape: Border(bottom: BorderSide(color: ext.border, width: AppBorderWidths.hairline)),
+        shape: Border(
+          bottom: BorderSide(
+            color: ext.border,
+            width: AppBorderWidths.hairline,
+          ),
+        ),
       ),
 
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -276,7 +287,10 @@ class AppTheme {
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
-          borderSide: BorderSide(color: AppColors.brandCyan, width: AppBorderWidths.thick),
+          borderSide: BorderSide(
+            color: AppColors.brandCyan,
+            width: AppBorderWidths.thick,
+          ),
         ),
         errorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
@@ -284,7 +298,10 @@ class AppTheme {
         ),
         focusedErrorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.inputR,
-          borderSide: BorderSide(color: AppColors.danger, width: AppBorderWidths.thick),
+          borderSide: BorderSide(
+            color: AppColors.danger,
+            width: AppBorderWidths.thick,
+          ),
         ),
       ),
 
@@ -297,7 +314,12 @@ class AppTheme {
           if (states.contains(WidgetState.selected)) return AppColors.brandCyan;
           return ext.surface3;
         }),
-        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+        // The off track is `surface3`, which on a dark sheet is the sheet's own
+        // colour: a hairline keeps a switched-off toggle visible as a control.
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.transparent;
+          return ext.muted.withValues(alpha: AppAlphas.a30);
+        }),
       ),
 
       dialogTheme: DialogThemeData(
@@ -310,12 +332,13 @@ class AppTheme {
       ),
 
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: ext.surface,
+        backgroundColor: isDark ? ext.surface : AppColors.sheetSurface,
         surfaceTintColor: Colors.transparent,
         elevation: AppElevations.none,
         shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheetTopR),
         showDragHandle: true,
         dragHandleColor: ext.muted,
+        dragHandleSize: const Size(AppControlSizes.dragHandleWidth, 4),
         modalBarrierColor: ext.overlay,
       ),
 

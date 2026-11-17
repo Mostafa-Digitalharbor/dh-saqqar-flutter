@@ -41,7 +41,10 @@ class PrimaryButton extends StatelessWidget {
           builder: (context, constraints) {
             final labelWidget = Text(
               label,
-              maxLines: 1,
+              // Two lines, not one: in a half-width dialog button a longer
+              // label ("Send to live") was cut to "Send to li…", hiding the
+              // word that says what the button does. Height is a minimum.
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: (context.text.labelLarge ?? const TextStyle()).copyWith(
@@ -64,8 +67,13 @@ class PrimaryButton extends StatelessWidget {
                     child: Center(child: TypingDots(color: AppColors.onBrand)),
                   )
                 else if (icon != null)
-                  Icon(icon, color: AppColors.onBrand, size: AppIconSizes.regular),
-                if (loading || icon != null) const SizedBox(width: AppSpacing.s10),
+                  Icon(
+                    icon,
+                    color: AppColors.onBrand,
+                    size: AppIconSizes.regular,
+                  ),
+                if (loading || icon != null)
+                  const SizedBox(width: AppSpacing.s10),
                 if (constraints.hasBoundedWidth)
                   Flexible(child: labelWidget)
                 else

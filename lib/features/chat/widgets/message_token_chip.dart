@@ -52,14 +52,10 @@ class MessageTokenChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            AppIcons.bolt,
-            size: AppIconSizes.metaTight,
-            color: s.muted,
-          ),
+          Icon(AppIcons.bolt, size: AppIconSizes.metaTight, color: s.muted),
           const SizedBox(width: AppSpacing.s2),
           Text(
-            total,
+            tr.tokensChipLabel(total),
             style: context.text.labelSmall?.copyWith(
               color: s.muted,
               fontSize: AppFontSizes.pillLabel,

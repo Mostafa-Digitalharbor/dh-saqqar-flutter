@@ -41,9 +41,7 @@ class ChatRevealWindow {
   const ChatRevealWindow._({required this.limit, required this.revealCount});
 
   /// A freshly-opened chat: one wide window, nothing revealed yet.
-  const ChatRevealWindow.opening()
-      : limit = openingRows,
-        revealCount = 0;
+  const ChatRevealWindow.opening() : limit = openingRows, revealCount = 0;
 
   /// Rows shown when a chat opens.
   static const int openingRows = 50;
@@ -93,17 +91,16 @@ class ChatRevealWindow {
       all.length <= limit ? all : all.sublist(all.length - limit);
 
   /// Whether another page should be pulled, given how much is loaded.
-  bool needsPrefetch(int loadedCount) =>
-      loadedCount - limit < prefetchHeadroom;
+  bool needsPrefetch(int loadedCount) => loadedCount - limit < prefetchHeadroom;
 
   /// The window after one reveal, grown from what is currently on screen.
   ///
   /// Takes the shown count rather than reading [limit], for the reason
   /// [shownOf] gives: a window wider than the transcript must not compound.
   ChatRevealWindow revealedFrom(int shownCount) => ChatRevealWindow._(
-        limit: shownCount + nextStep,
-        revealCount: revealCount + 1,
-      );
+    limit: shownCount + nextStep,
+    revealCount: revealCount + 1,
+  );
 
   @override
   bool operator ==(Object other) =>

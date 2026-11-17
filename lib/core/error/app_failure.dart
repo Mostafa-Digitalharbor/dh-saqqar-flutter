@@ -66,10 +66,7 @@ class NotFoundFailure extends AppFailure {
 /// inline messages on specific form fields. The optional [message]
 /// carries the top-level error string when the backend included one.
 class ValidationFailure extends AppFailure {
-  const ValidationFailure({
-    this.fieldErrors = const {},
-    this.message,
-  });
+  const ValidationFailure({this.fieldErrors = const {}, this.message});
 
   final Map<String, List<String>> fieldErrors;
   final String? message;

@@ -96,7 +96,8 @@ class SaqqarThemeExtension extends ThemeExtension<SaqqarThemeExtension> {
 
   /// The near-black this theme casts shadows in. Compose a one-off elevation
   /// from this rather than writing the hex again.
-  Color get shadowBase => _isDark ? AppColors.shadowDark : AppColors.shadowLight;
+  Color get shadowBase =>
+      _isDark ? AppColors.shadowDark : AppColors.shadowLight;
 
   /// Deep lift for surfaces that float above *everything* — dialogs and
   /// sheets. Heavier than [glassShadow] on purpose: a modal has to read as

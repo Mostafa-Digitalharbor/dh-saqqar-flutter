@@ -7,7 +7,11 @@ import '../../core/theme/app_sizes.dart';
 ///
 /// Respects MediaQuery's `disableAnimations` (driven by OS Reduce Motion).
 class PulseDot extends StatefulWidget {
-  const PulseDot({super.key, required this.color, this.size = AppControlSizes.dot});
+  const PulseDot({
+    super.key,
+    required this.color,
+    this.size = AppControlSizes.dot,
+  });
 
   final Color color;
   final double size;

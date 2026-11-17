@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
-import 'package:saqqar_app/features/chat/widgets/attachment_chip.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_composer.dart';
 import 'package:saqqar_app/features/chat/data/chat_view_models.dart';
 
@@ -84,7 +84,7 @@ void main() {
 
       // Every staged chip shares one baseline — proof they sit in a single
       // row rather than wrapping onto several.
-      final chips = find.byType(AttachmentChip);
+      final chips = find.descendant(of: list, matching: find.byIcon(LucideIcons.x));
       expect(chips, findsWidgets);
       final tops = <double>{
         for (final e in chips.evaluate())
@@ -115,7 +115,7 @@ void main() {
       await tester.pump();
 
       expect(_images(1).single.isImage, isTrue);
-      expect(find.byType(AttachmentChip), findsOneWidget);
+      expect(find.byIcon(LucideIcons.x), findsOneWidget);
     });
   });
 }

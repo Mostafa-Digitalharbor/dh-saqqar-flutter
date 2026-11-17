@@ -64,7 +64,10 @@ class AppTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (label != null) ...[EyebrowLabel(label!), const SizedBox(height: AppSpacing.s6)],
+        if (label != null) ...[
+          EyebrowLabel(label!),
+          const SizedBox(height: AppSpacing.s6),
+        ],
         TextFormField(
           controller: controller,
           focusNode: focusNode,

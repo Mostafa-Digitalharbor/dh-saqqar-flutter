@@ -60,14 +60,16 @@ class MeetingTranscript {
     if (t == null) return '';
     if (t is String) return t;
     if (t is List) {
-      return t.map((seg) {
-        if (seg is Map) {
-          final speaker = seg['speaker'] ?? seg['name'] ?? seg['author'];
-          final text = seg['text'] ?? seg['content'] ?? '';
-          return speaker != null ? '$speaker: $text' : '$text';
-        }
-        return seg.toString();
-      }).join('\n');
+      return t
+          .map((seg) {
+            if (seg is Map) {
+              final speaker = seg['speaker'] ?? seg['name'] ?? seg['author'];
+              final text = seg['text'] ?? seg['content'] ?? '';
+              return speaker != null ? '$speaker: $text' : '$text';
+            }
+            return seg.toString();
+          })
+          .join('\n');
     }
     return t.toString();
   }

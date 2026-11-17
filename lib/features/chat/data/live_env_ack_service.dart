@@ -18,10 +18,7 @@ class LiveEnvAckService {
 
   /// True when the user already acknowledged the warning for this env in
   /// this conversation OR globally for the env.
-  bool isAcknowledged({
-    required String conversationId,
-    required String envId,
-  }) {
+  bool isAcknowledged({required String conversationId, required String envId}) {
     if (_prefs.getBool('$_globalPrefix$envId') == true) return true;
     return _prefs.getBool('$_convPrefix$conversationId.$envId') == true;
   }

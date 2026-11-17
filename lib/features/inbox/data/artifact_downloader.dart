@@ -144,7 +144,9 @@ class ArtifactDownloader {
       if (partial.existsSync()) {
         try {
           partial.deleteSync();
-        } catch (_) {/* best-effort cleanup */}
+        } catch (_) {
+          /* best-effort cleanup */
+        }
       }
       rethrow;
     }
@@ -154,11 +156,7 @@ class ArtifactDownloader {
   /// `<cacheKey>.<ext>` so we can dedupe across re-downloads but still
   /// hand the OS a familiar extension. Falls back to `.bin` when we
   /// can't detect one.
-  String _safeFilename(
-    String cacheKey,
-    String originalName,
-    String kindHint,
-  ) {
+  String _safeFilename(String cacheKey, String originalName, String kindHint) {
     final original = originalName.trim();
     var ext = '';
     final dot = original.lastIndexOf('.');
@@ -186,10 +184,8 @@ sealed class ArtifactFetchResult {
   const ArtifactFetchResult();
 
   const factory ArtifactFetchResult.success(File file) = ArtifactFetchSuccess;
-  const factory ArtifactFetchResult.failed(
-    int? statusCode,
-    String message,
-  ) = ArtifactFetchFailed;
+  const factory ArtifactFetchResult.failed(int? statusCode, String message) =
+      ArtifactFetchFailed;
 }
 
 class ArtifactFetchSuccess extends ArtifactFetchResult {

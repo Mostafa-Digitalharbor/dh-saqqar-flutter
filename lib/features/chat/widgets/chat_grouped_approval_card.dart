@@ -145,11 +145,14 @@ class _ChatGroupedApprovalCardState extends State<ChatGroupedApprovalCard> {
                   color: s.muted,
                 ),
                 const SizedBox(width: AppSpacing.s4),
-                Text(
-                  _expanded ? tr.hideIndividual : tr.showIndividual,
-                  style: context.text.labelMedium?.copyWith(
-                    color: s.muted,
-                    fontWeight: FontWeight.w700,
+                Flexible(
+                  child: Text(
+                    _expanded ? tr.hideIndividual : tr.showIndividual,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.labelMedium?.copyWith(
+                      color: s.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -205,14 +208,17 @@ class _DecisionButtons extends StatelessWidget {
     final painter = TextPainter(
       text: TextSpan(
         text: label,
-        style: (context.text.labelLarge ?? const TextStyle())
-            .copyWith(fontWeight: FontWeight.w600),
+        style: (context.text.labelLarge ?? const TextStyle()).copyWith(
+          fontWeight: FontWeight.w600,
+        ),
       ),
       textDirection: Directionality.of(context),
       maxLines: 1,
       textScaler: MediaQuery.textScalerOf(context),
     )..layout();
-    return painter.width + AppSpacing.s18 * 2;
+    // A little slack: the 1-2 px the painter and the button disagree by was
+    // enough to overflow once the labels got larger.
+    return painter.width + AppSpacing.s18 * 2 + AppSpacing.s8;
   }
 
   @override
@@ -220,7 +226,8 @@ class _DecisionButtons extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final half = (constraints.maxWidth - AppSpacing.s10) / 2;
-        final fits = _needed(context, approveLabel) <= half &&
+        final fits =
+            _needed(context, approveLabel) <= half &&
             _needed(context, rejectLabel) <= half;
 
         final reject = GhostButton(label: rejectLabel, onPressed: onReject);

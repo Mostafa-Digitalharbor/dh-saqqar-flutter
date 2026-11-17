@@ -71,10 +71,7 @@ T requireBody<T>(T? value, {int? statusCode}) {
 /// both, means the required-body rule cannot be half-applied.
 extension JsonRequests on Dio {
   /// `POST` returning the decoded JSON object. Throws when no body arrives.
-  Future<Map<String, dynamic>> postJson(
-    String path, {
-    Object? data,
-  }) async {
+  Future<Map<String, dynamic>> postJson(String path, {Object? data}) async {
     final res = await post<Map<String, dynamic>>(path, data: data);
     return res.requiredBody;
   }
@@ -97,7 +94,7 @@ extension JsonRequests on Dio {
 /// "fall back to localized copy", which is how this reaches an Arabic user
 /// in Arabic. Seeding an English sentence here would pin it to English.
 ApiException _missingBody(int? statusCode) => ApiException(
-      kind: ApiExceptionKind.parse,
-      message: '',
-      statusCode: statusCode,
-    );
+  kind: ApiExceptionKind.parse,
+  message: '',
+  statusCode: statusCode,
+);

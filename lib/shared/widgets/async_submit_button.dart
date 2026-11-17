@@ -45,8 +45,8 @@ class AsyncSubmitButton<C extends StateStreamable<S>, S>
     this.icon,
     this.expand = true,
     GhostButtonTone tone = GhostButtonTone.neutral,
-  })  : _ghost = true,
-        _ghostTone = tone;
+  }) : _ghost = true,
+       _ghostTone = tone;
 
   final String label;
   final IconData? icon;

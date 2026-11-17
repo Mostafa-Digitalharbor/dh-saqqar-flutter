@@ -39,7 +39,7 @@ import '../../../core/constants/ui_strings.dart';
 /// caller's plan lacks it), so an "on" default is never a hard failure.
 class TaskPrepCubit extends Cubit<bool> {
   TaskPrepCubit(this._prefs)
-      : super(_prefs.getBool(UiStrings.taskPrepPreferenceKey) ?? true);
+    : super(_prefs.getBool(UiStrings.taskPrepPreferenceKey) ?? true);
 
   final SharedPreferences _prefs;
 

@@ -134,8 +134,10 @@ Approval _pendingApproval(String id) => Approval(
 /// Mirrors main.dart's repository + cubit tree so widget tests boot a
 /// fully-wired SaqqarApp without going through the real `main()` entrypoint
 /// (which would touch the secure-storage platform channel).
-Future<void> _pumpApp(WidgetTester tester) async {
-  SharedPreferences.setMockInitialValues({});
+Future<void> _pumpApp(WidgetTester tester, {bool onboarded = true}) async {
+  // `onboarded: false` is a fresh install — the router sends it to /welcome.
+  SharedPreferences.setMockInitialValues(
+      {if (onboarded) 'saqqar.onboarding.seen': true});
   final prefs = await SharedPreferences.getInstance();
   final tokenStore = _FakeSecureTokenStore();
   final dio = buildDio(tokenStore);
@@ -252,11 +254,28 @@ void main() {
     await _pumpApp(tester);
 
     // Auth gate redirects unauthenticated users to /sign-in on cold start.
-    // The email-OTP flow (Gap D) enters at the "Welcome back" step with an
-    // email field + "Continue with email" primary button — assert both so
-    // we know the flow's first step mounted.
-    expect(find.text('Welcome back'), findsWidgets);
-    expect(find.text('Continue with email'), findsWidgets);
+    // The redesigned sign-in: the "one AI conversation" headline, email +
+    // password fields and the Sign In CTA — assert them so we know the
+    // flow's first step mounted.
+    expect(find.text('Your business, one AI conversation.'), findsWidgets);
+    expect(find.text('Sign In'), findsWidgets);
+    expect(find.text('Enter your email'), findsWidgets);
+  });
+
+  testWidgets('A fresh install asks for a language, then shows Welcome', (
+    tester,
+  ) async {
+    await _pumpApp(tester, onboarded: false);
+
+    // First launch: the "Choose Your Language" card sits over the splash.
+    expect(find.text('Choose Your Language'), findsOneWidget);
+    await tester.tap(find.text('English'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.text('Get started'), findsWidgets);
+    expect(find.text('Your business, one AI conversation.'), findsNothing);
   });
 
   test('load() populates approvals + pending count from the real API', () async {

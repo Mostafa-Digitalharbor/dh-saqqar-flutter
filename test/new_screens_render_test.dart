@@ -143,7 +143,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('ZATCA e-invoicing'), findsOneWidget);
-    expect(find.text('Saqqar Apps'), findsOneWidget); // app bar title
+    expect(find.text('Apps'), findsOneWidget); // header title
   });
 
   testWidgets('TrialScreen renders the request form for a fresh user',

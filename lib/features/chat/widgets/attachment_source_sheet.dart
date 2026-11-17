@@ -59,7 +59,8 @@ class AttachmentPickerSourceSheet extends StatelessWidget {
             icon: AppIcons.camera,
             label: tr.attachSourceCamera,
             subtitle: tr.attachSourceCameraHint,
-            onTap: () => Navigator.of(context).pop(AttachmentPickerSource.camera),
+            onTap: () =>
+                Navigator.of(context).pop(AttachmentPickerSource.camera),
           ),
         SheetActionRow(
           tint: context.saqqar.brandCyan,
@@ -73,4 +74,3 @@ class AttachmentPickerSourceSheet extends StatelessWidget {
     );
   }
 }
-

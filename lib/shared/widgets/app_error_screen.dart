@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/i18n/app_localizations.dart';
-import '../../core/i18n/app_strings.dart';
 import '../../core/constants/ui_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
@@ -155,9 +154,7 @@ class AppErrorScreen extends StatelessWidget {
                                 color: card,
                                 borderRadius: AppRadius.smallR,
                                 border: Border.all(
-                                  color: muted.withValues(
-                                    alpha: AppAlphas.a20,
-                                  ),
+                                  color: muted.withValues(alpha: AppAlphas.a20),
                                 ),
                               ),
                               child: SelectableText(

@@ -36,9 +36,15 @@ class ConversationsEmptyState extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: AppGradients.vivid,
-                border: Border.all(color: AppColors.onBrand.withValues(alpha: AppAlphas.a18)),
+                border: Border.all(
+                  color: AppColors.onBrand.withValues(alpha: AppAlphas.a18),
+                ),
               ),
-              child: const Icon(AppIcons.chats, color: AppColors.onBrand, size: AppIconSizes.emptyState),
+              child: const Icon(
+                AppIcons.chats,
+                color: AppColors.onBrand,
+                size: AppIconSizes.emptyState,
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.s22),
@@ -176,9 +182,15 @@ class _BreathingGlowState extends State<_BreathingGlow>
               borderRadius: AppRadius.inputR,
               boxShadow: [
                 BoxShadow(
-                  color: widget.color.withValues(alpha: AppAlphas.a18 + 0.22 * t),
-                  blurRadius: AppShadowSizes.blurPulseBase + AppShadowSizes.blurPulseRange * t,
-                  spreadRadius: AppShadowSizes.spreadThin + AppShadowSizes.spreadPulseRange * t,
+                  color: widget.color.withValues(
+                    alpha: AppAlphas.a18 + 0.22 * t,
+                  ),
+                  blurRadius:
+                      AppShadowSizes.blurPulseBase +
+                      AppShadowSizes.blurPulseRange * t,
+                  spreadRadius:
+                      AppShadowSizes.spreadThin +
+                      AppShadowSizes.spreadPulseRange * t,
                 ),
               ],
             ),

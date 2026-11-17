@@ -97,9 +97,9 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
     });
     try {
       final draft = await context.read<VoiceSupportApi>().draft(
-            problem: problem,
-            lang: Localizations.localeOf(context).languageCode,
-          );
+        problem: problem,
+        lang: Localizations.localeOf(context).languageCode,
+      );
       if (!mounted) return;
       setState(() {
         _draft = draft;
@@ -135,10 +135,10 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
     setState(() => _filing = true);
     try {
       final ticket = await context.read<VoiceSupportApi>().createTicket(
-            draft: draft,
-            transcript: _draftedProblem,
-            environmentId: widget.environmentId,
-          );
+        draft: draft,
+        transcript: _draftedProblem,
+        environmentId: widget.environmentId,
+      );
       if (!mounted) return;
       if (!ticket.created) {
         // A 200 with no record id. The old code called every 200 a success,
@@ -179,7 +179,10 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
       children: [
         Text(
           tr.voiceSupportIntro,
-          style: context.text.bodyMedium?.copyWith(color: s.muted, height: AppLineHeights.body),
+          style: context.text.bodyMedium?.copyWith(
+            color: s.muted,
+            height: AppLineHeights.body,
+          ),
         ),
         const SizedBox(height: AppSpacing.s14),
         AppTextField(
@@ -228,7 +231,9 @@ class _DraftCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.s14),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelCard)),
+        color: s.surface2.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelCard),
+        ),
         borderRadius: AppRadius.cardR,
         border: Border.all(color: s.border),
       ),
@@ -318,7 +323,10 @@ class _Section extends StatelessWidget {
         const SizedBox(height: AppSpacing.s6),
         Text(
           body,
-          style: context.text.bodyMedium?.copyWith(color: s.text, height: AppLineHeights.loose),
+          style: context.text.bodyMedium?.copyWith(
+            color: s.text,
+            height: AppLineHeights.loose,
+          ),
         ),
       ],
     );
@@ -370,8 +378,10 @@ class _List extends StatelessWidget {
                 Expanded(
                   child: Text(
                     item,
-                    style: context.text.bodySmall
-                        ?.copyWith(color: s.text, height: AppLineHeights.loose),
+                    style: context.text.bodySmall?.copyWith(
+                      color: s.text,
+                      height: AppLineHeights.loose,
+                    ),
                   ),
                 ),
               ],

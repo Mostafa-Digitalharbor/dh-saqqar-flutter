@@ -28,7 +28,6 @@ class AppsCubit extends Cubit<DataState<List<SaqqarApp>>> {
       AppLogger.warn(_tag, 'load() failed', error: e, stackTrace: st);
       emit(
         DataFailure<List<SaqqarApp>>(
-
           error: ApiErrorMapper.toFailure(e),
           previous: state.dataOrNull,
         ),

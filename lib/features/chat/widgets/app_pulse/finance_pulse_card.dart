@@ -50,29 +50,56 @@ class FinancePulseCard extends StatelessWidget {
             // coming due is amber ("سداد 7 أيام"). This card splits both
             // sides into overdue and due-soon rather than netting them, so
             // each half takes the tone the web gives its own reading.
-            _moneyTile(context, payload.cash.available, payload.cash.balance,
-                tr.pulseFinanceCashBalance),
-            pulseBucketStatTile(context, payload.receivablesOverdue,
-                tr.pulseFinanceReceivablesOverdue,
-                tone: PulseTone.danger),
-            pulseBucketStatTile(context, payload.receivablesDueSoon,
-                tr.pulseFinanceReceivablesDueSoon,
-                tone: PulseTone.warn),
-            pulseBucketStatTile(context, payload.payablesOverdue,
-                tr.pulseFinancePayablesOverdue,
-                tone: PulseTone.danger),
-            pulseBucketStatTile(context, payload.payablesDueSoon,
-                tr.pulseFinancePayablesDueSoon,
-                tone: PulseTone.warn),
-            pulseBucketStatTile(context, payload.draftVendorBills,
-                tr.pulseFinanceDraftVendorBills),
-            pulseBucketStatTile(context, payload.draftCustomerInvoices,
-                tr.pulseFinanceDraftCustomerInvoices),
-            pulseBucketStatTile(context, payload.bankReconciliation,
-                tr.pulseFinanceBankReconciliation),
+            _moneyTile(
+              context,
+              payload.cash.available,
+              payload.cash.balance,
+              tr.pulseFinanceCashBalance,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.receivablesOverdue,
+              tr.pulseFinanceReceivablesOverdue,
+              tone: PulseTone.danger,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.receivablesDueSoon,
+              tr.pulseFinanceReceivablesDueSoon,
+              tone: PulseTone.warn,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.payablesOverdue,
+              tr.pulseFinancePayablesOverdue,
+              tone: PulseTone.danger,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.payablesDueSoon,
+              tr.pulseFinancePayablesDueSoon,
+              tone: PulseTone.warn,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.draftVendorBills,
+              tr.pulseFinanceDraftVendorBills,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.draftCustomerInvoices,
+              tr.pulseFinanceDraftCustomerInvoices,
+            ),
+            pulseBucketStatTile(
+              context,
+              payload.bankReconciliation,
+              tr.pulseFinanceBankReconciliation,
+            ),
             if (payload.liquidityAvailable && payload.liquidityStatus != null)
               pulseStatTile(
-                  payload.liquidityStatus!, tr.pulseFinanceLiquidityStatus),
+                payload.liquidityStatus!,
+                tr.pulseFinanceLiquidityStatus,
+              ),
           ],
         ),
         // The day-band breakdown behind the receivable/payable tiles: which
@@ -103,7 +130,10 @@ class FinancePulseCard extends StatelessWidget {
   ) {
     if (!available) {
       return pulseStatTile(
-          context.tr.pulseUnavailable, label, color: context.saqqar.muted);
+        context.tr.pulseUnavailable,
+        label,
+        color: context.saqqar.muted,
+      );
     }
     if (balance == null) {
       return pulseStatTile('—', label, color: context.saqqar.muted);

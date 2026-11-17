@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:intl/intl.dart' show Bidi;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -21,11 +22,7 @@ import '../../../core/theme/app_radius.dart';
 /// we deliberately avoid `url_launcher` here to keep the dependency tree
 /// thin and skip the per-platform setup it requires.
 class ChatMarkdown extends StatefulWidget {
-  const ChatMarkdown({
-    super.key,
-    required this.data,
-    required this.isUser,
-  });
+  const ChatMarkdown({super.key, required this.data, required this.isUser});
 
   final String data;
   final bool isUser;
@@ -71,7 +68,20 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
     return _cachedBody ??= _buildBody(context);
   }
 
+  /// A message is laid out in the direction it is *written* in, not the app
+  /// locale's: an English reply inside an Arabic-locale bubble otherwise puts
+  /// its full stop at the left edge (".Hi. Tell me…"), and Arabic in an
+  /// English-locale app has the mirror problem.
   Widget _buildBody(BuildContext context) {
+    return Directionality(
+      textDirection: Bidi.detectRtlDirectionality(widget.data)
+          ? TextDirection.rtl
+          : TextDirection.ltr,
+      child: _buildMarkdown(context),
+    );
+  }
+
+  Widget _buildMarkdown(BuildContext context) {
     final data = widget.data;
     final isUser = widget.isUser;
     final s = context.saqqar;
@@ -90,19 +100,28 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
 
     final styleSheet = MarkdownStyleSheet(
       p: base,
-      h1: base?.copyWith(fontSize: AppFontSizes.markdownH1, fontWeight: FontWeight.w800),
-      h2: base?.copyWith(fontSize: AppFontSizes.markdownH2, fontWeight: FontWeight.w800),
-      h3: base?.copyWith(fontSize: AppFontSizes.markdownH3, fontWeight: FontWeight.w700),
+      h1: base?.copyWith(
+        fontSize: AppFontSizes.markdownH1,
+        fontWeight: FontWeight.w800,
+      ),
+      h2: base?.copyWith(
+        fontSize: AppFontSizes.markdownH2,
+        fontWeight: FontWeight.w800,
+      ),
+      h3: base?.copyWith(
+        fontSize: AppFontSizes.markdownH3,
+        fontWeight: FontWeight.w700,
+      ),
       em: base?.copyWith(fontStyle: FontStyle.italic),
       strong: base?.copyWith(fontWeight: FontWeight.w800),
-      blockquote: base?.copyWith(
-        color: s.muted,
-        fontStyle: FontStyle.italic,
-      ),
+      blockquote: base?.copyWith(color: s.muted, fontStyle: FontStyle.italic),
       blockquoteDecoration: BoxDecoration(
         color: s.surface2.withValues(alpha: AppAlphas.a35),
         border: BorderDirectional(
-          start: BorderSide(color: s.brandCyan, width: AppBorderWidths.accentBar),
+          start: BorderSide(
+            color: s.brandCyan,
+            width: AppBorderWidths.accentBar,
+          ),
         ),
       ),
       blockquotePadding: const EdgeInsets.fromLTRB(
@@ -133,7 +152,10 @@ class _ChatMarkdownState extends State<ChatMarkdown> {
       listIndent: 22,
       tableHead: base?.copyWith(fontWeight: FontWeight.w700),
       tableBody: base,
-      tableBorder: TableBorder.all(color: s.cardBorder, width: AppBorderWidths.hairline),
+      tableBorder: TableBorder.all(
+        color: s.cardBorder,
+        width: AppBorderWidths.hairline,
+      ),
       // IntrinsicColumnWidth (not the default FlexColumnWidth) makes each
       // column size to its content AND opts the whole table into
       // flutter_markdown's built-in horizontal SingleChildScrollView, so a

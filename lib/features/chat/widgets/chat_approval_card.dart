@@ -149,9 +149,7 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    _showDetails
-                        ? AppIcons.chevronUp
-                        : AppIcons.chevronDown,
+                    _showDetails ? AppIcons.chevronUp : AppIcons.chevronDown,
                     size: AppIconSizes.inline,
                     color: s.muted,
                   ),
@@ -218,8 +216,9 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                 // would be a number the client invented.
                 child: _isDestructiveDelete
                     ? GhostButton(
-                        label: context.tr
-                            .deleteApprovalAction(approval.recordCount ?? 1),
+                        label: context.tr.deleteApprovalAction(
+                          approval.recordCount ?? 1,
+                        ),
                         icon: AppIcons.trash,
                         tone: GhostButtonTone.danger,
                         onPressed: _approve,

@@ -104,15 +104,17 @@ class AttachmentStaging {
         continue;
       }
 
-      chips.add(ChatAttachment(
-        name: candidate.name,
-        kind: FileKinds.isImage(candidate.extension)
-            ? tr.fileKindImage
-            : FileKinds.badge(candidate.extension),
-        size: humanBytes(candidate.size, tr),
-        imageUrl: FileKinds.isImage(candidate.extension) ? path : null,
-        localPath: path,
-      ));
+      chips.add(
+        ChatAttachment(
+          name: candidate.name,
+          kind: FileKinds.isImage(candidate.extension)
+              ? tr.fileKindImage
+              : FileKinds.badge(candidate.extension),
+          size: humanBytes(candidate.size, tr),
+          imageUrl: FileKinds.isImage(candidate.extension) ? path : null,
+          localPath: path,
+        ),
+      );
       files.add(File(path));
     }
 

@@ -28,10 +28,7 @@ class RenameConversationDialog extends StatefulWidget {
 
   final String initial;
 
-  static Future<String?> show(
-    BuildContext context, {
-    required String initial,
-  }) {
+  static Future<String?> show(BuildContext context, {required String initial}) {
     return showDialog<String>(
       context: context,
       barrierDismissible: true,
@@ -102,65 +99,65 @@ class _RenameConversationDialogState extends State<RenameConversationDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    ColoredIconBox(
-                      icon: AppIcons.edit,
-                      color: s.brandCyan,
-                      size: AppIconSizes.emptyState,
-                      radius: AppRadius.button,
-                      iconSize: AppIconSizes.boxGlyphCompact,
-                      backgroundAlpha: 0.14,
-                      // This one has no hairline — that's what null means.
-                      borderAlpha: null,
-                    ),
-                    const SizedBox(width: AppSpacing.s10),
-                    Expanded(
-                      child: Text(
-                        context.tr.renameConversation,
-                        style: context.text.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+            children: [
+              Row(
+                children: [
+                  ColoredIconBox(
+                    icon: AppIcons.edit,
+                    color: s.brandCyan,
+                    size: AppIconSizes.emptyState,
+                    radius: AppRadius.button,
+                    iconSize: AppIconSizes.boxGlyphCompact,
+                    backgroundAlpha: 0.14,
+                    // This one has no hairline — that's what null means.
+                    borderAlpha: null,
+                  ),
+                  const SizedBox(width: AppSpacing.s10),
+                  Expanded(
+                    child: Text(
+                      context.tr.renameConversation,
+                      style: context.text.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.s16),
-                AppTextField(
-                  controller: _controller,
-                  hint: context.tr.renameConversationHint,
-                  textInputAction: TextInputAction.done,
-                  autofocus: true,
-                  onSubmitted: (_) => _save(),
-                ),
-                const SizedBox(height: AppSpacing.s18),
-                DialogActions(
-                  cancel: GhostButton(
-                    label: context.tr.cancel,
-                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  // Save stays disabled until the title is non-empty AND
-                  // actually different from the current one — renaming to
-                  // the same value is a wasted PATCH.
-                  confirm: ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _controller,
-                    builder: (context, value, _) {
-                      final next = value.text.trim();
-                      final canSave =
-                          next.isNotEmpty && next != widget.initial.trim();
-                      return PrimaryButton(
-                        label: context.tr.save,
-                        icon: AppIcons.save,
-                        onPressed: canSave ? _save : null,
-                      );
-                    },
-                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s16),
+              AppTextField(
+                controller: _controller,
+                hint: context.tr.renameConversationHint,
+                textInputAction: TextInputAction.done,
+                autofocus: true,
+                onSubmitted: (_) => _save(),
+              ),
+              const SizedBox(height: AppSpacing.s18),
+              DialogActions(
+                cancel: GhostButton(
+                  label: context.tr.cancel,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
-              ],
-            ),
+                // Save stays disabled until the title is non-empty AND
+                // actually different from the current one — renaming to
+                // the same value is a wasted PATCH.
+                confirm: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _controller,
+                  builder: (context, value, _) {
+                    final next = value.text.trim();
+                    final canSave =
+                        next.isNotEmpty && next != widget.initial.trim();
+                    return PrimaryButton(
+                      label: context.tr.save,
+                      icon: AppIcons.save,
+                      onPressed: canSave ? _save : null,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 }

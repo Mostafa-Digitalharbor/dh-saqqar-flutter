@@ -73,7 +73,12 @@ class ProjectCard extends StatelessWidget {
                     onLongPress!();
                   },
             child: Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s16, AppSpacing.s16, AppSpacing.s8, AppSpacing.s16),
+              padding: const EdgeInsetsDirectional.fromSTEB(
+                AppSpacing.s16,
+                AppSpacing.s16,
+                AppSpacing.s8,
+                AppSpacing.s16,
+              ),
               child: Row(
                 children: [
                   Container(
@@ -87,8 +92,11 @@ class ProjectCard extends StatelessWidget {
                         color: s.brandCyan.withValues(alpha: AppAlphas.a28),
                       ),
                     ),
-                    child:
-                        Icon(AppIcons.database, color: s.brandCyan, size: AppIconSizes.back),
+                    child: Icon(
+                      AppIcons.database,
+                      color: s.brandCyan,
+                      size: AppIconSizes.back,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.s14),
                   Expanded(
@@ -108,22 +116,31 @@ class ProjectCard extends StatelessWidget {
                           stats,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: context.text.bodySmall
-                              ?.copyWith(color: s.muted),
+                          style: context.text.bodySmall?.copyWith(
+                            color: s.muted,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   if (onEdit != null || onTap != null)
                     IconButton(
-                      icon: Icon(AppIcons.edit, size: AppIconSizes.action, color: s.muted),
+                      icon: Icon(
+                        AppIcons.edit,
+                        size: AppIconSizes.action,
+                        color: s.muted,
+                      ),
                       tooltip: context.tr.edit,
                       onPressed: onEdit ?? onTap,
                       visualDensity: VisualDensity.compact,
                     ),
                   if (onDelete != null)
                     IconButton(
-                      icon: Icon(AppIcons.trash, size: AppIconSizes.action, color: s.muted),
+                      icon: Icon(
+                        AppIcons.trash,
+                        size: AppIconSizes.action,
+                        color: s.muted,
+                      ),
                       tooltip: context.tr.delete,
                       onPressed: onDelete,
                       visualDensity: VisualDensity.compact,
@@ -148,7 +165,8 @@ class ProjectCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (var i = 0; i < environments.length; i++) ...[
-                  if (i > 0) Divider(color: s.border, height: AppBorderWidths.hairline),
+                  if (i > 0)
+                    Divider(color: s.border, height: AppBorderWidths.hairline),
                   _EnvironmentRow(
                     env: environments[i],
                     onTap: () => onEnvTap(environments[i]),
@@ -177,8 +195,8 @@ class _EnvironmentRow extends StatelessWidget {
     final Color tint = env.isLive
         ? s.success
         : env.readOnly
-            ? s.muted
-            : s.muted;
+        ? s.muted
+        : s.muted;
 
     // Host + last-sync aren't carried by the API's environment model, so we
     // don't render them (they used to be fabricated from the id hash). Only
@@ -190,7 +208,12 @@ class _EnvironmentRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s16, AppSpacing.s15, AppSpacing.s12, AppSpacing.s15),
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            AppSpacing.s16,
+            AppSpacing.s15,
+            AppSpacing.s12,
+            AppSpacing.s15,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -254,8 +277,9 @@ class _EnvironmentRow extends StatelessWidget {
                         _noCreds(context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            context.text.labelMedium?.copyWith(color: s.muted),
+                        style: context.text.labelMedium?.copyWith(
+                          color: s.muted,
+                        ),
                       ),
                   ],
                 ),
@@ -302,10 +326,16 @@ class _StatusServerGlyph extends StatelessWidget {
             height: AppBoxSizes.cardTile,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Color.alphaBlend(tint.withValues(alpha: AppAlphas.a12), s.surface3),
+              color: Color.alphaBlend(
+                tint.withValues(alpha: AppAlphas.a12),
+                s.surface3,
+              ),
               borderRadius: AppRadius.buttonR,
               border: Border.all(
-                color: Color.alphaBlend(tint.withValues(alpha: AppAlphas.a26), s.border),
+                color: Color.alphaBlend(
+                  tint.withValues(alpha: AppAlphas.a26),
+                  s.border,
+                ),
               ),
             ),
             child: Icon(AppIcons.server, color: tint, size: AppIconSizes.bell),
@@ -320,7 +350,10 @@ class _StatusServerGlyph extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: s.success,
-                  border: Border.all(color: s.surface, width: AppBorderWidths.ring),
+                  border: Border.all(
+                    color: s.surface,
+                    width: AppBorderWidths.ring,
+                  ),
                 ),
               ),
             )
@@ -337,7 +370,11 @@ class _StatusServerGlyph extends StatelessWidget {
                   color: s.surface,
                   border: Border.all(color: s.border),
                 ),
-                child: Icon(AppIcons.lock, size: AppIconSizes.overlay, color: s.muted),
+                child: Icon(
+                  AppIcons.lock,
+                  size: AppIconSizes.overlay,
+                  color: s.muted,
+                ),
               ),
             ),
         ],

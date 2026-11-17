@@ -46,10 +46,14 @@ class MessageBubbleSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: isUser
             ? s.brandCyan.withValues(alpha: AppAlphas.a08)
-            : s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelDense)),
+            : s.surface2.withValues(
+                alpha: context.alpha(AppAlphaPairs.panelDense),
+              ),
         borderRadius: AppRadius.modalR,
         border: Border.all(
-          color: isUser ? s.brandCyan.withValues(alpha: AppAlphas.a18) : s.border,
+          color: isUser
+              ? s.brandCyan.withValues(alpha: AppAlphas.a18)
+              : s.border,
         ),
       ),
       child: Column(

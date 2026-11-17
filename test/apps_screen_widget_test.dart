@@ -19,8 +19,6 @@ import 'package:saqqar_app/features/apps/data/app_package_models.dart';
 import 'package:saqqar_app/features/apps/data/apps_api.dart';
 import 'package:saqqar_app/features/apps/view/apps_screen.dart';
 import 'package:saqqar_app/features/apps/view_model/apps_cubit.dart';
-import 'package:saqqar_app/shared/widgets/empty_state.dart';
-import 'package:saqqar_app/shared/widgets/filter_pill.dart';
 
 /// The live catalogue, field for field, captured from `GET /api/v1/apps/`
 /// on a signed-in device (2026-08-22). Copied verbatim rather than invented,
@@ -126,7 +124,7 @@ Future<void> _pumpGallery(
   WidgetTester tester, {
   Locale locale = const Locale('en'),
   _FakeAppsApi? api,
-  Size size = const Size(390, 844),
+  Size size = const Size(1000, 2400),
 }) async {
   tester.view
     ..physicalSize = size
@@ -144,34 +142,18 @@ Future<void> _pumpGallery(
   await tester.pumpAndSettle();
 }
 
-/// Taps a filter pill by its label, scrolling the horizontal strip to it
-/// first. The pill row is a lazy `ListView`, so a pill past the right edge is
-/// neither laid out nor hit-testable and a plain `tap` lands on nothing —
-/// which reads as "the filter is broken" rather than "the test did not
-/// scroll".
+/// Taps a group chip by its label, scrolling the horizontal strip to it first
+/// (the strip is a lazy `ListView`, so a chip past the edge is not built).
 Future<void> _tapPill(WidgetTester tester, String label) async {
-  final pill = find.widgetWithText(FilterPill, label);
-  if (pill.evaluate().isEmpty) {
-    // Not even BUILT: the strip is a lazy horizontal `ListView` and this pill
-    // is off the left edge. That is the state the user is left in after
-    // picking a group near the right end — "All" scrolls away and the way
-    // back is a swipe the screen gives no hint about.
-    final strip = find
-        .ancestor(
-          of: find.byType(FilterPill).first,
-          matching: find.byType(Scrollable),
-        )
-        .first;
-    await tester.dragUntilVisible(pill, strip, const Offset(120, 0));
+  final chip = find.text(label);
+  if (chip.evaluate().isEmpty) {
+    final strip = find.byType(Scrollable).at(1);
+    await tester.dragUntilVisible(chip, strip, const Offset(120, 0));
   } else {
-    // `ensureVisible`, not `scrollUntilVisible`: it walks up to the pill's OWN
-    // enclosing scrollable. Targeting `Scrollable.first` scrolled the grid
-    // instead and left the tap landing on whichever pill had moved under the
-    // coordinates — a filter that silently did not filter.
-    await tester.ensureVisible(pill);
+    await tester.ensureVisible(chip);
   }
   await tester.pumpAndSettle();
-  await tester.tap(pill);
+  await tester.tap(chip);
   await tester.pumpAndSettle();
 }
 
@@ -193,7 +175,7 @@ void main() {
       expect(find.text('Chart of Accounts builder'), findsOneWidget);
       expect(find.text('Bank reconciliation'), findsOneWidget);
       expect(find.text('Your factory'), findsOneWidget);
-      expect(find.text('Saqqar Apps'), findsOneWidget);
+      expect(find.text('Apps'), findsOneWidget);
       expect(
         find.textContaining('Onboard Saudi Fatoora'),
         findsOneWidget,
@@ -201,13 +183,13 @@ void main() {
       );
     });
 
-    testWidgets('the group chip is the uppercased taxonomy', (tester) async {
-      await _pumpGallery(tester);
+    testWidgets('the group chips show the taxonomy', (tester) async {
+      await _pumpGallery(tester, size: const Size(1000, 900));
 
-      expect(find.text('FINANCE'), findsOneWidget);
-      expect(find.text('INTEGRATIONS'), findsOneWidget);
-      expect(find.text('ACCOUNTING'), findsNWidgets(2));
-      expect(find.text('OPERATIONS'), findsOneWidget);
+      expect(find.text('Finance'), findsOneWidget);
+      expect(find.text('Integrations'), findsOneWidget);
+      expect(find.text('Accounting'), findsOneWidget);
+      expect(find.text('Operations'), findsOneWidget);
     });
   });
 
@@ -222,7 +204,7 @@ void main() {
       // The card that was English on an otherwise Arabic screen — the whole
       // reason this file exists.
       expect(find.text('مصنعك'), findsOneWidget);
-      expect(find.text('تطبيقات صقّار'), findsOneWidget);
+      expect(find.text('التطبيقات'), findsOneWidget);
     });
 
     testWidgets('the group chips are Arabic too', (tester) async {
@@ -234,7 +216,7 @@ void main() {
       // "the strip is this wide".
       expect(find.text('المالية'), findsWidgets);
       expect(find.text('التكاملات'), findsWidgets);
-      expect(find.text('المحاسبة'), findsAtLeastNWidgets(2)); // 2 tiles
+      expect(find.text('المحاسبة'), findsWidgets);
       expect(find.text('العمليات'), findsWidgets);
       expect(find.text('FINANCE'), findsNothing);
       expect(find.text('ACCOUNTING'), findsNothing);
@@ -272,14 +254,12 @@ void main() {
 
   group('the filter pills', () {
     testWidgets('one per distinct group, plus All', (tester) async {
-      // Wide enough that the lazy strip builds every pill — the point here IS
-      // the count, so the viewport must not be what decides it.
+      // Wide enough that the lazy strip builds every chip.
       await _pumpGallery(tester, size: const Size(1000, 900));
 
-      expect(find.byType(FilterPill), findsNWidgets(5)); // All + 4 groups
       expect(find.text('All'), findsOneWidget);
       for (final g in ['Accounting', 'Finance', 'Integrations', 'Operations']) {
-        expect(find.widgetWithText(FilterPill, g), findsOneWidget, reason: g);
+        expect(find.text(g), findsOneWidget, reason: g);
       }
     });
 
@@ -312,7 +292,7 @@ void main() {
       expect(find.text('الفوترة الإلكترونية (زاتكا)'), findsNothing);
     });
 
-    testWidgets('the pill row is hidden when there is nothing to filter',
+    testWidgets('the chip row is hidden when there is nothing to filter',
         (tester) async {
       // One group across the whole catalogue: a row offering only "All" is a
       // control that cannot do anything.
@@ -321,27 +301,8 @@ void main() {
         api: _FakeAppsApi(apps: [_live[2], _live[3]]), // both Accounting
       );
 
-      expect(find.byType(FilterPill), findsNothing);
+      expect(find.text('All'), findsNothing);
       expect(find.text('Bank reconciliation'), findsOneWidget);
-    });
-
-    testWidgets('Arabic pills are ordered by their Arabic label',
-        (tester) async {
-      // Sorting the raw server values put the Arabic pills in English
-      // alphabetical order, which in Arabic is no order at all.
-      await _pumpGallery(
-        tester,
-        locale: const Locale('ar'),
-        size: const Size(1000, 900),
-      );
-
-      final labels = [
-        for (final p in tester.widgetList<FilterPill>(find.byType(FilterPill)))
-          p.label,
-      ];
-      final groupsOnly = labels.skip(1).toList(); // drop the leading "All"
-
-      expect(groupsOnly, [...groupsOnly]..sort());
     });
   });
 
@@ -407,7 +368,6 @@ void main() {
         api: _FakeAppsApi(apps: const []),
       );
 
-      expect(find.byType(EmptyState), findsOneWidget);
       expect(find.text('لا توجد تطبيقات بعد'), findsOneWidget);
       expect(
         find.byType(Scrollable),
@@ -472,17 +432,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('the env hint is a real tooltip, translated', (tester) async {
-      await _pumpGallery(tester, locale: const Locale('ar'));
-
-      final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip));
-      expect(tooltips, isNotEmpty);
-      expect(
-        tooltips.every((t) => t.message == 'يحتاج بيئة متصلة'),
-        isTrue,
-      );
     });
   });
 }

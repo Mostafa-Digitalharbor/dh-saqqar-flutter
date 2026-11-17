@@ -37,8 +37,11 @@ class PlayUpdateInfo extends Equatable {
   bool get installable => immediateAllowed || flexibleAllowed;
 
   @override
-  List<Object?> get props =>
-      [availableVersionCode, immediateAllowed, flexibleAllowed];
+  List<Object?> get props => [
+    availableVersionCode,
+    immediateAllowed,
+    flexibleAllowed,
+  ];
 }
 
 /// Thin wrapper over Play's In-App Update API.
@@ -90,8 +93,12 @@ class PlayUpdateService {
       final result = await InAppUpdate.performImmediateUpdate();
       return result == AppUpdateResult.success;
     } catch (error, stackTrace) {
-      AppLogger.warn(_tag, 'immediate update failed',
-          error: error, stackTrace: stackTrace);
+      AppLogger.warn(
+        _tag,
+        'immediate update failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
@@ -107,8 +114,12 @@ class PlayUpdateService {
       await InAppUpdate.completeFlexibleUpdate();
       return true;
     } catch (error, stackTrace) {
-      AppLogger.warn(_tag, 'flexible update failed',
-          error: error, stackTrace: stackTrace);
+      AppLogger.warn(
+        _tag,
+        'flexible update failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }

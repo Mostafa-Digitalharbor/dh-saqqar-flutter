@@ -79,7 +79,8 @@ class DataStateRefreshableView<T> extends StatelessWidget {
         loadingLabel: loadingLabel,
         keepPreviousOnLoading: keepPreviousOnLoading,
         onRetry: onRefresh,
-        onIdle: (context) => _scrollFill(onIdle?.call(context) ?? const SizedBox.shrink()),
+        onIdle: (context) =>
+            _scrollFill(onIdle?.call(context) ?? const SizedBox.shrink()),
         onLoading: onLoading == null
             ? null
             : (context, prev) => _scrollFill(onLoading!(context, prev)),

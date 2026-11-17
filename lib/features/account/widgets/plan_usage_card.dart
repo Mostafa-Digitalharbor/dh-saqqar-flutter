@@ -78,10 +78,7 @@ class PlanUsageCard extends StatelessWidget {
           // acts on.
           if (_subscriptionLine(context, plan) case final line?) ...[
             const SizedBox(height: AppSpacing.s6),
-            Text(
-              line,
-              style: context.text.bodySmall?.copyWith(color: s.muted),
-            ),
+            Text(line, style: context.text.bodySmall?.copyWith(color: s.muted)),
           ],
           const SizedBox(height: AppSpacing.s16),
           if (plan.exempt)
@@ -156,8 +153,8 @@ class _UsageRow extends StatelessWidget {
     final Color color = window.exceeded
         ? s.danger
         : window.nearLimit
-            ? s.warning
-            : s.brandCyan;
+        ? s.warning
+        : s.brandCyan;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

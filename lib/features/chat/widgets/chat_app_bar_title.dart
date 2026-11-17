@@ -72,7 +72,12 @@ class ChatAppBarTitle extends StatelessWidget {
       onTap: onCredentialTap,
       borderRadius: AppRadius.buttonR,
       child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s4, AppSpacing.s4, AppSpacing.s4, AppSpacing.s4),
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          AppSpacing.s4,
+          AppSpacing.s4,
+          AppSpacing.s4,
+          AppSpacing.s4,
+        ),
         child: Row(
           children: [
             // The gradient sparkles avatar was retired on 2026-05-17 —
@@ -164,7 +169,9 @@ class ChatAppBarTitle extends StatelessWidget {
                           // still sit beside it rather than always wrapping.
                           Flexible(
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: AppLayoutWidths.titleCap),
+                              constraints: const BoxConstraints(
+                                maxWidth: AppLayoutWidths.titleCap,
+                              ),
                               child: Text(
                                 activeCredentialLabel,
                                 maxLines: 1,
@@ -189,9 +196,7 @@ class ChatAppBarTitle extends StatelessWidget {
                       if (envIsLive)
                         const _EnvFlagBadge(variant: _EnvFlagVariant.live),
                       if (envReadOnly)
-                        const _EnvFlagBadge(
-                          variant: _EnvFlagVariant.readOnly,
-                        ),
+                        const _EnvFlagBadge(variant: _EnvFlagVariant.readOnly),
                       if (autoApprove) _AutoApprovePill(),
                     ],
                   ),
@@ -261,7 +266,9 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
           decoration: BoxDecoration(
             color: s.brandCyan.withValues(alpha: AppAlphas.a14),
             borderRadius: AppRadius.pillR,
-            border: Border.all(color: s.brandCyan.withValues(alpha: AppAlphas.a40)),
+            border: Border.all(
+              color: s.brandCyan.withValues(alpha: AppAlphas.a40),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -276,7 +283,9 @@ class _AgentWorkingPillState extends State<_AgentWorkingPill>
                     width: AppControlSizes.dotLarge,
                     height: AppControlSizes.dotLarge,
                     decoration: BoxDecoration(
-                      color: s.brandCyan.withValues(alpha: AppAlphas.a45 + 0.55 * t),
+                      color: s.brandCyan.withValues(
+                        alpha: AppAlphas.a45 + 0.55 * t,
+                      ),
                       shape: BoxShape.circle,
                     ),
                   );

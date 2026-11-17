@@ -35,10 +35,10 @@ class AuthUser {
   /// Best display name: server `full_name` → "first last" → username.
   String get displayName {
     if (fullName.trim().isNotEmpty) return fullName.trim();
-    final joined = [firstName, lastName]
-        .where((p) => p.trim().isNotEmpty)
-        .join(' ')
-        .trim();
+    final joined = [
+      firstName,
+      lastName,
+    ].where((p) => p.trim().isNotEmpty).join(' ').trim();
     return joined.isNotEmpty ? joined : username;
   }
 

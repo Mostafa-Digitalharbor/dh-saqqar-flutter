@@ -1,0 +1,702 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/routing/route_names.dart';
+import '../../shared/fig/fig.dart';
+import '../auth/view/auth_flow_screen.dart' show AuthFrame;
+import '../vault/data/credential_models.dart';
+import '../vault/data/credentials_api.dart';
+import '../vault/data/vault_repository.dart';
+import '../vault/view_model/vault_cubit.dart';
+import '../../core/i18n/app_localizations.dart';
+import '../../core/constants/asset_paths.dart';
+import '../../core/theme/app_icons.dart';
+import '../../core/network/api_error_mapper.dart';
+import '../../shared/widgets/app_toast.dart';
+import '../../core/constants/ui_strings.dart';
+import '../../core/theme/app_sizes.dart';
+
+/// Wizard step 1 — "What is the name of your company?".
+class CompanyNameScreen extends StatefulWidget {
+  const CompanyNameScreen({super.key});
+
+  @override
+  State<CompanyNameScreen> createState() => _CompanyNameScreenState();
+}
+
+class _CompanyNameScreenState extends State<CompanyNameScreen> {
+  final _name = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  void _next() {
+    final v = _name.text.trim();
+    if (v.isEmpty) {
+      setState(() => _error = context.tr.figMustEnterCompanyName);
+      return;
+    }
+    context.push(RouteNames.setupEnvironmentPath, extra: v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: figLightStatusBar,
+      child: Scaffold(
+        backgroundColor: Fig.pageGrey,
+        body: FigBackdrop(
+          child: AuthFrame(
+            hPad: 20,
+            onBack: () => context.canPop()
+                ? context.pop()
+                : context.go(RouteNames.homePath),
+            progress: 0.1,
+            titleGap: 52,
+            subtitleGap: 12,
+            bodyGap: 70,
+            title: context.tr.figWhatIsTheNameOfYour,
+            subtitle: context.tr.figLetSCreateYourWorkspaceYou,
+            footer: context.tr.figSaqqarSecurelyConnectsToYourExisting,
+            children: [
+              FigField(
+                label: context.tr.figCompanyName,
+                hint: context.tr.figEGElNadaCompany,
+                controller: _name,
+                error: _error,
+                height: 56,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) {
+                  if (_error != null) setState(() => _error = null);
+                },
+                onSubmitted: (_) => _next(),
+              ),
+              SizedBox(height: _error != null ? 44 : 50),
+              FigButton(
+                label: context.tr.figNext,
+                height: 54,
+                onPressed: _next,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wizard step 2 — connect the first Odoo environment.
+class ConnectEnvironmentScreen extends StatefulWidget {
+  const ConnectEnvironmentScreen({super.key, required this.companyName});
+
+  final String companyName;
+
+  @override
+  State<ConnectEnvironmentScreen> createState() =>
+      _ConnectEnvironmentScreenState();
+}
+
+class _ConnectEnvironmentScreenState extends State<ConnectEnvironmentScreen> {
+  final _label = TextEditingController();
+  final _url = TextEditingController();
+  final _user = TextEditingController();
+  final _secret = TextEditingController();
+  final _db = TextEditingController();
+  EnvMode _mode = EnvMode.live;
+  bool _apiKey = false;
+  bool _busy = false;
+
+  /// Shown only after auto-detection failed: some servers block listing their
+  /// databases, and guessing a name from the host would send the backend a
+  /// database that does not exist.
+  bool _askDb = false;
+  String? _labelErr, _urlErr, _userErr, _secretErr;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    _url.dispose();
+    _user.dispose();
+    _secret.dispose();
+    _db.dispose();
+    super.dispose();
+  }
+
+  Future<void> _connect() async {
+    final label = _label.text.trim();
+    final url = _url.text.trim();
+    final user = _user.text.trim();
+    final secret = _secret.text;
+    final req = context.tr.figRequired;
+    setState(() {
+      _labelErr = label.isEmpty ? req : null;
+      _urlErr = url.isEmpty ? req : null;
+      _userErr = user.isEmpty ? req : null;
+      _secretErr = secret.isEmpty ? req : null;
+    });
+    if (label.isEmpty || url.isEmpty || user.isEmpty || secret.isEmpty) return;
+    final repo = context.read<VaultRepository>();
+    final creds = context.read<CredentialsApi>();
+    final vault = context.read<VaultCubit>();
+    final nav = GoRouter.of(context);
+    final tr = context.tr;
+    setState(() => _busy = true);
+
+    // Resolve the database before anything is written server-side: a typed
+    // name wins, else ask the server, else hand the question to the user.
+    var db = _db.text.trim();
+    if (db.isEmpty) {
+      try {
+        final dbs = await creds.listDatabases(url);
+        if (dbs.isNotEmpty) db = dbs.first;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    if (db.isEmpty) {
+      // Pre-fill the sub-domain (`acme.odoo.com` → `acme`) — right for Odoo
+      // Online, a starting point elsewhere.
+      final host =
+          Uri.tryParse(
+            url.contains('://') ? url : '${UiStrings.httpsScheme}$url',
+          )?.host ??
+          '';
+      setState(() {
+        _busy = false;
+        _askDb = true;
+        _db.text = host.split('.').first;
+      });
+      AppToast.show(
+        context,
+        title: tr.figCouldNotDetectDatabase,
+        message: tr.figEnterTheDatabaseNameBelow,
+        variant: ToastVariant.error,
+      );
+      return;
+    }
+
+    showProcessingDialog(context, widget.companyName);
+    String? createdProjectId;
+    try {
+      final project = await repo.createProject(name: widget.companyName);
+      createdProjectId = project.id;
+      final env = await repo.createEnvironment(
+        projectId: project.id,
+        name: label,
+        isLive: _mode == EnvMode.live,
+        readOnly: _mode == EnvMode.readOnly,
+        autoApprove: _mode == EnvMode.autoApprove,
+      );
+      await repo.upsertEnvironmentCredential(
+        environmentId: env.id,
+        kind: CredentialKind.xmlrpc,
+        payload: {
+          'url': url,
+          'db': db,
+          'username': user,
+          'secret': secret,
+          'auth_type': _apiKey ? 'api_key' : 'password',
+        },
+      );
+      await vault.load();
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // processing dialog
+      nav.go(RouteNames.homePath);
+    } catch (e) {
+      // Roll back the half-created workspace so a retry doesn't pile up
+      // orphaned projects/environments on the server.
+      final orphan = createdProjectId;
+      if (orphan != null) {
+        try {
+          await repo.deleteProject(orphan);
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _busy = false);
+      AppToast.show(
+        context,
+        title: context.tr.figCouldNotConnectCheckTheUrl,
+        message: ApiErrorMapper.message(context, e),
+        variant: ToastVariant.error,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: figLightStatusBar,
+      child: Scaffold(
+        backgroundColor: Fig.pageGrey,
+        body: FigBackdrop(
+          child: AuthFrame(
+            hPad: 20,
+            onBack: () => context.pop(),
+            progress: 0.5,
+            titleGap: 52,
+            subtitleGap: 12,
+            bodyGap: 28,
+            title: context.tr.figConnectYourOdooEnvironment,
+            subtitle: context.tr.figAddTheConnectionDetailsForYou(
+              widget.companyName,
+            ),
+            children: [
+              FigField(
+                label: context.tr.figLabelEnvironmentName,
+                hint: context.tr.figEGElNadaCompany,
+                controller: _label,
+                error: _labelErr,
+                onChanged: (_) {
+                  if (_labelErr != null) setState(() => _labelErr = null);
+                },
+                height: 54,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: AppSpacing.s18),
+              Text(
+                context.tr.figEnvironmentType,
+                style: Fig.t(context, size: 15, color: Fig.navyText),
+              ),
+              const SizedBox(height: AppSpacing.s8),
+              EnvTypePicker(
+                value: _mode,
+                onChanged: (m) => setState(() => _mode = m),
+              ),
+              const SizedBox(height: AppSpacing.s20),
+              ConnectionTabs(
+                apiKey: _apiKey,
+                onChanged: (v) => setState(() => _apiKey = v),
+              ),
+              const SizedBox(height: AppSpacing.s14),
+              FigField(
+                label: context.tr.figLabelUrl,
+                hint: context.tr.figHintOdooUrl,
+                controller: _url,
+                error: _urlErr,
+                onChanged: (_) {
+                  if (_urlErr != null) setState(() => _urlErr = null);
+                },
+                height: 54,
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.next,
+              ),
+              if (_askDb) ...[
+                const SizedBox(height: AppSpacing.s18),
+                FigField(
+                  label: context.tr.figLabelDatabase,
+                  hint: context.tr.figHintDbName,
+                  controller: _db,
+                  height: 54,
+                  textInputAction: TextInputAction.next,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.s18),
+              FigField(
+                label: context.tr.figUsername,
+                hint: context.tr.figHintOdooUser,
+                controller: _user,
+                error: _userErr,
+                onChanged: (_) {
+                  if (_userErr != null) setState(() => _userErr = null);
+                },
+                height: 54,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: AppSpacing.s18),
+              Text(
+                context.tr.figAuthentication,
+                style: Fig.t(context, size: 15, color: Fig.navyText),
+              ),
+              const SizedBox(height: AppSpacing.s8),
+              FigDropdown(
+                value: _apiKey
+                    ? context.tr.figLabelApiKey
+                    : context.tr.figPassword2,
+                options: [context.tr.figPassword2, context.tr.figLabelApiKey],
+                onChanged: (v) =>
+                    setState(() => _apiKey = v == context.tr.figLabelApiKey),
+              ),
+              const SizedBox(height: AppSpacing.s18),
+              FigField(
+                label: _apiKey
+                    ? context.tr.figLabelApiKey
+                    : context.tr.figPassword2,
+                hint: _apiKey
+                    ? context.tr.figEnterOdooApiKey
+                    : context.tr.figEnterOdooPassword,
+                controller: _secret,
+                error: _secretErr,
+                onChanged: (_) {
+                  if (_secretErr != null) setState(() => _secretErr = null);
+                },
+                height: 54,
+                obscure: true,
+                textInputAction: TextInputAction.go,
+                onSubmitted: (_) => _connect(),
+              ),
+              const SizedBox(height: AppSpacing.s28),
+              FigButton(
+                label: context.tr.figConnectInitialize,
+                height: 54,
+                loading: _busy,
+                onPressed: _connect,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum EnvMode { live, readOnly, autoApprove }
+
+/// Three radio cards: Live / Read only / Auto approve.
+class EnvTypePicker extends StatelessWidget {
+  const EnvTypePicker({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.dark = false,
+  });
+
+  final EnvMode value;
+  final ValueChanged<EnvMode> onChanged;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (EnvMode.live, context.tr.figLive, context.tr.figReadWrite),
+      (EnvMode.readOnly, context.tr.figReadOnly, context.tr.figNoChanges),
+      (
+        EnvMode.autoApprove,
+        context.tr.figAutoApprove,
+        context.tr.figTrustedActions,
+      ),
+    ];
+    return SizedBox(
+      height: MediaQuery.textScalerOf(context).scale(78),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        children: [
+          for (final it in items)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: AppSpacing.s6),
+              child: GestureDetector(
+                onTap: () => onChanged(it.$1),
+                child: Container(
+                  width: 114,
+                  padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                  decoration: BoxDecoration(
+                    color: dark
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : Colors.white.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: value == it.$1
+                          ? (dark ? Fig.blueSoft : const Color(0xFF5878E8))
+                          : (dark
+                                ? Colors.white.withValues(alpha: 0.12)
+                                : const Color(0xFFD6DCF3)),
+                      width: value == it.$1 ? 1.4 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: AlignmentDirectional.centerStart,
+                              child: Text(
+                                it.$2,
+                                maxLines: 1,
+                                style: Fig.t(
+                                  context,
+                                  size: 12,
+                                  color: dark
+                                      ? Colors.white.withValues(alpha: 0.8)
+                                      : Fig.muted,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.s4),
+                          _Radio(selected: value == it.$1, dark: dark),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.s6),
+                      Text(
+                        it.$3,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Fig.t(
+                          context,
+                          size: 11,
+                          color: dark ? Colors.white : Fig.mutedSoft,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Radio extends StatelessWidget {
+  const _Radio({required this.selected, required this.dark});
+
+  final bool selected;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: selected ? Fig.blueFocus : (dark ? Colors.white30 : Fig.muted),
+          width: 1.2,
+        ),
+      ),
+      child: selected
+          ? Center(
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Fig.blueFocus,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+/// "Odoo connection | API key" underline tabs.
+class ConnectionTabs extends StatelessWidget {
+  const ConnectionTabs({
+    super.key,
+    required this.apiKey,
+    required this.onChanged,
+    this.dark = false,
+  });
+
+  final bool apiKey;
+  final ValueChanged<bool> onChanged;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget tab(IconData? icon, String label, bool active, VoidCallback tap) {
+      final c = active
+          ? (dark ? Colors.white : Fig.navy)
+          : (dark ? Colors.white54 : Fig.mutedSoft);
+      return GestureDetector(
+        onTap: tap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(8, 4, 12, 8),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: active ? Fig.blueStrong : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 14, color: c),
+                const SizedBox(width: AppSpacing.s6),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Fig.t(context, size: 10, color: c),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: dark ? Colors.white12 : const Color(0xFFD9DEEE),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Flexible(
+            child: tab(
+              AppIcons.database,
+              context.tr.figOdooConnection,
+              !apiKey,
+              () => onChanged(false),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.s12),
+          Flexible(
+            child: tab(
+              null,
+              context.tr.figLabelApiKey,
+              apiKey,
+              () => onChanged(true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pill-shaped select (Authentication / Execution time / …).
+class FigDropdown extends StatelessWidget {
+  const FigDropdown({
+    super.key,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+    this.dark = false,
+    this.height = 54,
+    this.filled = false,
+    this.labelOf,
+  });
+
+  final String value;
+  final List<String> options;
+
+  /// Display text for an option; the stored/returned value stays [options]'s
+  /// own string, so persisted data is unaffected by translation.
+  final String Function(String)? labelOf;
+  final ValueChanged<String> onChanged;
+  final bool dark;
+  final double height;
+
+  /// Solid light fill (dialog fields) instead of the glass pill.
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: onChanged,
+      position: PopupMenuPosition.under,
+      itemBuilder: (_) => [
+        for (final o in options)
+          PopupMenuItem(value: o, child: Text(labelOf?.call(o) ?? o)),
+      ],
+      child: Container(
+        height: height,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
+        decoration: BoxDecoration(
+          color: filled
+              ? Fig.panelTint
+              : (dark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.white.withValues(alpha: 0.34)),
+          borderRadius: BorderRadius.circular(height / 2),
+          border: Border.all(
+            color: filled
+                ? Fig.panelBorder
+                : (dark ? Colors.white12 : Fig.fieldBorder),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                labelOf?.call(value) ?? value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Fig.t(
+                  context,
+                  size: 13,
+                  color: dark ? Colors.white : Fig.muted,
+                ),
+              ),
+            ),
+            Icon(
+              AppIcons.chevronDown,
+              size: 20,
+              color: dark ? Colors.white : Fig.tileText,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The "Processing — your company has been processing" dialog.
+void showProcessingDialog(BuildContext context, String company) {
+  showFigSheet<void>(
+    context,
+    builder: (_) => PopScope(
+      canPop: false,
+      child: FigNotchSheet(
+        onClose: () {},
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                AssetPaths.processPlane,
+                width: 150,
+                filterQuality: FilterQuality.medium,
+              ),
+              const SizedBox(height: AppSpacing.s14),
+              Text(
+                context.tr.figProcessing,
+                style: Fig.t(context, size: 30, color: Fig.inkDeep),
+              ),
+              const SizedBox(height: AppSpacing.s6),
+              Text.rich(
+                TextSpan(
+                  style: Fig.t(context, size: 13, color: Fig.tileText),
+                  children: [
+                    TextSpan(text: context.tr.figYour2),
+                    TextSpan(
+                      text: company,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(text: context.tr.figHasBeenProcessing),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}

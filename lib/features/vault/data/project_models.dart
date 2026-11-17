@@ -54,8 +54,8 @@ class Environment extends Equatable {
       projectId: json['project_id'] as String? ?? '',
       // Server annotates either `has_xmlrpc` (GET /projects/) or
       // `has_credential` (POST /projects/default/) — accept both.
-      hasXmlrpc: (json['has_xmlrpc'] ?? json['has_credential']) as bool? ??
-          false,
+      hasXmlrpc:
+          (json['has_xmlrpc'] ?? json['has_credential']) as bool? ?? false,
     );
   }
 
@@ -63,15 +63,15 @@ class Environment extends Equatable {
   /// Mirrors the server's snake_case so the cached blob is interchangeable
   /// with a fresh API response.
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'slug': slug,
-        'is_live': isLive,
-        'read_only': readOnly,
-        'auto_approve': autoApprove,
-        'project_id': projectId,
-        'has_xmlrpc': hasXmlrpc,
-      };
+    'id': id,
+    'name': name,
+    'slug': slug,
+    'is_live': isLive,
+    'read_only': readOnly,
+    'auto_approve': autoApprove,
+    'project_id': projectId,
+    'has_xmlrpc': hasXmlrpc,
+  };
 
   Environment copyWith({
     String? name,
@@ -94,15 +94,15 @@ class Environment extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        slug,
-        isLive,
-        readOnly,
-        autoApprove,
-        projectId,
-        hasXmlrpc,
-      ];
+    id,
+    name,
+    slug,
+    isLive,
+    readOnly,
+    autoApprove,
+    projectId,
+    hasXmlrpc,
+  ];
 }
 
 /// Logical grouping of environments — typically one per client / customer.
@@ -121,7 +121,8 @@ class Project extends Equatable {
   final List<Environment> environments;
 
   factory Project.fromJson(Map<String, dynamic> json) {
-    final envs = (json['environments'] as List?)
+    final envs =
+        (json['environments'] as List?)
             ?.cast<Map<String, dynamic>>()
             .map(Environment.fromJson)
             .toList() ??
@@ -135,11 +136,11 @@ class Project extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'slug': slug,
-        'environments': environments.map((e) => e.toJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'slug': slug,
+    'environments': environments.map((e) => e.toJson()).toList(),
+  };
 
   @override
   List<Object?> get props => [id, name, slug, environments];

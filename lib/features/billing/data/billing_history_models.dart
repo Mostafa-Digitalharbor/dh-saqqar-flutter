@@ -59,8 +59,11 @@ class PaymentRow {
   /// honest reading of a state we don't know.
   bool get isAwaitingConfirmation {
     if (isPaid || isFailed) return false;
-    return const {'expired', 'refunded', 'chargeback'}
-        .contains(status.toLowerCase())
+    return const {
+          'expired',
+          'refunded',
+          'chargeback',
+        }.contains(status.toLowerCase())
         ? false
         : true;
   }

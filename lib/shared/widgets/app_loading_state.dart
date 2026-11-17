@@ -26,9 +26,11 @@ class AppLoadingState extends StatelessWidget {
 
   /// Compact in-line spinner — same color, scaled for use inside buttons
   /// or list rows.
-  const AppLoadingState.inline({super.key, this.size = AppControlSizes.spinnerInline})
-      : label = null,
-        _inline = true;
+  const AppLoadingState.inline({
+    super.key,
+    this.size = AppControlSizes.spinnerInline,
+  }) : label = null,
+       _inline = true;
 
   final String? label;
   final double size;

@@ -36,7 +36,8 @@ class _DataExplorerScreenState extends State<DataExplorerScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback(
-        (_) => context.read<DataExplorerCubit>().loadEnvironments());
+      (_) => context.read<DataExplorerCubit>().loadEnvironments(),
+    );
   }
 
   @override
@@ -67,18 +68,16 @@ class _DataExplorerScreenState extends State<DataExplorerScreen> {
               final msg = state.queryError is FormatException
                   ? context.tr.dataExplorerInvalidJson
                   : ApiErrorMapper.message(context, state.queryError);
-              AppToast.show(
-                context,
-                message: msg,
-                variant: ToastVariant.error,
-              );
+              AppToast.show(context, message: msg, variant: ToastVariant.error);
             }
           },
           builder: (context, state) {
             if (state.loadingEnvs) {
               return Center(
-                child:
-                    CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerRegular, color: s.muted),
+                child: CircularProgressIndicator(
+                  strokeWidth: AppStrokeWidths.spinnerRegular,
+                  color: s.muted,
+                ),
               );
             }
             if (state.envError != null) {

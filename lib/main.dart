@@ -144,42 +144,39 @@ Future<void> main() async {
   // so it never lands in source control. When the define is empty
   // (local dev), Sentry effectively disables itself — no network calls,
   // no overhead.
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = const String.fromEnvironment(
-        'SAQQAR_SENTRY_DSN',
-        defaultValue: '',
-      );
-      // Tag every event with the build environment so the dashboard
-      // can split prod crashes from dev / CI noise. `release` is read
-      // from PackageInfo above so it tracks pubspec automatically — no
-      // hand-edited version string to drift on each bump. Falls back to
-      // Sentry's own auto-detection when the PackageInfo read failed.
-      options.environment = kReleaseMode ? 'production' : 'development';
-      if (release.isNotEmpty) options.release = release;
-      // Drop sample rate for transactions to 10% — chat polling fires
-      // every 1.5 s; tracing every call would burn the free quota in
-      // hours. Errors are always sent (sample rate ignored on those).
-      options.tracesSampleRate = 0.1;
-      // Never ship PII: no email, no IP, no screenshots, no widget
-      // tree dumps. The app touches credentials and Odoo data, so the
-      // payload to Sentry stays strictly to stack traces + breadcrumbs.
-      options.sendDefaultPii = false;
-      options.attachScreenshot = false;
-      options.attachViewHierarchy = false;
-      // Final filter before any event leaves the device. Catches the
-      // small percentage of errors that bypass our AppLogger crash
-      // reporter — e.g. uncaught DioException from a future Flutter
-      // engine path, or anything the Sentry integration auto-captures.
-      // `_shouldSkipSentry` is the single source of truth for "is this
-      // a real bug or environmental noise" — see its doc for the rules.
-      options.beforeSend = (event, hint) {
-        if (_shouldSkipSentry(event.throwable)) return null;
-        return event;
-      };
-    },
-    appRunner: _bootApp,
-  );
+  await SentryFlutter.init((options) {
+    options.dsn = const String.fromEnvironment(
+      'SAQQAR_SENTRY_DSN',
+      defaultValue: '',
+    );
+    // Tag every event with the build environment so the dashboard
+    // can split prod crashes from dev / CI noise. `release` is read
+    // from PackageInfo above so it tracks pubspec automatically — no
+    // hand-edited version string to drift on each bump. Falls back to
+    // Sentry's own auto-detection when the PackageInfo read failed.
+    options.environment = kReleaseMode ? 'production' : 'development';
+    if (release.isNotEmpty) options.release = release;
+    // Drop sample rate for transactions to 10% — chat polling fires
+    // every 1.5 s; tracing every call would burn the free quota in
+    // hours. Errors are always sent (sample rate ignored on those).
+    options.tracesSampleRate = 0.1;
+    // Never ship PII: no email, no IP, no screenshots, no widget
+    // tree dumps. The app touches credentials and Odoo data, so the
+    // payload to Sentry stays strictly to stack traces + breadcrumbs.
+    options.sendDefaultPii = false;
+    options.attachScreenshot = false;
+    options.attachViewHierarchy = false;
+    // Final filter before any event leaves the device. Catches the
+    // small percentage of errors that bypass our AppLogger crash
+    // reporter — e.g. uncaught DioException from a future Flutter
+    // engine path, or anything the Sentry integration auto-captures.
+    // `_shouldSkipSentry` is the single source of truth for "is this
+    // a real bug or environmental noise" — see its doc for the rules.
+    options.beforeSend = (event, hint) {
+      if (_shouldSkipSentry(event.throwable)) return null;
+      return event;
+    };
+  }, appRunner: _bootApp);
 }
 
 /// The `SharedPreferences` load, started in [main] and consumed in
@@ -417,7 +414,6 @@ Future<void> _bootApp() async {
     snapshotDiskCache: ChatSnapshotDiskCache(),
   );
 
-
   runApp(
     MultiRepositoryProvider(
       providers: [
@@ -494,8 +490,7 @@ Future<void> _bootApp() async {
           // before the first frame, not on first read.
           BlocProvider<AppLockCubit>(
             lazy: false,
-            create: (_) =>
-                AppLockCubit(prefs: prefs, auth: BiometricAuth()),
+            create: (_) => AppLockCubit(prefs: prefs, auth: BiometricAuth()),
           ),
           // User's push on/off preference (defaults on). Gates the push
           // service in app.dart and drives device (un)registration.
@@ -535,9 +530,7 @@ Future<void> _bootApp() async {
           BlocProvider<SaqqarFeaturesCubit>(
             create: (_) => SaqqarFeaturesCubit(usageApi),
           ),
-          BlocProvider<RunningAgentsCubit>(
-            create: (_) => RunningAgentsCubit(),
-          ),
+          BlocProvider<RunningAgentsCubit>(create: (_) => RunningAgentsCubit()),
           BlocProvider<ApprovalsCubit>(
             create: (_) => ApprovalsCubit(approvalsApi),
           ),

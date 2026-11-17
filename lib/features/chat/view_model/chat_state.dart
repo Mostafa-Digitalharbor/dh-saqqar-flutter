@@ -104,11 +104,10 @@ class ChatState extends Equatable {
 
   /// Convenience: the server-reported running flag from the latest
   /// snapshot. Drives the polling cadence (1.5 s vs 15 s).
-  bool get isRunning =>
-      data.dataOrNull?.conversation.isRunning ?? false;
+  bool get isRunning => data.dataOrNull?.conversation.isRunning ?? false;
 
-  bool get hasUnreadyAttachments => stagedAttachments
-      .any((a) => a.status != AttachmentStatus.ready);
+  bool get hasUnreadyAttachments =>
+      stagedAttachments.any((a) => a.status != AttachmentStatus.ready);
 
   ChatState copyWith({
     DataState<ConversationSnapshot>? data,
@@ -138,27 +137,26 @@ class ChatState extends Equatable {
       isUploading: isUploading ?? this.isUploading,
       isLoadingOlder: isLoadingOlder ?? this.isLoadingOlder,
       hasMoreOlder: hasMoreOlder ?? this.hasMoreOlder,
-      lastShareUrl:
-          clearShareUrl ? null : (lastShareUrl ?? this.lastShareUrl),
-      actionFailure:
-          clearActionFailure ? null : (actionFailure ?? this.actionFailure),
-      actionToast:
-          clearActionToast ? null : (actionToast ?? this.actionToast),
+      lastShareUrl: clearShareUrl ? null : (lastShareUrl ?? this.lastShareUrl),
+      actionFailure: clearActionFailure
+          ? null
+          : (actionFailure ?? this.actionFailure),
+      actionToast: clearActionToast ? null : (actionToast ?? this.actionToast),
     );
   }
 
   @override
   List<Object?> get props => [
-        data,
-        stagedAttachments,
-        isSending,
-        isStopping,
-        isResuming,
-        isUploading,
-        isLoadingOlder,
-        hasMoreOlder,
-        lastShareUrl,
-        actionFailure,
-        actionToast,
-      ];
+    data,
+    stagedAttachments,
+    isSending,
+    isStopping,
+    isResuming,
+    isUploading,
+    isLoadingOlder,
+    hasMoreOlder,
+    lastShareUrl,
+    actionFailure,
+    actionToast,
+  ];
 }

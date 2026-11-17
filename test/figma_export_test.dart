@@ -480,12 +480,13 @@ void main() {
     await grab(
       'Auth Email',
       const AuthFlowScreen(initial: AuthFlowStep.signInEmail),
-      minLayers: 25,
+      // The redesigned sign-in is a flatter layout (glass fields, one CTA).
+      minLayers: 12,
     );
     await grab(
       'Auth OTP',
       const AuthFlowScreen(initial: AuthFlowStep.signInOtp),
-      minLayers: 25,
+      minLayers: 12,
     );
     await grab(
       'Account',
@@ -524,7 +525,8 @@ void main() {
         create: (_) => _seededNotifications(prefs),
         child: child,
       ),
-      minLayers: 30,
+      // Plainer rows than the legacy card list (no icon tiles / chips).
+      minLayers: 18,
     );
 
     writeCaptures(captures);

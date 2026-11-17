@@ -13,12 +13,10 @@ import 'auth_state.dart';
 /// router gate (`BlocListener<AuthCubit, AuthState>` inside the GoRouter
 /// `refreshListenable`) can react to status changes from anywhere.
 class AuthCubit extends Cubit<AuthState> {
-  AuthCubit({
-    required AuthApi api,
-    required SecureTokenStore tokenStore,
-  })  : _api = api,
-        _store = tokenStore,
-        super(const AuthState());
+  AuthCubit({required AuthApi api, required SecureTokenStore tokenStore})
+    : _api = api,
+      _store = tokenStore,
+      super(const AuthState());
 
   final AuthApi _api;
   final SecureTokenStore _store;
@@ -51,44 +49,36 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(status: AuthStatus.loading, clearFailure: true));
     final token = await _store.readAccessToken();
     if (token == null || token.isEmpty) {
-      emit(state.copyWith(
-        status: AuthStatus.unauthenticated,
-        clearUser: true,
-      ));
+      emit(state.copyWith(status: AuthStatus.unauthenticated, clearUser: true));
       return;
     }
     try {
       final me = await _api.me();
-      emit(state.copyWith(
-        status: AuthStatus.authenticated,
-        user: me.user,
-        counts: me.counts,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.authenticated,
+          user: me.user,
+          counts: me.counts,
+        ),
+      );
     } on ApiException catch (e) {
       if (e.isUnauthorized) {
         // Server rejected the token → real session-ended state.
         await _store.clear();
-        emit(state.copyWith(
-          status: AuthStatus.unauthenticated,
-          clearUser: true,
-        ));
+        emit(
+          state.copyWith(status: AuthStatus.unauthenticated, clearUser: true),
+        );
       } else {
         // Network / 500 / timeout — keep the user signed in with
         // whatever data we already had (none on cold start). Don't
         // clear the token; the next request will retry.
-        emit(state.copyWith(
-          status: AuthStatus.authenticated,
-          failure: e,
-        ));
+        emit(state.copyWith(status: AuthStatus.authenticated, failure: e));
       }
     } catch (e) {
       // Unknown error (not even an ApiException) — same policy: stay
       // authenticated so the user isn't kicked out by a transient
       // failure we can't classify.
-      emit(state.copyWith(
-        status: AuthStatus.authenticated,
-        failure: e,
-      ));
+      emit(state.copyWith(status: AuthStatus.authenticated, failure: e));
     }
   }
 
@@ -97,26 +87,27 @@ class AuthCubit extends Cubit<AuthState> {
   /// Sign-in flow. Persists the returned token, then sets state to
   /// authenticated. Re-throws [ApiException] so the screen can render
   /// field errors / toasts (state's `failure` carries the same).
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     emit(state.copyWith(status: AuthStatus.loading, clearFailure: true));
     try {
       final session = await _api.login(email: email, password: password);
       await _store.writeAccessToken(session.token);
       final counts = await _safeCounts();
-      emit(state.copyWith(
-        status: AuthStatus.authenticated,
-        user: session.user,
-        counts: counts,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.authenticated,
+          user: session.user,
+          counts: counts,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.unauthenticated,
-        failure: e,
-        clearUser: true,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.unauthenticated,
+          failure: e,
+          clearUser: true,
+        ),
+      );
       rethrow;
     }
   }
@@ -137,17 +128,21 @@ class AuthCubit extends Cubit<AuthState> {
       );
       await _store.writeAccessToken(session.token);
       final counts = await _safeCounts();
-      emit(state.copyWith(
-        status: AuthStatus.authenticated,
-        user: session.user,
-        counts: counts,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.authenticated,
+          user: session.user,
+          counts: counts,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.unauthenticated,
-        failure: e,
-        clearUser: true,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.unauthenticated,
+          failure: e,
+          clearUser: true,
+        ),
+      );
       rethrow;
     }
   }
@@ -159,11 +154,13 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> adoptSession(AuthSession session) async {
     await _store.writeAccessToken(session.token);
     final counts = await _safeCounts();
-    emit(state.copyWith(
-      status: AuthStatus.authenticated,
-      user: session.user,
-      counts: counts,
-    ));
+    emit(
+      state.copyWith(
+        status: AuthStatus.authenticated,
+        user: session.user,
+        counts: counts,
+      ),
+    );
   }
 
   /// Best-effort POST to /logout/ then clear local state. The server call
@@ -195,10 +192,7 @@ class AuthCubit extends Cubit<AuthState> {
   /// Update the user's display name (Gap I). Patches `/auth/me/` and swaps
   /// the refreshed user into state so the hero + chat header update live.
   /// Re-throws so the form can surface validation errors.
-  Future<void> updateProfile({
-    String? firstName,
-    String? lastName,
-  }) async {
+  Future<void> updateProfile({String? firstName, String? lastName}) async {
     final me = await _api.updateProfile(
       firstName: firstName,
       lastName: lastName,

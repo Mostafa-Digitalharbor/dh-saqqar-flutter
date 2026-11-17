@@ -14,10 +14,8 @@ import '../../../core/theme/app_sizes.dart';
 /// Loads one page of `GET /api/v1/report-entities/` for [entity], optionally
 /// narrowed by [query]. Injected so the card is drivable in a widget test
 /// without a Dio stack, and so the screen owns the conversation id.
-typedef ReportEntityLoader = Future<ReportEntityPage> Function(
-  String entity,
-  String query,
-);
+typedef ReportEntityLoader =
+    Future<ReportEntityPage> Function(String entity, String query);
 
 /// §4b — the report configurator card
 /// (`tool_payload.kind == report_builder`).
@@ -338,7 +336,9 @@ class _EntityPicker extends StatelessWidget {
               child: SizedBox(
                 width: AppControlSizes.spinnerSmall,
                 height: AppControlSizes.spinnerSmall,
-                child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerThin),
+                child: CircularProgressIndicator(
+                  strokeWidth: AppStrokeWidths.spinnerThin,
+                ),
               ),
             ),
           )
@@ -354,23 +354,28 @@ class _EntityPicker extends StatelessWidget {
           // Capped height so a 1,000-row list can't swallow the chat. The
           // list scrolls inside the card; the card keeps its own size.
           ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: AppSheetHeights.reportRecordsMax),
+            constraints: const BoxConstraints(
+              maxHeight: AppSheetHeights.reportRecordsMax,
+            ),
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: items.length,
               itemBuilder: (context, i) {
                 final entity = items[i];
-                return CheckboxListTile(
-                  value: selected.containsKey(entity.id),
-                  onChanged: (_) => onToggle(entity),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: Text(
-                    entity.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.bodyMedium,
+                return Material(
+                  type: MaterialType.transparency,
+                  child: CheckboxListTile(
+                    value: selected.containsKey(entity.id),
+                    onChanged: (_) => onToggle(entity),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(
+                      entity.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.bodyMedium,
+                    ),
                   ),
                 );
               },

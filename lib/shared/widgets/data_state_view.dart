@@ -75,7 +75,7 @@ class DataStateView<T> extends StatelessWidget {
   /// post-frame callback so it's safe to call `BuildContext`-bound
   /// helpers (toasts, navigation).
   final void Function(BuildContext context, DataFailure<T> failure)?
-      onStaleFailure;
+  onStaleFailure;
 
   /// Caption under the spinner. Optional.
   final String? loadingLabel;
@@ -93,8 +93,11 @@ class DataStateView<T> extends StatelessWidget {
         onIdle != null ? onIdle!(context) : const SizedBox.shrink(),
       DataLoading<T>(previous: final prev) => _buildLoading(context, prev),
       DataSuccess<T>(data: final d) => onData(context, d),
-      DataFailure<T>(previous: final prev) when prev != null =>
-        _buildStaleData(context, prev, state as DataFailure<T>),
+      DataFailure<T>(previous: final prev) when prev != null => _buildStaleData(
+        context,
+        prev,
+        state as DataFailure<T>,
+      ),
       DataFailure<T>() => _buildError(context, state as DataFailure<T>),
     };
   }

@@ -81,7 +81,9 @@ List<ApprovalGroup> groupApprovalsByShape(List<Approval> pending) {
   final byKey = <String, int>{};
 
   for (final approval in pending) {
-    final key = approvalIsGroupable(approval) ? approvalShapeKey(approval) : null;
+    final key = approvalIsGroupable(approval)
+        ? approvalShapeKey(approval)
+        : null;
     if (key == null) {
       order.add([approval]);
       keys.add(null);

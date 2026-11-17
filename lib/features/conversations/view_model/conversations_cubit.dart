@@ -26,8 +26,8 @@ import 'conversations_state.dart';
 class ConversationsCubit extends Cubit<ConversationsState>
     with ActionOutcomeCubit<ConversationsState> {
   ConversationsCubit({required ConversationsRepository repository})
-      : _repo = repository,
-        super(const ConversationsState());
+    : _repo = repository,
+      super(const ConversationsState());
 
   static const _tag = 'ConversationsCubit';
 
@@ -78,15 +78,19 @@ class ConversationsCubit extends Cubit<ConversationsState>
     if (state.data.dataOrNull != null) return;
     final cached = _repo.readCachedList();
     if (cached == null || cached.conversations.isEmpty) return;
-    emit(state.copyWith(
-      data: DataSuccess(ConversationsData(
-        conversations: cached.conversations,
-        pinnedIds: const <String>{},
-        total: cached.conversations.length,
-        pendingByConv: cached.pendingByConv,
-        filesByConv: cached.filesByConv,
-      )),
-    ));
+    emit(
+      state.copyWith(
+        data: DataSuccess(
+          ConversationsData(
+            conversations: cached.conversations,
+            pinnedIds: const <String>{},
+            total: cached.conversations.length,
+            pendingByConv: cached.pendingByConv,
+            filesByConv: cached.filesByConv,
+          ),
+        ),
+      ),
+    );
   }
 
   /// Best-effort write of the current list + counts to the offline cache so
@@ -94,11 +98,13 @@ class ConversationsCubit extends Cubit<ConversationsState>
   void _persistCache() {
     final data = state.data.dataOrNull;
     if (data == null || data.conversations.isEmpty) return;
-    unawaited(_repo.writeCachedList(
-      conversations: data.conversations,
-      pendingByConv: data.pendingByConv,
-      filesByConv: data.filesByConv,
-    ));
+    unawaited(
+      _repo.writeCachedList(
+        conversations: data.conversations,
+        pendingByConv: data.pendingByConv,
+        filesByConv: data.filesByConv,
+      ),
+    );
   }
 
   /// Initial load — fetches the conversation list. Default now
@@ -122,9 +128,11 @@ class ConversationsCubit extends Cubit<ConversationsState>
     // good. Verified on-device by killing the backend mid-session.
     final lastGood = state.data.dataOrPrevious;
     if (lastGood == null) {
-      emit(state.copyWith(
-        data: DataLoading<ConversationsData>(previous: lastGood),
-      ));
+      emit(
+        state.copyWith(
+          data: DataLoading<ConversationsData>(previous: lastGood),
+        ),
+      );
     }
     try {
       // Kick off the list and the real per-conversation meta (pending
@@ -149,7 +157,8 @@ class ConversationsCubit extends Cubit<ConversationsState>
       // row so a refresh doesn't blank the tag out before the next
       // enrichment pass lands (the list endpoint never carries it).
       final prevById = <String, ConversationSummary>{
-        for (final c in previous?.conversations ?? const <ConversationSummary>[])
+        for (final c
+            in previous?.conversations ?? const <ConversationSummary>[])
           c.id: c,
       };
       final conversations = [
@@ -164,17 +173,19 @@ class ConversationsCubit extends Cubit<ConversationsState>
       // seconds; waiting additionally for meta before showing anything doubled
       // the perceived wait. Counts carry over from the previous data and
       // refresh the instant the meta lands (below).
-      emit(state.copyWith(
-        data: DataSuccess(
-          ConversationsData(
-            conversations: conversations,
-            pinnedIds: pinned,
-            total: res.total,
-            pendingByConv: previous?.pendingByConv ?? const {},
-            filesByConv: previous?.filesByConv ?? const {},
+      emit(
+        state.copyWith(
+          data: DataSuccess(
+            ConversationsData(
+              conversations: conversations,
+              pinnedIds: pinned,
+              total: res.total,
+              pendingByConv: previous?.pendingByConv ?? const {},
+              filesByConv: previous?.filesByConv ?? const {},
+            ),
           ),
         ),
-      ));
+      );
       // Persist the fresh list for instant cold-start paint next time.
       _persistCache();
       // Warm every conversation's transcript on disk in the background so
@@ -189,39 +200,49 @@ class ConversationsCubit extends Cubit<ConversationsState>
         // server up in background work and starve the user's own foreground
         // request. The rest open on demand — and repeat opens are instant
         // from the disk cache anyway.
-        unawaited(_repo.prefetchSnapshots(
-          [for (final c in conversations.take(5)) c.id],
-        ));
+        unawaited(
+          _repo.prefetchSnapshots([
+            for (final c in conversations.take(5)) c.id,
+          ]),
+        );
       }
       // Fold the fresh pending-approval / file counts in when the SEPARATE
       // meta feed resolves — never blocks the list above. Best-effort:
       // conversationMeta already yields empty maps on error.
-      unawaited(metaFuture.then((meta) {
-        final cur = state.data.dataOrNull;
-        if (cur == null) return;
-        emit(state.copyWith(
-          data: DataSuccess(cur.copyWith(
-            pendingByConv: meta.pendingByConv,
-            filesByConv: meta.filesByConv,
-          )),
-        ));
-        _persistCache();
-      }));
+      unawaited(
+        metaFuture.then((meta) {
+          final cur = state.data.dataOrNull;
+          if (cur == null) return;
+          emit(
+            state.copyWith(
+              data: DataSuccess(
+                cur.copyWith(
+                  pendingByConv: meta.pendingByConv,
+                  filesByConv: meta.filesByConv,
+                ),
+              ),
+            ),
+          );
+          _persistCache();
+        }),
+      );
     } catch (e, st) {
       AppLogger.error(_tag, 'load() failed', error: e, stackTrace: st);
       final failure = ApiErrorMapper.toFailure(e);
-      emit(state.copyWith(
-        data: DataFailure<ConversationsData>(
-          error: failure,
-          // Must be `dataOrPrevious` — otherwise the SECOND consecutive
-          // failure drops the rows the first one preserved.
-          previous: state.data.dataOrPrevious,
+      emit(
+        state.copyWith(
+          data: DataFailure<ConversationsData>(
+            error: failure,
+            // Must be `dataOrPrevious` — otherwise the SECOND consecutive
+            // failure drops the rows the first one preserved.
+            previous: state.data.dataOrPrevious,
+          ),
+          actionFailure: ConversationsActionFailure(
+            action: ConversationsAction.load,
+            failure: failure,
+          ),
         ),
-        actionFailure: ConversationsActionFailure(
-          action: ConversationsAction.load,
-          failure: failure,
-        ),
-      ));
+      );
     } finally {
       _loading = false;
     }
@@ -252,7 +273,6 @@ class ConversationsCubit extends Cubit<ConversationsState>
   /// and the "Saqqar is working" state update on their own — no manual pull.
   Future<void> poll() => load(prefetch: false);
 
-
   /// Drops the in-memory conversation list back to the idle state.
   /// Called from the auth boundary when the signed-in user changes
   /// (sign-out OR sign-in as a different account) so the previous
@@ -276,20 +296,29 @@ class ConversationsCubit extends Cubit<ConversationsState>
       // summary fields like message_count + preview that the bare POST
       // response doesn't include).
       await load();
-      emit(state.copyWith(
-        actionInFlight: false,
-        actionToast: ConversationsToast.conversationCreated,
-      ));
+      emit(
+        state.copyWith(
+          actionInFlight: false,
+          actionToast: ConversationsToast.conversationCreated,
+        ),
+      );
       return id;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'createConversation failed', error: e, stackTrace: st);
-      emit(state.copyWith(
-        actionInFlight: false,
-        actionFailure: ConversationsActionFailure(
-          action: ConversationsAction.create,
-          failure: ApiErrorMapper.toFailure(e),
+      AppLogger.warn(
+        _tag,
+        'createConversation failed',
+        error: e,
+        stackTrace: st,
+      );
+      emit(
+        state.copyWith(
+          actionInFlight: false,
+          actionFailure: ConversationsActionFailure(
+            action: ConversationsAction.create,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return null;
     }
   }
@@ -311,22 +340,26 @@ class ConversationsCubit extends Cubit<ConversationsState>
       final url = res.url.isNotEmpty ? res.url : res.path;
       return url.isEmpty ? null : url;
     } catch (e, st) {
-      AppLogger.warn(_tag, 'shareConversation failed', error: e, stackTrace: st);
-      emit(state.copyWith(
-        actionInFlight: false,
-        actionFailure: ConversationsActionFailure(
-          action: ConversationsAction.share,
-          failure: ApiErrorMapper.toFailure(e),
+      AppLogger.warn(
+        _tag,
+        'shareConversation failed',
+        error: e,
+        stackTrace: st,
+      );
+      emit(
+        state.copyWith(
+          actionInFlight: false,
+          actionFailure: ConversationsActionFailure(
+            action: ConversationsAction.share,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return null;
     }
   }
 
-  Future<bool> renameConversation({
-    required String id,
-    required String name,
-  }) {
+  Future<bool> renameConversation({required String id, required String name}) {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return Future.value(false);
     return _runOptimistic(
@@ -407,13 +440,10 @@ class ConversationsCubit extends Cubit<ConversationsState>
     } else {
       next.add(id);
     }
-    emit(state.copyWith(
-      data: DataSuccess(current.copyWith(pinnedIds: next)),
-    ));
+    emit(state.copyWith(data: DataSuccess(current.copyWith(pinnedIds: next))));
   }
 
-  bool isPinned(String id) =>
-      state.data.dataOrNull?.isPinned(id) ?? false;
+  bool isPinned(String id) => state.data.dataOrNull?.isPinned(id) ?? false;
 
   // ── One-shot message acknowledgement ────────────────────────────────
 
@@ -442,17 +472,16 @@ class ConversationsCubit extends Cubit<ConversationsState>
     final current = state.data.dataOrNull;
     if (current == null) return false;
     final optimistic = mutate(current);
-    emit(state.copyWith(
-      data: DataSuccess(optimistic),
-      actionInFlight: true,
-      clearActionFailure: true,
-    ));
+    emit(
+      state.copyWith(
+        data: DataSuccess(optimistic),
+        actionInFlight: true,
+        clearActionFailure: true,
+      ),
+    );
     try {
       await commit();
-      emit(state.copyWith(
-        actionInFlight: false,
-        actionToast: successToast,
-      ));
+      emit(state.copyWith(actionInFlight: false, actionToast: successToast));
       return true;
     } catch (e, st) {
       AppLogger.warn(
@@ -461,14 +490,16 @@ class ConversationsCubit extends Cubit<ConversationsState>
         error: e,
         stackTrace: st,
       );
-      emit(state.copyWith(
-        data: DataSuccess(current),
-        actionInFlight: false,
-        actionFailure: ConversationsActionFailure(
-          action: action,
-          failure: ApiErrorMapper.toFailure(e),
+      emit(
+        state.copyWith(
+          data: DataSuccess(current),
+          actionInFlight: false,
+          actionFailure: ConversationsActionFailure(
+            action: action,
+            failure: ApiErrorMapper.toFailure(e),
+          ),
         ),
-      ));
+      );
       return false;
     }
   }

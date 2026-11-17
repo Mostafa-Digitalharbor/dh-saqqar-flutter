@@ -87,12 +87,10 @@ class UsageApi {
       // front of the whole usage snapshot — a single malformed field would
       // take out the plan, the quota bars and the subscription state along
       // with the flags. A pattern match degrades to "unknown" instead.
-      saqqarFeatures: SaqqarFeatures.fromJson(
-        switch (body['saqqar_features']) {
-          final Map<dynamic, dynamic> m => m.cast<String, dynamic>(),
-          _ => null,
-        },
-      ),
+      saqqarFeatures: SaqqarFeatures.fromJson(switch (body['saqqar_features']) {
+        final Map<dynamic, dynamic> m => m.cast<String, dynamic>(),
+        _ => null,
+      }),
     );
   }
 }

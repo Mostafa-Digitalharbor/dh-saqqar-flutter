@@ -73,14 +73,19 @@ class AccountCardHeader extends StatelessWidget {
                 const SizedBox(height: AppSpacing.s3),
                 Text(
                   subtitle!,
-                  style: context.text.bodySmall
-                      ?.copyWith(color: s.muted, height: AppLineHeights.label),
+                  style: context.text.bodySmall?.copyWith(
+                    color: s.muted,
+                    height: AppLineHeights.label,
+                  ),
                 ),
               ],
             ],
           ),
         ),
-        if (trailing != null) ...[const SizedBox(width: AppSpacing.s8), trailing!],
+        if (trailing != null) ...[
+          const SizedBox(width: AppSpacing.s8),
+          trailing!,
+        ],
       ],
     );
   }

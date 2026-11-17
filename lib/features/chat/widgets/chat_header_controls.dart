@@ -85,7 +85,9 @@ class ChatHeaderControls extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: s.surface.withValues(alpha: context.alpha(AppAlphaPairs.panelHeader)),
+        color: s.surface.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelHeader),
+        ),
         border: Border(bottom: BorderSide(color: s.border)),
       ),
       child: ResponsiveContent(
@@ -139,8 +141,7 @@ class ChatHeaderControls extends StatelessWidget {
                   ? _CreateCtaPill(
                       icon: AppIcons.plus,
                       label: context.tr.createEnvironmentCta,
-                      onTap: () =>
-                          onCreateEnvironmentRequested(projectId!),
+                      onTap: () => onCreateEnvironmentRequested(projectId!),
                     )
                   : _MultiEnvPill(
                       caption: context.tr.headerEnvironment,
@@ -155,8 +156,7 @@ class ChatHeaderControls extends StatelessWidget {
                           .where((id) => id != environmentId)
                           .length,
                       onTap: () async {
-                        final result =
-                            await EnvironmentMultiSelectSheet.show(
+                        final result = await EnvironmentMultiSelectSheet.show(
                           context,
                           projectId: projectId,
                           selectedEnvironmentIds: selectedEnvironmentIds,
@@ -256,7 +256,11 @@ class _ChatToggleIcon extends StatelessWidget {
                   : Colors.transparent,
             ),
           ),
-          child: Icon(icon, size: AppIconSizes.regular, color: value ? accent : s.muted),
+          child: Icon(
+            icon,
+            size: AppIconSizes.regular,
+            color: value ? accent : s.muted,
+          ),
         ),
       ),
     );
@@ -361,13 +365,21 @@ class _MultiEnvPill extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: Container(
         height: AppControlSizes.headerControlHeight,
-        padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s10, 0, AppSpacing.s10, 0),
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          AppSpacing.s10,
+          0,
+          AppSpacing.s10,
+          0,
+        ),
         decoration: BoxDecoration(
-          color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSheet)),
+          color: s.surface2.withValues(
+            alpha: context.alpha(AppAlphaPairs.panelSheet),
+          ),
           borderRadius: AppRadius.buttonR,
           border: Border.all(
-            color:
-                enabled ? s.cardBorder : s.cardBorder.withValues(alpha: AppAlphas.a40),
+            color: enabled
+                ? s.cardBorder
+                : s.cardBorder.withValues(alpha: AppAlphas.a40),
           ),
         ),
         child: Row(
@@ -401,9 +413,7 @@ class _MultiEnvPill extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: context.text.bodyMedium?.copyWith(
-                  color: hasSelection
-                      ? (enabled ? s.text : s.muted)
-                      : s.muted,
+                  color: hasSelection ? (enabled ? s.text : s.muted) : s.muted,
                   fontWeight: FontWeight.w600,
                   fontSize: AppFontSizes.dense,
                 ),
@@ -412,11 +422,10 @@ class _MultiEnvPill extends StatelessWidget {
             if (extraCount > 0) ...[
               const SizedBox(width: AppSpacing.s6),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s6,
-                      vertical: AppSpacing.s2,
-                    ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s6,
+                  vertical: AppSpacing.s2,
+                ),
                 decoration: BoxDecoration(
                   color: s.brandCyan.withValues(alpha: AppAlphas.a14),
                   borderRadius: AppRadius.pillR,
@@ -477,12 +486,21 @@ class _DropdownPill extends StatelessWidget {
     final hasValue = value != null && items.any((i) => i.value == value);
     return Container(
       height: AppControlSizes.headerControlHeight,
-      padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.s10, 0, AppSpacing.s10, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        AppSpacing.s10,
+        0,
+        AppSpacing.s10,
+        0,
+      ),
       decoration: BoxDecoration(
-        color: s.surface2.withValues(alpha: context.alpha(AppAlphaPairs.panelSheet)),
+        color: s.surface2.withValues(
+          alpha: context.alpha(AppAlphaPairs.panelSheet),
+        ),
         borderRadius: AppRadius.buttonR,
         border: Border.all(
-          color: enabled ? s.cardBorder : s.cardBorder.withValues(alpha: AppAlphas.a40),
+          color: enabled
+              ? s.cardBorder
+              : s.cardBorder.withValues(alpha: AppAlphas.a40),
         ),
       ),
       child: Row(
