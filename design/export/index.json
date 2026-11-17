@@ -8,7 +8,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 5
+      "layers": 6
     },
     {
       "name": "Auth Email",
@@ -18,7 +18,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 31
+      "layers": 24
     },
     {
       "name": "Auth OTP",
@@ -28,7 +28,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 32
+      "layers": 19
     },
     {
       "name": "Account",
@@ -38,7 +38,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 75
+      "layers": 62
     },
     {
       "name": "Usage",
@@ -88,7 +88,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 40
+      "layers": 22
     }
   ]
 }

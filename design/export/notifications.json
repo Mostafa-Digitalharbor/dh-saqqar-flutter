@@ -14,7 +14,7 @@
       "w": 430.0,
       "h": 932.0,
       "type": "rect",
-      "fill": "#F8FAFCFF",
+      "fill": "#FFFFFFFF",
       "radius": [
         0.0,
         0.0,
@@ -23,354 +23,16 @@
       ]
     },
     {
-      "name": "ColoredBox",
-      "x": 0.0,
-      "y": 60.0,
-      "w": 430.0,
-      "h": 872.0,
-      "type": "rect",
-      "fill": "#F8FAFCFF",
-      "radius": 0
-    },
-    {
-      "name": "PhysicalShape",
-      "x": 69.08,
-      "y": 70.0,
-      "w": 43.2,
-      "h": 34.0,
-      "type": "rect",
-      "fill": "#00000000",
-      "radius": 0
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 69.08,
-      "y": 70.0,
-      "w": 43.2,
-      "h": 34.0,
-      "type": "rect",
-      "fill": "#06B6D41F",
-      "stroke": {
-        "color": "#06B6D466",
-        "width": 1.0
-      },
-      "radius": [
-        17.0,
-        17.0,
-        17.0,
-        17.0
-      ]
-    },
-    {
       "name": "RichText",
-      "x": 84.08,
-      "y": 79.0,
-      "w": 13.2,
-      "h": 16.0,
+      "x": 21.0,
+      "y": 37.0,
+      "w": 26.0,
+      "h": 26.0,
       "type": "text",
-      "text": "All",
+      "text": "",
       "lines": [
         {
-          "text": "All",
-          "x": 0.0,
-          "top": 0.04
-        }
-      ],
-      "align": "start",
-      "dir": "ltr",
-      "maxLines": 1,
-      "font": {
-        "family": "SpaceGrotesk",
-        "fallback": [
-          "Tajawal",
-          "IBMPlexSansArabic"
-        ],
-        "size": 12.0,
-        "weight": 700,
-        "italic": false,
-        "letterSpacing": 0.0,
-        "lineHeight": 15.96,
-        "color": "#06B6D4FF"
-      }
-    },
-    {
-      "name": "PhysicalShape",
-      "x": 120.28,
-      "y": 70.0,
-      "w": 86.7,
-      "h": 34.0,
-      "type": "rect",
-      "fill": "#00000000",
-      "radius": 0
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 120.28,
-      "y": 70.0,
-      "w": 86.7,
-      "h": 34.0,
-      "type": "rect",
-      "fill": "#F1F5F9DB",
-      "stroke": {
-        "color": "#E2E8F0F2",
-        "width": 1.0
-      },
-      "radius": [
-        17.0,
-        17.0,
-        17.0,
-        17.0
-      ]
-    },
-    {
-      "name": "RichText",
-      "x": 135.28,
-      "y": 79.0,
-      "w": 56.7,
-      "h": 16.0,
-      "type": "text",
-      "text": "Approvals",
-      "lines": [
-        {
-          "text": "Approvals",
-          "x": 0.0,
-          "top": 0.04
-        }
-      ],
-      "align": "start",
-      "dir": "ltr",
-      "maxLines": 1,
-      "font": {
-        "family": "SpaceGrotesk",
-        "fallback": [
-          "Tajawal",
-          "IBMPlexSansArabic"
-        ],
-        "size": 12.0,
-        "weight": 700,
-        "italic": false,
-        "letterSpacing": 0.0,
-        "lineHeight": 15.96,
-        "color": "#0F172AFF"
-      }
-    },
-    {
-      "name": "PhysicalShape",
-      "x": 214.98,
-      "y": 70.0,
-      "w": 61.69,
-      "h": 34.0,
-      "type": "rect",
-      "fill": "#00000000",
-      "radius": 0
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 214.98,
-      "y": 70.0,
-      "w": 61.69,
-      "h": 34.0,
-      "type": "rect",
-      "fill": "#F1F5F9DB",
-      "stroke": {
-        "color": "#E2E8F0F2",
-        "width": 1.0
-      },
-      "radius": [
-        17.0,
-        17.0,
-        17.0,
-        17.0
-      ]
-    },
-    {
-      "name": "RichText",
-      "x": 229.98,
-      "y": 79.0,
-      "w": 31.69,
-      "h": 16.0,
-      "type": "text",
-      "text": "Tasks",
-      "lines": [
-        {
-          "text": "Tasks",
-          "x": 0.0,
-          "top": 0.04
-        }
-      ],
-      "align": "start",
-      "dir": "ltr",
-      "maxLines": 1,
-      "font": {
-        "family": "SpaceGrotesk",
-        "fallback": [
-          "Tajawal",
-          "IBMPlexSansArabic"
-        ],
-        "size": 12.0,
-        "weight": 700,
-        "italic": false,
-        "letterSpacing": 0.0,
-        "lineHeight": 15.96,
-        "color": "#0F172AFF"
-      }
-    },
-    {
-      "name": "PhysicalShape",
-      "x": 284.67,
-      "y": 70.0,
-      "w": 76.25,
-      "h": 34.0,
-      "type": "rect",
-      "fill": "#00000000",
-      "radius": 0
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 284.67,
-      "y": 70.0,
-      "w": 76.25,
-      "h": 34.0,
-      "type": "rect",
-      "fill": "#F1F5F9DB",
-      "stroke": {
-        "color": "#E2E8F0F2",
-        "width": 1.0
-      },
-      "radius": [
-        17.0,
-        17.0,
-        17.0,
-        17.0
-      ]
-    },
-    {
-      "name": "RichText",
-      "x": 299.67,
-      "y": 79.0,
-      "w": 46.25,
-      "h": 16.0,
-      "type": "text",
-      "text": "Reports",
-      "lines": [
-        {
-          "text": "Reports",
-          "x": 0.0,
-          "top": 0.04
-        }
-      ],
-      "align": "start",
-      "dir": "ltr",
-      "maxLines": 1,
-      "font": {
-        "family": "SpaceGrotesk",
-        "fallback": [
-          "Tajawal",
-          "IBMPlexSansArabic"
-        ],
-        "size": 12.0,
-        "weight": 700,
-        "italic": false,
-        "letterSpacing": 0.0,
-        "lineHeight": 15.96,
-        "color": "#0F172AFF"
-      }
-    },
-    {
-      "name": "RichText",
-      "x": 18.0,
-      "y": 132.0,
-      "w": 394.0,
-      "h": 16.0,
-      "type": "text",
-      "text": "Earlier",
-      "lines": [
-        {
-          "text": "Earlier",
-          "x": 0.2,
-          "top": 0.04
-        }
-      ],
-      "align": "start",
-      "dir": "ltr",
-      "font": {
-        "family": "SpaceGrotesk",
-        "fallback": [
-          "Tajawal",
-          "IBMPlexSansArabic"
-        ],
-        "size": 12.0,
-        "weight": 800,
-        "italic": false,
-        "letterSpacing": 0.4,
-        "lineHeight": 15.96,
-        "color": "#64748BFF"
-      }
-    },
-    {
-      "name": "PhysicalModel",
-      "x": 14.0,
-      "y": 154.0,
-      "w": 402.0,
-      "h": 91.0,
-      "type": "rect",
-      "fill": "#00000000",
-      "radius": [
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 14.0,
-      "y": 154.0,
-      "w": 402.0,
-      "h": 91.0,
-      "type": "rect",
-      "fill": "#FFFFFFD9",
-      "stroke": {
-        "color": "#E2E8F0F2",
-        "width": 1.0
-      },
-      "radius": [
-        20.0,
-        20.0,
-        20.0,
-        20.0
-      ]
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 29.0,
-      "y": 169.0,
-      "w": 38.0,
-      "h": 38.0,
-      "type": "rect",
-      "fill": "#F59E0B24",
-      "stroke": {
-        "color": "#F59E0B4D",
-        "width": 1.0
-      },
-      "radius": [
-        11.0,
-        11.0,
-        11.0,
-        11.0
-      ]
-    },
-    {
-      "name": "RichText",
-      "x": 39.0,
-      "y": 179.0,
-      "w": 18.0,
-      "h": 18.0,
-      "type": "text",
-      "text": "",
-      "lines": [
-        {
-          "text": "",
+          "text": "",
           "x": 0.0,
           "top": 0.0
         }
@@ -380,34 +42,111 @@
       "font": {
         "family": "packages/lucide_icons_flutter/Lucide",
         "fallback": [],
-        "size": 18.0,
+        "size": 26.0,
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 18.0,
-        "color": "#F59E0BFF"
+        "lineHeight": 26.0,
+        "color": "#000000FF"
       }
     },
     {
       "name": "RichText",
-      "x": 79.0,
-      "y": 169.0,
-      "w": 281.56,
+      "x": 83.0,
+      "y": 33.5,
+      "w": 264.0,
+      "h": 33.0,
+      "type": "text",
+      "text": "Notification",
+      "lines": [
+        {
+          "text": "Notification",
+          "x": 0.0,
+          "top": 0.0
+        }
+      ],
+      "align": "start",
+      "dir": "ltr",
+      "font": {
+        "family": "HankenGrotesk",
+        "fallback": [
+          "Tajawal",
+          "IBMPlexSansArabic"
+        ],
+        "size": 22.0,
+        "weight": 400,
+        "italic": false,
+        "letterSpacing": 0.0,
+        "lineHeight": 33.0,
+        "color": "#111111FF"
+      }
+    },
+    {
+      "name": "RichText",
+      "x": 18.0,
+      "y": 122.0,
+      "w": 394.0,
       "h": 20.0,
+      "type": "text",
+      "text": "11 August 2026",
+      "lines": [
+        {
+          "text": "11 August 2026",
+          "x": 0.0,
+          "top": 0.5
+        }
+      ],
+      "align": "start",
+      "dir": "ltr",
+      "font": {
+        "family": "HankenGrotesk",
+        "fallback": [
+          "Tajawal",
+          "IBMPlexSansArabic"
+        ],
+        "size": 13.0,
+        "weight": 400,
+        "italic": false,
+        "letterSpacing": 0.0,
+        "lineHeight": 19.5,
+        "color": "#7D8190FF"
+      }
+    },
+    {
+      "name": "DecoratedBox",
+      "x": 18.0,
+      "y": 152.0,
+      "w": 394.0,
+      "h": 107.0,
+      "type": "rect",
+      "stroke": {
+        "color": "#EEEEF1FF",
+        "top": 0.0,
+        "right": 0.0,
+        "bottom": 1.0,
+        "left": 0.0
+      },
+      "radius": 0
+    },
+    {
+      "name": "RichText",
+      "x": 18.0,
+      "y": 160.0,
+      "w": 316.0,
+      "h": 21.0,
       "type": "text",
       "text": "Approval needed",
       "lines": [
         {
           "text": "Approval needed",
           "x": 0.0,
-          "top": -0.02
+          "top": 0.0
         }
       ],
       "align": "start",
       "dir": "ltr",
-      "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
@@ -416,67 +155,66 @@
         "weight": 700,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 20.02,
-        "color": "#0F172AFF"
+        "lineHeight": 21.0,
+        "color": "#111111FF"
       }
     },
     {
       "name": "RichText",
-      "x": 368.56,
-      "y": 171.0,
-      "w": 32.44,
-      "h": 16.0,
+      "x": 334.0,
+      "y": 160.0,
+      "w": 78.0,
+      "h": 20.0,
       "type": "text",
       "text": "Aug 11",
       "lines": [
         {
           "text": "Aug 11",
           "x": 0.0,
-          "top": 0.05
+          "top": 0.5
         }
       ],
       "align": "start",
       "dir": "ltr",
-      "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 11.0,
-        "weight": 700,
+        "size": 13.0,
+        "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 15.95,
-        "color": "#64748BFF"
+        "lineHeight": 19.5,
+        "color": "#636A80FF"
       }
     },
     {
       "name": "RichText",
-      "x": 79.0,
-      "y": 192.0,
-      "w": 322.0,
-      "h": 38.0,
+      "x": 18.0,
+      "y": 185.0,
+      "w": 394.0,
+      "h": 34.0,
       "type": "text",
       "text": "Saqqar wants to post quotation SO-2291 to Production.",
       "lines": [
         {
-          "text": "Saqqar wants to post quotation SO-2291 to ",
+          "text": "Saqqar wants to post quotation ",
           "x": 0.0,
-          "top": 0.15
+          "top": 0.1
         },
         {
-          "text": "Production.",
+          "text": "SO-2291 to Production.",
           "x": 0.0,
-          "top": 19.15
+          "top": 17.1
         }
       ],
       "align": "start",
       "dir": "ltr",
-      "maxLines": 3,
+      "maxLines": 2,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
@@ -485,111 +223,91 @@
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 18.85,
-        "color": "#64748BFF"
+        "lineHeight": 16.9,
+        "color": "#7D8190FF"
       }
     },
     {
-      "name": "PhysicalModel",
-      "x": 14.0,
-      "y": 253.0,
-      "w": 402.0,
-      "h": 91.0,
-      "type": "rect",
-      "fill": "#00000000",
-      "radius": [
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 14.0,
-      "y": 253.0,
-      "w": 402.0,
-      "h": 91.0,
-      "type": "rect",
-      "fill": "#FFFFFFD9",
-      "stroke": {
-        "color": "#E2E8F0F2",
-        "width": 1.0
-      },
-      "radius": [
-        20.0,
-        20.0,
-        20.0,
-        20.0
-      ]
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 29.0,
-      "y": 268.0,
-      "w": 38.0,
-      "h": 38.0,
-      "type": "rect",
-      "fill": "#06B6D424",
-      "stroke": {
-        "color": "#06B6D44D",
-        "width": 1.0
-      },
-      "radius": [
-        11.0,
-        11.0,
-        11.0,
-        11.0
-      ]
-    },
-    {
       "name": "RichText",
-      "x": 39.0,
-      "y": 278.0,
-      "w": 18.0,
-      "h": 18.0,
+      "x": 18.0,
+      "y": 224.0,
+      "w": 387.0,
+      "h": 20.0,
       "type": "text",
-      "text": "",
+      "text": "Approvals",
       "lines": [
         {
-          "text": "",
+          "text": "Approvals",
           "x": 0.0,
-          "top": 0.0
+          "top": 0.5
         }
       ],
       "align": "start",
       "dir": "ltr",
       "font": {
-        "family": "packages/lucide_icons_flutter/Lucide",
-        "fallback": [],
-        "size": 18.0,
+        "family": "HankenGrotesk",
+        "fallback": [
+          "Tajawal",
+          "IBMPlexSansArabic"
+        ],
+        "size": 13.0,
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 18.0,
-        "color": "#06B6D4FF"
+        "lineHeight": 19.5,
+        "color": "#636A80FF"
       }
     },
     {
+      "name": "DecoratedBox",
+      "x": 405.0,
+      "y": 230.5,
+      "w": 7.0,
+      "h": 7.0,
+      "type": "rect",
+      "fill": "#8B5CF6FF",
+      "radius": "circle"
+    },
+    {
+      "name": "DecoratedBox",
+      "x": 18.0,
+      "y": 259.0,
+      "w": 394.0,
+      "h": 128.0,
+      "type": "rect",
+      "stroke": {
+        "color": "#EEEEF1FF",
+        "top": 0.0,
+        "right": 0.0,
+        "bottom": 1.0,
+        "left": 0.0
+      },
+      "radius": 0
+    },
+    {
       "name": "RichText",
-      "x": 79.0,
-      "y": 268.0,
-      "w": 281.56,
-      "h": 20.0,
+      "x": 18.0,
+      "y": 267.0,
+      "w": 316.0,
+      "h": 42.0,
       "type": "text",
       "text": "Stock reconciliation finished",
       "lines": [
         {
-          "text": "Stock reconciliation finished",
+          "text": "Stock reconciliation ",
           "x": 0.0,
-          "top": -0.02
+          "top": 0.0
+        },
+        {
+          "text": "finished",
+          "x": 0.0,
+          "top": 21.0
         }
       ],
       "align": "start",
       "dir": "ltr",
-      "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
@@ -598,67 +316,29 @@
         "weight": 700,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 20.02,
-        "color": "#0F172AFF"
+        "lineHeight": 21.0,
+        "color": "#111111FF"
       }
     },
     {
       "name": "RichText",
-      "x": 368.56,
-      "y": 270.0,
-      "w": 32.44,
-      "h": 16.0,
+      "x": 334.0,
+      "y": 267.0,
+      "w": 78.0,
+      "h": 20.0,
       "type": "text",
       "text": "Aug 11",
       "lines": [
         {
           "text": "Aug 11",
           "x": 0.0,
-          "top": 0.05
+          "top": 0.5
         }
       ],
       "align": "start",
       "dir": "ltr",
-      "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
-        "fallback": [
-          "Tajawal",
-          "IBMPlexSansArabic"
-        ],
-        "size": 11.0,
-        "weight": 700,
-        "italic": false,
-        "letterSpacing": 0.0,
-        "lineHeight": 15.95,
-        "color": "#64748BFF"
-      }
-    },
-    {
-      "name": "RichText",
-      "x": 79.0,
-      "y": 291.0,
-      "w": 322.0,
-      "h": 38.0,
-      "type": "text",
-      "text": "11 SKUs need review before the count can be posted.",
-      "lines": [
-        {
-          "text": "11 SKUs need review before the count can be ",
-          "x": 0.0,
-          "top": 0.15
-        },
-        {
-          "text": "posted.",
-          "x": 0.0,
-          "top": 19.15
-        }
-      ],
-      "align": "start",
-      "dir": "ltr",
-      "maxLines": 3,
-      "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
@@ -667,111 +347,154 @@
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 18.85,
-        "color": "#64748BFF"
+        "lineHeight": 19.5,
+        "color": "#636A80FF"
       }
     },
     {
-      "name": "PhysicalModel",
-      "x": 14.0,
-      "y": 352.0,
-      "w": 402.0,
-      "h": 72.0,
-      "type": "rect",
-      "fill": "#00000000",
-      "radius": [
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 14.0,
-      "y": 352.0,
-      "w": 402.0,
-      "h": 72.0,
-      "type": "rect",
-      "fill": "#FFFFFFD9",
-      "stroke": {
-        "color": "#E2E8F0F2",
-        "width": 1.0
-      },
-      "radius": [
-        20.0,
-        20.0,
-        20.0,
-        20.0
-      ]
-    },
-    {
-      "name": "DecoratedBox",
-      "x": 29.0,
-      "y": 367.0,
-      "w": 38.0,
-      "h": 38.0,
-      "type": "rect",
-      "fill": "#EF444424",
-      "stroke": {
-        "color": "#EF44444D",
-        "width": 1.0
-      },
-      "radius": [
-        11.0,
-        11.0,
-        11.0,
-        11.0
-      ]
+      "name": "RichText",
+      "x": 18.0,
+      "y": 313.0,
+      "w": 394.0,
+      "h": 34.0,
+      "type": "text",
+      "text": "11 SKUs need review before the count can be posted.",
+      "lines": [
+        {
+          "text": "11 SKUs need review before the ",
+          "x": 0.0,
+          "top": 0.1
+        },
+        {
+          "text": "count can be posted.",
+          "x": 0.0,
+          "top": 17.1
+        }
+      ],
+      "align": "start",
+      "dir": "ltr",
+      "maxLines": 2,
+      "font": {
+        "family": "HankenGrotesk",
+        "fallback": [
+          "Tajawal",
+          "IBMPlexSansArabic"
+        ],
+        "size": 13.0,
+        "weight": 400,
+        "italic": false,
+        "letterSpacing": 0.0,
+        "lineHeight": 16.9,
+        "color": "#7D8190FF"
+      }
     },
     {
       "name": "RichText",
-      "x": 39.0,
-      "y": 377.0,
-      "w": 18.0,
-      "h": 18.0,
+      "x": 18.0,
+      "y": 352.0,
+      "w": 387.0,
+      "h": 20.0,
       "type": "text",
-      "text": "",
+      "text": "Automation",
       "lines": [
         {
-          "text": "",
+          "text": "Automation",
           "x": 0.0,
-          "top": 0.0
+          "top": 0.5
         }
       ],
       "align": "start",
       "dir": "ltr",
       "font": {
-        "family": "packages/lucide_icons_flutter/Lucide",
-        "fallback": [],
-        "size": 18.0,
+        "family": "HankenGrotesk",
+        "fallback": [
+          "Tajawal",
+          "IBMPlexSansArabic"
+        ],
+        "size": 13.0,
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 18.0,
-        "color": "#EF4444FF"
+        "lineHeight": 19.5,
+        "color": "#636A80FF"
       }
     },
     {
+      "name": "DecoratedBox",
+      "x": 405.0,
+      "y": 358.5,
+      "w": 7.0,
+      "h": 7.0,
+      "type": "rect",
+      "fill": "#8B5CF6FF",
+      "radius": "circle"
+    },
+    {
       "name": "RichText",
-      "x": 79.0,
-      "y": 367.0,
-      "w": 278.99,
+      "x": 18.0,
+      "y": 401.0,
+      "w": 394.0,
       "h": 20.0,
+      "type": "text",
+      "text": "10 August 2026",
+      "lines": [
+        {
+          "text": "10 August 2026",
+          "x": 0.0,
+          "top": 0.5
+        }
+      ],
+      "align": "start",
+      "dir": "ltr",
+      "font": {
+        "family": "HankenGrotesk",
+        "fallback": [
+          "Tajawal",
+          "IBMPlexSansArabic"
+        ],
+        "size": 13.0,
+        "weight": 400,
+        "italic": false,
+        "letterSpacing": 0.0,
+        "lineHeight": 19.5,
+        "color": "#7D8190FF"
+      }
+    },
+    {
+      "name": "DecoratedBox",
+      "x": 18.0,
+      "y": 431.0,
+      "w": 394.0,
+      "h": 107.0,
+      "type": "rect",
+      "stroke": {
+        "color": "#EEEEF1FF",
+        "top": 0.0,
+        "right": 0.0,
+        "bottom": 1.0,
+        "left": 0.0
+      },
+      "radius": 0
+    },
+    {
+      "name": "RichText",
+      "x": 18.0,
+      "y": 439.0,
+      "w": 316.0,
+      "h": 21.0,
       "type": "text",
       "text": "Daily quota at 80%",
       "lines": [
         {
           "text": "Daily quota at 80%",
           "x": 0.0,
-          "top": -0.02
+          "top": 0.0
         }
       ],
       "align": "start",
       "dir": "ltr",
-      "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
@@ -780,62 +503,29 @@
         "weight": 700,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 20.02,
-        "color": "#0F172AFF"
+        "lineHeight": 21.0,
+        "color": "#111111FF"
       }
     },
     {
       "name": "RichText",
-      "x": 365.99,
-      "y": 369.0,
-      "w": 35.01,
-      "h": 16.0,
+      "x": 334.0,
+      "y": 439.0,
+      "w": 78.0,
+      "h": 20.0,
       "type": "text",
       "text": "Aug 10",
       "lines": [
         {
           "text": "Aug 10",
           "x": 0.0,
-          "top": 0.05
+          "top": 0.5
         }
       ],
       "align": "start",
       "dir": "ltr",
-      "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
-        "fallback": [
-          "Tajawal",
-          "IBMPlexSansArabic"
-        ],
-        "size": 11.0,
-        "weight": 700,
-        "italic": false,
-        "letterSpacing": 0.0,
-        "lineHeight": 15.95,
-        "color": "#64748BFF"
-      }
-    },
-    {
-      "name": "RichText",
-      "x": 79.0,
-      "y": 390.0,
-      "w": 293.77,
-      "h": 19.0,
-      "type": "text",
-      "text": "You have used 8,000 of 10,000 requests today.",
-      "lines": [
-        {
-          "text": "You have used 8,000 of 10,000 requests today.",
-          "x": 0.0,
-          "top": 0.15
-        }
-      ],
-      "align": "start",
-      "dir": "ltr",
-      "maxLines": 3,
-      "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
@@ -844,87 +534,76 @@
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 18.85,
-        "color": "#64748BFF"
+        "lineHeight": 19.5,
+        "color": "#636A80FF"
       }
     },
     {
-      "name": "PhysicalShape",
-      "x": 0.0,
-      "y": 0.0,
-      "w": 430.0,
-      "h": 60.0,
-      "type": "rect",
-      "fill": "#FFFFFFF5",
-      "radius": 0
-    },
-    {
       "name": "RichText",
-      "x": 16.0,
-      "y": 20.0,
-      "w": 97.14,
-      "h": 20.0,
+      "x": 18.0,
+      "y": 464.0,
+      "w": 394.0,
+      "h": 34.0,
       "type": "text",
-      "text": "Notifications",
+      "text": "You have used 8,000 of 10,000 requests today.",
       "lines": [
         {
-          "text": "Notifications",
+          "text": "You have used 8,000 of 10,000 ",
           "x": 0.0,
-          "top": -0.42
+          "top": 0.1
+        },
+        {
+          "text": "requests today.",
+          "x": 0.0,
+          "top": 17.1
         }
       ],
       "align": "start",
       "dir": "ltr",
+      "maxLines": 2,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 16.0,
-        "weight": 800,
+        "size": 13.0,
+        "weight": 400,
         "italic": false,
-        "letterSpacing": -0.2,
-        "lineHeight": null,
-        "color": "#0F172AFF"
+        "letterSpacing": 0.0,
+        "lineHeight": 16.9,
+        "color": "#7D8190FF"
       }
     },
     {
-      "name": "PhysicalShape",
-      "x": 386.0,
-      "y": 10.0,
-      "w": 40.0,
-      "h": 40.0,
-      "type": "rect",
-      "fill": "#00000000",
-      "radius": 0
-    },
-    {
       "name": "RichText",
-      "x": 395.0,
-      "y": 19.0,
-      "w": 22.0,
-      "h": 22.0,
+      "x": 18.0,
+      "y": 503.0,
+      "w": 394.0,
+      "h": 20.0,
       "type": "text",
-      "text": "",
+      "text": "Usage",
       "lines": [
         {
-          "text": "",
+          "text": "Usage",
           "x": 0.0,
-          "top": 0.0
+          "top": 0.5
         }
       ],
       "align": "start",
       "dir": "ltr",
       "font": {
-        "family": "packages/lucide_icons_flutter/Lucide",
-        "fallback": [],
-        "size": 22.0,
+        "family": "HankenGrotesk",
+        "fallback": [
+          "Tajawal",
+          "IBMPlexSansArabic"
+        ],
+        "size": 13.0,
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 22.0,
-        "color": "#0F172AFF"
+        "lineHeight": 19.5,
+        "color": "#636A80FF"
       }
     }
   ],

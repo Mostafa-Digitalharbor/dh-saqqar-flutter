@@ -37,7 +37,7 @@
       "x": 14.0,
       "y": 74.0,
       "w": 402.0,
-      "h": 89.0,
+      "h": 92.0,
       "type": "rect",
       "fill": "#FFFFFFD9",
       "stroke": {
@@ -54,7 +54,7 @@
     {
       "name": "DecoratedBox",
       "x": 29.0,
-      "y": 99.5,
+      "y": 101.0,
       "w": 38.0,
       "h": 38.0,
       "type": "rect",
@@ -73,7 +73,7 @@
     {
       "name": "RichText",
       "x": 38.5,
-      "y": 109.0,
+      "y": 110.5,
       "w": 19.0,
       "h": 19.0,
       "type": "text",
@@ -102,101 +102,101 @@
       "name": "RichText",
       "x": 79.0,
       "y": 89.0,
-      "w": 132.68,
-      "h": 20.0,
+      "w": 266.0,
+      "h": 21.0,
       "type": "text",
       "text": "Android · v1.0.22+23",
       "lines": [
         {
           "text": "Android · v1.0.22+23",
           "x": 0.0,
-          "top": -0.02
+          "top": -0.45
         }
       ],
       "align": "start",
       "dir": "ltr",
       "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 14.0,
+        "size": 15.0,
         "weight": 700,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 20.02,
+        "lineHeight": 21.45,
         "color": "#0F172AFF"
       }
     },
     {
       "name": "RichText",
       "x": 79.0,
-      "y": 111.0,
-      "w": 193.87,
-      "h": 19.0,
+      "y": 112.0,
+      "w": 266.0,
+      "h": 20.0,
       "type": "text",
       "text": "fcm-token-abcdef0123456789",
       "lines": [
         {
           "text": "fcm-token-abcdef0123456789",
           "x": 0.0,
-          "top": 0.15
+          "top": -0.3
         }
       ],
       "align": "start",
       "dir": "ltr",
       "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 13.0,
+        "size": 14.0,
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 18.85,
+        "lineHeight": 20.3,
         "color": "#64748BFF"
       }
     },
     {
       "name": "RichText",
       "x": 79.0,
-      "y": 132.0,
-      "w": 93.46,
-      "h": 16.0,
+      "y": 134.0,
+      "w": 216.0,
+      "h": 17.0,
       "type": "text",
       "text": "Last active Aug 11",
       "lines": [
         {
           "text": "Last active Aug 11",
           "x": 0.0,
-          "top": 0.05
+          "top": -0.4
         }
       ],
       "align": "start",
       "dir": "ltr",
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 11.0,
+        "size": 12.0,
         "weight": 700,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 15.95,
+        "lineHeight": 17.4,
         "color": "#64748BFF"
       }
     },
     {
       "name": "PhysicalShape",
       "x": 357.0,
-      "y": 98.5,
+      "y": 100.0,
       "w": 40.0,
       "h": 40.0,
       "type": "rect",
@@ -206,7 +206,7 @@
     {
       "name": "RichText",
       "x": 367.0,
-      "y": 108.5,
+      "y": 110.0,
       "w": 20.0,
       "h": 20.0,
       "type": "text",
@@ -234,9 +234,9 @@
     {
       "name": "DecoratedBox",
       "x": 14.0,
-      "y": 171.0,
+      "y": 174.0,
       "w": 402.0,
-      "h": 89.0,
+      "h": 92.0,
       "type": "rect",
       "fill": "#FFFFFFD9",
       "stroke": {
@@ -253,7 +253,7 @@
     {
       "name": "DecoratedBox",
       "x": 29.0,
-      "y": 196.5,
+      "y": 201.0,
       "w": 38.0,
       "h": 38.0,
       "type": "rect",
@@ -272,7 +272,7 @@
     {
       "name": "RichText",
       "x": 38.5,
-      "y": 206.0,
+      "y": 210.5,
       "w": 19.0,
       "h": 19.0,
       "type": "text",
@@ -300,102 +300,102 @@
     {
       "name": "RichText",
       "x": 79.0,
-      "y": 186.0,
-      "w": 101.58,
-      "h": 20.0,
+      "y": 189.0,
+      "w": 240.0,
+      "h": 21.0,
       "type": "text",
       "text": "iOS · v1.0.22+23",
       "lines": [
         {
           "text": "iOS · v1.0.22+23",
           "x": 0.0,
-          "top": -0.02
+          "top": -0.45
         }
       ],
       "align": "start",
       "dir": "ltr",
       "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 14.0,
+        "size": 15.0,
         "weight": 700,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 20.02,
+        "lineHeight": 21.45,
         "color": "#0F172AFF"
       }
     },
     {
       "name": "RichText",
       "x": 79.0,
-      "y": 208.0,
-      "w": 200.65,
-      "h": 19.0,
+      "y": 212.0,
+      "w": 266.0,
+      "h": 20.0,
       "type": "text",
       "text": "apns-token-9f8e7d6c5b4a3210",
       "lines": [
         {
           "text": "apns-token-9f8e7d6c5b4a3210",
           "x": 0.0,
-          "top": 0.15
+          "top": -0.3
         }
       ],
       "align": "start",
       "dir": "ltr",
       "maxLines": 1,
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 13.0,
+        "size": 14.0,
         "weight": 400,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 18.85,
+        "lineHeight": 20.3,
         "color": "#64748BFF"
       }
     },
     {
       "name": "RichText",
       "x": 79.0,
-      "y": 229.0,
-      "w": 93.46,
-      "h": 16.0,
+      "y": 234.0,
+      "w": 216.0,
+      "h": 17.0,
       "type": "text",
       "text": "Last active Aug 11",
       "lines": [
         {
           "text": "Last active Aug 11",
           "x": 0.0,
-          "top": 0.05
+          "top": -0.4
         }
       ],
       "align": "start",
       "dir": "ltr",
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 11.0,
+        "size": 12.0,
         "weight": 700,
         "italic": false,
         "letterSpacing": 0.0,
-        "lineHeight": 15.95,
+        "lineHeight": 17.4,
         "color": "#64748BFF"
       }
     },
     {
       "name": "PhysicalShape",
       "x": 357.0,
-      "y": 195.5,
+      "y": 200.0,
       "w": 40.0,
       "h": 40.0,
       "type": "rect",
@@ -405,7 +405,7 @@
     {
       "name": "RichText",
       "x": 367.0,
-      "y": 205.5,
+      "y": 210.0,
       "w": 20.0,
       "h": 20.0,
       "type": "text",
@@ -443,27 +443,27 @@
     {
       "name": "RichText",
       "x": 16.0,
-      "y": 20.0,
-      "w": 58.41,
-      "h": 20.0,
+      "y": 21.5,
+      "w": 117.6,
+      "h": 17.0,
       "type": "text",
       "text": "Devices",
       "lines": [
         {
           "text": "Devices",
           "x": 0.0,
-          "top": -0.42
+          "top": 0.0
         }
       ],
       "align": "start",
       "dir": "ltr",
       "font": {
-        "family": "SpaceGrotesk",
+        "family": "HankenGrotesk",
         "fallback": [
           "Tajawal",
           "IBMPlexSansArabic"
         ],
-        "size": 16.0,
+        "size": 17.0,
         "weight": 800,
         "italic": false,
         "letterSpacing": -0.2,
