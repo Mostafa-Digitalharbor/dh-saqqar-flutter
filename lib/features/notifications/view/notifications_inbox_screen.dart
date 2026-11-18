@@ -12,6 +12,7 @@ import '../../../core/i18n/app_date_format.dart';
 import '../../../core/constants/asset_paths.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/fig_metrics.dart';
 
 /// In-app notifications inbox, restyled to the Figma "Notification" frames:
 /// white page, centred title, grouped rows with a category caption and a
@@ -91,7 +92,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.figWhite,
         body: SafeArea(
           child: Column(
             children: [
@@ -103,7 +104,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                     SizedBox(
                       width: 52,
                       child: FigBackButton(
-                        color: Colors.black,
+                        color: AppColors.figBlack,
                         onTap: () => context.canPop()
                             ? context.pop()
                             : context.go(RouteNames.homePath),
@@ -113,11 +114,11 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                       child: Center(
                         child: Text(
                           context.tr.figNotification,
-                          style: Fig.t(context, size: 22, color: Fig.inkPlain),
+                          style: Fig.t(context, size: AppFontSizes.headlineLarge, color: Fig.inkPlain),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 60),
+                    const SizedBox(width: AppSpacing.s60),
                   ],
                 ),
               ),
@@ -125,19 +126,19 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                 child: items.isEmpty
                     ? _Empty()
                     : ListView(
-                        padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.s18, AppSpacing.s8, AppSpacing.s18, AppSpacing.s24),
                         children: [
                           for (final g in _group(context, items)) ...[
                             Padding(
                               padding: const EdgeInsets.only(
-                                top: 14,
-                                bottom: 10,
+                                top: AppSpacing.s14,
+                                bottom: AppSpacing.s10,
                               ),
                               child: Text(
                                 g.$1,
                                 style: Fig.t(
                                   context,
-                                  size: 10.5,
+                                  size: FigMetrics.fontFig10U5,
                                   color: Fig.mutedLight,
                                 ),
                               ),
@@ -191,10 +192,10 @@ class _Row extends StatelessWidget {
       key: ValueKey(n.id),
       onDismissed: (_) => onDismiss(),
       background: Container(
-        color: const Color(0xFFF3F3F5),
+        color: AppColors.figCFFF3F3F5,
         alignment: AlignmentDirectional.centerEnd,
         padding: const EdgeInsets.only(right: AppSpacing.s16),
-        child: const Icon(LucideIcons.trash2, color: Fig.dangerText, size: 20),
+        child: const Icon(LucideIcons.trash2, color: Fig.dangerText, size: AppIconSizes.action),
       ),
       child: InkWell(
         onTap: onOpen,
@@ -204,7 +205,7 @@ class _Row extends StatelessWidget {
             bottom: AppSpacing.s14,
           ),
           decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Color(0xFFEEEEF1))),
+            border: Border(bottom: BorderSide(color: AppColors.figCFFEEEEF1)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,7 +218,7 @@ class _Row extends StatelessWidget {
                       n.title,
                       style: Fig.t(
                         context,
-                        size: 13,
+                        size: AppFontSizes.caption,
                         weight: FontWeight.w700,
                         color: Fig.inkPlain,
                       ),
@@ -225,7 +226,7 @@ class _Row extends StatelessWidget {
                   ),
                   Text(
                     ago,
-                    style: Fig.t(context, size: 9, color: Fig.mutedCool),
+                    style: Fig.t(context, size: FigMetrics.fontFig9, color: Fig.mutedCool),
                   ),
                 ],
               ),
@@ -236,9 +237,9 @@ class _Row extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Fig.t(
                   context,
-                  size: 11,
+                  size: FigMetrics.fontFig11,
                   color: Fig.mutedLight,
-                  height: 1.3,
+                  height: AppLineHeights.snug,
                 ),
               ),
               const SizedBox(height: AppSpacing.s5),
@@ -247,13 +248,12 @@ class _Row extends StatelessWidget {
                   Expanded(
                     child: Text(
                       category,
-                      style: Fig.t(context, size: 9, color: Fig.mutedCool),
+                      style: Fig.t(context, size: FigMetrics.fontFig9, color: Fig.mutedCool),
                     ),
                   ),
                   if (unread)
                     Container(
-                      width: 7,
-                      height: 7,
+                      width: FigMetrics.size7, height: FigMetrics.size7,
                       decoration: const BoxDecoration(
                         color: AppColors.brandPurple,
                         shape: BoxShape.circle,
@@ -274,7 +274,7 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 40),
+        padding: const EdgeInsets.only(bottom: AppSpacing.s40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -286,7 +286,7 @@ class _Empty extends StatelessWidget {
             const SizedBox(height: AppSpacing.s18),
             Text(
               context.tr.figNoNotificationsYet,
-              style: Fig.t(context, size: 21, color: Fig.navy),
+              style: Fig.t(context, size: FigMetrics.fontFig21, color: Fig.navy),
             ),
             const SizedBox(height: AppSpacing.s10),
             Padding(
@@ -296,9 +296,9 @@ class _Empty extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Fig.t(
                   context,
-                  size: 12.5,
-                  color: const Color(0xFF656B80),
-                  height: 1.4,
+                  size: AppFontSizes.metaLine,
+                  color: AppColors.figCFF656B80,
+                  height: AppLineHeights.compact,
                 ),
               ),
             ),

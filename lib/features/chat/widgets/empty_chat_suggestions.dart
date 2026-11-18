@@ -4,6 +4,8 @@ import '../../../shared/fig/fig.dart';
 import '../../home/home_screen.dart' show Orb;
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Empty-chat surface: the orb and the centred "Hello `<name>` — How can i help
 /// you today?" greeting. [onSuggestionTap] is kept for call-site stability;
@@ -29,7 +31,7 @@ class EmptyChatSuggestions extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Orb(size: 74),
+            const Orb(size: FigMetrics.iconFig74),
             const SizedBox(height: AppSpacing.s26),
             Text(
               user.isEmpty
@@ -38,9 +40,9 @@ class EmptyChatSuggestions extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Fig.t(
                 context,
-                size: 36,
-                color: Colors.white,
-                height: 1.08,
+                size: FigMetrics.fontFig36,
+                color: AppColors.figWhite,
+                height: FigMetrics.lhFig108,
               ),
             ),
           ],

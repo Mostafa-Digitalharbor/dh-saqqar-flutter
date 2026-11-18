@@ -20,6 +20,9 @@ import '../../inbox/view/artifact_details_sheet.dart';
 import '../view/attachment_viewer_screen.dart';
 import '../view_model/chat_cubit.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 part 'chat_rail_drawer_approvals.dart';
 part 'chat_rail_drawer_files.dart';
 part 'chat_rail_drawer_activity.dart';
@@ -196,16 +199,16 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
       color: Colors.transparent,
       child: DecoratedBox(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.figWhite,
           borderRadius: BorderRadiusDirectional.only(
-            topStart: Radius.circular(40),
-            bottomStart: Radius.circular(40),
+            topStart: Radius.circular(FigMetrics.radFig40),
+            bottomStart: Radius.circular(FigMetrics.radFig40),
           ),
           boxShadow: [
             BoxShadow(
               color: Fig.drawerShadow,
-              blurRadius: 40,
-              offset: Offset(0, 16),
+              blurRadius: FigMetrics.blur40,
+              offset: FigOffsets.oU0U16,
             ),
           ],
         ),
@@ -214,7 +217,7 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s20, AppSpacing.s16, AppSpacing.s12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -226,7 +229,7 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
                             context.tr.figWorkspace,
                             style: Fig.t(
                               context,
-                              size: 24,
+                              size: AppFontSizes.avatarInitialLarge,
                               weight: FontWeight.w700,
                               color: Fig.navy,
                             ),
@@ -251,7 +254,7 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Fig.t(context, size: 12.5, color: Fig.muted),
+                            style: Fig.t(context, size: AppFontSizes.metaLine, color: Fig.muted),
                           ),
                         ],
                       ),
@@ -261,15 +264,14 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
                       child: Tooltip(
                         message: context.tr.close,
                         child: Container(
-                          width: 44,
-                          height: 44,
+                          width: FigMetrics.size44, height: FigMetrics.size44,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: Fig.hairline),
                           ),
                           child: const Icon(
                             LucideIcons.x,
-                            size: 19,
+                            size: AppIconSizes.bell,
                             color: Fig.navy,
                           ),
                         ),
@@ -291,10 +293,10 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
                   dividerColor: Colors.transparent,
                   labelStyle: Fig.t(
                     context,
-                    size: 14.5,
+                    size: AppFontSizes.cardTitle,
                     weight: FontWeight.w600,
                   ),
-                  unselectedLabelStyle: Fig.t(context, size: 14.5),
+                  unselectedLabelStyle: Fig.t(context, size: AppFontSizes.cardTitle),
                   tabs: [for (final t in tabs) Tab(height: 44, text: t)],
                 ),
               ),
@@ -346,8 +348,8 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
 // Tabs
 // ─────────────────────────────────────────────────────────────────────────
 
-const _statusPending = Color(0xFFD9962B);
-const _statusApproved = Color(0xFF1F9D63);
+const _statusPending = AppColors.figCFFD9962B;
+const _statusApproved = AppColors.figCFF1F9D63;
 const _statusRejected = Fig.dangerText;
 
 String _initials(String text) {
@@ -365,14 +367,14 @@ String _initials(String text) {
 }
 
 const _avatarPalette = [
-  Color(0xFF5B3E8B),
-  Color(0xFF1F6B6B),
-  Color(0xFF2A5598),
-  Color(0xFF7A5230),
+  AppColors.figCFF5B3E8B,
+  AppColors.figCFF1F6B6B,
+  AppColors.figCFF2A5598,
+  AppColors.figCFF7A5230,
 ];
 
 class _Avatar extends StatelessWidget {
-  const _Avatar(this.label, {this.size = 24});
+  const _Avatar(this.label, {this.size = FigMetrics.size24});
   final String label;
   final double size;
 
@@ -392,7 +394,7 @@ class _Avatar extends StatelessWidget {
           context,
           size: size * 0.42,
           weight: FontWeight.w600,
-          color: Colors.white,
+          color: AppColors.figWhite,
         ),
       ),
     );
@@ -441,14 +443,13 @@ class _EmptyTab extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: FigMetrics.size56, height: FigMetrics.size56,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Fig.tintBlue,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.bubble),
                     ),
-                    child: Icon(icon, color: Fig.blue, size: 24),
+                    child: Icon(icon, color: Fig.blue, size: AppIconSizes.back),
                   ),
                   const SizedBox(height: AppSpacing.s14),
                   Text(
@@ -456,7 +457,7 @@ class _EmptyTab extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Fig.t(
                       context,
-                      size: 15,
+                      size: AppFontSizes.body,
                       weight: FontWeight.w600,
                       color: Fig.navy,
                     ),
@@ -465,7 +466,7 @@ class _EmptyTab extends StatelessWidget {
                   Text(
                     body,
                     textAlign: TextAlign.center,
-                    style: Fig.t(context, size: 13, color: Fig.muted),
+                    style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
                   ),
                 ],
               ),

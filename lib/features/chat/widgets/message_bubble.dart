@@ -22,6 +22,9 @@ import 'attachment_chip.dart';
 import 'chat_markdown.dart';
 import '../../../shared/widgets/sheet_action_row.dart';
 import '../../../core/constants/asset_paths.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Spec §8 — two distinct render paths for one message:
 ///
@@ -68,15 +71,15 @@ class _UserBubble extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsetsDirectional.only(
-            end: 46,
+            end: AppSpacing.s46,
             bottom: AppSpacing.s4,
           ),
           child: Text(
             context.tr.youLabel,
             style: Fig.t(
               context,
-              size: 10,
-              color: Colors.white.withValues(alpha: 0.8),
+              size: FigMetrics.fontFig10,
+              color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
             ),
           ),
         ),
@@ -90,16 +93,16 @@ class _UserBubble extends StatelessWidget {
                 onLongPress: () => _showMessageActions(context, message),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 11,
+                    horizontal: AppSpacing.s14,
+                    vertical: AppSpacing.s11,
                   ),
                   decoration: const BoxDecoration(
-                    color: Color(0xFF2373E9),
+                    color: AppColors.figCFF2373E9,
                     borderRadius: BorderRadiusDirectional.only(
-                      topStart: Radius.circular(16),
-                      bottomStart: Radius.circular(16),
-                      bottomEnd: Radius.circular(16),
-                      topEnd: Radius.circular(4),
+                      topStart: Radius.circular(AppRadius.bubble),
+                      bottomStart: Radius.circular(AppRadius.bubble),
+                      bottomEnd: Radius.circular(AppRadius.bubble),
+                      topEnd: Radius.circular(AppRadius.badge),
                     ),
                   ),
                   child: Column(
@@ -119,8 +122,7 @@ class _UserBubble extends StatelessWidget {
             ClipOval(
               child: Image.asset(
                 AssetPaths.avatar,
-                width: 36,
-                height: 36,
+                width: FigMetrics.size36, height: FigMetrics.size36,
                 fit: BoxFit.cover,
               ),
             ),
@@ -149,8 +151,7 @@ class _AgentMessage extends StatelessWidget {
           ClipOval(
             child: Image.asset(
               AssetPaths.orb,
-              width: 36,
-              height: 36,
+              width: FigMetrics.size36, height: FigMetrics.size36,
               fit: BoxFit.cover,
             ),
           ),
@@ -165,9 +166,9 @@ class _AgentMessage extends StatelessWidget {
                     context.tr.figSaqqarAssistant,
                     style: Fig.t(
                       context,
-                      size: 10,
+                      size: FigMetrics.fontFig10,
                       weight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                     ),
                   ),
                 ),
@@ -199,19 +200,19 @@ class _AgentMessage extends StatelessWidget {
                 ],
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 11,
+                    horizontal: AppSpacing.s14,
+                    vertical: AppSpacing.s11,
                   ),
                   decoration: BoxDecoration(
-                    color: Fig.navyDeep.withValues(alpha: 0.9),
+                    color: Fig.navyDeep.withValues(alpha: AppAlphas.a90),
                     borderRadius: const BorderRadiusDirectional.only(
-                      topStart: Radius.circular(4),
-                      topEnd: Radius.circular(16),
-                      bottomStart: Radius.circular(16),
-                      bottomEnd: Radius.circular(16),
+                      topStart: Radius.circular(AppRadius.badge),
+                      topEnd: Radius.circular(AppRadius.bubble),
+                      bottomStart: Radius.circular(AppRadius.bubble),
+                      bottomEnd: Radius.circular(AppRadius.bubble),
                     ),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.07),
+                      color: AppColors.figWhite.withValues(alpha: AppAlphas.a07),
                     ),
                   ),
                   child: Column(

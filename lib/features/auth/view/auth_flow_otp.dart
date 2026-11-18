@@ -93,8 +93,8 @@ class _OtpPageState extends State<_OtpPage> {
           context.tr.figOtp,
           style: Fig.t(
             context,
-            size: 16,
-            color: const Color(0xFF5A6590),
+            size: AppFontSizes.reading,
+            color: AppColors.figCFF5A6590,
             weight: FontWeight.w700,
           ),
         ),
@@ -145,13 +145,13 @@ class _OtpPageState extends State<_OtpPage> {
             padding: const EdgeInsets.only(top: AppSpacing.s8),
             child: Text(
               context.tr.figOtpNotCorrect,
-              style: Fig.t(context, size: 13, color: Fig.dangerText),
+              style: Fig.t(context, size: AppFontSizes.caption, color: Fig.dangerText),
             ),
           ),
         Align(
           alignment: AlignmentDirectional.centerEnd,
           child: Padding(
-            padding: EdgeInsets.only(top: wrong ? 0 : 8),
+            padding: EdgeInsets.only(top: wrong ? 0 : AppSpacing.s8),
             child: GestureDetector(
               onTap: _remaining > 0
                   ? null
@@ -165,10 +165,10 @@ class _OtpPageState extends State<_OtpPage> {
                     : context.tr.figResendCode,
                 style: Fig.t(
                   context,
-                  size: 13,
+                  size: AppFontSizes.caption,
                   color: _remaining > 0
-                      ? const Color(0xFF5A66A8)
-                      : const Color(0xFF3B4A9E),
+                      ? AppColors.figCFF5A66A8
+                      : AppColors.figCFF3B4A9E,
                 ),
               ).withUnderline(),
             ),
@@ -204,23 +204,23 @@ class _OtpBox extends StatelessWidget {
     final border = error
         ? Fig.danger
         : active
-        ? const Color(0xFF6A7BC8)
-        : const Color(0xFFA9B6E6);
+        ? AppColors.figCFF6A7BC8
+        : AppColors.figCFFA9B6E6;
     return Container(
       width: width,
       height: 52,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border, width: 1.4),
+        color: AppColors.figWhite.withValues(alpha: AppAlphas.a28),
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        border: Border.all(color: border, width: AppBorderWidths.medium),
       ),
       child: char.isNotEmpty
           ? Text(
               char,
               style: Fig.t(
                 context,
-                size: 20,
+                size: AppFontSizes.crashTitle,
                 color: Fig.navy,
                 weight: FontWeight.w600,
               ),

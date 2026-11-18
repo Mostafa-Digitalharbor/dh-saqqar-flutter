@@ -17,6 +17,9 @@ import '../view_model/auth_flow_cubit.dart';
 import '../../../core/constants/asset_paths.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_colors.dart';
 part 'auth_flow_signin.dart';
 part 'auth_flow_signup.dart';
 part 'auth_flow_otp.dart';
@@ -171,7 +174,7 @@ class AuthFrame extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.fromLTRB(hPad, 26, hPad, 24),
+              padding: EdgeInsets.fromLTRB(hPad, AppSpacing.s26, hPad, AppSpacing.s24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -182,7 +185,7 @@ class AuthFrame extends StatelessWidget {
                       children: [
                         if (onBack != null)
                           Transform.translate(
-                            offset: const Offset(-10, 0),
+                            offset: FigOffsets.oUn10U0,
                             child: FigBackButton(onTap: onBack),
                           )
                         else
@@ -201,10 +204,10 @@ class AuthFrame extends StatelessWidget {
                     title,
                     style: Fig.t(
                       context,
-                      size: 32,
-                      color: Colors.white,
-                      height: 1.17,
-                      letterSpacing: -0.2,
+                      size: FigMetrics.fontFig32,
+                      color: AppColors.figWhite,
+                      height: FigMetrics.lhFig117,
+                      letterSpacing: AppLetterSpacing.heading,
                     ),
                   ),
                   SizedBox(height: subtitleGap),
@@ -216,12 +219,12 @@ class AuthFrame extends StatelessWidget {
                     style:
                         Fig.t(
                           context,
-                          size: 14,
-                          color: Colors.white,
-                          height: 1.3,
+                          size: AppFontSizes.dense,
+                          color: AppColors.figWhite,
+                          height: AppLineHeights.snug,
                         ).copyWith(
                           shadows: const [
-                            Shadow(color: Fig.shadowInk, blurRadius: 6),
+                            Shadow(color: Fig.shadowInk, blurRadius: FigMetrics.blur6),
                           ],
                         ),
                   ),
@@ -236,7 +239,7 @@ class AuthFrame extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: AppSpacing.s14),
               child: Text(
                 footer!,
-                style: Fig.t(context, size: 10, color: Fig.muted),
+                style: Fig.t(context, size: FigMetrics.fontFig10, color: Fig.muted),
               ),
             ),
         ],
@@ -255,8 +258,8 @@ class _ProgressBar extends StatelessWidget {
     return Container(
       height: 6,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(3),
+        color: AppColors.figWhite.withValues(alpha: AppAlphas.a85),
+        borderRadius: BorderRadius.circular(FigMetrics.radFig3),
       ),
       alignment: AlignmentDirectional.centerStart,
       child: FractionallySizedBox(
@@ -264,7 +267,7 @@ class _ProgressBar extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: Fig.blueStrong,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(FigMetrics.radFig3),
           ),
         ),
       ),
@@ -304,3 +307,16 @@ extension on Text {
 // ─────────────────────────────────────────────────────────────────────────
 // Reset password
 // ─────────────────────────────────────────────────────────────────────────
+
+/// Runs [onEdit] when the text in [controller] actually changes (not on a
+/// cursor move or a tap), so a field's validation message can disappear as soon
+/// as the user starts fixing it instead of lingering — and contradicting what
+/// is now typed — until the next submit.
+void _watchEdits(TextEditingController controller, VoidCallback onEdit) {
+  var last = controller.text;
+  controller.addListener(() {
+    if (controller.text == last) return;
+    last = controller.text;
+    onEdit();
+  });
+}

@@ -29,7 +29,7 @@ class _ApprovalsTab extends StatelessWidget {
         .where((a) => a.status == inbox_api.ApprovalStatus.pending)
         .length;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s14, AppSpacing.s16, AppSpacing.s24),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s12),
@@ -38,12 +38,12 @@ class _ApprovalsTab extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.tr.figRequests,
-                  style: Fig.t(context, size: 13, color: Fig.muted),
+                  style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
                 ),
               ),
               Text(
                 context.tr.figNeedsYourReview(needs),
-                style: Fig.t(context, size: 13, color: Fig.muted),
+                style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
               ),
             ],
           ),
@@ -62,7 +62,7 @@ class _ApprovalsTab extends StatelessWidget {
             company.isEmpty
                 ? context.tr.figRequestsSharedInChats
                 : context.tr.figRequestsSharedInChats2(company),
-            style: Fig.t(context, size: 12.5, color: Fig.muted),
+            style: Fig.t(context, size: AppFontSizes.metaLine, color: Fig.muted),
           ),
         ),
       ],
@@ -105,10 +105,10 @@ class _ApprovalCard extends StatelessWidget {
         : '${AppDateFormat.date(context, a.createdAt!)} · ${AppDateFormat.time(context, a.createdAt!)}';
     final model = adapted.payload['model'] ?? '';
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.s14, AppSpacing.s12, AppSpacing.s14, AppSpacing.s12),
       decoration: BoxDecoration(
-        color: const Color(0xFFDFE2EE),
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.figCFFDFE2EE,
+        borderRadius: BorderRadius.circular(AppRadius.modal),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,19 +120,18 @@ class _ApprovalCard extends StatelessWidget {
                   model.isEmpty ? a.actionType.wire : model,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Fig.t(context, size: 12, color: Fig.muted),
+                  style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.muted),
                 ),
               ),
               Container(
-                width: 7,
-                height: 7,
+                width: FigMetrics.size7, height: FigMetrics.size7,
                 decoration: BoxDecoration(color: tone, shape: BoxShape.circle),
               ),
               const SizedBox(width: AppSpacing.s6),
               Flexible(
                 child: Text(
                   word,
-                  style: Fig.t(context, size: 12, color: tone),
+                  style: Fig.t(context, size: AppFontSizes.microCaps, color: tone),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -146,7 +145,7 @@ class _ApprovalCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Fig.t(
               context,
-              size: 17,
+              size: AppFontSizes.markdownH2,
               weight: FontWeight.w700,
               color: Fig.navy,
             ),
@@ -163,7 +162,7 @@ class _ApprovalCard extends StatelessWidget {
                       who,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Fig.t(context, size: 13, color: Fig.navy),
+                      style: Fig.t(context, size: AppFontSizes.caption, color: Fig.navy),
                     ),
                   ),
                 ],
@@ -171,7 +170,7 @@ class _ApprovalCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     when,
-                    style: Fig.t(context, size: 12, color: Fig.muted),
+                    style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.muted),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -185,7 +184,7 @@ class _ApprovalCard extends StatelessWidget {
               a.prompt,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: Fig.t(context, size: 13, color: Fig.muted),
+              style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
             ),
           ],
           if (a.status == inbox_api.ApprovalStatus.pending) ...[
@@ -197,7 +196,7 @@ class _ApprovalCard extends StatelessWidget {
                     context.tr.figViewDetails,
                     style: Fig.t(
                       context,
-                      size: 13,
+                      size: AppFontSizes.caption,
                       weight: FontWeight.w600,
                       color: Fig.blue,
                     ),
@@ -212,12 +211,12 @@ class _ApprovalCard extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE9EBF3),
-                      borderRadius: BorderRadius.circular(17),
+                      color: AppColors.figCFFE9EBF3,
+                      borderRadius: BorderRadius.circular(FigMetrics.radFig17),
                     ),
                     child: Text(
                       context.tr.figReject,
-                      style: Fig.t(context, size: 13, color: Fig.dangerText),
+                      style: Fig.t(context, size: AppFontSizes.caption, color: Fig.dangerText),
                     ),
                   ),
                 ),
@@ -234,15 +233,15 @@ class _ApprovalCard extends StatelessWidget {
                       gradient: const LinearGradient(
                         colors: [Fig.blueTop, Fig.blueBottom],
                       ),
-                      borderRadius: BorderRadius.circular(17),
+                      borderRadius: BorderRadius.circular(FigMetrics.radFig17),
                     ),
                     child: Text(
                       context.tr.figApprove,
                       style: Fig.t(
                         context,
-                        size: 13,
+                        size: AppFontSizes.caption,
                         weight: FontWeight.w600,
-                        color: Colors.white,
+                        color: AppColors.figWhite,
                       ),
                     ),
                   ),
@@ -255,7 +254,7 @@ class _ApprovalCard extends StatelessWidget {
               context.tr.figViewDetails,
               style: Fig.t(
                 context,
-                size: 13,
+                size: AppFontSizes.caption,
                 weight: FontWeight.w600,
                 color: Fig.blue,
               ),

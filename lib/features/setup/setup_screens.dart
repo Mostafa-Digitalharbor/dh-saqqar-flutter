@@ -17,6 +17,9 @@ import '../../core/network/api_error_mapper.dart';
 import '../../shared/widgets/app_toast.dart';
 import '../../core/constants/ui_strings.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/fig_metrics.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Wizard step 1 — "What is the name of your company?".
 class CompanyNameScreen extends StatefulWidget {
@@ -261,7 +264,7 @@ class _ConnectEnvironmentScreenState extends State<ConnectEnvironmentScreen> {
               const SizedBox(height: AppSpacing.s18),
               Text(
                 context.tr.figEnvironmentType,
-                style: Fig.t(context, size: 15, color: Fig.navyText),
+                style: Fig.t(context, size: AppFontSizes.body, color: Fig.navyText),
               ),
               const SizedBox(height: AppSpacing.s8),
               EnvTypePicker(
@@ -311,7 +314,7 @@ class _ConnectEnvironmentScreenState extends State<ConnectEnvironmentScreen> {
               const SizedBox(height: AppSpacing.s18),
               Text(
                 context.tr.figAuthentication,
-                style: Fig.t(context, size: 15, color: Fig.navyText),
+                style: Fig.t(context, size: AppFontSizes.body, color: Fig.navyText),
               ),
               const SizedBox(height: AppSpacing.s8),
               FigDropdown(
@@ -394,18 +397,18 @@ class EnvTypePicker extends StatelessWidget {
                 onTap: () => onChanged(it.$1),
                 child: Container(
                   width: 114,
-                  padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.s12, AppSpacing.s10, AppSpacing.s10, AppSpacing.s10),
                   decoration: BoxDecoration(
                     color: dark
-                        ? Colors.white.withValues(alpha: 0.04)
-                        : Colors.white.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(16),
+                        ? AppColors.figWhite.withValues(alpha: AppAlphas.a04)
+                        : AppColors.figWhite.withValues(alpha: AppAlphas.a40),
+                    borderRadius: BorderRadius.circular(AppRadius.bubble),
                     border: Border.all(
                       color: value == it.$1
-                          ? (dark ? Fig.blueSoft : const Color(0xFF5878E8))
+                          ? (dark ? Fig.blueSoft : AppColors.figCFF5878E8)
                           : (dark
-                                ? Colors.white.withValues(alpha: 0.12)
-                                : const Color(0xFFD6DCF3)),
+                                ? AppColors.figWhite.withValues(alpha: AppAlphas.a12)
+                                : AppColors.figCFFD6DCF3),
                       width: value == it.$1 ? 1.4 : 1,
                     ),
                   ),
@@ -424,9 +427,9 @@ class EnvTypePicker extends StatelessWidget {
                                 maxLines: 1,
                                 style: Fig.t(
                                   context,
-                                  size: 12,
+                                  size: AppFontSizes.microCaps,
                                   color: dark
-                                      ? Colors.white.withValues(alpha: 0.8)
+                                      ? AppColors.figWhite.withValues(alpha: AppAlphas.a80)
                                       : Fig.muted,
                                 ),
                               ),
@@ -443,8 +446,8 @@ class EnvTypePicker extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Fig.t(
                           context,
-                          size: 11,
-                          color: dark ? Colors.white : Fig.mutedSoft,
+                          size: FigMetrics.fontFig11,
+                          color: dark ? AppColors.figWhite : Fig.mutedSoft,
                         ),
                       ),
                     ],
@@ -467,20 +470,18 @@ class _Radio extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 16,
-      height: 16,
+      width: FigMetrics.size16, height: FigMetrics.size16,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
           color: selected ? Fig.blueFocus : (dark ? Colors.white30 : Fig.muted),
-          width: 1.2,
+          width: FigMetrics.bwFig1U2,
         ),
       ),
       child: selected
           ? Center(
               child: Container(
-                width: 8,
-                height: 8,
+                width: FigMetrics.size8, height: FigMetrics.size8,
                 decoration: const BoxDecoration(
                   color: Fig.blueFocus,
                   shape: BoxShape.circle,
@@ -509,18 +510,18 @@ class ConnectionTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget tab(IconData? icon, String label, bool active, VoidCallback tap) {
       final c = active
-          ? (dark ? Colors.white : Fig.navy)
+          ? (dark ? AppColors.figWhite : Fig.navy)
           : (dark ? Colors.white54 : Fig.mutedSoft);
       return GestureDetector(
         onTap: tap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(8, 4, 12, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s8, AppSpacing.s4, AppSpacing.s12, AppSpacing.s8),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
                 color: active ? Fig.blueStrong : Colors.transparent,
-                width: 2,
+                width: AppBorderWidths.ring,
               ),
             ),
           ),
@@ -528,7 +529,7 @@ class ConnectionTabs extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 14, color: c),
+                Icon(icon, size: AppIconSizes.compact, color: c),
                 const SizedBox(width: AppSpacing.s6),
               ],
               Flexible(
@@ -536,7 +537,7 @@ class ConnectionTabs extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Fig.t(context, size: 10, color: c),
+                  style: Fig.t(context, size: FigMetrics.fontFig10, color: c),
                 ),
               ),
             ],
@@ -549,7 +550,7 @@ class ConnectionTabs extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: dark ? Colors.white12 : const Color(0xFFD9DEEE),
+            color: dark ? Colors.white12 : AppColors.figCFFD9DEEE,
           ),
         ),
       ),
@@ -620,8 +621,8 @@ class FigDropdown extends StatelessWidget {
           color: filled
               ? Fig.panelTint
               : (dark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.white.withValues(alpha: 0.34)),
+                    ? AppColors.figWhite.withValues(alpha: AppAlphas.a05)
+                    : AppColors.figWhite.withValues(alpha: AppAlphas.a34)),
           borderRadius: BorderRadius.circular(height / 2),
           border: Border.all(
             color: filled
@@ -638,15 +639,15 @@ class FigDropdown extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Fig.t(
                   context,
-                  size: 13,
-                  color: dark ? Colors.white : Fig.muted,
+                  size: AppFontSizes.caption,
+                  color: dark ? AppColors.figWhite : Fig.muted,
                 ),
               ),
             ),
             Icon(
               AppIcons.chevronDown,
-              size: 20,
-              color: dark ? Colors.white : Fig.tileText,
+              size: AppIconSizes.action,
+              color: dark ? AppColors.figWhite : Fig.tileText,
             ),
           ],
         ),
@@ -664,7 +665,7 @@ void showProcessingDialog(BuildContext context, String company) {
       child: FigNotchSheet(
         onClose: () {},
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 36),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s24, 0, AppSpacing.s24, AppSpacing.s36),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -676,12 +677,12 @@ void showProcessingDialog(BuildContext context, String company) {
               const SizedBox(height: AppSpacing.s14),
               Text(
                 context.tr.figProcessing,
-                style: Fig.t(context, size: 30, color: Fig.inkDeep),
+                style: Fig.t(context, size: FigMetrics.fontFig30, color: Fig.inkDeep),
               ),
               const SizedBox(height: AppSpacing.s6),
               Text.rich(
                 TextSpan(
-                  style: Fig.t(context, size: 13, color: Fig.tileText),
+                  style: Fig.t(context, size: AppFontSizes.caption, color: Fig.tileText),
                   children: [
                     TextSpan(text: context.tr.figYour2),
                     TextSpan(

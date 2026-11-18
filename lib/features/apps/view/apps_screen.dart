@@ -17,6 +17,9 @@ import '../data/apps_api.dart';
 import '../view_model/apps_cubit.dart';
 import '../widgets/app_launch_dialog.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Saqqar Apps gallery in the redesigned look: dark header, group chips,
 /// glass search and white package cards with a "Set up →" affordance.
@@ -78,9 +81,9 @@ class _AppsScreenState extends State<AppsScreen> {
   }
 
   static const _tints = [
-    (Color(0xFFE2EAFB), Fig.blueSoft),
-    (Color(0xFFE2F5EF), Color(0xFF1FA37A)),
-    (Color(0xFFFBEFE0), Color(0xFFB8741A)),
+    (AppColors.figCFFE2EAFB, Fig.blueSoft),
+    (AppColors.figCFFE2F5EF, AppColors.figCFF1FA37A),
+    (AppColors.figCFFFBEFE0, AppColors.figCFFB8741A),
   ];
 
   IconData _icon(SaqqarApp a) {
@@ -140,7 +143,7 @@ class _AppsScreenState extends State<AppsScreen> {
                         onRefresh: () => context.read<AppsCubit>().refresh(),
                         child: ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 140),
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.s24, 0, AppSpacing.s24, AppSpacing.s140),
                           children: [
                             if (widget.workspace)
                               Padding(
@@ -151,7 +154,7 @@ class _AppsScreenState extends State<AppsScreen> {
                                 child: Align(
                                   alignment: AlignmentDirectional.centerStart,
                                   child: Transform.translate(
-                                    offset: const Offset(-12, 0),
+                                    offset: FigOffsets.oUn12U0,
                                     child: FigBackButton(
                                       onTap: () => context.canPop()
                                           ? context.pop()
@@ -161,14 +164,14 @@ class _AppsScreenState extends State<AppsScreen> {
                                 ),
                               )
                             else
-                              const SizedBox(height: 54),
+                              const SizedBox(height: AppSpacing.s54),
                             if (widget.workspace)
                               Text(
                                 context.tr.figWorkspace2,
                                 style: Fig.t(
                                   context,
-                                  size: 9,
-                                  color: Colors.white.withValues(alpha: 0.8),
+                                  size: FigMetrics.fontFig9,
+                                  color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                                 ),
                               ),
                             Text(
@@ -181,8 +184,8 @@ class _AppsScreenState extends State<AppsScreen> {
                                 weight: widget.workspace
                                     ? FontWeight.w600
                                     : FontWeight.w700,
-                                color: Colors.white,
-                                height: 1.2,
+                                color: AppColors.figWhite,
+                                height: AppLineHeights.heading,
                               ),
                             ),
                             if (!widget.workspace) ...[
@@ -190,8 +193,8 @@ class _AppsScreenState extends State<AppsScreen> {
                                 context.tr.figReadyMadeSaqqarAgentsForCommon,
                                 style: Fig.t(
                                   context,
-                                  size: 9.5,
-                                  color: Colors.white.withValues(alpha: 0.8),
+                                  size: FigMetrics.fontFig9U5,
+                                  color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.s18),
@@ -229,20 +232,20 @@ class _AppsScreenState extends State<AppsScreen> {
                             if (state is DataLoading<List<SaqqarApp>> &&
                                 apps.isEmpty)
                               const Padding(
-                                padding: EdgeInsets.only(top: 60),
+                                padding: EdgeInsets.only(top: AppSpacing.s60),
                                 child: Center(
                                   child: CircularProgressIndicator(),
                                 ),
                               )
                             else if (visible.isEmpty)
                               Padding(
-                                padding: const EdgeInsets.only(top: 50),
+                                padding: const EdgeInsets.only(top: AppSpacing.s50),
                                 child: Center(
                                   child: Text(
                                     tr.appsEmptyTitle,
                                     style: Fig.t(
                                       context,
-                                      size: 14,
+                                      size: AppFontSizes.dense,
                                       color: Fig.muted,
                                     ),
                                   ),
@@ -267,7 +270,7 @@ class _AppsScreenState extends State<AppsScreen> {
               if (_launchingSlug != null)
                 Positioned.fill(
                   child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.35),
+                    color: AppColors.figBlack.withValues(alpha: AppAlphas.a35),
                     child: const Center(child: CircularProgressIndicator()),
                   ),
                 ),
@@ -296,16 +299,16 @@ class _Chip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: active ? null : const Color(0xFFE4E6EE),
+            color: active ? null : AppColors.figCFFE4E6EE,
             gradient: active ? Fig.primaryGradient : null,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.modal),
           ),
           child: Text(
             label,
             style: Fig.t(
               context,
-              size: 12.5,
-              color: active ? Colors.white : const Color(0xFF4A4F63),
+              size: AppFontSizes.metaLine,
+              color: active ? AppColors.figWhite : AppColors.figCFF4A4F63,
             ),
           ),
         ),
@@ -326,24 +329,24 @@ class _SearchPill extends StatelessWidget {
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s18),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.24),
-        borderRadius: BorderRadius.circular(27),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+        color: AppColors.figBlack.withValues(alpha: FigMetrics.alphaA24),
+        borderRadius: BorderRadius.circular(FigMetrics.radFig27),
+        border: Border.all(color: AppColors.figWhite.withValues(alpha: AppAlphas.a30)),
       ),
       child: Row(
         children: [
           Icon(
             LucideIcons.search,
-            size: 18,
-            color: Colors.white.withValues(alpha: 0.85),
+            size: AppIconSizes.regular,
+            color: AppColors.figWhite.withValues(alpha: AppAlphas.a85),
           ),
           const SizedBox(width: AppSpacing.s12),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
-              cursorColor: Colors.white,
-              style: Fig.t(context, size: 14, color: Colors.white),
+              cursorColor: AppColors.figWhite,
+              style: Fig.t(context, size: AppFontSizes.dense, color: AppColors.figWhite),
               decoration: InputDecoration(
                 isCollapsed: true,
                 border: InputBorder.none,
@@ -353,8 +356,8 @@ class _SearchPill extends StatelessWidget {
                 hintText: context.tr.figSearch,
                 hintStyle: Fig.t(
                   context,
-                  size: 14,
-                  color: Colors.white.withValues(alpha: 0.92),
+                  size: AppFontSizes.dense,
+                  color: AppColors.figWhite.withValues(alpha: AppAlphas.a92),
                 ),
               ),
             ),
@@ -387,16 +390,16 @@ class _AppCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(18, 18, 20, 14),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s18, AppSpacing.s18, AppSpacing.s20, AppSpacing.s14),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: const Color(0xFFE3E7F4)),
+            color: AppColors.figWhite,
+            borderRadius: BorderRadius.circular(FigMetrics.radFig30),
+            border: Border.all(color: AppColors.figCFFE3E7F4),
             boxShadow: [
               BoxShadow(
-                color: Fig.slate.withValues(alpha: 0.10),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+                color: Fig.slate.withValues(alpha: AppAlphas.a10),
+                blurRadius: FigMetrics.blur16,
+                offset: FigOffsets.oU0U6,
               ),
             ],
           ),
@@ -407,13 +410,12 @@ class _AppCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: FigMetrics.size44, height: FigMetrics.size44,
                     decoration: BoxDecoration(
                       color: tint.$1,
-                      borderRadius: BorderRadius.circular(13),
+                      borderRadius: BorderRadius.circular(FigMetrics.radFig13),
                     ),
-                    child: Icon(icon, size: 20, color: tint.$2),
+                    child: Icon(icon, size: AppIconSizes.action, color: tint.$2),
                   ),
                   const SizedBox(width: AppSpacing.s14),
                   Expanded(
@@ -424,7 +426,7 @@ class _AppCard extends StatelessWidget {
                           title,
                           style: Fig.t(
                             context,
-                            size: 13,
+                            size: AppFontSizes.caption,
                             weight: FontWeight.w700,
                             color: Fig.ink,
                           ),
@@ -434,9 +436,9 @@ class _AppCard extends StatelessWidget {
                           body,
                           style: Fig.t(
                             context,
-                            size: 12.5,
+                            size: AppFontSizes.metaLine,
                             color: Fig.mutedGrey,
-                            height: 1.3,
+                            height: AppLineHeights.snug,
                           ),
                         ),
                       ],
@@ -455,7 +457,7 @@ class _AppCard extends StatelessWidget {
                         context.tr.figSetUp,
                         style: Fig.t(
                           context,
-                          size: 9.5,
+                          size: FigMetrics.fontFig9U5,
                           weight: FontWeight.w700,
                           color: Fig.blue,
                         ),
@@ -468,7 +470,7 @@ class _AppCard extends StatelessWidget {
                       Directionality.of(context) == TextDirection.rtl
                           ? LucideIcons.arrowLeft
                           : LucideIcons.arrowRight,
-                      size: 13,
+                      size: AppIconSizes.dense,
                       color: Fig.blue,
                     ),
                   ],

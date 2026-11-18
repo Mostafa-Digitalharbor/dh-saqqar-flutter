@@ -281,10 +281,12 @@ void main() {
     final gaps = <String>[];
     for (final base in pluralBases.toList()..sort()) {
       for (final c in pluralCategories) {
-        if (!enSet.contains('${base}_$c'))
+        if (!enSet.contains('${base}_$c')) {
           gaps.add('_en is missing ${base}_$c');
-        if (!arSet.contains('${base}_$c'))
+        }
+        if (!arSet.contains('${base}_$c')) {
           gaps.add('_ar is missing ${base}_$c');
+        }
       }
     }
     expect(gaps, isEmpty, reason: gaps.join('\n'));

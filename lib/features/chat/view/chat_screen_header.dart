@@ -12,7 +12,7 @@ extension _ChatHeader on _ChatScreenState {
     required int pending,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 36, 14, 0),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.s14, AppSpacing.s36, AppSpacing.s14, 0),
       child: Row(
         children: [
           GestureDetector(
@@ -22,9 +22,8 @@ extension _ChatHeader on _ChatScreenState {
               _railOpen = false;
             }),
             child: const SizedBox(
-              width: 48,
-              height: 48,
-              child: Icon(LucideIcons.menu, color: Colors.white, size: 24),
+              width: FigMetrics.size48, height: FigMetrics.size48,
+              child: Icon(LucideIcons.menu, color: AppColors.figWhite, size: AppIconSizes.back),
             ),
           ),
           Expanded(
@@ -52,34 +51,31 @@ extension _ChatHeader on _ChatScreenState {
               _sidebarOpen = false;
             }),
             child: SizedBox(
-              width: 48,
-              height: 48,
+              width: FigMetrics.size48, height: FigMetrics.size48,
               child: Stack(
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 30,
-                    height: 30,
+                    width: FigMetrics.size30, height: FigMetrics.size30,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white, width: 1.6),
+                      borderRadius: BorderRadius.circular(AppRadius.tight),
+                      border: Border.all(color: AppColors.figWhite, width: FigMetrics.bwFig1U6),
                     ),
                     child: const Icon(
                       LucideIcons.layoutPanelLeft,
-                      size: 17,
-                      color: Colors.white,
+                      size: AppIconSizes.listMark,
+                      color: AppColors.figWhite,
                     ),
                   ),
                   if (pending > 0)
                     Positioned(
-                      top: 4,
-                      right: 2,
+                      top: AppSpacing.s4,
+                      right: AppSpacing.s2,
                       child: Container(
-                        width: 10,
-                        height: 10,
+                        width: FigMetrics.size10, height: FigMetrics.size10,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFFF5A4D),
+                          color: AppColors.figCFFFF5A4D,
                           shape: BoxShape.circle,
                         ),
                       ),

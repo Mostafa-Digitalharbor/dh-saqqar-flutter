@@ -92,7 +92,7 @@ class _ChangePasswordState extends State<_ChangePassword> {
       children: [
         Text(
           context.tr.figUseAtLeast8CharactersYou,
-          style: Fig.t(context, size: 11, color: Fig.muted, height: 1.35),
+          style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.muted, height: AppLineHeights.label),
         ),
         _f(context.tr.figCurrentPassword, '••••••••', _current, _curErr),
         _f(
@@ -111,7 +111,7 @@ class _ChangePasswordState extends State<_ChangePassword> {
         FigButton(
           label: context.tr.figUpdatePassword,
           height: 48,
-          fontSize: 15,
+          fontSize: AppFontSizes.body,
           loading: _busy,
           onPressed: _submit,
         ),
@@ -127,7 +127,7 @@ class _PasswordChanged extends StatelessWidget {
   Widget build(BuildContext context) {
     return FigNotchSheet(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.s24, 0, AppSpacing.s24, AppSpacing.s28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -138,12 +138,12 @@ class _PasswordChanged extends StatelessWidget {
             ),
             Text(
               context.tr.figPasswordChanged,
-              style: Fig.t(context, size: 29, color: Fig.inkDeep),
+              style: Fig.t(context, size: FigMetrics.fontFig29, color: Fig.inkDeep),
             ),
             const SizedBox(height: AppSpacing.s8),
             Text.rich(
               TextSpan(
-                style: Fig.t(context, size: 13, color: Fig.tileText),
+                style: Fig.t(context, size: AppFontSizes.caption, color: Fig.tileText),
                 children: [
                   TextSpan(text: context.tr.figYour),
                   TextSpan(

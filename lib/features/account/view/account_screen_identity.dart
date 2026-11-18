@@ -20,16 +20,15 @@ class _IdentityCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.s16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(26),
+          color: AppColors.figWhite,
+          borderRadius: BorderRadius.circular(AppRadius.heroPlate),
         ),
         child: Row(
           children: [
             ClipOval(
               child: Image.asset(
                 AssetPaths.avatar,
-                width: 66,
-                height: 66,
+                width: FigMetrics.size66, height: FigMetrics.size66,
                 fit: BoxFit.cover,
               ),
             ),
@@ -44,7 +43,7 @@ class _IdentityCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: Fig.t(
                       context,
-                      size: 20,
+                      size: AppFontSizes.crashTitle,
                       weight: FontWeight.w600,
                       color: Fig.inkDeep,
                     ),
@@ -54,25 +53,25 @@ class _IdentityCard extends StatelessWidget {
                     email,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Fig.t(context, size: 11.5, color: Fig.muted),
+                    style: Fig.t(context, size: FigMetrics.fontFig11U5, color: Fig.muted),
                   ),
                   const SizedBox(height: AppSpacing.s8),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 6,
+                      horizontal: AppSpacing.s18,
+                      vertical: AppSpacing.s6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF414A9E),
-                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.figCFF414A9E,
+                      borderRadius: BorderRadius.circular(AppRadius.input),
                     ),
                     child: Text(
                       plan,
                       style: Fig.t(
                         context,
-                        size: 11,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
+                        size: FigMetrics.fontFig11,
+                        color: AppColors.figWhite,
+                        letterSpacing: AppLetterSpacing.tight,
                       ),
                     ),
                   ),
@@ -96,11 +95,11 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        constraints: const BoxConstraints(minHeight: 68),
-        padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+        constraints: const BoxConstraints(minHeight: FigMetrics.boxMInHU68),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.s10, AppSpacing.s8, AppSpacing.s4, AppSpacing.s8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(18),
+          color: AppColors.figWhite.withValues(alpha: AppAlphas.a90),
+          borderRadius: BorderRadius.circular(AppRadius.modal),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +109,7 @@ class _Stat extends StatelessWidget {
               '$value',
               style: Fig.t(
                 context,
-                size: 22,
+                size: AppFontSizes.headlineLarge,
                 weight: FontWeight.w700,
                 color: Fig.inkDeep,
               ),
@@ -119,7 +118,7 @@ class _Stat extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Fig.t(context, size: 9.5, color: const Color(0xFF5E6478)),
+              style: Fig.t(context, size: FigMetrics.fontFig9U5, color: AppColors.figCFF5E6478),
             ),
           ],
         ),

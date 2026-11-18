@@ -59,7 +59,7 @@ class _ResetEmailPageState extends State<_ResetEmailPage> {
           autofillHints: const [AutofillHints.email],
           onSubmitted: (_) => _submit(),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: AppSpacing.s40),
         FigButton(
           label: context.tr.figReset,
           loading: loading,
@@ -81,6 +81,17 @@ class _NewPasswordPageState extends State<_NewPasswordPage> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   String? _pErr, _cErr;
+
+  @override
+  void initState() {
+    super.initState();
+    _watchEdits(_password, () {
+      if (mounted) setState(() => _pErr = null);
+    });
+    _watchEdits(_confirm, () {
+      if (mounted) setState(() => _cErr = null);
+    });
+  }
 
   @override
   void dispose() {

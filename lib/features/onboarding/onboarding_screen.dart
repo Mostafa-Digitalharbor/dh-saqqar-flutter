@@ -7,6 +7,9 @@ import '../../shared/fig/fig.dart';
 import 'onboarding_flag.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/fig_metrics.dart';
+import '../../core/theme/app_colors.dart';
 
 /// First-run welcome: gradient backdrop, the "+3.28% / +12.76%" growth line,
 /// the big three-line promise and the Get started pill.
@@ -35,7 +38,7 @@ class OnboardingScreen extends StatelessWidget {
               SafeArea(
                 child: LayoutBuilder(
                   builder: (context, box) => SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.s24, 0, AppSpacing.s24, AppSpacing.s14),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                         minHeight: box.maxHeight - 14,
@@ -50,8 +53,8 @@ class OnboardingScreen extends StatelessWidget {
                               context,
                               size: box.maxHeight < 700 ? 48 : 66,
                               color: Fig.inkDeep,
-                              height: 1.04,
-                              letterSpacing: -1.4,
+                              height: FigMetrics.lhFig104,
+                              letterSpacing: FigMetrics.lsFign1U4,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.s18),
@@ -59,16 +62,16 @@ class OnboardingScreen extends StatelessWidget {
                             context.tr.figSaqqarUnderstandsYourOdooBusinessData,
                             style: Fig.t(
                               context,
-                              size: 14,
-                              color: const Color(0xFF3D4054),
-                              height: 1.4,
+                              size: AppFontSizes.dense,
+                              color: AppColors.figCFF3D4054,
+                              height: AppLineHeights.compact,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.s28),
                           FigButton(
                             label: context.tr.figGetStarted,
                             height: 57,
-                            fontSize: 17,
+                            fontSize: AppFontSizes.markdownH2,
                             weight: FontWeight.w500,
                             onPressed:
                                 onStart ??
@@ -110,13 +113,13 @@ class _GrowthLine extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: const Color(0xFF2F5FEA),
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.figCFF2F5FEA,
+              borderRadius: BorderRadius.circular(AppRadius.card),
             ),
             child: Text(
               text,
               textDirection: TextDirection.ltr,
-              style: Fig.t(context, size: 12, color: Colors.white),
+              style: Fig.t(context, size: AppFontSizes.microCaps, color: AppColors.figWhite),
             ),
           ),
         );
@@ -172,7 +175,7 @@ class _CurvePainter extends CustomPainter {
       path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
     }
     final line = Paint()
-      ..color = Colors.white
+      ..color = AppColors.figWhite
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.4
       ..strokeCap = StrokeCap.round;
@@ -186,9 +189,9 @@ class _CurvePainter extends CustomPainter {
       canvas.drawCircle(
         d,
         14,
-        Paint()..color = Colors.white.withValues(alpha: 0.35),
+        Paint()..color = AppColors.figWhite.withValues(alpha: AppAlphas.a35),
       );
-      canvas.drawCircle(d, 7.5, Paint()..color = Colors.white);
+      canvas.drawCircle(d, 7.5, Paint()..color = AppColors.figWhite);
     }
   }
 

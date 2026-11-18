@@ -17,6 +17,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/fig/fig.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../core/theme/fig_metrics.dart';
 
 /// What the viewer can render natively. Anything outside this set is a
 /// hand-off, not a failure — see [_UnsupportedBody].
@@ -489,15 +490,15 @@ class _ImageViewerState extends State<_ImageViewer> {
 
   @override
   Widget build(BuildContext context) {
-    const white = Colors.white;
+    const white = AppColors.figWhite;
     return Scaffold(
-      backgroundColor: const Color(0xFF07080C),
+      backgroundColor: AppColors.figCFF07080C,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s20, AppSpacing.s14, AppSpacing.s20, 0),
               child: Row(
                 children: [
                   GestureDetector(
@@ -505,15 +506,14 @@ class _ImageViewerState extends State<_ImageViewer> {
                     child: Tooltip(
                       message: context.tr.viewerOpenExternally,
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: FigMetrics.size36, height: FigMetrics.size36,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: white, width: 1.5),
+                          borderRadius: BorderRadius.circular(AppRadius.small),
+                          border: Border.all(color: white, width: AppBorderWidths.thick),
                         ),
                         child: const Icon(
                           LucideIcons.arrowDownToLine,
-                          size: 18,
+                          size: AppIconSizes.regular,
                           color: white,
                         ),
                       ),
@@ -525,7 +525,7 @@ class _ImageViewerState extends State<_ImageViewer> {
                         context.tr.fig1Of1,
                         style: Fig.t(
                           context,
-                          size: 15,
+                          size: AppFontSizes.body,
                           weight: FontWeight.w600,
                           color: white,
                         ),
@@ -537,9 +537,8 @@ class _ImageViewerState extends State<_ImageViewer> {
                     child: Tooltip(
                       message: context.tr.close,
                       child: const SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: Icon(LucideIcons.x, size: 24, color: white),
+                        width: FigMetrics.size36, height: FigMetrics.size36,
+                        child: Icon(LucideIcons.x, size: AppIconSizes.back, color: white),
                       ),
                     ),
                   ),
@@ -547,7 +546,7 @@ class _ImageViewerState extends State<_ImageViewer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 30, 24, 0),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s24, AppSpacing.s30, AppSpacing.s24, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -557,7 +556,7 @@ class _ImageViewerState extends State<_ImageViewer> {
                     overflow: TextOverflow.ellipsis,
                     style: Fig.t(
                       context,
-                      size: 20,
+                      size: AppFontSizes.crashTitle,
                       weight: FontWeight.w500,
                       color: white,
                     ),
@@ -570,8 +569,8 @@ class _ImageViewerState extends State<_ImageViewer> {
                       overflow: TextOverflow.ellipsis,
                       style: Fig.t(
                         context,
-                        size: 12.5,
-                        color: white.withValues(alpha: 0.5),
+                        size: AppFontSizes.metaLine,
+                        color: white.withValues(alpha: AppAlphas.a50),
                       ),
                     ),
                   ],
@@ -605,7 +604,7 @@ class _ImageViewerState extends State<_ImageViewer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s24, AppSpacing.s22, AppSpacing.s24, 0),
               child: Row(
                 children: [
                   const _RoundGhost(icon: LucideIcons.arrowLeftToLine),
@@ -613,11 +612,11 @@ class _ImageViewerState extends State<_ImageViewer> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(LucideIcons.zoomIn, size: 20, color: white),
+                        const Icon(LucideIcons.zoomIn, size: AppIconSizes.action, color: white),
                         const SizedBox(width: AppSpacing.s8),
                         Text(
                           '$_zoomPct%',
-                          style: Fig.t(context, size: 15, color: white),
+                          style: Fig.t(context, size: AppFontSizes.body, color: white),
                         ),
                       ],
                     ),
@@ -630,15 +629,14 @@ class _ImageViewerState extends State<_ImageViewer> {
               padding: const EdgeInsets.only(top: AppSpacing.s22),
               child: Center(
                 child: Container(
-                  width: 54,
-                  height: 46,
+                  width: FigMetrics.size54, height: FigMetrics.size46,
                   padding: const EdgeInsets.all(AppSpacing.s2),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Fig.blueBright, width: 2),
+                    borderRadius: BorderRadius.circular(AppRadius.small),
+                    border: Border.all(color: Fig.blueBright, width: AppBorderWidths.ring),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(7),
+                    borderRadius: BorderRadius.circular(AppRadius.checkbox),
                     child: Image.file(
                       widget.file,
                       fit: BoxFit.cover,
@@ -650,7 +648,7 @@ class _ImageViewerState extends State<_ImageViewer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s24, AppSpacing.s28, AppSpacing.s24, AppSpacing.s22),
               child: Column(
                 children: [
                   Text(
@@ -658,8 +656,8 @@ class _ImageViewerState extends State<_ImageViewer> {
                     textAlign: TextAlign.center,
                     style: Fig.t(
                       context,
-                      size: 12,
-                      color: white.withValues(alpha: 0.5),
+                      size: AppFontSizes.microCaps,
+                      color: white.withValues(alpha: AppAlphas.a50),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s4),
@@ -668,8 +666,8 @@ class _ImageViewerState extends State<_ImageViewer> {
                     textAlign: TextAlign.center,
                     style: Fig.t(
                       context,
-                      size: 12,
-                      color: const Color(0xFF6F7FB0),
+                      size: AppFontSizes.microCaps,
+                      color: AppColors.figCFF6F7FB0,
                     ),
                   ),
                 ],
@@ -689,13 +687,12 @@ class _RoundGhost extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 40,
-      height: 40,
+      width: FigMetrics.size40, height: FigMetrics.size40,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: AppColors.figWhite.withValues(alpha: AppAlphas.a08),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, size: 18, color: Colors.white.withValues(alpha: 0.4)),
+      child: Icon(icon, size: AppIconSizes.regular, color: AppColors.figWhite.withValues(alpha: AppAlphas.a40)),
     );
   }
 }

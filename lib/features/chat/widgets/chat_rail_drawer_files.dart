@@ -56,27 +56,27 @@ class _FilesTab extends StatelessWidget {
         )
         .toList();
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s16, AppSpacing.s16, AppSpacing.s24),
       children: [
         Container(
           height: 40,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: Fig.hairline),
           ),
           child: Row(
             children: [
-              const Icon(LucideIcons.search, size: 17, color: Fig.muted),
+              const Icon(LucideIcons.search, size: AppIconSizes.listMark, color: Fig.muted),
               const SizedBox(width: AppSpacing.s10),
               Expanded(
                 child: TextField(
                   controller: search,
                   onChanged: (_) => onSearch(),
-                  style: Fig.t(context, size: 13, color: Fig.navy),
+                  style: Fig.t(context, size: AppFontSizes.caption, color: Fig.navy),
                   decoration: InputDecoration(
                     hintText: context.tr.figSearchSharedFiles,
-                    hintStyle: Fig.t(context, size: 13, color: Fig.muted),
+                    hintStyle: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
                     isCollapsed: true,
                     filled: false,
                     border: InputBorder.none,
@@ -101,8 +101,8 @@ class _FilesTab extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: i == filter ? Fig.tintBlue : Colors.white,
-                  borderRadius: BorderRadius.circular(15),
+                  color: i == filter ? Fig.tintBlue : AppColors.figWhite,
+                  borderRadius: BorderRadius.circular(FigMetrics.radFig15),
                   border: Border.all(
                     color: i == filter ? Colors.transparent : Fig.hairline,
                   ),
@@ -111,7 +111,7 @@ class _FilesTab extends StatelessWidget {
                   labels[i],
                   style: Fig.t(
                     context,
-                    size: 12.5,
+                    size: AppFontSizes.metaLine,
                     weight: i == filter ? FontWeight.w600 : FontWeight.w400,
                     color: i == filter ? Fig.blue : Fig.muted,
                   ),
@@ -121,19 +121,19 @@ class _FilesTab extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(0, 18, 0, 6),
+          padding: const EdgeInsets.fromLTRB(0, AppSpacing.s18, 0, AppSpacing.s6),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   context.tr.figSharedFiles,
-                  style: Fig.t(context, size: 13, color: Fig.muted),
+                  style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
                 ),
               ),
               Flexible(
                 child: Text(
                   context.tr.figFiles2(shown.length),
-                  style: Fig.t(context, size: 13, color: Fig.muted),
+                  style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -143,11 +143,11 @@ class _FilesTab extends StatelessWidget {
         ),
         if (shown.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s40),
             child: Center(
               child: Text(
                 context.tr.noExportsTitle,
-                style: Fig.t(context, size: 14, color: Fig.muted),
+                style: Fig.t(context, size: AppFontSizes.dense, color: Fig.muted),
               ),
             ),
           ),
@@ -202,7 +202,7 @@ class _FileRow extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.s2),
-              child: Icon(icon, size: 32, color: color),
+              child: Icon(icon, size: AppIconSizes.emptyState, color: color),
             ),
             const SizedBox(width: AppSpacing.s12),
             Expanded(
@@ -215,7 +215,7 @@ class _FileRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: Fig.t(
                       context,
-                      size: 14,
+                      size: AppFontSizes.dense,
                       weight: FontWeight.w600,
                       color: Fig.navy,
                     ),
@@ -225,7 +225,7 @@ class _FileRow extends StatelessWidget {
                     meta,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Fig.t(context, size: 12, color: Fig.muted),
+                    style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.muted),
                   ),
                   if ((a.conversation?.title ?? '').isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.s8),
@@ -233,7 +233,7 @@ class _FileRow extends StatelessWidget {
                       a.conversation!.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Fig.t(context, size: 12.5, color: Fig.navy),
+                      style: Fig.t(context, size: AppFontSizes.metaLine, color: Fig.navy),
                     ),
                   ],
                 ],
@@ -242,15 +242,15 @@ class _FileRow extends StatelessWidget {
             GestureDetector(
               onTap: onOpen,
               child: const Padding(
-                padding: EdgeInsets.fromLTRB(8, 24, 4, 0),
-                child: Icon(LucideIcons.eye, size: 20, color: Fig.blue),
+                padding: EdgeInsets.fromLTRB(AppSpacing.s8, AppSpacing.s24, AppSpacing.s4, 0),
+                child: Icon(LucideIcons.eye, size: AppIconSizes.action, color: Fig.blue),
               ),
             ),
             GestureDetector(
               onTap: onOpen,
               child: const Padding(
-                padding: EdgeInsets.fromLTRB(8, 24, 0, 0),
-                child: Icon(LucideIcons.download, size: 20, color: Fig.blue),
+                padding: EdgeInsets.fromLTRB(AppSpacing.s8, AppSpacing.s24, 0, 0),
+                child: Icon(LucideIcons.download, size: AppIconSizes.action, color: Fig.blue),
               ),
             ),
           ],

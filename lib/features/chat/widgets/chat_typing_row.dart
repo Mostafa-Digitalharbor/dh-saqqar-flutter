@@ -6,6 +6,8 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/constants/asset_paths.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// "Saqqar Assistant is typing" row: orb avatar, small name label and a dark
 /// bubble holding the three typing dots (plus the live tool-status label).
@@ -27,8 +29,7 @@ class ChatTypingRow extends StatelessWidget {
         ClipOval(
           child: Image.asset(
             AssetPaths.orb,
-            width: 36,
-            height: 36,
+            width: FigMetrics.size36, height: FigMetrics.size36,
             fit: BoxFit.cover,
           ),
         ),
@@ -43,35 +44,35 @@ class ChatTypingRow extends StatelessWidget {
                   context.tr.figSaqqarAssistant,
                   style: Fig.t(
                     context,
-                    size: 10,
+                    size: FigMetrics.fontFig10,
                     weight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                   ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
+                  horizontal: AppSpacing.s18,
+                  vertical: AppSpacing.s14,
                 ),
                 decoration: BoxDecoration(
-                  color: Fig.navyDeep.withValues(alpha: 0.9),
+                  color: Fig.navyDeep.withValues(alpha: AppAlphas.a90),
                   borderRadius: const BorderRadiusDirectional.only(
-                    topStart: Radius.circular(4),
-                    topEnd: Radius.circular(16),
-                    bottomStart: Radius.circular(16),
-                    bottomEnd: Radius.circular(16),
+                    topStart: Radius.circular(AppRadius.badge),
+                    topEnd: Radius.circular(AppRadius.bubble),
+                    bottomStart: Radius.circular(AppRadius.bubble),
+                    bottomEnd: Radius.circular(AppRadius.bubble),
                   ),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.07),
+                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a07),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TypingDots(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      dotSize: 9,
+                      color: AppColors.figWhite.withValues(alpha: AppAlphas.a55),
+                      dotSize: AppIconSizes.overlay,
                     ),
                     if (statusLabel != null) ...[
                       const SizedBox(width: AppSpacing.s10),
@@ -96,8 +97,8 @@ class ChatTypingRow extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: Fig.t(
                               context,
-                              size: 12,
-                              color: Colors.white.withValues(alpha: 0.8),
+                              size: AppFontSizes.microCaps,
+                              color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                             ),
                           ),
                         ),

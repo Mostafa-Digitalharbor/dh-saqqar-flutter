@@ -30,24 +30,23 @@ class _DevicesState extends State<_Devices> {
     Widget card(String title, String sub, {VoidCallback? onRevoke}) =>
         Container(
           margin: const EdgeInsets.only(top: AppSpacing.s8),
-          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s14, AppSpacing.s12, AppSpacing.s10, AppSpacing.s12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            color: AppColors.figWhite,
+            borderRadius: BorderRadius.circular(AppRadius.modal),
             border: Border.all(color: Fig.borderBlue),
           ),
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: FigMetrics.size36, height: FigMetrics.size36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE7ECFB),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.figCFFE7ECFB,
+                  borderRadius: BorderRadius.circular(AppRadius.small),
                 ),
                 child: const Icon(
                   LucideIcons.smartphone,
-                  size: 17,
+                  size: AppIconSizes.listMark,
                   color: Fig.blueSoft,
                 ),
               ),
@@ -60,7 +59,7 @@ class _DevicesState extends State<_Devices> {
                       title,
                       style: Fig.t(
                         context,
-                        size: 12.5,
+                        size: AppFontSizes.metaLine,
                         weight: FontWeight.w700,
                         color: Fig.navy,
                       ),
@@ -68,7 +67,7 @@ class _DevicesState extends State<_Devices> {
                     const SizedBox(height: AppSpacing.s2),
                     Text(
                       sub,
-                      style: Fig.t(context, size: 10, color: Fig.muted),
+                      style: Fig.t(context, size: FigMetrics.fontFig10, color: Fig.muted),
                     ),
                   ],
                 ),
@@ -80,7 +79,7 @@ class _DevicesState extends State<_Devices> {
                     padding: EdgeInsets.all(AppSpacing.s6),
                     child: Icon(
                       LucideIcons.logOut,
-                      size: 16,
+                      size: AppIconSizes.small,
                       color: Fig.dangerText,
                     ),
                   ),
@@ -95,10 +94,10 @@ class _DevicesState extends State<_Devices> {
           context.tr.figSessions,
           style: Fig.t(
             context,
-            size: 9,
+            size: FigMetrics.fontFig9,
             weight: FontWeight.w500,
             color: Fig.muted,
-            letterSpacing: 0.4,
+            letterSpacing: AppLetterSpacing.label,
           ),
         ),
         if (rows == null)
@@ -106,9 +105,8 @@ class _DevicesState extends State<_Devices> {
             padding: EdgeInsets.all(AppSpacing.s16),
             child: Center(
               child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                width: FigMetrics.size20, height: FigMetrics.size20,
+                child: CircularProgressIndicator(strokeWidth: AppStrokeWidths.spinnerThin),
               ),
             ),
           )

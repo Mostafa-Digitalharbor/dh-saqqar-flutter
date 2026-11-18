@@ -16,6 +16,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:saqqar_app/features/tasks/tasks_screen.dart';
+import 'package:saqqar_app/shared/fig/fig.dart';
 import 'package:saqqar_app/core/i18n/app_localizations.dart';
 import 'package:saqqar_app/core/theme/app_icons.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
@@ -407,6 +409,22 @@ void main() {
               // The composer hands over whatever is half-typed, so the field
               // opens at whatever length the user had already reached.
               initialQuery: kLongName,
+            ),
+            child: const Text('open'),
+          ),
+        ),
+        openWith: 'open',
+      );
+    });
+
+    testWidgets('ScheduleTaskSheet (Fig notch sheet)', (tester) async {
+      await _sweep(
+        tester,
+        () => Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showFigSheet<void>(
+              context,
+              builder: (_) => const ScheduleTaskSheet(),
             ),
             child: const Text('open'),
           ),

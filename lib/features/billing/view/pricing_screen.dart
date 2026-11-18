@@ -19,6 +19,8 @@ import '../view_model/plan_cubit.dart';
 import '../widgets/plan_feature_line.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Pricing screen (Gap L) — renders the live tiers from `GET /api/v1/plans/`,
 /// marks the caller's current tier, and hands off to saqqaar.com to subscribe.
@@ -207,7 +209,7 @@ class _PricingScreenState extends State<PricingScreen>
                           .map((p) => p.sort)
                           .firstOrNull;
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 32),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.s12, 0, AppSpacing.s12, AppSpacing.s32),
                   children: [
                     header,
                     const SizedBox(height: AppSpacing.s14),
@@ -224,16 +226,16 @@ class _PricingScreenState extends State<PricingScreen>
                           child: Text(
                             tr.pricingVatNote(data.vat.rateLabel),
                             textAlign: TextAlign.center,
-                            style: Fig.t(context, size: 11, color: Fig.muted),
+                            style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.muted),
                           ),
                         ),
                       const SizedBox(height: AppSpacing.s14),
                     ] else
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.s12, 0, AppSpacing.s12, AppSpacing.s14),
                         child: Text(
                           tr.pricingSubtitle,
-                          style: Fig.t(context, size: 12, color: Fig.muted),
+                          style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.muted),
                         ),
                       ),
                     for (final tier in data.plans) ...[
@@ -258,7 +260,7 @@ class _PricingScreenState extends State<PricingScreen>
                           label: tr.pricingManageCta,
                           secondary: true,
                           height: 48,
-                          fontSize: 14,
+                          fontSize: AppFontSizes.dense,
                           loading: _opening == '',
                           onPressed: () => _openWeb(''),
                         ),
@@ -276,9 +278,9 @@ class _PricingScreenState extends State<PricingScreen>
                         textAlign: TextAlign.center,
                         style: Fig.t(
                           context,
-                          size: 11,
+                          size: FigMetrics.fontFig11,
                           color: Fig.muted,
-                          height: 1.4,
+                          height: AppLineHeights.compact,
                         ),
                       ),
                     ),
@@ -312,8 +314,8 @@ class _CycleSwitch extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s14),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: active ? Fig.blue : const Color(0xFFE5E8F2),
-            borderRadius: BorderRadius.circular(21),
+            color: active ? Fig.blue : AppColors.figCFFE5E8F2,
+            borderRadius: BorderRadius.circular(FigMetrics.radFig21),
           ),
           child: Text(
             label,
@@ -321,8 +323,8 @@ class _CycleSwitch extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Fig.t(
               context,
-              size: 14,
-              color: active ? Colors.white : Fig.muted,
+              size: AppFontSizes.dense,
+              color: active ? AppColors.figWhite : Fig.muted,
             ),
           ),
         ),
@@ -331,9 +333,9 @@ class _CycleSwitch extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.s4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Fig.blueStrong, width: 1.5),
+        color: AppColors.figWhite,
+        borderRadius: BorderRadius.circular(AppRadius.heroPlate),
+        border: Border.all(color: Fig.blueStrong, width: AppBorderWidths.thick),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -385,24 +387,23 @@ class _PlanTierCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: isCurrent ? Border.all(color: Fig.blue, width: 1.4) : null,
+        color: AppColors.figWhite,
+        borderRadius: BorderRadius.circular(AppRadius.navBar),
+        border: isCurrent ? Border.all(color: Fig.blue, width: AppBorderWidths.medium) : null,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           if (tier.mostPopular)
             Positioned(
-              top: -60,
-              right: -40,
+              top: AppSpacing.sn60,
+              right: AppSpacing.sn40,
               child: Container(
-                width: 220,
-                height: 220,
+                width: FigMetrics.size220, height: FigMetrics.size220,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Fig.blueStrong, Color(0x00FFFFFF)],
+                    colors: [Fig.blueStrong, AppColors.figC00FFFFFF],
                   ),
                 ),
               ),
@@ -411,7 +412,7 @@ class _PlanTierCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.s20, AppSpacing.s20, AppSpacing.s20, AppSpacing.s18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -422,8 +423,8 @@ class _PlanTierCard extends StatelessWidget {
                             name,
                             style: Fig.t(
                               context,
-                              size: 17,
-                              color: const Color(0xFF555B70),
+                              size: AppFontSizes.markdownH2,
+                              color: AppColors.figCFF555B70,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -433,16 +434,16 @@ class _PlanTierCard extends StatelessWidget {
                           const SizedBox(width: AppSpacing.s8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 3,
+                              horizontal: AppSpacing.s9,
+                              vertical: AppSpacing.s3,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE7EEFF),
-                              borderRadius: BorderRadius.circular(10),
+                              color: AppColors.figCFFE7EEFF,
+                              borderRadius: BorderRadius.circular(AppRadius.small),
                             ),
                             child: Text(
                               tr.pricingMostPopular,
-                              style: Fig.t(context, size: 10, color: Fig.blue),
+                              style: Fig.t(context, size: FigMetrics.fontFig10, color: Fig.blue),
                             ),
                           ),
                         ],
@@ -450,7 +451,7 @@ class _PlanTierCard extends StatelessWidget {
                           const SizedBox(width: AppSpacing.s8),
                           Text(
                             tr.pricingCurrent,
-                            style: Fig.t(context, size: 11, color: Fig.blue),
+                            style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.blue),
                           ),
                         ],
                       ],
@@ -459,7 +460,7 @@ class _PlanTierCard extends StatelessWidget {
                       const SizedBox(height: AppSpacing.s2),
                       Text(
                         tagline,
-                        style: Fig.t(context, size: 12, color: Fig.mutedLight),
+                        style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.mutedLight),
                       ),
                     ],
                     if (showPaidUpsell) ...[
@@ -473,10 +474,10 @@ class _PlanTierCard extends StatelessWidget {
                               price,
                               style: Fig.t(
                                 context,
-                                size: 46,
+                                size: FigMetrics.fontFig46,
                                 weight: FontWeight.w800,
-                                color: const Color(0xFF0B0B1A),
-                                height: 1.0,
+                                color: AppColors.figCFF0B0B1A,
+                                height: AppLineHeights.flush,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -488,7 +489,7 @@ class _PlanTierCard extends StatelessWidget {
                               context.tr.figPerMonth,
                               style: Fig.t(
                                 context,
-                                size: 12,
+                                size: AppFontSizes.microCaps,
                                 color: Fig.mutedDim,
                               ),
                             ),
@@ -498,7 +499,7 @@ class _PlanTierCard extends StatelessWidget {
                                 tr.pricePlusVat,
                                 style: Fig.t(
                                   context,
-                                  size: 12,
+                                  size: AppFontSizes.microCaps,
                                   color: Fig.mutedDim,
                                 ),
                               ),
@@ -516,9 +517,9 @@ class _PlanTierCard extends StatelessWidget {
                               ),
                         style: Fig.t(
                           context,
-                          size: 12.5,
+                          size: AppFontSizes.metaLine,
                           color: Fig.mutedGrey,
-                          height: 1.45,
+                          height: AppLineHeights.reading,
                         ),
                       ),
                     ],
@@ -532,27 +533,26 @@ class _PlanTierCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: tier.mostPopular
                                 ? null
-                                : const Color(0xFFF1F2F6),
+                                : AppColors.figCFFF1F2F6,
                             gradient: tier.mostPopular
                                 ? Fig.primaryGradient
                                 : null,
-                            borderRadius: BorderRadius.circular(23),
+                            borderRadius: BorderRadius.circular(FigMetrics.radFig23),
                           ),
                           child: opening
                               ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
+                                  width: FigMetrics.size18, height: FigMetrics.size18,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                                    strokeWidth: AppStrokeWidths.spinnerThin,
                                   ),
                                 )
                               : Text(
                                   tr.pricingWebCta,
                                   style: Fig.t(
                                     context,
-                                    size: 14,
+                                    size: AppFontSizes.dense,
                                     color: tier.mostPopular
-                                        ? Colors.white
+                                        ? AppColors.figWhite
                                         : Fig.ink,
                                   ),
                                 ),
@@ -563,9 +563,9 @@ class _PlanTierCard extends StatelessWidget {
                 ),
               ),
               if (tier.featuresText.isNotEmpty) ...[
-                const Divider(height: 1, color: Color(0xFFEDEEF3)),
+                const Divider(height: AppBorderWidths.hairline, color: AppColors.figCFFEDEEF3),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.s20, AppSpacing.s16, AppSpacing.s20, AppSpacing.s18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -573,9 +573,9 @@ class _PlanTierCard extends StatelessWidget {
                         context.tr.figFeatures,
                         style: Fig.t(
                           context,
-                          size: 11,
+                          size: FigMetrics.fontFig11,
                           color: Fig.mutedGrey,
-                          letterSpacing: 0.4,
+                          letterSpacing: AppLetterSpacing.label,
                         ),
                       ),
                       if (intro.isNotEmpty) ...[
@@ -584,8 +584,8 @@ class _PlanTierCard extends StatelessWidget {
                           intro,
                           style: Fig.t(
                             context,
-                            size: 12.5,
-                            color: const Color(0xFFB0B4C2),
+                            size: AppFontSizes.metaLine,
+                            color: AppColors.figCFFB0B4C2,
                           ),
                         ),
                       ],

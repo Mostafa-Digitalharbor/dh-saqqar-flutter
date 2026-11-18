@@ -19,6 +19,7 @@ import '../../core/i18n/app_localizations.dart';
 import '../../core/constants/asset_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/fig_metrics.dart';
 
 /// Home tab: logo + avatar + bell, the orb, the greeting and "Recently
 /// Chats". A first-time user with no Odoo environment is sent to the setup
@@ -95,9 +96,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: SafeArea(
             bottom: false,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 130),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s24, 0, AppSpacing.s24, AppSpacing.s130),
               children: [
-                const SizedBox(height: 38),
+                const SizedBox(height: AppSpacing.s38),
                 Row(
                   children: [
                     const SaqqarLogo(height: 24, forceVariant: Brightness.dark),
@@ -107,8 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipOval(
                         child: Image.asset(
                           AssetPaths.avatar,
-                          width: 40,
-                          height: 40,
+                          width: FigMetrics.size40, height: FigMetrics.size40,
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -120,31 +120,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         clipBehavior: Clip.none,
                         children: [
                           Container(
-                            width: 40,
-                            height: 40,
+                            width: FigMetrics.size40, height: FigMetrics.size40,
                             decoration: const BoxDecoration(
                               color: Fig.dividerSoft,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               LucideIcons.bell,
-                              size: 19,
-                              color: Color(0xFF1A1C22),
+                              size: AppIconSizes.bell,
+                              color: AppColors.figCFF1A1C22,
                             ),
                           ),
                           if (unread)
                             Positioned(
-                              right: 9,
-                              top: 9,
+                              right: AppSpacing.s9,
+                              top: AppSpacing.s9,
                               child: Container(
-                                width: 8,
-                                height: 8,
+                                width: FigMetrics.size8, height: FigMetrics.size8,
                                 decoration: BoxDecoration(
                                   color: AppColors.brandPurple,
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: Fig.dividerSoft,
-                                    width: 1.5,
+                                    width: AppBorderWidths.thick,
                                   ),
                                 ),
                               ),
@@ -155,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.s56),
-                const Orb(size: 74),
+                const Orb(size: FigMetrics.iconFig74),
                 const SizedBox(height: AppSpacing.s28),
                 Text(
                   user.isEmpty
@@ -164,28 +162,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   style:
                       Fig.t(
                         context,
-                        size: 36,
-                        color: Colors.white,
-                        height: 1.08,
+                        size: FigMetrics.fontFig36,
+                        color: AppColors.figWhite,
+                        height: FigMetrics.lhFig108,
                       ).copyWith(
                         // The glow turns pale behind the last line; this keeps the
                         // white readable without touching the artwork.
                         shadows: const [
                           Shadow(
                             color: Fig.shadowInk,
-                            blurRadius: 14,
-                            offset: Offset(0, 2),
+                            blurRadius: FigMetrics.blur14,
+                            offset: FigOffsets.oU0U2,
                           ),
                         ],
                       ),
                 ),
-                const SizedBox(height: 46),
+                const SizedBox(height: AppSpacing.s46),
                 Row(
                   children: [
                     Expanded(
                       child: Text(
                         context.tr.figRecentlyChats,
-                        style: Fig.t(context, size: 19, color: Fig.inkBlack),
+                        style: Fig.t(context, size: AppFontSizes.markdownH1, color: Fig.inkBlack),
                       ),
                     ),
                     GestureDetector(
@@ -197,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: EdgeInsets.all(AppSpacing.s4),
                         child: Icon(
                           LucideIcons.plus,
-                          size: 22,
+                          size: AppIconSizes.navBar,
                           color: Fig.inkBlack,
                         ),
                       ),
@@ -232,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 /// The iridescent orb that stands in for the assistant.
 class Orb extends StatelessWidget {
-  const Orb({super.key, this.size = 74});
+  const Orb({super.key, this.size = FigMetrics.size74});
 
   final double size;
 
@@ -267,14 +265,14 @@ class _ChatTile extends StatelessWidget {
           height: 66,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s20),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.34),
-            borderRadius: BorderRadius.circular(33),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.75)),
+            color: AppColors.figWhite.withValues(alpha: AppAlphas.a34),
+            borderRadius: BorderRadius.circular(FigMetrics.radFig33),
+            border: Border.all(color: AppColors.figWhite.withValues(alpha: AppAlphas.a75)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF8E97B8).withValues(alpha: 0.12),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
+                color: AppColors.figCFF8E97B8.withValues(alpha: AppAlphas.a12),
+                blurRadius: FigMetrics.blur14,
+                offset: FigOffsets.oU0U4,
               ),
             ],
           ),
@@ -291,7 +289,7 @@ class _ChatTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Fig.t(
                         context,
-                        size: 15,
+                        size: AppFontSizes.body,
                         weight: FontWeight.w600,
                         color: Fig.navy,
                       ),
@@ -303,7 +301,7 @@ class _ChatTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Fig.t(
                           context,
-                          size: 12.5,
+                          size: AppFontSizes.metaLine,
                           color: Fig.mutedIndigo,
                         ),
                       ),
@@ -314,7 +312,7 @@ class _ChatTile extends StatelessWidget {
                 Directionality.of(context) == TextDirection.rtl
                     ? LucideIcons.chevronLeft
                     : LucideIcons.chevronRight,
-                size: 20,
+                size: AppIconSizes.action,
                 color: Fig.mutedIndigo,
               ),
             ],

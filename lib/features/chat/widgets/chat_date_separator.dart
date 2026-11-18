@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_date_format.dart';
 import '../../../shared/fig/fig.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Small caps day caption ("TODAY") rendered between message groups when the
 /// calendar day rolls.
@@ -29,9 +31,9 @@ class ChatDateSeparator extends StatelessWidget {
           AppDateFormat.dayLabel(context, date).toUpperCase(),
           style: Fig.t(
             context,
-            size: 9,
-            color: Colors.white.withValues(alpha: 0.8),
-            letterSpacing: 0.9,
+            size: FigMetrics.fontFig9,
+            color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
+            letterSpacing: FigMetrics.lsFig0U9,
           ),
         ),
       ),

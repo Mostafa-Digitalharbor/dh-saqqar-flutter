@@ -16,14 +16,14 @@ class _Preferences extends StatelessWidget {
           height: 38,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: active ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(19),
+            color: active ? AppColors.figWhite : Colors.transparent,
+            borderRadius: BorderRadius.circular(FigMetrics.radFig19),
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: Fig.slate.withValues(alpha: 0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+                      color: Fig.slate.withValues(alpha: AppAlphas.a20),
+                      blurRadius: FigMetrics.blur6,
+                      offset: FigOffsets.oU0U2,
                     ),
                   ]
                 : null,
@@ -36,7 +36,7 @@ class _Preferences extends StatelessWidget {
                   label,
                   style: Fig.t(
                     context,
-                    size: 11.5,
+                    size: FigMetrics.fontFig11U5,
                     weight: active ? FontWeight.w700 : FontWeight.w400,
                     color: active ? Fig.blue : Fig.mutedBlue,
                   ),
@@ -46,7 +46,7 @@ class _Preferences extends StatelessWidget {
               ),
               if (active) ...[
                 const SizedBox(width: AppSpacing.s4),
-                const Icon(LucideIcons.check, size: 13, color: Fig.blue),
+                const Icon(LucideIcons.check, size: AppIconSizes.dense, color: Fig.blue),
               ],
             ],
           ),
@@ -57,19 +57,17 @@ class _Preferences extends StatelessWidget {
       onTap: () => on(!v),
       child: AnimatedContainer(
         duration: AppDurations.menuIn,
-        width: 36,
-        height: 22,
+        width: FigMetrics.size36, height: FigMetrics.size22,
         padding: const EdgeInsets.all(AppSpacing.s3),
         decoration: BoxDecoration(
-          color: v ? Fig.switchOn : const Color(0xFF3A3C48),
-          borderRadius: BorderRadius.circular(11),
+          color: v ? Fig.switchOn : AppColors.figCFF3A3C48,
+          borderRadius: BorderRadius.circular(AppRadius.iconBox),
         ),
         alignment: v ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
-          width: 16,
-          height: 16,
+          width: FigMetrics.size16, height: FigMetrics.size16,
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppColors.figWhite,
             shape: BoxShape.circle,
           ),
         ),
@@ -87,7 +85,7 @@ class _Preferences extends StatelessWidget {
                   title,
                   style: Fig.t(
                     context,
-                    size: 12,
+                    size: AppFontSizes.microCaps,
                     weight: FontWeight.w600,
                     color: Fig.navy,
                   ),
@@ -97,9 +95,9 @@ class _Preferences extends StatelessWidget {
                   sub,
                   style: Fig.t(
                     context,
-                    size: 10,
+                    size: FigMetrics.fontFig10,
                     color: Fig.muted,
-                    height: 1.3,
+                    height: AppLineHeights.snug,
                   ),
                 ),
               ],
@@ -117,7 +115,7 @@ class _Preferences extends StatelessWidget {
           context.tr.figLanguage,
           style: Fig.t(
             context,
-            size: 11,
+            size: FigMetrics.fontFig11,
             weight: FontWeight.w500,
             color: Fig.navy,
           ),
@@ -126,9 +124,9 @@ class _Preferences extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.s3),
           decoration: BoxDecoration(
-            color: const Color(0xFFEAEDFB),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFD4DBF4)),
+            color: AppColors.figCFFEAEDFB,
+            borderRadius: BorderRadius.circular(AppRadius.navBar),
+            border: Border.all(color: AppColors.figCFFD4DBF4),
           ),
           child: Row(
             children: [

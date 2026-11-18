@@ -11,7 +11,7 @@ Future<void> showCompaniesSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.55),
+    barrierColor: AppColors.figBlack.withValues(alpha: AppAlphas.a55),
     builder: (_) =>
         _CompaniesSheet(selectedEnvId: selectedEnvId, onSelect: onSelect),
   );
@@ -49,11 +49,11 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
         backgroundColor: _dark,
         title: Text(
           context.tr.figRenameCompany,
-          style: Fig.t(ctx, color: Colors.white, size: 16),
+          style: Fig.t(ctx, color: AppColors.figWhite, size: AppFontSizes.reading),
         ),
         content: TextField(
           controller: c,
-          style: Fig.t(ctx, color: Colors.white),
+          style: Fig.t(ctx, color: AppColors.figWhite),
           decoration: const InputDecoration(),
         ),
         actions: [
@@ -79,7 +79,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
         backgroundColor: _dark,
         title: Text(
           context.tr.figDelete(p.name),
-          style: Fig.t(ctx, color: Colors.white, size: 16),
+          style: Fig.t(ctx, color: AppColors.figWhite, size: AppFontSizes.reading),
         ),
         content: Text(
           context.tr.figItsEnvironmentsAndCredentialsWillBe,
@@ -108,11 +108,11 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+        maxHeight: MediaQuery.sizeOf(context).height * AppFractions.companiesSheetMax,
       ),
       decoration: const BoxDecoration(
         color: _dark,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(FigMetrics.radFig32)),
       ),
       child: SafeArea(
         top: false,
@@ -125,7 +125,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 22, 18, 4),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.s20, AppSpacing.s22, AppSpacing.s18, AppSpacing.s4),
                   child: Row(
                     children: [
                       Expanded(
@@ -133,9 +133,9 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                           context.tr.figCompaniesEnvironments,
                           style: Fig.t(
                             context,
-                            size: 18,
+                            size: AppFontSizes.avatarInitial,
                             weight: FontWeight.w500,
-                            color: Colors.white,
+                            color: AppColors.figWhite,
                           ),
                         ),
                       ),
@@ -143,28 +143,28 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                         onTap: () => Navigator.pop(context),
                         child: const Icon(
                           LucideIcons.x,
-                          color: Colors.white,
-                          size: 26,
+                          color: AppColors.figWhite,
+                          size: AppIconSizes.tile,
                         ),
                       ),
                     ],
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.s20, 0, AppSpacing.s20, AppSpacing.s16),
                   child: Text(
                     context.tr.figSwitchContextOrManageYourOdoo,
                     style: Fig.t(
                       context,
-                      size: 9,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      size: FigMetrics.fontFig9,
+                      color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                     ),
                   ),
                 ),
                 Flexible(
                   child: ListView(
                     shrinkWrap: true,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.s16, 0, AppSpacing.s16, AppSpacing.s12),
                     children: [
                       for (final p in projects) _company(context, p),
                       const SizedBox(height: AppSpacing.s6),
@@ -174,9 +174,9 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                           height: 48,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(FigMetrics.radFig24),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: AppColors.figWhite.withValues(alpha: AppAlphas.a20),
                             ),
                           ),
                           child: Row(
@@ -184,7 +184,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                             children: [
                               const Icon(
                                 LucideIcons.plus,
-                                size: 16,
+                                size: AppIconSizes.small,
                                 color: Fig.accentBlue,
                               ),
                               const SizedBox(width: AppSpacing.s8),
@@ -192,7 +192,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                                 context.tr.figAddCompany,
                                 style: Fig.t(
                                   context,
-                                  size: 12,
+                                  size: AppFontSizes.microCaps,
                                   color: Fig.accentBlue,
                                 ),
                               ),
@@ -214,14 +214,13 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
   Widget _circleBtn(IconData i, Color c, VoidCallback onTap) => GestureDetector(
     onTap: onTap,
     child: Container(
-      width: 32,
-      height: 32,
+      width: FigMetrics.size32, height: FigMetrics.size32,
       margin: const EdgeInsetsDirectional.only(start: AppSpacing.s6),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: c.withValues(alpha: 0.5)),
+        border: Border.all(color: c.withValues(alpha: AppAlphas.a50)),
       ),
-      child: Icon(i, size: 14, color: c),
+      child: Icon(i, size: AppIconSizes.compact, color: c),
     ),
   );
 
@@ -230,8 +229,8 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.s12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(26),
+        color: AppColors.figWhite.withValues(alpha: AppAlphas.a04),
+        borderRadius: BorderRadius.circular(AppRadius.heroPlate),
         // One colour on all four sides: a rounded box refuses a border whose
         // sides differ (it throws while painting and the whole card went
         // blank when opened), so the "open" accent is the border colour
@@ -247,7 +246,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
             behavior: HitTestBehavior.opaque,
             onTap: () => setState(() => _open = open ? null : p.id),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s14, AppSpacing.s12, AppSpacing.s14),
               child: Row(
                 children: [
                   Expanded(
@@ -258,15 +257,15 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                           p.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Fig.t(context, size: 14, color: Colors.white),
+                          style: Fig.t(context, size: AppFontSizes.dense, color: AppColors.figWhite),
                         ),
                         const SizedBox(height: AppSpacing.s2),
                         Text(
                           context.tr.environmentCount(p.environments.length),
                           style: Fig.t(
                             context,
-                            size: 8.5,
-                            color: Colors.white.withValues(alpha: 0.8),
+                            size: FigMetrics.fontFig8U5,
+                            color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                           ),
                         ),
                       ],
@@ -274,15 +273,15 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                   ),
                   _circleBtn(
                     LucideIcons.pencil,
-                    const Color(0xFF6C8CFF),
+                    AppColors.figCFF6C8CFF,
                     () => _rename(p),
                   ),
                   _circleBtn(LucideIcons.trash2, Fig.danger, () => _delete(p)),
                   const SizedBox(width: AppSpacing.s10),
                   Icon(
                     open ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                    size: 18,
-                    color: Colors.white,
+                    size: AppIconSizes.regular,
+                    color: AppColors.figWhite,
                   ),
                 ],
               ),
@@ -290,7 +289,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
           ),
           if (open)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s16, 0, AppSpacing.s16, AppSpacing.s14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -308,22 +307,20 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                         child: Row(
                           children: [
                             Container(
-                              width: 18,
-                              height: 18,
+                              width: FigMetrics.size18, height: FigMetrics.size18,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: _selected == e.id
                                       ? Fig.accentBlue
                                       : Colors.white38,
-                                  width: 1.4,
+                                  width: AppBorderWidths.medium,
                                 ),
                               ),
                               child: _selected == e.id
                                   ? Center(
                                       child: Container(
-                                        width: 9,
-                                        height: 9,
+                                        width: FigMetrics.size9, height: FigMetrics.size9,
                                         decoration: const BoxDecoration(
                                           color: Fig.accentBlue,
                                           shape: BoxShape.circle,
@@ -341,17 +338,16 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                                     e.name,
                                     style: Fig.t(
                                       context,
-                                      size: 10.5,
+                                      size: FigMetrics.fontFig10U5,
                                       weight: FontWeight.w600,
-                                      color: Colors.white,
+                                      color: AppColors.figWhite,
                                     ),
                                   ),
                                   const SizedBox(height: AppSpacing.s3),
                                   Row(
                                     children: [
                                       Container(
-                                        width: 5,
-                                        height: 5,
+                                        width: FigMetrics.size5, height: FigMetrics.size5,
                                         decoration: BoxDecoration(
                                           color: e.hasXmlrpc
                                               ? Fig.success
@@ -364,9 +360,9 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                                         '${e.hasXmlrpc ? context.tr.figOdooConnected : context.tr.figNotConnected} · ${e.readOnly ? context.tr.figReadOnly : (e.isLive ? context.tr.figLive : context.tr.figStaging)}',
                                         style: Fig.t(
                                           context,
-                                          size: 8,
-                                          color: Colors.white.withValues(
-                                            alpha: 0.5,
+                                          size: FigMetrics.fontFig8,
+                                          color: AppColors.figWhite.withValues(
+                                            alpha: AppAlphas.a50,
                                           ),
                                         ),
                                       ),
@@ -380,7 +376,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                                 context.tr.figCurrent,
                                 style: Fig.t(
                                   context,
-                                  size: 8.5,
+                                  size: FigMetrics.fontFig8U5,
                                   color: Fig.success,
                                 ),
                               ),
@@ -395,7 +391,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                       children: [
                         const Icon(
                           LucideIcons.plus,
-                          size: 14,
+                          size: AppIconSizes.compact,
                           color: Fig.accentBlue,
                         ),
                         const SizedBox(width: AppSpacing.s8),
@@ -404,7 +400,7 @@ class _CompaniesSheetState extends State<_CompaniesSheet> {
                             context.tr.figAddEnvironment,
                             style: Fig.t(
                               context,
-                              size: 9,
+                              size: FigMetrics.fontFig9,
                               color: Fig.accentBlue,
                             ),
                             maxLines: 1,

@@ -20,48 +20,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:saqqar_app/core/constants/ui_strings.dart';
 import 'package:saqqar_app/core/i18n/app_strings.dart';
 
-/// Files rewritten for the 2026-11 Figma redesign (`figma-design/`).
-///
-/// That design is specified in absolute pixels, hex colours and one-off radii
-/// ("1:1, not a hair of difference"), so these files still carry the mock's
-/// literal sizes, spacing and colours. That is tracked debt, exempt ONLY from
-/// the pixel / colour / spacing token rules. Copy (`AppStrings`), asset paths,
-/// icons, motion, toasts, endpoints and the Row-overflow rule hold for these
-/// files like everything else.
-const _figRedesign = <String>[
-  'lib/shared/fig/',
-  'lib/features/onboarding/',
-  'lib/features/setup/',
-  'lib/features/home/',
-  'lib/features/tasks/',
-  'lib/features/launch/',
-  'lib/features/notifications/view/',
-  'lib/features/apps/view/apps_screen.dart',
-  'lib/features/account/view/account_screen',
-  'lib/features/auth/view/auth_flow_',
-  'lib/features/billing/view/pricing_screen.dart',
-  'lib/features/billing/widgets/plan_feature_line.dart',
-  // chat_screen.dart and the `chat_screen_*.dart` parts split out of it.
-  'lib/features/chat/view/chat_screen',
-  'lib/features/chat/widgets/chat_frame.dart',
-  'lib/features/chat/widgets/chat_composer.dart',
-  'lib/features/chat/widgets/chat_rail_drawer',
-  'lib/features/chat/widgets/chat_sidebar_drawer.dart',
-  'lib/features/chat/widgets/voice_input_button.dart',
-  'lib/features/chat/view/attachment_viewer_screen.dart',
-  'lib/features/chat/widgets/chat_context',
-  'lib/features/chat/widgets/chat_date_separator.dart',
-  'lib/features/chat/widgets/chat_typing_row.dart',
-  'lib/features/chat/widgets/empty_chat_suggestions.dart',
-  'lib/features/chat/widgets/message_bubble.dart',
-  'lib/navigation/home_shell.dart',
-  'lib/shared/widgets/sign_out_helper.dart',
-  'lib/shared/widgets/delete_account_helper.dart',
-];
-
-bool _isFigRedesign(String path) =>
-    _figRedesign.any((e) => path.replaceAll(r'\', '/').contains(e));
-
 /// One scanned line of Dart source, with comments and imports already gone.
 typedef _Line = ({String path, int number, String text});
 
@@ -72,7 +30,7 @@ typedef _Line = ({String path, int number, String text});
 /// below is *discussed* in a doc comment somewhere (often the comment
 /// explaining the very bug the rule guards), and a naive `grep` would flag
 /// the explanation as a violation.
-List<_Line> _scanLib({List<String> exclude = const [], bool exempt = true}) {
+List<_Line> _scanLib({List<String> exclude = const []}) {
   final out = <_Line>[];
   final files =
       Directory('lib')
@@ -85,7 +43,6 @@ List<_Line> _scanLib({List<String> exclude = const [], bool exempt = true}) {
   for (final file in files) {
     final path = file.path.replaceAll(r'\', '/');
     if (exclude.any(path.contains)) continue;
-    if (exempt && _isFigRedesign(path)) continue;
 
     var inBlockComment = false;
     final lines = file.readAsLinesSync();
@@ -141,7 +98,6 @@ List<({String path, String text})> _scanFiles() {
         ..sort((a, b) => a.path.compareTo(b.path));
 
   for (final file in files) {
-    if (_isFigRedesign(file.path)) continue;
     var inBlock = false;
     final kept = <String>[];
     for (final raw in file.readAsLinesSync()) {
@@ -386,9 +342,7 @@ bool _rendersUi(String path) {
 
 void main() {
   final lib = _scanLib();
-  // The copy, asset, icon, motion, toast and layout-safety rules hold for the
-  // redesigned files too; only the pixel/colour/spacing token rules exempt them.
-  final libStrict = _scanLib(exempt: false);
+  final libStrict = lib;
 
   group('Bundled assets are named in one place', () {
     test('no `assets/…` path is written inline', () {
@@ -1015,7 +969,7 @@ void main() {
       // Cubits, services and API clients use English sentences constantly for
       // `AppLogger` output and wire values, and none of that is ever read by a
       // user.
-      final hits = _scanLib(exempt: false)
+      final hits = _scanLib()
           .where((l) => _rendersUi(l.path))
           .where((l) => !l.path.contains('core/i18n/'))
           // The one file that MUST carry inline English — it renders when the

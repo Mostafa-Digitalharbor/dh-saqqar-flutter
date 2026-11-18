@@ -22,8 +22,8 @@ class _Accordion extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.s10),
       decoration: BoxDecoration(
-        color: Fig.cardFill.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(22),
+        color: Fig.cardFill.withValues(alpha: AppAlphas.a95),
+        borderRadius: BorderRadius.circular(AppRadius.navBar),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -32,17 +32,16 @@ class _Accordion extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(9, 12, 14, 12),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s9, AppSpacing.s12, AppSpacing.s14, AppSpacing.s12),
               child: Row(
                 children: [
                   Container(
-                    width: 30,
-                    height: 30,
+                    width: FigMetrics.size30, height: FigMetrics.size30,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFDCE1F1),
-                      borderRadius: BorderRadius.circular(9),
+                      color: AppColors.figCFFDCE1F1,
+                      borderRadius: BorderRadius.circular(FigMetrics.radFig9),
                     ),
-                    child: Icon(icon, size: 16, color: Fig.tileText),
+                    child: Icon(icon, size: AppIconSizes.small, color: Fig.tileText),
                   ),
                   const SizedBox(width: AppSpacing.s11),
                   Expanded(
@@ -53,7 +52,7 @@ class _Accordion extends StatelessWidget {
                           title,
                           style: Fig.t(
                             context,
-                            size: 13.5,
+                            size: AppFontSizes.pillTitle,
                             weight: FontWeight.w500,
                             color: Fig.navy,
                           ),
@@ -63,7 +62,7 @@ class _Accordion extends StatelessWidget {
                           subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Fig.t(context, size: 8.5, color: Fig.muted),
+                          style: Fig.t(context, size: FigMetrics.fontFig8U5, color: Fig.muted),
                         ),
                       ],
                     ),
@@ -73,7 +72,7 @@ class _Accordion extends StatelessWidget {
                     duration: AppDurations.fast,
                     child: const Icon(
                       LucideIcons.chevronDown,
-                      size: 22,
+                      size: AppIconSizes.navBar,
                       color: Fig.ink,
                     ),
                   ),
@@ -87,7 +86,7 @@ class _Accordion extends StatelessWidget {
             curve: Curves.easeOutCubic,
             child: open
                 ? Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.s14, 0, AppSpacing.s14, AppSpacing.s14),
                     child: child,
                   )
                 : const SizedBox(width: double.infinity),
@@ -117,18 +116,18 @@ class _SubRow extends StatelessWidget {
         decoration: BoxDecoration(
           border: last
               ? null
-              : const Border(bottom: BorderSide(color: Color(0xFFD9E0F5))),
+              : const Border(bottom: BorderSide(color: AppColors.figCFFD9E0F5)),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: const Color(0xFF5B6585)),
+            Icon(icon, size: AppIconSizes.regular, color: AppColors.figCFF5B6585),
             const SizedBox(width: AppSpacing.s14),
             Expanded(
               child: Text(
                 label,
                 style: Fig.t(
                   context,
-                  size: 13.5,
+                  size: AppFontSizes.pillTitle,
                   weight: FontWeight.w500,
                   color: Fig.navy,
                 ),
@@ -138,7 +137,7 @@ class _SubRow extends StatelessWidget {
               Directionality.of(context) == TextDirection.rtl
                   ? LucideIcons.chevronLeft
                   : LucideIcons.chevronRight,
-              size: 18,
+              size: AppIconSizes.regular,
               color: Fig.mutedSoft,
             ),
           ],
@@ -174,10 +173,10 @@ class _DangerRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: Fig.t(context, size: 14, color: Fig.dangerText),
+                style: Fig.t(context, size: AppFontSizes.dense, color: Fig.dangerText),
               ),
             ),
-            Icon(icon, size: 20, color: Fig.dangerText),
+            Icon(icon, size: AppIconSizes.action, color: Fig.dangerText),
           ],
         ),
       ),

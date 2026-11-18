@@ -23,6 +23,8 @@
 /// call site, so the choice keeps happening here.
 library;
 
+import 'dart:ui' show Offset;
+
 /// Type sizes.
 ///
 /// The first stop for any screen is the `TextTheme` — `context.text.bodyMedium`
@@ -610,6 +612,20 @@ class AppSpacing {
   static const double s13 = 13;
   static const double s15 = 15;
   static const double s19 = 19;
+
+  static const double sn60 = -60;
+  static const double sn40 = -40;
+  static const double s25 = 25;
+  static const double s29 = 29;
+  static const double s38 = 38;
+  static const double s40 = 40;
+  static const double s46 = 46;
+  static const double s50 = 50;
+  static const double s54 = 54;
+  static const double s60 = 60;
+  static const double s62 = 62;
+  static const double s130 = 130;
+  static const double s140 = 140;
 
   // ── The published design scale ─────────────────────────────────────────
   //
@@ -1697,6 +1713,12 @@ class AppFractions {
   /// `AppSheetHeights` bounds clamp it.
   static const double projectsListSheet = 0.6;
 
+  /// The company-picker sheet's maximum share of the screen height.
+  static const double companiesSheetMax = 0.85;
+
+  /// The environment sheet's maximum share of the screen height.
+  static const double environmentSheetMax = 0.92;
+
   /// The project detail sheet's share, likewise clamped.
   static const double projectDetailSheet = 0.7;
 
@@ -1845,4 +1867,17 @@ class AppTypingDotsMotion {
 
   /// Peak hop height in `bounce` mode, as a fraction of `dotSize`.
   static const double bounceRatio = 0.8;
+}
+
+/// Shadow and text-shadow offsets of the Figma redesign, named by value.
+class FigOffsets {
+  FigOffsets._();
+
+  static const oU0U0U15 = Offset(0, 0.15);
+  static const oU0U16 = Offset(0, 16);
+  static const oU0U2 = Offset(0, 2);
+  static const oU0U4 = Offset(0, 4);
+  static const oU0U6 = Offset(0, 6);
+  static const oUn10U0 = Offset(-10, 0);
+  static const oUn12U0 = Offset(-12, 0);
 }

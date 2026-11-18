@@ -71,13 +71,13 @@ class _ActivityTab extends StatelessWidget {
             Expanded(
               child: Text(
                 context.tr.figWorkspaceActivity,
-                style: Fig.t(context, size: 13, color: Fig.muted),
+                style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
               ),
             ),
             Flexible(
               child: Text(
                 context.tr.figLatestFirst,
-                style: Fig.t(context, size: 13, color: Fig.muted),
+                style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -93,12 +93,12 @@ class _ActivityTab extends StatelessWidget {
         day = d;
         children.add(
           Padding(
-            padding: const EdgeInsets.fromLTRB(0, 10, 0, 8),
+            padding: const EdgeInsets.fromLTRB(0, AppSpacing.s10, 0, AppSpacing.s8),
             child: Text(
               AppDateFormat.date(context, e.time),
               style: Fig.t(
                 context,
-                size: 13,
+                size: AppFontSizes.caption,
                 weight: FontWeight.w600,
                 color: Fig.navy,
               ),
@@ -109,7 +109,7 @@ class _ActivityTab extends StatelessWidget {
       children.add(_EventRow(event: e));
     }
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s16, AppSpacing.s16, AppSpacing.s24),
       children: children,
     );
   }
@@ -142,7 +142,7 @@ class _EventRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Avatar(e.who, size: 28),
+          _Avatar(e.who, size: AppIconSizes.tileLarge),
           const SizedBox(width: AppSpacing.s10),
           Expanded(
             child: Column(
@@ -154,7 +154,7 @@ class _EventRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Fig.t(
                     context,
-                    size: 13.5,
+                    size: AppFontSizes.pillTitle,
                     weight: FontWeight.w600,
                     color: Fig.navy,
                   ),
@@ -163,24 +163,24 @@ class _EventRow extends StatelessWidget {
                   e.text,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Fig.t(context, size: 13, color: Fig.muted),
+                  style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
                 ),
                 if (e.sub.isNotEmpty)
                   Text(
                     e.sub,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Fig.t(context, size: 12, color: Fig.muted),
+                    style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.muted),
                   ),
                 const SizedBox(height: AppSpacing.s3),
                 Row(
                   children: [
-                    Icon(e.tag.$1, size: 13, color: e.tag.$2),
+                    Icon(e.tag.$1, size: AppIconSizes.dense, color: e.tag.$2),
                     const SizedBox(width: AppSpacing.s4),
                     Flexible(
                       child: Text(
                         e.tag.$3,
-                        style: Fig.t(context, size: 12, color: e.tag.$2),
+                        style: Fig.t(context, size: AppFontSizes.microCaps, color: e.tag.$2),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -192,7 +192,7 @@ class _EventRow extends StatelessWidget {
           ),
           Text(
             AppDateFormat.time(context, e.time),
-            style: Fig.t(context, size: 12, color: Fig.muted),
+            style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.muted),
           ),
         ],
       ),

@@ -9,6 +9,9 @@ import '../../shared/fig/fig.dart';
 import '../setup/setup_screens.dart' show FigDropdown;
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/fig_metrics.dart';
+import '../../core/theme/app_colors.dart';
 
 /// One recurring agent workflow.
 class ScheduledTask {
@@ -148,7 +151,7 @@ class _TasksScreenState extends State<TasksScreen> {
         child: SafeArea(
           bottom: false,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 140),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.s24, 0, AppSpacing.s24, AppSpacing.s140),
             children: [
               const SizedBox(height: AppSpacing.s56),
               Row(
@@ -162,18 +165,18 @@ class _TasksScreenState extends State<TasksScreen> {
                           context.tr.figScheduledTasks,
                           style: Fig.t(
                             context,
-                            size: 32,
+                            size: FigMetrics.fontFig32,
                             weight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1.2,
+                            color: AppColors.figWhite,
+                            height: AppLineHeights.heading,
                           ),
                         ),
                         Text(
                           context.tr.figRecurringAgentWorkflowsThatKeepYour,
                           style: Fig.t(
                             context,
-                            size: 9.5,
-                            color: Colors.white.withValues(alpha: 0.8),
+                            size: FigMetrics.fontFig9U5,
+                            color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                           ),
                         ),
                       ],
@@ -182,19 +185,18 @@ class _TasksScreenState extends State<TasksScreen> {
                   GestureDetector(
                     onTap: _add,
                     child: Container(
-                      width: 36,
-                      height: 36,
+                      width: FigMetrics.size36, height: FigMetrics.size36,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.14),
+                        color: AppColors.figWhite.withValues(alpha: AppAlphas.a14),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: AppColors.figWhite.withValues(alpha: AppAlphas.a25),
                         ),
                       ),
                       child: const Icon(
                         LucideIcons.plus,
-                        size: 18,
-                        color: Colors.white,
+                        size: AppIconSizes.regular,
+                        color: AppColors.figWhite,
                       ),
                     ),
                   ),
@@ -203,7 +205,7 @@ class _TasksScreenState extends State<TasksScreen> {
               const SizedBox(height: AppSpacing.s36),
               if (tasks != null && tasks.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(top: 40),
+                  padding: const EdgeInsets.only(top: AppSpacing.s40),
                   child: Column(
                     children: [
                       Text(
@@ -211,10 +213,10 @@ class _TasksScreenState extends State<TasksScreen> {
                         // Sits on the blue part of the backdrop, where the
                         // muted grey vanished; white + the same soft shadow
                         // the sign-in subtitle uses stays legible.
-                        style: Fig.t(context, size: 14, color: Colors.white)
+                        style: Fig.t(context, size: AppFontSizes.dense, color: AppColors.figWhite)
                             .copyWith(
                               shadows: const [
-                                Shadow(color: Fig.shadowInk, blurRadius: 6),
+                                Shadow(color: Fig.shadowInk, blurRadius: FigMetrics.blur6),
                               ],
                             ),
                       ),
@@ -224,7 +226,7 @@ class _TasksScreenState extends State<TasksScreen> {
                         child: FigButton(
                           label: context.tr.figScheduleATask,
                           height: 46,
-                          fontSize: 14,
+                          fontSize: AppFontSizes.dense,
                           onPressed: _add,
                         ),
                       ),
@@ -252,28 +254,27 @@ class _TaskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.s16),
-      padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.s14, AppSpacing.s14, AppSpacing.s10, AppSpacing.s14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.figWhite,
+        borderRadius: BorderRadius.circular(AppRadius.bubble),
         boxShadow: [
           BoxShadow(
-            color: Fig.slate.withValues(alpha: 0.12),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: Fig.slate.withValues(alpha: AppAlphas.a12),
+            blurRadius: FigMetrics.blur14,
+            offset: FigOffsets.oU0U4,
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: FigMetrics.size46, height: FigMetrics.size46,
             decoration: BoxDecoration(
-              color: const Color(0xFFE3EBFB),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.figCFFE3EBFB,
+              borderRadius: BorderRadius.circular(AppRadius.button),
             ),
-            child: Icon(task.icon, size: 19, color: Fig.blue),
+            child: Icon(task.icon, size: AppIconSizes.bell, color: Fig.blue),
           ),
           const SizedBox(width: AppSpacing.s14),
           Expanded(
@@ -286,7 +287,7 @@ class _TaskCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Fig.t(
                     context,
-                    size: 11.5,
+                    size: FigMetrics.fontFig11U5,
                     weight: FontWeight.w700,
                     color: Fig.ink,
                   ),
@@ -296,7 +297,7 @@ class _TaskCard extends StatelessWidget {
                   children: [
                     const Icon(
                       LucideIcons.clock,
-                      size: 11,
+                      size: AppIconSizes.metaTight,
                       color: Fig.mutedCool,
                     ),
                     const SizedBox(width: AppSpacing.s5),
@@ -305,7 +306,7 @@ class _TaskCard extends StatelessWidget {
                         task.scheduleLabel(context.tr.isArabic),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Fig.t(context, size: 9, color: Fig.mutedCool),
+                        style: Fig.t(context, size: FigMetrics.fontFig9, color: Fig.mutedCool),
                       ),
                     ),
                   ],
@@ -316,8 +317,8 @@ class _TaskCard extends StatelessWidget {
           PopupMenuButton<String>(
             icon: const Icon(
               LucideIcons.ellipsis,
-              size: 20,
-              color: Color(0xFF5B6075),
+              size: AppIconSizes.action,
+              color: AppColors.figCFF5B6075,
             ),
             onSelected: (v) {
               if (v == 'delete') onDelete();
@@ -433,7 +434,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
     padding: const EdgeInsets.only(bottom: AppSpacing.s7),
     child: Text(
       t,
-      style: Fig.t(context, size: 12, weight: FontWeight.w600, color: Fig.navy),
+      style: Fig.t(context, size: AppFontSizes.microCaps, weight: FontWeight.w600, color: Fig.navy),
     ),
   );
 
@@ -444,7 +445,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
       padding: EdgeInsets.only(bottom: bottom),
       child: FigNotchSheet(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s20, 0, AppSpacing.s20, AppSpacing.s24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -453,7 +454,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
                 context.tr.figScheduleASaqqarTask,
                 style: Fig.t(
                   context,
-                  size: 17,
+                  size: AppFontSizes.markdownH2,
                   weight: FontWeight.w500,
                   color: Fig.navy,
                 ),
@@ -461,7 +462,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
               const SizedBox(height: AppSpacing.s4),
               Text(
                 context.tr.figSetUpARecurringAiWorkflow,
-                style: Fig.t(context, size: 9, color: Fig.muted),
+                style: Fig.t(context, size: FigMetrics.fontFig9, color: Fig.muted),
               ),
               const SizedBox(height: AppSpacing.s22),
               _label(context.tr.figTaskTitle),
@@ -472,7 +473,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
                   onChanged: (_) {
                     if (_error != null) setState(() => _error = null);
                   },
-                  style: Fig.t(context, size: 13, color: Fig.navy),
+                  style: Fig.t(context, size: AppFontSizes.caption, color: Fig.navy),
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -480,7 +481,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
                     filled: false,
                     isCollapsed: true,
                     hintText: context.tr.figEGDailySalesReportSync,
-                    hintStyle: Fig.t(context, size: 13, color: Fig.placeholder),
+                    hintStyle: Fig.t(context, size: AppFontSizes.caption, color: Fig.placeholder),
                   ),
                 ),
               ),
@@ -489,7 +490,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
                   padding: const EdgeInsets.only(top: AppSpacing.s5),
                   child: Text(
                     _error!,
-                    style: Fig.t(context, size: 11, color: Fig.dangerText),
+                    style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.dangerText),
                   ),
                 ),
               const SizedBox(height: AppSpacing.s16),
@@ -574,13 +575,13 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
                 padding: const EdgeInsets.all(AppSpacing.s12),
                 decoration: BoxDecoration(
                   color: Fig.panelTint,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(AppRadius.modal),
                   border: Border.all(color: Fig.panelBorder),
                 ),
                 child: TextField(
                   controller: _prompt,
                   maxLines: null,
-                  style: Fig.t(context, size: 12, color: Fig.navy),
+                  style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.navy),
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -589,7 +590,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
                     isCollapsed: true,
                     hintText:
                         context.tr.figDescribeWhatSaqqarShouldFetchAnalyze,
-                    hintStyle: Fig.t(context, size: 12, color: Fig.placeholder),
+                    hintStyle: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.placeholder),
                   ),
                 ),
               ),
@@ -597,7 +598,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
               FigButton(
                 label: context.tr.figScheduleTask,
                 height: 50,
-                fontSize: 15,
+                fontSize: AppFontSizes.body,
                 onPressed: _save,
               ),
             ],
@@ -613,7 +614,7 @@ class _ScheduleTaskSheetState extends State<ScheduleTaskSheet> {
     alignment: Alignment.centerLeft,
     decoration: BoxDecoration(
       color: Fig.panelTint,
-      borderRadius: BorderRadius.circular(25),
+      borderRadius: BorderRadius.circular(FigMetrics.radFig25),
       border: Border.all(color: Fig.panelBorder),
     ),
     child: child,

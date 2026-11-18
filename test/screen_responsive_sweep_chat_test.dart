@@ -523,7 +523,7 @@ void main() {
             as RenderRepaintBoundary;
         final img = await b.toImage(pixelRatio: 1);
         final data = await img.toByteData(format: ui.ImageByteFormat.png);
-        final f = File('${shotDir}/$name.png');
+        final f = File('$shotDir/$name.png');
         await f.parent.create(recursive: true);
         await f.writeAsBytes(data!.buffer.asUint8List());
       });

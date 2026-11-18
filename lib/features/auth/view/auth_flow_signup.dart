@@ -20,6 +20,14 @@ class _SignUpPageState extends State<_SignUpPage> {
     _email = TextEditingController(
       text: context.read<AuthFlowCubit>().state.email,
     );
+    void clear(void Function() f) {
+      if (mounted) setState(f);
+    }
+
+    _watchEdits(_name, () => clear(() => _nameErr = null));
+    _watchEdits(_email, () => clear(() => _emailErr = null));
+    _watchEdits(_password, () => clear(() => _pwdErr = null));
+    _watchEdits(_confirm, () => clear(() => _confirmErr = null));
   }
 
   @override
@@ -108,7 +116,7 @@ class _SignUpPageState extends State<_SignUpPage> {
           textInputAction: TextInputAction.go,
           onSubmitted: (_) => _submit(),
         ),
-        const SizedBox(height: 38),
+        const SizedBox(height: AppSpacing.s38),
         FigButton(
           label: context.tr.figSignUp,
           loading: loading,

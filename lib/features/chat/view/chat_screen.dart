@@ -73,6 +73,7 @@ import '../data/attachment_source_picker.dart';
 import '../data/mic_permission_gate.dart';
 import '../view_model/attachment_staging.dart';
 import '../view_model/voice_note_recorder.dart';
+import '../../../core/theme/fig_metrics.dart';
 
 export '../view_model/chat_cubit_paging.dart';
 part 'chat_screen_messages.dart';
@@ -457,7 +458,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     return Theme(
       data: AppTheme.dark(Localizations.localeOf(context)),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.figWhite,
         resizeToAvoidBottomInset: true,
         body: Stack(
           children: [

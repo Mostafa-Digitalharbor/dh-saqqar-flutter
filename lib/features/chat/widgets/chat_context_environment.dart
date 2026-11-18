@@ -7,7 +7,7 @@ Future<void> showAddEnvironmentSheet(BuildContext context, {Project? project}) {
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.55),
+    barrierColor: AppColors.figBlack.withValues(alpha: AppAlphas.a55),
     builder: (_) => _AddEnvironment(project: project),
   );
 }
@@ -114,16 +114,16 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.92,
+          maxHeight: MediaQuery.sizeOf(context).height * AppFractions.environmentSheetMax,
         ),
         decoration: const BoxDecoration(
           color: _dark,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(FigMetrics.radFig32)),
         ),
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.s18, AppSpacing.s22, AppSpacing.s18, AppSpacing.s20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -136,9 +136,9 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                             : context.tr.figAddEnvironment,
                         style: Fig.t(
                           context,
-                          size: 17,
+                          size: AppFontSizes.markdownH2,
                           weight: FontWeight.w500,
-                          color: Colors.white,
+                          color: AppColors.figWhite,
                         ),
                       ),
                     ),
@@ -146,8 +146,8 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                       onTap: () => Navigator.pop(context),
                       child: const Icon(
                         LucideIcons.x,
-                        color: Colors.white,
-                        size: 26,
+                        color: AppColors.figWhite,
+                        size: AppIconSizes.tile,
                       ),
                     ),
                   ],
@@ -161,8 +161,8 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                         ),
                   style: Fig.t(
                     context,
-                    size: 9,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    size: FigMetrics.fontFig9,
+                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.s18),
@@ -188,9 +188,9 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                   context.tr.figEnvironmentType,
                   style: Fig.t(
                     context,
-                    size: 13,
+                    size: AppFontSizes.caption,
                     weight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.figWhite,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.s8),
@@ -219,9 +219,9 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                   context.tr.figDatabase,
                   style: Fig.t(
                     context,
-                    size: 13,
+                    size: AppFontSizes.caption,
                     weight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.figWhite,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.s8),
@@ -246,15 +246,14 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                         ),
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD9DFEF),
-                          borderRadius: BorderRadius.circular(26),
+                          color: AppColors.figCFFD9DFEF,
+                          borderRadius: BorderRadius.circular(AppRadius.heroPlate),
                         ),
                         child: _detecting
                             ? const SizedBox(
-                                width: 16,
-                                height: 16,
+                                width: FigMetrics.size16, height: FigMetrics.size16,
                                 child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                                  strokeWidth: AppStrokeWidths.spinnerThin,
                                 ),
                               )
                             : Row(
@@ -262,7 +261,7 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                                 children: [
                                   const Icon(
                                     LucideIcons.sparkles,
-                                    size: 13,
+                                    size: AppIconSizes.dense,
                                     color: Fig.tileText,
                                   ),
                                   const SizedBox(width: AppSpacing.s6),
@@ -271,7 +270,7 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                                       context.tr.figDetectDatabases,
                                       style: Fig.t(
                                         context,
-                                        size: 10.5,
+                                        size: FigMetrics.fontFig10U5,
                                         color: Fig.tileText,
                                       ),
                                       maxLines: 1,
@@ -297,9 +296,9 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                   context.tr.figAuthentication,
                   style: Fig.t(
                     context,
-                    size: 13,
+                    size: AppFontSizes.caption,
                     weight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.figWhite,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.s8),
@@ -333,8 +332,8 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                       _error!,
                       style: Fig.t(
                         context,
-                        size: 11,
-                        color: const Color(0xFFFF8A78),
+                        size: FigMetrics.fontFig11,
+                        color: AppColors.figCFFFF8A78,
                       ),
                     ),
                   ),

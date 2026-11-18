@@ -9,6 +9,8 @@ import '../extensions/context_extensions.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/fig_metrics.dart';
+import '../../core/theme/app_colors.dart';
 
 /// "Saqqar Tools" bottom sheet (the ⋮ pill): modes, Odoo context and the
 /// Odoo tools lists. Task prep is wired to the real [TaskPrepCubit].
@@ -23,7 +25,7 @@ Future<void> showSaqqarTools(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.5),
+    barrierColor: AppColors.figBlack.withValues(alpha: AppAlphas.a50),
     builder: (_) => _ToolsSheet(
       taskPrep: taskPrep,
       autoApprove: autoApprove,
@@ -33,8 +35,8 @@ Future<void> showSaqqarTools(
   );
 }
 
-const _sheetBg = Color(0xFF17181B);
-const _tile = Color(0xFF232529);
+const _sheetBg = AppColors.figCFF17181B;
+const _tile = AppColors.figCFF232529;
 
 class _ToolsSheet extends StatefulWidget {
   const _ToolsSheet({
@@ -64,7 +66,7 @@ class _ToolsSheetState extends State<_ToolsSheet> {
     return DecoratedBox(
       decoration: const BoxDecoration(
         color: _sheetBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(FigMetrics.radFig30)),
       ),
       child: SafeArea(
         top: false,
@@ -78,14 +80,14 @@ class _ToolsSheetState extends State<_ToolsSheet> {
   }
 
   Widget _label(String t) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+    padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s14, AppSpacing.s16, AppSpacing.s8),
     child: Text(
       t,
       style: Fig.t(
         context,
-        size: 9,
-        color: Colors.white.withValues(alpha: 0.8),
-        letterSpacing: 0.8,
+        size: FigMetrics.fontFig9,
+        color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
+        letterSpacing: AppLetterSpacing.capsWide,
       ),
     ),
   );
@@ -93,36 +95,33 @@ class _ToolsSheetState extends State<_ToolsSheet> {
   Widget _divider() => Container(
     height: 1,
     margin: const EdgeInsets.symmetric(horizontal: 0),
-    color: Colors.white.withValues(alpha: 0.08),
+    color: AppColors.figWhite.withValues(alpha: AppAlphas.a08),
   );
 
   Widget _iconTile(IconData i) => Container(
-    width: 46,
-    height: 46,
+    width: FigMetrics.size46, height: FigMetrics.size46,
     decoration: BoxDecoration(
       color: _tile,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.input),
     ),
-    child: Icon(i, size: 19, color: Colors.white.withValues(alpha: 0.85)),
+    child: Icon(i, size: AppIconSizes.bell, color: AppColors.figWhite.withValues(alpha: AppAlphas.a85)),
   );
 
   Widget _toggle(bool v, ValueChanged<bool> on) => GestureDetector(
     onTap: () => on(!v),
     child: AnimatedContainer(
       duration: AppDurations.menuIn,
-      width: 42,
-      height: 24,
+      width: FigMetrics.size42, height: FigMetrics.size24,
       padding: const EdgeInsets.all(AppSpacing.s3),
       decoration: BoxDecoration(
-        color: v ? Fig.switchOn : const Color(0xFF3A3C42),
-        borderRadius: BorderRadius.circular(12),
+        color: v ? Fig.switchOn : AppColors.figCFF3A3C42,
+        borderRadius: BorderRadius.circular(AppRadius.button),
       ),
       alignment: v ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        width: 18,
-        height: 18,
+        width: FigMetrics.size18, height: FigMetrics.size18,
         decoration: BoxDecoration(
-          color: v ? Colors.white : const Color(0xFFB9BCC4),
+          color: v ? AppColors.figWhite : AppColors.figCFFB9BCC4,
           shape: BoxShape.circle,
         ),
       ),
@@ -131,7 +130,7 @@ class _ToolsSheetState extends State<_ToolsSheet> {
 
   Widget _modeRow(IconData icon, String title, String sub, Widget trailing) =>
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s6, AppSpacing.s16, AppSpacing.s6),
         child: Row(
           children: [
             _iconTile(icon),
@@ -144,9 +143,9 @@ class _ToolsSheetState extends State<_ToolsSheet> {
                     title,
                     style: Fig.t(
                       context,
-                      size: 12.5,
+                      size: AppFontSizes.metaLine,
                       weight: FontWeight.w600,
-                      color: Colors.white,
+                      color: AppColors.figWhite,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s2),
@@ -154,8 +153,8 @@ class _ToolsSheetState extends State<_ToolsSheet> {
                     sub,
                     style: Fig.t(
                       context,
-                      size: 10,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      size: FigMetrics.fontFig10,
+                      color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                     ),
                   ),
                 ],
@@ -178,7 +177,7 @@ class _ToolsSheetState extends State<_ToolsSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 22, 16, 14),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s22, AppSpacing.s16, AppSpacing.s14),
           child: Row(
             children: [
               Expanded(
@@ -186,15 +185,15 @@ class _ToolsSheetState extends State<_ToolsSheet> {
                   context.tr.figSaqqarTools,
                   style: Fig.t(
                     context,
-                    size: 19,
+                    size: AppFontSizes.markdownH1,
                     weight: FontWeight.w500,
-                    color: Colors.white,
+                    color: AppColors.figWhite,
                   ),
                 ),
               ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(LucideIcons.x, color: Colors.white, size: 26),
+                child: const Icon(LucideIcons.x, color: AppColors.figWhite, size: AppIconSizes.tile),
               ),
             ],
           ),
@@ -233,34 +232,34 @@ class _ToolsSheetState extends State<_ToolsSheet> {
         _divider(),
         _label(context.tr.figOdooContext),
         Padding(
-          padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s10, 0, AppSpacing.s10, AppSpacing.s6),
           child: Wrap(
-            spacing: 8,
+            spacing: AppSpacing.s8,
             children: [
               for (var i = 0; i < contexts.length; i++)
                 GestureDetector(
                   onTap: () => setState(() => _ctx = i),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
+                      horizontal: AppSpacing.s14,
+                      vertical: AppSpacing.s8,
                     ),
                     decoration: BoxDecoration(
-                      color: i == _ctx ? const Color(0xFFE3E8F5) : Fig.navyDeep,
-                      borderRadius: BorderRadius.circular(16),
+                      color: i == _ctx ? AppColors.figCFFE3E8F5 : Fig.navyDeep,
+                      borderRadius: BorderRadius.circular(AppRadius.bubble),
                       border: Border.all(
                         color: i == _ctx
                             ? Colors.transparent
-                            : Colors.white.withValues(alpha: 0.08),
+                            : AppColors.figWhite.withValues(alpha: AppAlphas.a08),
                       ),
                     ),
                     child: Text(
                       contexts[i],
                       style: Fig.t(
                         context,
-                        size: 10.5,
+                        size: FigMetrics.fontFig10U5,
                         weight: FontWeight.w600,
-                        color: i == _ctx ? Fig.navy : Colors.white,
+                        color: i == _ctx ? Fig.navy : AppColors.figWhite,
                       ),
                     ),
                   ),
@@ -302,8 +301,8 @@ class _ToolsSheetState extends State<_ToolsSheet> {
           sub,
           Icon(
             LucideIcons.chevronRight,
-            size: 20,
-            color: Colors.white.withValues(alpha: 0.85),
+            size: AppIconSizes.action,
+            color: AppColors.figWhite.withValues(alpha: AppAlphas.a85),
           ),
         ),
       );
@@ -323,14 +322,14 @@ class _ToolsSheetState extends State<_ToolsSheet> {
         GestureDetector(
           onTap: () => setState(() => _commands = false),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 22, 16, 12),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.s14, AppSpacing.s22, AppSpacing.s16, AppSpacing.s12),
             child: Row(
               children: [
-                Icon(context.chevronBack, color: Colors.white, size: 22),
+                Icon(context.chevronBack, color: AppColors.figWhite, size: AppIconSizes.navBar),
                 const SizedBox(width: AppSpacing.s8),
                 Text(
                   context.tr.figBack,
-                  style: Fig.t(context, size: 17, color: Colors.white),
+                  style: Fig.t(context, size: AppFontSizes.markdownH2, color: AppColors.figWhite),
                 ),
               ],
             ),

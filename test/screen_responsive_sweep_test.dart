@@ -399,7 +399,7 @@ void main() {
     await sweepMatrix(
       tester,
       prefs: prefs,
-      () => TasksScreen(initial: [
+      () => const TasksScreen(initial: [
         ScheduledTask(
           id: '1',
           title: kLongName,
@@ -409,7 +409,7 @@ void main() {
           frequency: 'Daily',
           prompt: kLongName,
         ),
-        const ScheduledTask(
+        ScheduledTask(
           id: '2',
           title: 'Collections summary',
           time: 'When stock falls below the configured minimum level',
@@ -438,7 +438,7 @@ void main() {
     await sweepMatrix(
       tester,
       prefs: prefs,
-      () => ConnectEnvironmentScreen(companyName: kLongName),
+      () => const ConnectEnvironmentScreen(companyName: kLongName),
     );
   });
 
@@ -467,6 +467,25 @@ void main() {
         () => AuthFlowScreen(initial: step),
       );
     }
+  });
+
+  testWidgets('a sign-up error goes away as soon as the field is edited',
+      (tester) async {
+    await pumpOnce(
+      tester,
+      const AuthFlowScreen(initial: AuthFlowStep.signUpEmail),
+      prefs: prefs,
+    );
+
+    await tester.tap(find.text('Sign Up').last);
+    await tester.pump();
+    expect(find.text('Enter your first name.'), findsOneWidget);
+
+    // The first field is the name; typing there fixes that message only.
+    await tester.enterText(find.byType(EditableText).first, 'Mostafa');
+    await tester.pump();
+    expect(find.text('Enter your first name.'), findsNothing);
+    expect(find.text('Email is required.'), findsOneWidget);
   });
 
   testWidgets('AuthFlowScreen shows no build/version string', (tester) async {

@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../shared/fig/fig.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// One bullet from a tier's feature list: a grey ring-check and the text.
 ///
@@ -24,8 +25,8 @@ class PlanFeatureLine extends StatelessWidget {
             padding: EdgeInsets.only(top: AppSpacing.s1),
             child: Icon(
               LucideIcons.circleCheck,
-              size: 18,
-              color: Color(0xFF8D93A5),
+              size: AppIconSizes.regular,
+              color: AppColors.figCFF8D93A5,
             ),
           ),
           const SizedBox(width: AppSpacing.s10),
@@ -34,9 +35,9 @@ class PlanFeatureLine extends StatelessWidget {
               label,
               style: Fig.t(
                 context,
-                size: 12.5,
+                size: AppFontSizes.metaLine,
                 color: Fig.mutedGrey,
-                height: 1.35,
+                height: AppLineHeights.label,
               ),
             ),
           ),

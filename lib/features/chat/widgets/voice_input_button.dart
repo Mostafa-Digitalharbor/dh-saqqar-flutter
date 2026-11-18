@@ -10,6 +10,8 @@ import '../../../core/theme/app_icons.dart';
 import '../../../shared/widgets/tappable_surface.dart';
 import '../../../shared/fig/fig.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/fig_metrics.dart';
 
 /// Mic-tap → start recording. Reduced to a pure stateless button after
 /// the Whisper integration (2026-05-23): the State that used to live
@@ -110,10 +112,10 @@ class _RecordingOverlayState extends State<RecordingOverlay>
   @override
   Widget build(BuildContext context) {
     final tr = context.tr;
-    const red = Color(0xFFFF6B6B);
+    const red = AppColors.figCFFFF6B6B;
     final busy = widget.transcribing;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.s20, AppSpacing.s18, AppSpacing.s20, AppSpacing.s18),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,8 +125,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
               AnimatedBuilder(
                 animation: _pulse,
                 builder: (context, _) => Container(
-                  width: 8,
-                  height: 8,
+                  width: FigMetrics.size8, height: FigMetrics.size8,
                   decoration: BoxDecoration(
                     color: red.withValues(
                       alpha: busy ? 0.4 : 0.6 + 0.4 * (1 - _pulse.value),
@@ -139,7 +140,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                   busy ? tr.transcribing : context.tr.figRecording,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Fig.t(context, size: 15, color: red),
+                  style: Fig.t(context, size: AppFontSizes.body, color: red),
                 ),
               ),
               if (!busy) ...[
@@ -148,8 +149,8 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                   _fmt(widget.elapsed),
                   style: Fig.t(
                     context,
-                    size: 15,
-                    color: Colors.white,
+                    size: AppFontSizes.body,
+                    color: AppColors.figWhite,
                     weight: FontWeight.w700,
                   ),
                 ),
@@ -162,8 +163,8 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                   overflow: TextOverflow.ellipsis,
                   style: Fig.t(
                     context,
-                    size: 13,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    size: AppFontSizes.caption,
+                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                   ),
                 ),
               ),
@@ -175,10 +176,9 @@ class _RecordingOverlayState extends State<RecordingOverlay>
             child: busy
                 ? const Center(
                     child: SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: FigMetrics.size22, height: FigMetrics.size22,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
+                        strokeWidth: AppStrokeWidths.spinnerRegular,
                         color: Fig.blueBright,
                       ),
                     ),
@@ -202,7 +202,7 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                         context.tr.figCancel,
                         style: Fig.t(
                           context,
-                          size: 15,
+                          size: AppFontSizes.body,
                           color: busy ? Colors.white38 : red,
                         ),
                       ),
@@ -225,14 +225,14 @@ class _RecordingOverlayState extends State<RecordingOverlay>
                       color: const Color(
                         0xFF2F6BF0,
                       ).withValues(alpha: busy ? 0.5 : 1),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                     ),
                     child: Text(
                       context.tr.figSend,
                       style: Fig.t(
                         context,
-                        size: 15,
-                        color: Colors.white,
+                        size: AppFontSizes.body,
+                        color: AppColors.figWhite,
                         weight: FontWeight.w600,
                       ),
                     ),
@@ -282,7 +282,7 @@ class _LiveWaveform extends StatelessWidget {
                                                 0.5 * math.sin(t + i * 0.45)))),
                     decoration: BoxDecoration(
                       color: Fig.blueBright,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppRadius.waveformBar),
                     ),
                   ),
               ],

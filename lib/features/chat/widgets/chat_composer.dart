@@ -12,6 +12,9 @@ import '../../../shared/widgets/responsive_content.dart';
 import '../data/chat_view_models.dart';
 import 'attachment_chip.dart';
 import 'voice_input_button.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Brief §4.5 composer — two-row layout inside a single rounded pill:
 ///
@@ -175,7 +178,7 @@ class ChatComposer extends StatelessWidget {
         decoration: const BoxDecoration(),
         child: ResponsiveContent(
           maxWidth: AppLayoutWidths.chatShell,
-          padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s18, AppSpacing.s8, AppSpacing.s18, AppSpacing.s14),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -188,7 +191,7 @@ class ChatComposer extends StatelessWidget {
               // growth.
               if (attachments.isNotEmpty) ...[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s12),
                   child: Row(
                     children: [
                       Expanded(
@@ -196,8 +199,8 @@ class ChatComposer extends StatelessWidget {
                           context.tr.figSelected(attachments.length),
                           style: Fig.t(
                             context,
-                            size: 14,
-                            color: Colors.white.withValues(alpha: 0.85),
+                            size: AppFontSizes.dense,
+                            color: AppColors.figWhite.withValues(alpha: AppAlphas.a85),
                           ),
                         ),
                       ),
@@ -208,8 +211,8 @@ class ChatComposer extends StatelessWidget {
                             context.tr.figClearAll,
                             style: Fig.t(
                               context,
-                              size: 14,
-                              color: Colors.white.withValues(alpha: 0.8),
+                              size: AppFontSizes.dense,
+                              color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                             ),
                           ),
                         ),
@@ -222,8 +225,8 @@ class ChatComposer extends StatelessWidget {
                             children: [
                               Icon(
                                 LucideIcons.plus,
-                                size: 15,
-                                color: Colors.white.withValues(alpha: 0.5),
+                                size: AppIconSizes.inline,
+                                color: AppColors.figWhite.withValues(alpha: AppAlphas.a50),
                               ),
                               const SizedBox(width: AppSpacing.s4),
                               Flexible(
@@ -231,8 +234,8 @@ class ChatComposer extends StatelessWidget {
                                   context.tr.figAddMore,
                                   style: Fig.t(
                                     context,
-                                    size: 14,
-                                    color: Colors.white.withValues(alpha: 0.8),
+                                    size: AppFontSizes.dense,
+                                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -296,10 +299,10 @@ class ChatComposer extends StatelessWidget {
               // now live in the ⋮ Saqqar Tools sheet.
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(32),
+                  color: AppColors.figBlack.withValues(alpha: AppAlphas.a55),
+                  borderRadius: BorderRadius.circular(FigMetrics.radFig32),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.32),
+                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a32),
                   ),
                 ),
                 child: recording || transcribing
@@ -314,21 +317,21 @@ class ChatComposer extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(22, 20, 22, 0),
+                            padding: const EdgeInsets.fromLTRB(AppSpacing.s22, AppSpacing.s20, AppSpacing.s22, 0),
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(minHeight: 56),
+                              constraints: const BoxConstraints(minHeight: FigMetrics.boxMInHU56),
                               child: TextField(
                                 controller: controller,
                                 focusNode: focusNode,
                                 minLines: 1,
                                 maxLines: 6,
                                 textInputAction: TextInputAction.newline,
-                                cursorColor: Colors.white,
+                                cursorColor: AppColors.figWhite,
                                 style: Fig.t(
                                   context,
-                                  size: 15,
-                                  color: Colors.white,
-                                  height: 1.35,
+                                  size: AppFontSizes.body,
+                                  color: AppColors.figWhite,
+                                  height: AppLineHeights.label,
                                 ),
                                 decoration: InputDecoration(
                                   hintText: onStop != null
@@ -336,8 +339,8 @@ class ChatComposer extends StatelessWidget {
                                       : context.tr.figAskMeAnything,
                                   hintStyle: Fig.t(
                                     context,
-                                    size: 15,
-                                    color: Colors.white.withValues(alpha: 0.8),
+                                    size: AppFontSizes.body,
+                                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                                   ),
                                   hintMaxLines: 2,
                                   isCollapsed: true,
@@ -350,7 +353,7 @@ class ChatComposer extends StatelessWidget {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                            padding: const EdgeInsets.fromLTRB(AppSpacing.s12, AppSpacing.s10, AppSpacing.s12, AppSpacing.s12),
                             child: Row(
                               children: [
                                 _RoundAction(
@@ -390,8 +393,7 @@ class ChatComposer extends StatelessWidget {
                                       child: Opacity(
                                         opacity: enabled ? 1 : 0.55,
                                         child: Container(
-                                          width: 46,
-                                          height: 46,
+                                          width: FigMetrics.size46, height: FigMetrics.size46,
                                           decoration: const BoxDecoration(
                                             shape: BoxShape.circle,
                                             gradient: LinearGradient(
@@ -399,7 +401,7 @@ class ChatComposer extends StatelessWidget {
                                               end: Alignment.bottomCenter,
                                               colors: [
                                                 Fig.blueAction,
-                                                Color(0xFF1B4FD0),
+                                                AppColors.figCFF1B4FD0,
                                               ],
                                             ),
                                           ),
@@ -407,8 +409,8 @@ class ChatComposer extends StatelessWidget {
                                             running
                                                 ? LucideIcons.square
                                                 : LucideIcons.arrowUpToLine,
-                                            size: 18,
-                                            color: Colors.white,
+                                            size: AppIconSizes.regular,
+                                            color: AppColors.figWhite,
                                           ),
                                         ),
                                       ),
@@ -443,16 +445,15 @@ class _RoundAction extends StatelessWidget {
       child: Opacity(
         opacity: onTap == null ? 0.4 : 1,
         child: Container(
-          width: 46,
-          height: 46,
+          width: FigMetrics.size46, height: FigMetrics.size46,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+            border: Border.all(color: AppColors.figWhite.withValues(alpha: AppAlphas.a28)),
           ),
           child: Icon(
             icon,
-            size: 19,
-            color: Colors.white.withValues(alpha: 0.8),
+            size: AppIconSizes.bell,
+            color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
           ),
         ),
       ),
@@ -486,11 +487,11 @@ class _StagedAttachment extends StatelessWidget {
       onTap: onPreview,
       child: Container(
         width: 100,
-        padding: const EdgeInsets.fromLTRB(10, 10, 8, 8),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.s10, AppSpacing.s10, AppSpacing.s8, AppSpacing.s8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          color: AppColors.figWhite.withValues(alpha: AppAlphas.a07),
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          border: Border.all(color: AppColors.figWhite.withValues(alpha: AppAlphas.a18)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,10 +499,9 @@ class _StagedAttachment extends StatelessWidget {
             Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
+                  borderRadius: BorderRadius.circular(FigMetrics.radFig5),
                   child: SizedBox(
-                    width: 24,
-                    height: 24,
+                    width: FigMetrics.size24, height: FigMetrics.size24,
                     child: localImg
                         ? Image.file(
                             File(a.imageUrl!),
@@ -521,8 +521,8 @@ class _StagedAttachment extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     child: Icon(
                       LucideIcons.x,
-                      size: 14,
-                      color: Colors.white.withValues(alpha: 0.7),
+                      size: AppIconSizes.compact,
+                      color: AppColors.figWhite.withValues(alpha: AppAlphas.a70),
                     ),
                   ),
                 ),
@@ -533,15 +533,15 @@ class _StagedAttachment extends StatelessWidget {
               a.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Fig.t(context, size: 12, color: Colors.white),
+              style: Fig.t(context, size: AppFontSizes.microCaps, color: AppColors.figWhite),
             ),
             Text(
               a.size,
               maxLines: 1,
               style: Fig.t(
                 context,
-                size: 11,
-                color: Colors.white.withValues(alpha: 0.8),
+                size: FigMetrics.fontFig11,
+                color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
               ),
             ),
           ],
@@ -568,8 +568,8 @@ class _KindGlyph extends StatelessWidget {
         ? (LucideIcons.fileArchive, Fig.fileAmber)
         : (LucideIcons.file, Colors.white70);
     return ColoredBox(
-      color: c.withValues(alpha: 0.22),
-      child: Icon(icon, size: 15, color: c),
+      color: c.withValues(alpha: AppAlphas.a22),
+      child: Icon(icon, size: AppIconSizes.inline, color: c),
     );
   }
 }

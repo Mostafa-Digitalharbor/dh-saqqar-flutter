@@ -6,6 +6,8 @@ import '../../shared/fig/fig.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/fig_metrics.dart';
 
 /// First-launch "Choose Your Language" card, shown over the blurred splash.
 /// Returns the chosen language code. Hindi and Chinese are listed as in the
@@ -21,7 +23,7 @@ Future<String?> showLanguageSheet(BuildContext context) {
       opacity: anim,
       child: SlideTransition(
         position: Tween(
-          begin: const Offset(0, 0.15),
+          begin: FigOffsets.oU0U0U15,
           end: Offset.zero,
         ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
         child: child,
@@ -46,7 +48,7 @@ class _LanguageSheet extends StatelessWidget {
               child: Center(
                 child: Text(
                   label,
-                  style: Fig.t(context, size: 16, color: Fig.inkDeep),
+                  style: Fig.t(context, size: AppFontSizes.reading, color: Fig.inkDeep),
                 ),
               ),
             ),
@@ -56,21 +58,21 @@ class _LanguageSheet extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: ColoredBox(color: Colors.black.withValues(alpha: 0.12)),
+          filter: ImageFilter.blur(sigmaX: FigMetrics.sigma14, sigmaY: FigMetrics.sigma14),
+          child: ColoredBox(color: AppColors.figBlack.withValues(alpha: AppAlphas.a12)),
         ),
         Align(
           alignment: Alignment.bottomCenter,
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 30),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s24, 0, AppSpacing.s24, AppSpacing.s30),
               child: Material(
                 color: Colors.transparent,
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s18, AppSpacing.s16, AppSpacing.s8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDCE1EB).withValues(alpha: 0.94),
-                    borderRadius: BorderRadius.circular(28),
+                    color: AppColors.figCFFDCE1EB.withValues(alpha: AppAlphas.a94),
+                    borderRadius: BorderRadius.circular(AppRadius.sheetTop),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -79,9 +81,9 @@ class _LanguageSheet extends StatelessWidget {
                         context.tr.figChooseYourLanguage,
                         style: Fig.t(
                           context,
-                          size: 15,
+                          size: AppFontSizes.body,
                           weight: FontWeight.w700,
-                          color: Colors.black,
+                          color: AppColors.figBlack,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.s10),

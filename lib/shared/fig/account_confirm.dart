@@ -6,6 +6,9 @@ import '../../features/auth/view_model/auth_cubit.dart';
 import 'fig.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/fig_metrics.dart';
+import '../../core/theme/app_colors.dart';
 
 /// The notched confirmation sheet used for "Sign out of Saqqar?" and "Delete
 /// your account?". Shows the signed-in user, a red primary action and Cancel;
@@ -66,7 +69,7 @@ class _AccountConfirmState extends State<_AccountConfirm> {
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: FigNotchSheet(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 0, 22, 26),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s22, 0, AppSpacing.s22, AppSpacing.s26),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -75,7 +78,7 @@ class _AccountConfirmState extends State<_AccountConfirm> {
                 textAlign: TextAlign.center,
                 style: Fig.t(
                   context,
-                  size: 23,
+                  size: FigMetrics.fontFig23,
                   weight: FontWeight.w600,
                   color: Fig.navy,
                 ),
@@ -86,24 +89,24 @@ class _AccountConfirmState extends State<_AccountConfirm> {
                 textAlign: TextAlign.center,
                 style: Fig.t(
                   context,
-                  size: 13,
+                  size: AppFontSizes.caption,
                   color: Fig.mutedBlue,
-                  height: 1.4,
+                  height: AppLineHeights.compact,
                 ),
               ),
               const SizedBox(height: AppSpacing.s22),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
+                  horizontal: AppSpacing.s18,
+                  vertical: AppSpacing.s14,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE6E7EC),
-                  borderRadius: BorderRadius.circular(26),
+                  color: AppColors.figCFFE6E7EC,
+                  borderRadius: BorderRadius.circular(AppRadius.heroPlate),
                 ),
                 child: Row(
                   children: [
-                    const Icon(LucideIcons.user, size: 20, color: Fig.muted),
+                    const Icon(LucideIcons.user, size: AppIconSizes.action, color: Fig.muted),
                     const SizedBox(width: AppSpacing.s14),
                     Expanded(
                       child: Column(
@@ -115,7 +118,7 @@ class _AccountConfirmState extends State<_AccountConfirm> {
                             overflow: TextOverflow.ellipsis,
                             style: Fig.t(
                               context,
-                              size: 11,
+                              size: FigMetrics.fontFig11,
                               weight: FontWeight.w700,
                               color: Fig.navy,
                             ),
@@ -125,7 +128,7 @@ class _AccountConfirmState extends State<_AccountConfirm> {
                             user?.email ?? '',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Fig.t(context, size: 10, color: Fig.muted),
+                            style: Fig.t(context, size: FigMetrics.fontFig10, color: Fig.muted),
                           ),
                         ],
                       ),
@@ -139,7 +142,7 @@ class _AccountConfirmState extends State<_AccountConfirm> {
                   alignment: AlignmentDirectional.centerStart,
                   child: Text(
                     context.tr.figTypeToConfirm(widget.requireText),
-                    style: Fig.t(context, size: 11, color: Fig.navy),
+                    style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.navy),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.s8),
@@ -150,14 +153,14 @@ class _AccountConfirmState extends State<_AccountConfirm> {
                   ),
                   alignment: Alignment.centerLeft,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F8FC),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(color: const Color(0xFF4E6AEA)),
+                    color: AppColors.figCFFF7F8FC,
+                    borderRadius: BorderRadius.circular(FigMetrics.radFig25),
+                    border: Border.all(color: AppColors.figCFF4E6AEA),
                   ),
                   child: TextField(
                     controller: _text,
                     onChanged: (_) => setState(() {}),
-                    style: Fig.t(context, size: 13, color: Fig.navy),
+                    style: Fig.t(context, size: AppFontSizes.caption, color: Fig.navy),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -173,7 +176,7 @@ class _AccountConfirmState extends State<_AccountConfirm> {
                 label: widget.confirmLabel,
                 danger: true,
                 height: 46,
-                fontSize: 14,
+                fontSize: AppFontSizes.dense,
                 weight: FontWeight.w600,
                 onPressed: _armed ? () => Navigator.pop(context, true) : null,
               ),
@@ -182,7 +185,7 @@ class _AccountConfirmState extends State<_AccountConfirm> {
                 label: context.tr.figCancel,
                 secondary: true,
                 height: 46,
-                fontSize: 14,
+                fontSize: AppFontSizes.dense,
                 onPressed: () => Navigator.pop(context, false),
               ),
             ],

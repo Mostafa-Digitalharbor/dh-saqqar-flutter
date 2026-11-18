@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/i18n/app_localizations.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/constants/asset_paths.dart';
 import '../extensions/context_extensions.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/fig_metrics.dart';
 
 /// Design tokens + primitives for the 2026-11 Figma redesign
 /// (`figma-design/`). Everything the new screens share lives here so a value
@@ -16,127 +18,127 @@ class Fig {
   Fig._();
 
   // ── Colours (sampled from the PNG exports) ──────────────────────────
-  static const pageGrey = Color(0xFFEEEEEF);
-  static const ink = Color(0xFF111827);
-  static const navy = Color(0xFF1B2140);
-  static const muted = Color(0xFF4A5274);
-  static const mutedSoft = Color(0xFF5F6888);
-  static const placeholder = Color(0xFF656E8E);
-  static const blue = Color(0xFF235FE7);
-  static const blueTop = Color(0xFF1D50D9);
-  static const blueBottom = Color(0xFF357AF3);
-  static const fieldBorder = Color(0xFFB3C3F4);
-  static const cardFill = Color(0xFFF8F9FA);
-  static const danger = Color(0xFFE5604A);
-  static const dangerText = Color(0xFFD9503C);
-  static const success = Color(0xFF22C58B);
-  static const nearBlack = Color(0xFF08090B);
-  static const chipBlue = Color(0xFF3A6FF0);
-  static const iconTile = Color(0xFFDDE3F3);
-  static const tileText = Color(0xFF3B4268);
+  static const pageGrey = AppColors.figPageGrey;
+  static const ink = AppColors.figInk;
+  static const navy = AppColors.figNavy;
+  static const muted = AppColors.figMuted;
+  static const mutedSoft = AppColors.figMutedSoft;
+  static const placeholder = AppColors.figPlaceholder;
+  static const blue = AppColors.figBlue;
+  static const blueTop = AppColors.figBlueTop;
+  static const blueBottom = AppColors.figBlueBottom;
+  static const fieldBorder = AppColors.figFieldBorder;
+  static const cardFill = AppColors.figCardFill;
+  static const danger = AppColors.figDanger;
+  static const dangerText = AppColors.figDangerText;
+  static const success = AppColors.figSuccess;
+  static const nearBlack = AppColors.figNearBlack;
+  static const chipBlue = AppColors.figChipBlue;
+  static const iconTile = AppColors.figIconTile;
+  static const tileText = AppColors.figTileText;
 
   // ── Shared one-offs promoted from screens (same hex, now named) ──
   /// Heading ink on the account rows.
-  static const inkDeep = Color(0xFF0B0B0C);
+  static const inkDeep = AppColors.figInkDeep;
 
   /// Link / selection accent on dark panels.
-  static const accentBlue = Color(0xFF4C8DFF);
+  static const accentBlue = AppColors.figAccentBlue;
 
   /// Hairline border of the chat rail.
-  static const hairline = Color(0xFFD7DBE8);
+  static const hairline = AppColors.figHairline;
 
   /// Soft brand blue (toggles, chips).
-  static const blueSoft = Color(0xFF3B6FF0);
+  static const blueSoft = AppColors.figBlueSoft;
 
   /// Secondary copy on the Apps cards.
-  static const mutedGrey = Color(0xFF666B80);
+  static const mutedGrey = AppColors.figMutedGrey;
 
   /// Primary action blue.
-  static const blueStrong = Color(0xFF2F63F0);
+  static const blueStrong = AppColors.figBlueStrong;
 
   /// Selected-row tint.
-  static const tintBlue = Color(0xFFE7EDFC);
+  static const tintBlue = AppColors.figTintBlue;
 
   /// Secondary copy in the notifications inbox.
-  static const mutedCool = Color(0xFF636A80);
+  static const mutedCool = AppColors.figMutedCool;
 
   /// Border of tinted blue cards.
-  static const borderBlue = Color(0xFFDCE3F6);
+  static const borderBlue = AppColors.figBorderBlue;
 
   /// Slate icon / badge base.
-  static const slate = Color(0xFF6E7BB0);
+  static const slate = AppColors.figSlate;
 
   /// Tertiary copy.
-  static const mutedLight = Color(0xFF7D8190);
+  static const mutedLight = AppColors.figMutedLight;
 
   /// Bright brand blue (viewer actions).
-  static const blueBright = Color(0xFF3B6FF5);
+  static const blueBright = AppColors.figBlueBright;
 
   /// Dark panel behind code / bars.
-  static const darkPanel = Color(0xFF16181C);
+  static const darkPanel = AppColors.figDarkPanel;
 
   /// Deep navy pill.
-  static const navyDeep = Color(0xFF0E1830);
+  static const navyDeep = AppColors.figNavyDeep;
 
   /// Body text on light sheets.
-  static const navyText = Color(0xFF2F3760);
+  static const navyText = AppColors.figNavyText;
 
   /// Light panel fill.
-  static const panelTint = Color(0xFFF4F5FA);
+  static const panelTint = AppColors.figPanelTint;
 
   /// Light panel border.
-  static const panelBorder = Color(0xFFE1E5F1);
+  static const panelBorder = AppColors.figPanelBorder;
 
   /// Inactive icon blue-grey.
-  static const mutedBlue = Color(0xFF5E678A);
+  static const mutedBlue = AppColors.figMutedBlue;
 
   /// Switch track, on.
-  static const switchOn = Color(0xFF2F7BF5);
+  static const switchOn = AppColors.figSwitchOn;
 
   /// Text shadow ink.
-  static const shadowInk = Color(0x990B1230);
+  static const shadowInk = AppColors.figShadowInk;
 
   /// Dim copy on the plans page.
-  static const mutedDim = Color(0xFF6A7088);
+  static const mutedDim = AppColors.figMutedDim;
 
   /// Composer action blue.
-  static const blueAction = Color(0xFF2F6BF0);
+  static const blueAction = AppColors.figBlueAction;
 
   /// PDF attachment tint.
-  static const fileRed = Color(0xFFFF6B7A);
+  static const fileRed = AppColors.figFileRed;
 
   /// Document attachment tint.
-  static const fileBlue = Color(0xFF3B8BFF);
+  static const fileBlue = AppColors.figFileBlue;
 
   /// Spreadsheet attachment tint.
-  static const fileGreen = Color(0xFF4CD28F);
+  static const fileGreen = AppColors.figFileGreen;
 
   /// Archive attachment tint.
-  static const fileAmber = Color(0xFFF3B93C);
+  static const fileAmber = AppColors.figFileAmber;
 
   /// Drop shadow of the rail drawer.
-  static const drawerShadow = Color(0x33101840);
+  static const drawerShadow = AppColors.figDrawerShadow;
 
   /// Cool divider.
-  static const dividerCool = Color(0xFFE3E6EF);
+  static const dividerCool = AppColors.figDividerCool;
 
   /// Soft divider.
-  static const dividerSoft = Color(0xFFE7E8EE);
+  static const dividerSoft = AppColors.figDividerSoft;
 
   /// Near-black text on Home.
-  static const inkBlack = Color(0xFF0D0D10);
+  static const inkBlack = AppColors.figInkBlack;
 
   /// Indigo-grey copy on Home.
-  static const mutedIndigo = Color(0xFF4F5C8A);
+  static const mutedIndigo = AppColors.figMutedIndigo;
 
   /// Plain near-black.
-  static const inkPlain = Color(0xFF111111);
+  static const inkPlain = AppColors.figInkPlain;
 
   /// Focus / selected blue on setup forms.
-  static const blueFocus = Color(0xFF3B7BF5);
+  static const blueFocus = AppColors.figBlueFocus;
 
   /// Cool surface in light mode.
-  static const surfaceCool = Color(0xFFEFF1F6);
+  static const surfaceCool = AppColors.figSurfaceCool;
 
   static const radiusPill = 30.0;
   static const radiusCard = 26.0;
@@ -217,7 +219,7 @@ class FigBackdrop extends StatelessWidget {
             child: Image.asset(
               AssetPaths.backdropLight,
               fit: BoxFit.fill,
-              height: 585.0 * stretch,
+              height: FigMetrics.lhFig585 * stretch,
               width: double.infinity,
               filterQuality: FilterQuality.medium,
               gaplessPlayback: true,
@@ -256,44 +258,44 @@ class _ChatGlow extends StatelessWidget {
     1.0,
   ];
   static const _left = [
-    Color(0xFF080909),
-    Color(0xFF090a0d),
-    Color(0xFF090a0e),
-    Color(0xFF08090e),
-    Color(0xFF090a10),
-    Color(0xFF0e1529),
-    Color(0xFF132142),
-    Color(0xFF182d5a),
-    Color(0xFF1d3972),
-    Color(0xFF21438b),
-    Color(0xFF244994),
-    Color(0xFF1e3d7a),
-    Color(0xFF193161),
-    Color(0xFF142547),
-    Color(0xFF101a2e),
-    Color(0xFF0a0e14),
-    Color(0xFF080909),
-    Color(0xFF080909),
+    AppColors.figCFF080909,
+    AppColors.figCFF090A0D,
+    AppColors.figCFF090A0E,
+    AppColors.figCFF08090E,
+    AppColors.figCFF090A10,
+    AppColors.figCFF0E1529,
+    AppColors.figCFF132142,
+    AppColors.figCFF182D5A,
+    AppColors.figCFF1D3972,
+    AppColors.figCFF21438B,
+    AppColors.figCFF244994,
+    AppColors.figCFF1E3D7A,
+    AppColors.figCFF193161,
+    AppColors.figCFF142547,
+    AppColors.figCFF101A2E,
+    AppColors.figCFF0A0E14,
+    AppColors.figCFF080909,
+    AppColors.figCFF080909,
   ];
   static const _right = [
-    Color(0xFF080909),
-    Color(0xFF0a0d14),
-    Color(0xFF101936),
-    Color(0xFF152658),
-    Color(0xFF1b337a),
-    Color(0xFF2245a6),
-    Color(0xFF2953ca),
-    Color(0xFF2e5fe8),
-    Color(0xFF3166fd),
-    Color(0xFF3062ef),
-    Color(0xFF2e5ee1),
-    Color(0xFF2b56c8),
-    Color(0xFF2449a7),
-    Color(0xFF1e397f),
-    Color(0xFF152750),
-    Color(0xFF0b101a),
-    Color(0xFF080909),
-    Color(0xFF080909),
+    AppColors.figCFF080909,
+    AppColors.figCFF0A0D14,
+    AppColors.figCFF101936,
+    AppColors.figCFF152658,
+    AppColors.figCFF1B337A,
+    AppColors.figCFF2245A6,
+    AppColors.figCFF2953CA,
+    AppColors.figCFF2E5FE8,
+    AppColors.figCFF3166FD,
+    AppColors.figCFF3062EF,
+    AppColors.figCFF2E5EE1,
+    AppColors.figCFF2B56C8,
+    AppColors.figCFF2449A7,
+    AppColors.figCFF1E397F,
+    AppColors.figCFF152750,
+    AppColors.figCFF0B101A,
+    AppColors.figCFF080909,
+    AppColors.figCFF080909,
   ];
 
   @override
@@ -316,7 +318,7 @@ class _ChatGlow extends StatelessWidget {
           child: ShaderMask(
             blendMode: BlendMode.dstIn,
             shaderCallback: (r) => const LinearGradient(
-              colors: [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+              colors: [AppColors.figC00FFFFFF, AppColors.figCFFFFFFFF],
               stops: [0.2, 0.8],
             ).createShader(r),
             child: const DecoratedBox(
@@ -393,11 +395,11 @@ class _FigFieldState extends State<FigField> {
     final borderColor = hasError
         ? Fig.danger
         : dark
-        ? Colors.white.withValues(alpha: 0.14)
+        ? AppColors.figWhite.withValues(alpha: AppAlphas.a14)
         : Fig.fieldBorder;
     final fill = dark
-        ? Colors.white.withValues(alpha: 0.05)
-        : Colors.white.withValues(alpha: 0.34);
+        ? AppColors.figWhite.withValues(alpha: AppAlphas.a05)
+        : AppColors.figWhite.withValues(alpha: AppAlphas.a34);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -409,18 +411,18 @@ class _FigFieldState extends State<FigField> {
               widget.label,
               style: Fig.t(
                 context,
-                size: 16,
+                size: AppFontSizes.reading,
                 color:
-                    widget.labelColor ?? (dark ? Colors.white : Fig.navyText),
+                    widget.labelColor ?? (dark ? AppColors.figWhite : Fig.navyText),
                 weight: dark ? FontWeight.w600 : FontWeight.w400,
-                height: 1.2,
+                height: AppLineHeights.heading,
               ),
             ),
           ),
         ClipRRect(
           borderRadius: BorderRadius.circular(widget.height / 2),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            filter: ImageFilter.blur(sigmaX: FigMetrics.sigma8, sigmaY: FigMetrics.sigma8),
             child: Container(
               height: widget.height,
               padding: const EdgeInsetsDirectional.only(
@@ -430,7 +432,7 @@ class _FigFieldState extends State<FigField> {
               decoration: BoxDecoration(
                 color: fill,
                 borderRadius: BorderRadius.circular(widget.height / 2),
-                border: Border.all(color: borderColor, width: 1),
+                border: Border.all(color: borderColor, width: AppBorderWidths.hairline),
               ),
               child: Row(
                 children: [
@@ -448,10 +450,10 @@ class _FigFieldState extends State<FigField> {
                       cursorColor: Fig.blue,
                       style: Fig.t(
                         context,
-                        size: 14,
+                        size: AppFontSizes.dense,
                         color:
                             widget.textStyleColor ??
-                            (dark ? Colors.white : Fig.navy),
+                            (dark ? AppColors.figWhite : Fig.navy),
                       ),
                       decoration: InputDecoration(
                         isCollapsed: true,
@@ -462,9 +464,9 @@ class _FigFieldState extends State<FigField> {
                         hintText: widget.hint,
                         hintStyle: Fig.t(
                           context,
-                          size: 14,
+                          size: AppFontSizes.dense,
                           color: dark
-                              ? Colors.white.withValues(alpha: 0.8)
+                              ? AppColors.figWhite.withValues(alpha: AppAlphas.a80)
                               : Fig.placeholder,
                         ),
                       ),
@@ -478,7 +480,7 @@ class _FigFieldState extends State<FigField> {
                         padding: const EdgeInsets.all(AppSpacing.s4),
                         child: Icon(
                           _hidden ? LucideIcons.eye : LucideIcons.eyeOff,
-                          size: 20,
+                          size: AppIconSizes.action,
                           color: Fig.muted,
                         ),
                       ),
@@ -499,9 +501,9 @@ class _FigFieldState extends State<FigField> {
               widget.error!,
               style: Fig.t(
                 context,
-                size: 11,
+                size: FigMetrics.fontFig11,
                 color: Fig.dangerText,
-                height: 1.3,
+                height: AppLineHeights.snug,
               ),
             ),
           ),
@@ -523,7 +525,7 @@ class FigButton extends StatelessWidget {
     this.secondary = false,
     this.textColor,
     this.weight = FontWeight.w400,
-    this.fontSize = 16,
+    this.fontSize = FigMetrics.font16,
   });
 
   final String label;
@@ -543,7 +545,7 @@ class FigButton extends StatelessWidget {
     Color fg;
     if (secondary) {
       deco = BoxDecoration(
-        color: const Color(0xFFEFF2FC),
+        color: AppColors.figCFFEFF2FC,
         borderRadius: BorderRadius.circular(height / 2),
         border: Border.all(color: Fig.borderBlue),
       );
@@ -553,13 +555,13 @@ class FigButton extends StatelessWidget {
         color: Fig.danger,
         borderRadius: BorderRadius.circular(height / 2),
       );
-      fg = Colors.white;
+      fg = AppColors.figWhite;
     } else {
       deco = BoxDecoration(
         gradient: Fig.primaryGradient,
         borderRadius: BorderRadius.circular(height / 2),
       );
-      fg = Colors.white;
+      fg = AppColors.figWhite;
     }
     return Opacity(
       opacity: onPressed == null ? 0.6 : 1,
@@ -574,10 +576,9 @@ class FigButton extends StatelessWidget {
             child: Center(
               child: loading
                   ? SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: FigMetrics.size22, height: FigMetrics.size22,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
+                        strokeWidth: AppStrokeWidths.spinnerSnug,
                         color: fg,
                       ),
                     )
@@ -610,17 +611,16 @@ class FigTopPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 90,
-        height: 36,
+        width: FigMetrics.size90, height: FigMetrics.size36,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+          color: AppColors.figWhite.withValues(alpha: AppAlphas.a10),
+          borderRadius: BorderRadius.circular(AppRadius.modal),
+          border: Border.all(color: AppColors.figWhite.withValues(alpha: AppAlphas.a18)),
         ),
         child: Text(
           label,
-          style: Fig.t(context, size: 13, color: Colors.white),
+          style: Fig.t(context, size: AppFontSizes.caption, color: AppColors.figWhite),
         ),
       ),
     );
@@ -629,7 +629,7 @@ class FigTopPill extends StatelessWidget {
 
 /// White chevron-back used on the dark header region.
 class FigBackButton extends StatelessWidget {
-  const FigBackButton({super.key, this.onTap, this.color = Colors.white});
+  const FigBackButton({super.key, this.onTap, this.color = AppColors.figWhite});
 
   final VoidCallback? onTap;
   final Color color;
@@ -640,9 +640,8 @@ class FigBackButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap ?? () => Navigator.maybePop(context),
       child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Icon(context.chevronBack, color: color, size: 26),
+        width: FigMetrics.size44, height: FigMetrics.size44,
+        child: Icon(context.chevronBack, color: color, size: AppIconSizes.tile),
       ),
     );
   }
@@ -674,14 +673,14 @@ class FigPageHeader extends StatelessWidget {
         if (showBack)
           Padding(
             padding: const EdgeInsetsDirectional.only(
-              start: 12,
-              top: 29,
-              bottom: 10,
+              start: AppSpacing.s12,
+              top: AppSpacing.s29,
+              bottom: AppSpacing.s10,
             ),
             child: FigBackButton(onTap: onBack),
           )
         else
-          const SizedBox(height: 62),
+          const SizedBox(height: AppSpacing.s62),
         Padding(
           padding: const EdgeInsetsDirectional.only(
             start: AppSpacing.s24,
@@ -695,19 +694,19 @@ class FigPageHeader extends StatelessWidget {
                   eyebrow!,
                   style: Fig.t(
                     context,
-                    size: 9,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    letterSpacing: 0.3,
+                    size: FigMetrics.fontFig9,
+                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
+                    letterSpacing: AppLetterSpacing.snug,
                   ),
                 ),
               Text(
                 title,
                 style: Fig.t(
                   context,
-                  size: 28,
+                  size: AppFontSizes.displayLarge,
                   weight: FontWeight.w700,
-                  color: Colors.white,
-                  height: 1.2,
+                  color: AppColors.figWhite,
+                  height: AppLineHeights.heading,
                 ),
               ),
               if (subtitle != null)
@@ -717,8 +716,8 @@ class FigPageHeader extends StatelessWidget {
                     subtitle!,
                     style: Fig.t(
                       context,
-                      size: 9.5,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      size: FigMetrics.fontFig9U5,
+                      color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
                     ),
                   ),
                 ),
@@ -776,8 +775,8 @@ class FigNavBar extends StatelessWidget {
                 height: 62,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s6),
                 decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(31),
+                  color: AppColors.figBlack,
+                  borderRadius: BorderRadius.circular(FigMetrics.radFig31),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -800,7 +799,7 @@ class FigNavBar extends StatelessWidget {
                             curve: Curves.easeOut,
                             child: Container(
                               height: 46,
-                              constraints: const BoxConstraints(minWidth: 40),
+                              constraints: const BoxConstraints(minWidth: FigMetrics.boxMInWU40),
                               padding: EdgeInsets.symmetric(
                                 horizontal: i == index && showLabel
                                     ? AppSpacing.s10
@@ -809,19 +808,19 @@ class FigNavBar extends StatelessWidget {
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: i == index
-                                    ? Colors.white
+                                    ? AppColors.figWhite
                                     : Colors.transparent,
-                                borderRadius: BorderRadius.circular(23),
+                                borderRadius: BorderRadius.circular(FigMetrics.radFig23),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
                                     _icons[i],
-                                    size: 20,
+                                    size: AppIconSizes.action,
                                     color: i == index
-                                        ? Colors.black
-                                        : Colors.white.withValues(alpha: 0.62),
+                                        ? AppColors.figBlack
+                                        : AppColors.figWhite.withValues(alpha: AppAlphas.a62),
                                   ),
                                   if (i == index && showLabel) ...[
                                     const SizedBox(width: AppSpacing.s6),
@@ -830,9 +829,9 @@ class FigNavBar extends StatelessWidget {
                                       maxLines: 1,
                                       style: Fig.t(
                                         context,
-                                        size: 12,
+                                        size: AppFontSizes.microCaps,
                                         weight: FontWeight.w600,
-                                        color: Colors.black,
+                                        color: AppColors.figBlack,
                                       ),
                                     ),
                                   ],
@@ -846,7 +845,7 @@ class FigNavBar extends StatelessWidget {
                 ),
               ),
               if (showMore) ...[
-                const SizedBox(width: 0),
+                const SizedBox(width: AppSpacing.zero),
                 Semantics(
                   button: true,
                   label: context.tr.figMore,
@@ -856,16 +855,15 @@ class FigNavBar extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     onTap: onMore,
                     child: Container(
-                      width: 62,
-                      height: 62,
+                      width: FigMetrics.size62, height: FigMetrics.size62,
                       decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(31),
+                        color: AppColors.figBlack,
+                        borderRadius: BorderRadius.circular(FigMetrics.radFig31),
                       ),
                       child: const Icon(
                         LucideIcons.ellipsisVertical,
-                        size: 18,
-                        color: Colors.white,
+                        size: AppIconSizes.regular,
+                        color: AppColors.figWhite,
                       ),
                     ),
                   ),
@@ -907,7 +905,7 @@ class FigNotchSheet extends StatelessWidget {
             child: Container(
               width: double.infinity,
               color: bg,
-              padding: const EdgeInsets.only(top: 40),
+              padding: const EdgeInsets.only(top: AppSpacing.s40),
               child: child,
             ),
           ),
@@ -917,16 +915,15 @@ class FigNotchSheet extends StatelessWidget {
           child: GestureDetector(
             onTap: onClose ?? () => Navigator.maybePop(context),
             child: Container(
-              width: 60,
-              height: 60,
+              width: FigMetrics.size60, height: FigMetrics.size60,
               decoration: BoxDecoration(
                 color: dark ? Fig.darkPanel : Fig.surfaceCool,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 LucideIcons.x,
-                size: 24,
-                color: dark ? Colors.white : Colors.black,
+                size: AppIconSizes.back,
+                color: dark ? AppColors.figWhite : AppColors.figBlack,
               ),
             ),
           ),
@@ -977,7 +974,7 @@ Future<T?> showFigSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.45),
+    barrierColor: AppColors.figBlack.withValues(alpha: AppAlphas.a45),
     useSafeArea: true,
     // Root navigator: the sheet must cover the floating tab bar, which lives
     // in the shell above the inner navigator (it hid the primary button).
@@ -1009,7 +1006,7 @@ class FigTopFade extends StatelessWidget {
       shaderCallback: (rect) => LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+        colors: const [AppColors.figC00FFFFFF, AppColors.figCFFFFFFFF],
         stops: [0, (height / rect.height).clamp(0.0, 1.0)],
       ).createShader(rect),
       child: child,

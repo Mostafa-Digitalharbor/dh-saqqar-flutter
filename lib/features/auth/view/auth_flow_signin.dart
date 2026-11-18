@@ -95,18 +95,17 @@ class _SignInPageState extends State<_SignInPage> {
                 _agreeError = null;
               }),
               child: Container(
-                width: 16,
-                height: 16,
+                width: FigMetrics.size16, height: FigMetrics.size16,
                 decoration: BoxDecoration(
                   color: _agreed ? Fig.blue : Colors.transparent,
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(FigMetrics.radFig3),
                   border: Border.all(
                     color: _agreed ? Fig.blue : Fig.muted,
-                    width: 1,
+                    width: AppBorderWidths.hairline,
                   ),
                 ),
                 child: _agreed
-                    ? const Icon(AppIcons.check, size: 12, color: Colors.white)
+                    ? const Icon(AppIcons.check, size: AppIconSizes.meta, color: AppColors.figWhite)
                     : null,
               ),
             ),
@@ -114,7 +113,7 @@ class _SignInPageState extends State<_SignInPage> {
             Expanded(
               child: Text.rich(
                 TextSpan(
-                  style: Fig.t(context, size: 10, color: Fig.muted),
+                  style: Fig.t(context, size: FigMetrics.fontFig10, color: Fig.muted),
                   children: [
                     TextSpan(text: context.tr.figIAgreeToThe),
                     TextSpan(
@@ -139,8 +138,8 @@ class _SignInPageState extends State<_SignInPage> {
                   textAlign: TextAlign.end,
                   style: Fig.t(
                     context,
-                    size: 12,
-                    color: const Color(0xFF2B3A8F),
+                    size: AppFontSizes.microCaps,
+                    color: AppColors.figCFF2B3A8F,
                     weight: FontWeight.w500,
                   ),
                 ),
@@ -153,19 +152,19 @@ class _SignInPageState extends State<_SignInPage> {
             padding: const EdgeInsets.only(top: AppSpacing.s6),
             child: Text(
               _agreeError!,
-              style: Fig.t(context, size: 11, color: Fig.dangerText),
+              style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.dangerText),
             ),
           ),
-        const SizedBox(height: 40),
+        const SizedBox(height: AppSpacing.s40),
         FigButton(
           label: context.tr.figSignIn,
           loading: loading,
           onPressed: _submit,
           height: 54,
         ),
-        const SizedBox(height: 25),
+        const SizedBox(height: AppSpacing.s25),
         const _OrDivider(),
-        const SizedBox(height: 38),
+        const SizedBox(height: AppSpacing.s38),
         const _SocialRow(),
       ],
     );
@@ -178,7 +177,7 @@ class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final line = Expanded(
-      child: Container(height: 1, color: const Color(0xFFD5DAEA)),
+      child: Container(height: 1, color: AppColors.figCFFD5DAEA),
     );
     return Row(
       children: [
@@ -190,7 +189,7 @@ class _OrDivider extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               context.tr.figOr,
-              style: Fig.t(context, size: 11, color: Fig.muted),
+              style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.muted),
             ),
           ),
         ),
@@ -211,11 +210,10 @@ class _SocialRow extends StatelessWidget {
     Widget tile(Widget glyph, VoidCallback? onTap) => GestureDetector(
       onTap: loading ? null : onTap,
       child: Container(
-        width: 54,
-        height: 54,
+        width: FigMetrics.size54, height: FigMetrics.size54,
         decoration: BoxDecoration(
-          color: const Color(0xFFE7E8ED),
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.figCFFE7E8ED,
+          borderRadius: BorderRadius.circular(AppRadius.bubble),
         ),
         child: Center(child: glyph),
       ),
@@ -226,13 +224,13 @@ class _SocialRow extends StatelessWidget {
         // Apple sign-in is iOS-only (App Store 4.8 pairs it with Google).
         if (defaultTargetPlatform == TargetPlatform.iOS) ...[
           tile(
-            Image.asset(AssetPaths.socialApple, width: 28, height: 28),
+            Image.asset(AssetPaths.socialApple, width: FigMetrics.size28, height: FigMetrics.size28),
             cubit.continueWithApple,
           ),
           const SizedBox(width: AppSpacing.s22),
         ],
         tile(
-          Image.asset(AssetPaths.socialGoogle, width: 28, height: 28),
+          Image.asset(AssetPaths.socialGoogle, width: FigMetrics.size28, height: FigMetrics.size28),
           cubit.continueWithGoogle,
         ),
       ],

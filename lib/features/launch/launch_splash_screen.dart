@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../shared/widgets/saqqar_logo.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Custom in-app launch screen.
 ///
@@ -67,7 +68,7 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
     // appears to "expand into focus" instead of popping in.
     _scale = Tween<double>(
       begin: AppSplashMotion.logoScaleStart,
-      end: 1.0,
+      end: AppScaleFractions.settled,
     ).animate(CurvedAnimation(parent: _entrance, curve: Curves.easeOutCubic));
     _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -141,7 +142,7 @@ class _LaunchSplashScreenState extends State<LaunchSplashScreen>
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF05070C),
+      backgroundColor: AppColors.figCFF05070C,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -178,7 +179,7 @@ class SplashBackdrop extends StatelessWidget {
           gradient: RadialGradient(
             center: c,
             radius: r,
-            colors: [color, color.withValues(alpha: 0)],
+            colors: [color, color.withValues(alpha: AppAlphas.a0)],
           ),
         ),
       ),
@@ -186,10 +187,10 @@ class SplashBackdrop extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        const ColoredBox(color: Color(0xFF03050A)),
-        glow(const Alignment(0.9, -1.1), 1.15, const Color(0xFF2B5BD2)),
-        glow(const Alignment(-0.6, 1.1), 1.25, const Color(0xFF2350B8)),
-        glow(const Alignment(-1.3, -0.2), 0.9, const Color(0xFF12296A)),
+        const ColoredBox(color: AppColors.figCFF03050A),
+        glow(const Alignment(0.9, -1.1), 1.15, AppColors.figCFF2B5BD2),
+        glow(const Alignment(-0.6, 1.1), 1.25, AppColors.figCFF2350B8),
+        glow(const Alignment(-1.3, -0.2), 0.9, AppColors.figCFF12296A),
       ],
     );
   }

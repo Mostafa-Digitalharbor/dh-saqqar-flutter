@@ -13,6 +13,9 @@ import '../../conversations/widgets/conversation_actions_sheet.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/format/plain_preview.dart';
 import '../../../shared/widgets/auto_direction_text.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Redesigned (figma-design / Light) "Chats" panel — sidebar drawer mounted on `Scaffold.drawer` of the chat
 /// screen. Opens from the start side via the AppBar hamburger.
@@ -117,16 +120,16 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
       color: Colors.transparent,
       child: DecoratedBox(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.figWhite,
           borderRadius: BorderRadiusDirectional.only(
-            topEnd: Radius.circular(40),
-            bottomEnd: Radius.circular(40),
+            topEnd: Radius.circular(FigMetrics.radFig40),
+            bottomEnd: Radius.circular(FigMetrics.radFig40),
           ),
           boxShadow: [
             BoxShadow(
               color: Fig.drawerShadow,
-              blurRadius: 40,
-              offset: Offset(0, 16),
+              blurRadius: FigMetrics.blur40,
+              offset: FigOffsets.oU0U16,
             ),
           ],
         ),
@@ -135,7 +138,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s20, AppSpacing.s16, 0),
                 child: Row(
                   children: [
                     Expanded(
@@ -143,7 +146,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                         context.tr.figChats,
                         style: Fig.t(
                           context,
-                          size: 26,
+                          size: FigMetrics.fontFig26,
                           weight: FontWeight.w700,
                           color: Fig.navy,
                         ),
@@ -154,15 +157,14 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                       child: Tooltip(
                         message: context.tr.close,
                         child: Container(
-                          width: 44,
-                          height: 44,
+                          width: FigMetrics.size44, height: FigMetrics.size44,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: Fig.hairline),
                           ),
                           child: const Icon(
                             LucideIcons.x,
-                            size: 19,
+                            size: AppIconSizes.bell,
                             color: Fig.navy,
                           ),
                         ),
@@ -172,21 +174,21 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s20, AppSpacing.s16, 0),
                 child: Container(
                   height: 40,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.s14,
                   ),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(color: Fig.hairline),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         LucideIcons.search,
-                        size: 17,
+                        size: AppIconSizes.listMark,
                         color: Fig.muted,
                       ),
                       const SizedBox(width: AppSpacing.s10),
@@ -194,13 +196,13 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                         child: TextField(
                           controller: _search,
                           onChanged: (_) => setState(() {}),
-                          style: Fig.t(context, size: 13, color: Fig.navy),
+                          style: Fig.t(context, size: AppFontSizes.caption, color: Fig.navy),
                           decoration: InputDecoration(
                             hintText:
                                 context.tr.figSearchContactsOrConversations,
                             hintStyle: Fig.t(
                               context,
-                              size: 13,
+                              size: AppFontSizes.caption,
                               color: Fig.muted,
                             ),
                             isCollapsed: true,
@@ -216,7 +218,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.s16, AppSpacing.s12, AppSpacing.s16, 0),
                 child: GestureDetector(
                   onTap: widget.onNewConversation,
                   child: Container(
@@ -224,14 +226,14 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Fig.tintBlue,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(AppRadius.modal),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(
                           LucideIcons.squarePen,
-                          size: 16,
+                          size: AppIconSizes.small,
                           color: Fig.blue,
                         ),
                         const SizedBox(width: AppSpacing.s8),
@@ -242,7 +244,7 @@ class _ChatSidebarDrawerState extends State<ChatSidebarDrawer> {
                             overflow: TextOverflow.ellipsis,
                             style: Fig.t(
                               context,
-                              size: 14,
+                              size: AppFontSizes.dense,
                               weight: FontWeight.w600,
                               color: Fig.blue,
                             ),
@@ -290,10 +292,10 @@ class _ConversationList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(8, 18, 8, 24),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.s8, AppSpacing.s18, AppSpacing.s8, AppSpacing.s24),
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.s12, 0, AppSpacing.s12, AppSpacing.s8),
           child: Row(
             children: [
               Expanded(
@@ -303,15 +305,15 @@ class _ConversationList extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Fig.t(
                     context,
-                    size: 11.5,
+                    size: FigMetrics.fontFig11U5,
                     color: Fig.muted,
-                    letterSpacing: 0.4,
+                    letterSpacing: AppLetterSpacing.label,
                   ),
                 ),
               ),
               Text(
                 context.tr.figChats2(conversations.length),
-                style: Fig.t(context, size: 12, color: Fig.blue),
+                style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.blue),
               ),
             ],
           ),
@@ -322,7 +324,7 @@ class _ConversationList extends StatelessWidget {
             child: Center(
               child: Text(
                 context.tr.noMatches,
-                style: Fig.t(context, size: 13, color: Fig.muted),
+                style: Fig.t(context, size: AppFontSizes.caption, color: Fig.muted),
               ),
             ),
           ),
@@ -339,10 +341,10 @@ class _ConversationList extends StatelessWidget {
 }
 
 const _avatarPalette = [
-  Color(0xFF2A5598),
-  Color(0xFF5B3E8B),
-  Color(0xFF1F6B6B),
-  Color(0xFF7A5230),
+  AppColors.figCFF2A5598,
+  AppColors.figCFF5B3E8B,
+  AppColors.figCFF1F6B6B,
+  AppColors.figCFF7A5230,
 ];
 
 String _initials(String title) {
@@ -385,16 +387,15 @@ class _ConversationRow extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
-        padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.s12, AppSpacing.s12, AppSpacing.s14, AppSpacing.s12),
         decoration: BoxDecoration(
           color: isActive ? Fig.tintBlue : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.input),
         ),
         child: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: FigMetrics.size38, height: FigMetrics.size38,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               child: FittedBox(
@@ -403,9 +404,9 @@ class _ConversationRow extends StatelessWidget {
                   _initials(title),
                   style: Fig.t(
                     context,
-                    size: 12,
+                    size: AppFontSizes.microCaps,
                     weight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.figWhite,
                   ),
                 ),
               ),
@@ -422,7 +423,7 @@ class _ConversationRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: Fig.t(
                       context,
-                      size: 15,
+                      size: AppFontSizes.body,
                       weight: isActive ? FontWeight.w700 : FontWeight.w500,
                       color: Fig.navy,
                     ),
@@ -436,7 +437,7 @@ class _ConversationRow extends StatelessWidget {
                         : TextAlign.left,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Fig.t(context, size: 12.5, color: Fig.muted),
+                    style: Fig.t(context, size: AppFontSizes.metaLine, color: Fig.muted),
                   ),
                 ],
               ),
@@ -444,7 +445,7 @@ class _ConversationRow extends StatelessWidget {
             const SizedBox(width: AppSpacing.s8),
             Text(
               AppDateFormat.relative(context, c.updatedAt),
-              style: Fig.t(context, size: 11.5, color: Fig.muted),
+              style: Fig.t(context, size: FigMetrics.fontFig11U5, color: Fig.muted),
             ),
           ],
         ),

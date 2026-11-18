@@ -27,6 +27,8 @@ import '../../../core/network/api_error_mapper.dart';
 import '../../../core/error/app_failure.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../billing/data/plan_copy.dart';
+import '../../../core/theme/fig_metrics.dart';
+import '../../../core/theme/app_colors.dart';
 
 part 'account_screen_identity.dart';
 part 'account_screen_rows.dart';
@@ -114,7 +116,7 @@ class _AccountScreenState extends State<AccountScreen>
               },
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 40),
+                padding: const EdgeInsets.only(bottom: AppSpacing.s40),
                 children: [
                   FigPageHeader(
                     title: context.tr.figProfile,
