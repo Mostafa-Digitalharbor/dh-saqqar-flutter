@@ -51,7 +51,7 @@ This document covers the mobile app's screens, navigation, chat and cards, desig
 
 | Area | Choice |
 |---|---|
-| Framework | Flutter, Dart `^3.9.2`. CI builds with Flutter 3.38.10 |
+| Framework | Flutter, Dart `^3.9.2`. CI builds with Flutter 3.47.7 |
 | State | Cubit + MVVM (`flutter_bloc`), with a shared `DataState<T>` (idle, loading, success, failure) |
 | Routing | `go_router` |
 | Network | `dio`, one client; the base URL is `https://saqqaar.com` |
