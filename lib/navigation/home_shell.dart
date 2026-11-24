@@ -19,7 +19,14 @@ class HomeShell extends StatelessWidget {
 
   final Widget child;
 
+  /// Screens reached from the ⋮ menu. They sit in the shell for its bar, but
+  /// belong to no tab, so the ⋮ pill is the one highlighted.
+  static bool isMoreLocation(String location) =>
+      location.startsWith(RouteNames.vaultPath);
+
+  /// The selected tab, or -1 for a [isMoreLocation] screen.
   static int indexFor(String location) {
+    if (isMoreLocation(location)) return -1;
     if (location.startsWith(RouteNames.appsPath)) return 2;
     if (location.startsWith(RouteNames.tasksPath)) return 3;
     return 0;
@@ -49,6 +56,12 @@ class HomeShell extends StatelessWidget {
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         if (selected != 0) {
+          // A ⋮ screen was pushed over the tab the user came from: Back goes
+          // there rather than to Home.
+          if (selected == -1 && context.canPop()) {
+            context.pop();
+            return;
+          }
           context.go(RouteNames.homePath);
           return;
         }
@@ -68,6 +81,7 @@ class HomeShell extends StatelessWidget {
                 child: FigNavBar(
                   index: selected,
                   showMore: selected != 0,
+                  moreSelected: selected == -1,
                   onSelect: (i) => go(context, i),
                   onMore: () => showSaqqarTools(context),
                 ),

@@ -161,6 +161,67 @@ void main() {
     });
   });
 
+  group('preview', () {
+    test('finish keeps the take on disk until the user decides', () async {
+      final voice = build(_FakeRecorder());
+      await voice.start();
+
+      expect(await voice.finish(), isTrue);
+
+      expect(voice.isRecording, isFalse);
+      expect(voice.isPreviewing, isTrue);
+      expect(voice.previewFile!.existsSync(), isTrue,
+          reason: 'the user has to be able to listen to it');
+      expect(leftovers(), hasLength(1));
+      voice.dispose();
+    });
+
+    test('Send transcribes the take and deletes it', () async {
+      final voice = build(_FakeRecorder());
+      await voice.start();
+      await voice.finish();
+
+      final outcome = await voice.sendPreview((f) async => 'مرحبا');
+
+      expect(outcome, isA<VoiceNoteTranscribed>());
+      expect(voice.isPreviewing, isFalse);
+      expect(leftovers(), isEmpty);
+      voice.dispose();
+    });
+
+    test('a failed upload still deletes the take', () async {
+      final voice = build(_FakeRecorder());
+      await voice.start();
+      await voice.finish();
+
+      final outcome =
+          await voice.sendPreview((f) async => throw StateError('502'));
+
+      expect(outcome, isA<VoiceNoteFailed>());
+      expect(leftovers(), isEmpty);
+      voice.dispose();
+    });
+
+    test('Cancel drops the take without uploading it', () async {
+      final voice = build(_FakeRecorder());
+      await voice.start();
+      await voice.finish();
+
+      await voice.discard();
+
+      expect(voice.isPreviewing, isFalse);
+      expect(leftovers(), isEmpty,
+          reason: 'an abandoned preview is still the voice of the user on disk');
+      voice.dispose();
+    });
+
+    test('finish with nothing recording is a no-op', () async {
+      final voice = build(_FakeRecorder());
+      expect(await voice.finish(), isFalse);
+      voice.dispose();
+    });
+  });
+
   group('stop', () {
     test('deletes the temp file after a successful transcription', () async {
       final voice = build(_FakeRecorder());

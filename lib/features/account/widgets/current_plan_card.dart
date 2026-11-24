@@ -7,7 +7,6 @@ import '../../../core/network/api_error_mapper.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/plan_copy.dart';
@@ -17,6 +16,7 @@ import '../../billing/view_model/plan_cubit.dart';
 import '../../billing/widgets/plan_feature_line.dart';
 import 'plan_badge.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Account "Plan" card shown when live usage isn't available yet (Gap A).
 ///
@@ -123,7 +123,8 @@ class _PlanCardError extends StatelessWidget {
           const SizedBox(height: AppSpacing.s12),
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: GhostButton(
+            child: FigButton.compact(
+              secondary: true,
               label: context.tr.retry,
               icon: AppIcons.refresh,
               onPressed: onRetry,
@@ -193,10 +194,11 @@ class _PlanCardBody extends StatelessWidget {
             const SizedBox(height: AppSpacing.s14),
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: GhostButton(
+              child: FigButton.compact(
+                secondary: true,
                 label: tr.quotaUpgradeCta,
                 icon: AppIcons.sparkles,
-                minHeight: AppControlSizes.buttonMin,
+                height: AppControlSizes.buttonMin,
                 onPressed: () => context.pushNamed(RouteNames.pricing),
               ),
             ),

@@ -1,10 +1,10 @@
+import '../../../shared/fig/fig.dart' show FigButton, showLightSheet;
 import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/app_toast.dart';
 import 'chat_sheet.dart';
 
@@ -29,8 +29,8 @@ class TaskWordingSheet extends StatefulWidget {
     BuildContext context, {
     String initialQuery = '',
   }) {
-    return showModalBottomSheet<String>(
-      context: context,
+    return showLightSheet<String>(
+      context,
       isScrollControlled: true,
       builder: (_) => TaskWordingSheet(initialQuery: initialQuery),
     );
@@ -87,7 +87,7 @@ class _TaskWordingSheetState extends State<TaskWordingSheet> {
           keyboardType: TextInputType.multiline,
         ),
         const SizedBox(height: AppSpacing.s14),
-        PrimaryButton(
+        FigButton.compact(
           label: tr.promptBankAskButton,
           expand: true,
           onPressed: _submit,

@@ -62,6 +62,9 @@ class _FakeConvs extends Cubit<ConversationsState> implements ConversationsCubit
   @override
   Future<void> load({bool includeArchived = true, bool prefetch = true}) async {}
 
+  @override
+  Future<void> refresh() async {}
+
   _FakeConvs()
       : super(ConversationsState(
           data: DataSuccess(ConversationsData(conversations: [

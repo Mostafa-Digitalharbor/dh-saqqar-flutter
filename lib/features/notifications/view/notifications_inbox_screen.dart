@@ -126,7 +126,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                 child: items.isEmpty
                     ? _Empty()
                     : ListView(
-                        padding: const EdgeInsets.fromLTRB(AppSpacing.s18, AppSpacing.s8, AppSpacing.s18, AppSpacing.s24),
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.s24, AppSpacing.s8, AppSpacing.s24, AppSpacing.s24),
                         children: [
                           for (final g in _group(context, items)) ...[
                             Padding(

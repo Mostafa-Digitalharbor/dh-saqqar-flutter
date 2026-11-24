@@ -3,11 +3,8 @@ part of 'chat_context.dart';
 /// "Add environment" (existing [project]) / "Add company environment" (new
 /// company) dark sheet.
 Future<void> showAddEnvironmentSheet(BuildContext context, {Project? project}) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: AppColors.figBlack.withValues(alpha: AppAlphas.a55),
+  return showFigSheet<void>(
+    context,
     builder: (_) => _AddEnvironment(project: project),
   );
 }
@@ -33,6 +30,22 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
   bool _busy = false;
   bool _detecting = false;
   String? _error;
+
+  /// Every field in the sheet shares one height and one caption style.
+  static const double _fieldHeight = FigMetrics.size44;
+
+  Widget _caption(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: AppSpacing.s8),
+    child: Text(
+      text,
+      style: Fig.t(
+        context,
+        size: AppFontSizes.caption,
+        weight: FontWeight.w600,
+        color: AppColors.figWhite,
+      ),
+    ),
+  );
 
   @override
   void dispose() {
@@ -167,33 +180,26 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                 ),
                 const SizedBox(height: AppSpacing.s18),
                 if (newCompany) ...[
+                  _caption(context.tr.figCompanyName),
                   FigField(
                     dark: true,
-                    label: context.tr.figCompanyName,
+                    label: '',
                     hint: context.tr.figCompanyName,
                     controller: _company,
-                    height: 52,
+                    height: _fieldHeight,
                   ),
                   const SizedBox(height: AppSpacing.s14),
                 ],
+                _caption(context.tr.figLabelEnvironmentName),
                 FigField(
                   dark: true,
-                  label: context.tr.figLabelEnvironmentName,
+                  label: '',
                   hint: context.tr.figEnvNameHint,
                   controller: _label,
-                  height: 52,
+                  height: _fieldHeight,
                 ),
                 const SizedBox(height: AppSpacing.s14),
-                Text(
-                  context.tr.figEnvironmentType,
-                  style: Fig.t(
-                    context,
-                    size: AppFontSizes.caption,
-                    weight: FontWeight.w600,
-                    color: AppColors.figWhite,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s8),
+                _caption(context.tr.figEnvironmentType),
                 EnvTypePicker(
                   dark: true,
                   value: _mode,
@@ -206,25 +212,17 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                   onChanged: (v) => setState(() => _apiKey = v),
                 ),
                 const SizedBox(height: AppSpacing.s14),
+                _caption(context.tr.figLabelUrl),
                 FigField(
                   dark: true,
-                  label: context.tr.figLabelUrl,
+                  label: '',
                   hint: context.tr.figHintOdooUrl,
                   controller: _url,
-                  height: 52,
+                  height: _fieldHeight,
                   keyboardType: TextInputType.url,
                 ),
                 const SizedBox(height: AppSpacing.s14),
-                Text(
-                  context.tr.figDatabase,
-                  style: Fig.t(
-                    context,
-                    size: AppFontSizes.caption,
-                    weight: FontWeight.w600,
-                    color: AppColors.figWhite,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s8),
+                _caption(context.tr.figDatabase),
                 Row(
                   children: [
                     Expanded(
@@ -233,14 +231,14 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                         label: '',
                         hint: context.tr.figHintDbName,
                         controller: _db,
-                        height: 52,
+                        height: _fieldHeight,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.s8),
                     GestureDetector(
                       onTap: _detecting ? null : _detect,
                       child: Container(
-                        height: 52,
+                        height: _fieldHeight,
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.s14,
                         ),
@@ -284,27 +282,19 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.s14),
+                _caption(context.tr.figUsername),
                 FigField(
                   dark: true,
-                  label: context.tr.figUsername,
+                  label: '',
                   hint: context.tr.figHintOdooUser,
                   controller: _user,
-                  height: 52,
+                  height: _fieldHeight,
                 ),
                 const SizedBox(height: AppSpacing.s14),
-                Text(
-                  context.tr.figAuthentication,
-                  style: Fig.t(
-                    context,
-                    size: AppFontSizes.caption,
-                    weight: FontWeight.w600,
-                    color: AppColors.figWhite,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s8),
+                _caption(context.tr.figAuthentication),
                 FigDropdown(
                   dark: true,
-                  height: 52,
+                  height: _fieldHeight,
                   value: _apiKey
                       ? context.tr.figLabelApiKey
                       : context.tr.figPassword2,
@@ -313,16 +303,17 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                       setState(() => _apiKey = v == context.tr.figLabelApiKey),
                 ),
                 const SizedBox(height: AppSpacing.s14),
+                _caption(
+                  _apiKey ? context.tr.figLabelApiKey : context.tr.figPassword2,
+                ),
                 FigField(
                   dark: true,
-                  label: _apiKey
-                      ? context.tr.figLabelApiKey
-                      : context.tr.figPassword2,
+                  label: '',
                   hint: _apiKey
                       ? context.tr.figEnterOdooApiKey
                       : context.tr.figEnterOdooPassword,
                   controller: _secret,
-                  height: 52,
+                  height: _fieldHeight,
                   obscure: true,
                 ),
                 if (_error != null)
@@ -340,7 +331,7 @@ class _AddEnvironmentState extends State<_AddEnvironment> {
                 const SizedBox(height: AppSpacing.s20),
                 FigButton(
                   label: context.tr.figConnectInitialize,
-                  height: 52,
+                  height: _fieldHeight,
                   loading: _busy,
                   onPressed: _save,
                 ),

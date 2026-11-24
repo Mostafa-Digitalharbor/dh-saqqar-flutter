@@ -43,10 +43,16 @@ extension _ConversationRows on _ConversationsScreenState {
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.s12),
-            child: Text(
-              group,
-              style: context.text.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+            // A Builder: this extension runs on the State's context, which sits
+            // ABOVE the light theme FigPage pins on its body. Read from there,
+            // the heading took the device's dark theme and came out white on the
+            // light page.
+            child: Builder(
+              builder: (ctx) => Text(
+                group,
+                style: ctx.text.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),

@@ -17,13 +17,13 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/data_state_refreshable_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/fade_slide_in.dart';
-import '../../../shared/widgets/page_scaffold.dart';
+import '../../../shared/fig/fig.dart';
+import '../../../shared/fig/fig_page.dart';
 import '../../../shared/widgets/pagination_bar.dart';
 import '../../../shared/widgets/search_and_filters_bar.dart';
 export '../view_model/chats_list_view.dart' show ChatsFilterMode;
@@ -235,81 +235,83 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         // state owns; mirrors its own condition below.
         final showsEmptyState = data != null && data.conversations.isEmpty;
 
-        return PageScaffold(
+        return FigPage(
           title: context.tr.tabChats,
           subtitle: subtitleText,
-          controller: _scrollController,
-          onRefresh: () => context.read<ConversationsCubit>().refresh(),
-          actions: [
-            AppIconButton(
-              icon: AppIcons.refresh,
-              tooltip: context.tr.refreshConversations,
-              bordered: false,
-              onPressed: () => context.read<ConversationsCubit>().refresh(),
-            ),
-            const SizedBox(width: AppSpacing.s6),
-          ],
-          floatingActionButton: showsEmptyState
-              ? null
-              : GradientFab(
-                  onPressed: _openFreshConversation,
-                  label: context.tr.newConversation,
-                ),
-          children: [
-            DataStateRefreshableView<ConversationsData>(
-              state: state.data,
-              onRefresh: () => context.read<ConversationsCubit>().refresh(),
-              loadingLabel: context.tr.loading,
-              // Skeleton-during-refresh: previous data hides, card-shaped
-              // shimmers paint in its place until the new snapshot lands.
-              // Far better than a bare spinner — the user keeps spatial
-              // intuition for "rows are coming back here".
-              keepPreviousOnLoading: false,
-              onLoading: (context, _) => const Column(
-                key: ValueKey('conversations-skeleton'),
-                children: [
-                  ConversationCardSkeleton(),
-                  SizedBox(height: AppSpacing.s10),
-                  ConversationCardSkeleton(),
-                  SizedBox(height: AppSpacing.s10),
-                  ConversationCardSkeleton(),
-                  SizedBox(height: AppSpacing.s10),
-                  ConversationCardSkeleton(),
-                  SizedBox(height: AppSpacing.s10),
-                  ConversationCardSkeleton(),
+          child: RefreshIndicator(
+            onRefresh: () => context.read<ConversationsCubit>().refresh(),
+            child: ListView(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s16,
+                AppSpacing.s16,
+                AppSpacing.s140,
+              ),
+              children: [
+                // Inline, not a floating button: the tab bar floats over the
+                // bottom of this screen and would cover it. The empty state
+                // owns its own "start a conversation" action.
+                if (!showsEmptyState) ...[
+                  FigButton(
+                    label: context.tr.newConversation,
+                    height: AppControlSizes.rowMin,
+                    onPressed: _openFreshConversation,
+                  ),
+                  const SizedBox(height: AppSpacing.s14),
                 ],
-              ),
-              onData: (context, data) => _ConversationsBody(
-                data: data,
-                query: _query,
-                filterMode: _filterMode,
-                onFilterModeChanged: (mode) => setState(() {
-                  _filterMode = mode;
-                  _resetPagination();
-                }),
-                archivedExpanded: _archivedExpanded,
-                pageIndex: _pageIndex,
-                pageSize: _pageSize,
-                searchController: _searchController,
-                onSearchChanged: (value) => setState(() {
-                  _query = value;
-                  _resetPagination();
-                }),
-                onArchivedToggle: () => setState(() {
-                  _archivedExpanded = !_archivedExpanded;
-                }),
-                onGoToPage: _goToPage,
-                openFresh: _openFreshConversation,
-                buildGroupedRows: _buildGroupedRows,
-                view: _view(data),
-                onRowAction: _handleRowAction,
-              ),
+                DataStateRefreshableView<ConversationsData>(
+                  state: state.data,
+                  onRefresh: () => context.read<ConversationsCubit>().refresh(),
+                  loadingLabel: context.tr.loading,
+                  // Skeleton-during-refresh: previous data hides, card-shaped
+                  // shimmers paint in its place until the new snapshot lands.
+                  // Far better than a bare spinner — the user keeps spatial
+                  // intuition for "rows are coming back here".
+                  keepPreviousOnLoading: false,
+                  onLoading: (context, _) => const Column(
+                    key: ValueKey('conversations-skeleton'),
+                    children: [
+                      ConversationCardSkeleton(),
+                      SizedBox(height: AppSpacing.s10),
+                      ConversationCardSkeleton(),
+                      SizedBox(height: AppSpacing.s10),
+                      ConversationCardSkeleton(),
+                      SizedBox(height: AppSpacing.s10),
+                      ConversationCardSkeleton(),
+                      SizedBox(height: AppSpacing.s10),
+                      ConversationCardSkeleton(),
+                    ],
+                  ),
+                  onData: (context, data) => _ConversationsBody(
+                    data: data,
+                    query: _query,
+                    filterMode: _filterMode,
+                    onFilterModeChanged: (mode) => setState(() {
+                      _filterMode = mode;
+                      _resetPagination();
+                    }),
+                    archivedExpanded: _archivedExpanded,
+                    pageIndex: _pageIndex,
+                    pageSize: _pageSize,
+                    searchController: _searchController,
+                    onSearchChanged: (value) => setState(() {
+                      _query = value;
+                      _resetPagination();
+                    }),
+                    onArchivedToggle: () => setState(() {
+                      _archivedExpanded = !_archivedExpanded;
+                    }),
+                    onGoToPage: _goToPage,
+                    openFresh: _openFreshConversation,
+                    buildGroupedRows: _buildGroupedRows,
+                    view: _view(data),
+                    onRowAction: _handleRowAction,
+                  ),
+                ),
+              ],
             ),
-            // Bottom clearance so the floating "New conversation" FAB never
-            // covers the last item (the pagination controls / final card)
-            // when the list is scrolled to the bottom.
-            const SizedBox(height: AppSpacing.s80),
-          ],
+          ),
         );
       },
     );

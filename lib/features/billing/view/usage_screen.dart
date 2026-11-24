@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../account/widgets/current_plan_card.dart';
 import '../../account/widgets/plan_usage_card.dart';
@@ -13,6 +12,7 @@ import '../data/usage_api.dart';
 import '../view_model/plan_cubit.dart';
 import '../view_model/saqqar_features_cubit.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../shared/fig/fig_page.dart';
 
 /// Standalone token-usage page, reached from the Account "Usage" button.
 ///
@@ -72,58 +72,56 @@ class _UsageScreenState extends State<UsageScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(title: Text(context.tr.usageTitle)),
-      body: AmbientBackground(
-        child: RefreshIndicator(
-          color: s.brandCyan,
-          backgroundColor: s.surface,
-          onRefresh: _fetchUsage,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.s16,
-              AppSpacing.s16,
-              AppSpacing.s16,
-              AppSpacing.s28,
-            ),
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              BlocBuilder<PlanCubit, PlanSnapshot?>(
-                builder: (context, plan) {
-                  // Real usage data wins outright — a failed refresh must
-                  // never replace numbers the user can already read.
-                  if (plan != null) return const PlanUsageCard();
-                  // Nothing to show AND the fetch failed: say so, and give
-                  // them a way out. `RefreshIndicator` alone isn't an
-                  // affordance — nothing on a blank page invites a pull.
-                  if (_failure != null) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.s64),
-                      child: AppErrorState(
-                        message: ApiErrorMapper.message(context, _failure),
-                        onRetry: _fetchUsage,
-                      ),
-                    );
-                  }
-                  if (_loading) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.s64),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: AppStrokeWidths.spinnerRegular,
-                          color: s.muted,
-                        ),
-                      ),
-                    );
-                  }
-                  // Fetch succeeded but carried no snapshot — fall back to
-                  // the public plan catalogue, as before.
-                  return const CurrentPlanCard();
-                },
-              ),
-            ],
+    return FigPage(
+      title: context.tr.usageTitle,
+      eyebrow: context.tr.figBilling,
+      child: RefreshIndicator(
+        color: s.brandCyan,
+        backgroundColor: s.surface,
+        onRefresh: _fetchUsage,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            AppSpacing.s16,
+            AppSpacing.s16,
+            AppSpacing.s28,
           ),
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            BlocBuilder<PlanCubit, PlanSnapshot?>(
+              builder: (context, plan) {
+                // Real usage data wins outright — a failed refresh must
+                // never replace numbers the user can already read.
+                if (plan != null) return const PlanUsageCard();
+                // Nothing to show AND the fetch failed: say so, and give
+                // them a way out. `RefreshIndicator` alone isn't an
+                // affordance — nothing on a blank page invites a pull.
+                if (_failure != null) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.s64),
+                    child: AppErrorState(
+                      message: ApiErrorMapper.message(context, _failure),
+                      onRetry: _fetchUsage,
+                    ),
+                  );
+                }
+                if (_loading) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.s64),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: AppStrokeWidths.spinnerRegular,
+                        color: s.muted,
+                      ),
+                    ),
+                  );
+                }
+                // Fetch succeeded but carried no snapshot — fall back to
+                // the public plan catalogue, as before.
+                return const CurrentPlanCard();
+              },
+            ),
+          ],
         ),
       ),
     );

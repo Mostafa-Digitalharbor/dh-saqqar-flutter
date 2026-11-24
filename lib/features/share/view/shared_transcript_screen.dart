@@ -9,7 +9,6 @@ import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/data_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/responsive_content.dart';
@@ -18,6 +17,7 @@ import '../../conversations/data/conversation_models.dart';
 import '../data/shared_transcript_models.dart';
 import '../view_model/shared_transcript_cubit.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../shared/fig/fig_page.dart';
 
 /// Public, read-only view of a shared conversation. Reached via the
 /// `https://saqqaar.com/share/<token>` Universal / App Link or the legacy
@@ -63,61 +63,19 @@ class SharedTranscriptScreen extends StatelessWidget {
               (transcript != null && transcript.title.trim().isNotEmpty)
               ? transcript.title
               : context.tr.sharedConversationTitle;
-          return Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                icon: const Icon(AppIcons.close),
-                tooltip: context.tr.cancel,
-                onPressed: () => _leave(context),
-              ),
-              title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-              actions: const [
-                Padding(
-                  padding: EdgeInsetsDirectional.only(end: AppSpacing.s12),
-                  child: Center(child: _ReadOnlyBadge()),
-                ),
-              ],
-            ),
-            body: AmbientBackground(
-              child: DataStateView<SharedTranscript>(
-                state: state,
-                onRetry: () =>
-                    context.read<SharedTranscriptCubit>().load(token),
-                onData: (context, data) => _TranscriptBody(transcript: data),
-              ),
+          return FigPage(
+            title: title,
+            // The "you can look but not touch" nature of a shared transcript,
+            // as the eyebrow over its title.
+            eyebrow: context.tr.readOnlyBadge,
+            onBack: () => _leave(context),
+            child: DataStateView<SharedTranscript>(
+              state: state,
+              onRetry: () => context.read<SharedTranscriptCubit>().load(token),
+              onData: (context, data) => _TranscriptBody(transcript: data),
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-/// Small pill that makes the "you can look but not touch" nature explicit.
-class _ReadOnlyBadge extends StatelessWidget {
-  const _ReadOnlyBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s9,
-        vertical: AppSpacing.s4,
-      ),
-      decoration: BoxDecoration(
-        color: s.muted.withValues(alpha: AppAlphas.a12),
-        borderRadius: AppRadius.pillR,
-        border: Border.all(color: s.muted.withValues(alpha: AppAlphas.a28)),
-      ),
-      child: Text(
-        context.tr.readOnlyBadge,
-        style: context.text.labelSmall?.copyWith(
-          color: s.muted,
-          fontSize: AppFontSizes.chipLabel,
-          fontWeight: FontWeight.w700,
-          letterSpacing: AppLetterSpacing.wide,
-        ),
       ),
     );
   }

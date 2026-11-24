@@ -9,12 +9,11 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_dialog_shell.dart';
 import '../../../shared/widgets/dialog_actions.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../vault/data/project_models.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import '../data/app_package_models.dart';
+import '../../../shared/fig/fig.dart';
 
 /// What the user chose in [AppLaunchDialog].
 @immutable
@@ -96,7 +95,6 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
     final envs = project?.environments ?? const <Environment>[];
 
     return AppDialogShell(
-      elevated: true,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.s20,
@@ -172,12 +170,13 @@ class _AppLaunchDialogState extends State<AppLaunchDialog> {
               // "Decide later" is a real, supported outcome — the launch API
               // takes no environment and the agent asks in-chat — so it is a
               // choice here, not a cancel.
-              cancel: GhostButton(
+              cancel: FigButton.compact(
+                secondary: true,
                 label: tr.appLaunchSkip,
                 onPressed: () =>
                     Navigator.of(context).pop(const AppLaunchChoice()),
               ),
-              confirm: PrimaryButton(
+              confirm: FigButton.compact(
                 label: tr.appLaunchStart,
                 icon: AppIcons.check,
                 // Disabled until there is a database to send: with nothing

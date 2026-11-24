@@ -11,6 +11,7 @@ import '../../../shared/widgets/labeled_divider.dart';
 import '../view_model/auth_flow_cubit.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/fig/fig.dart';
 
 /// "or continue with" divider + Google (all platforms) and Apple (iOS only)
 /// sign-in buttons. Shown under the email field on the sign-in / sign-up entry
@@ -57,7 +58,7 @@ class SocialAuthButtons extends StatelessWidget {
   }
 }
 
-/// Neutral pill matching [GhostButton]'s surface + hairline, with the brand
+/// Neutral pill matching [FigButton]'s surface + hairline, with the brand
 /// logo pinned left and the label optically centered.
 class _SocialButton extends StatelessWidget {
   const _SocialButton({

@@ -259,7 +259,8 @@ class _SchemaField extends StatelessWidget {
       children: [
         field,
         const SizedBox(height: AppSpacing.s8),
-        GhostButton(
+        FigButton.compact(
+          secondary: true,
           label: detectingDatabases
               ? tr.detectingDatabases
               : tr.detectDatabases,

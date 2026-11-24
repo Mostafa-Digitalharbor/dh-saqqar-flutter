@@ -6,6 +6,7 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/glass_card.dart';
 import 'account_card_header.dart';
+import '../../../shared/fig/fig.dart';
 
 /// One destination inside an [AccountLinkGroup].
 @immutable
@@ -39,7 +40,7 @@ class AccountLink {
 
 /// A titled card of related account destinations.
 ///
-/// Replaces a flat run of full-width [GhostButton]s. Seven identical pills
+/// Replaces a flat run of full-width [FigButton]s. Seven identical pills
 /// stacked down a screen give the eye nothing to grab: no grouping, no
 /// hierarchy, and no hint that "Manage devices" and "Buy tokens" are different
 /// kinds of thing. Grouping them under headings turns one long list into three

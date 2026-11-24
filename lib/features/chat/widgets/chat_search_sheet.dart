@@ -1,3 +1,4 @@
+import '../../../shared/fig/fig.dart' show showLightSheet;
 import 'package:flutter/material.dart';
 
 import '../../../core/i18n/app_localizations.dart';
@@ -35,11 +36,10 @@ class ChatSearchSheet {
     final s = context.saqqar;
     final controller = TextEditingController();
     try {
-      await showModalBottomSheet<void>(
-        context: context,
+      await showLightSheet<void>(
+        context,
         isScrollControlled: true,
-        backgroundColor: s.surface,
-        builder: (sheetContext) {
+        builder: (BuildContext sheetContext) {
           return Padding(
             padding: EdgeInsets.only(
               // Scoped accessor — wholesale `MediaQuery.of` would rebuild this

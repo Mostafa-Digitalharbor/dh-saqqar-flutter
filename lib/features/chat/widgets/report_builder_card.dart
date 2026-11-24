@@ -6,10 +6,10 @@ import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../data/interactive_cards.dart';
 import 'interactive_card_shell.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Loads one page of `GET /api/v1/report-entities/` for [entity], optionally
 /// narrowed by [query]. Injected so the card is drivable in a widget test
@@ -229,7 +229,7 @@ class _ReportBuilderCardState extends State<ReportBuilderCard> {
             }),
           ),
         const SizedBox(height: AppSpacing.s14),
-        PrimaryButton(
+        FigButton.compact(
           label: tr.reportBuild,
           icon: AppIcons.send,
           expand: true,

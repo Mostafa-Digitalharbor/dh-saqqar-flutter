@@ -1,3 +1,6 @@
+import '../../../shared/fig/fig.dart' show FigDarkSurface, showFigSheet;
+import '../../../shared/fig/tools_sheet.dart' show showSaqqarTools;
+import 'dart:io';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../auth/view_model/auth_cubit.dart';
 import '../../../core/theme/app_theme.dart';
@@ -24,6 +27,10 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../core/network/view_model/connectivity_cubit.dart';
+import '../../../core/error/app_failure.dart';
+import '../../../core/state/data_state.dart';
+import '../../conversations/data/conversation_models.dart';
+import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/fade_slide_in.dart';
 // Dead with the conversation menu — the rail drawer renders counts as
@@ -94,9 +101,17 @@ part 'chat_screen_tools_sheet.dart';
 /// auto-approve toggle, composer text), wires the typing/scroll FSM, and
 /// orchestrates the chat widgets and sheets.
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.conversationId});
+  const ChatScreen({
+    super.key,
+    required this.conversationId,
+    this.initialDraft,
+  });
 
   final String conversationId;
+
+  /// Text to leave in the composer on open — a command picked from the tools
+  /// menu — for the user to finish and send.
+  final String? initialDraft;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -170,7 +185,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   /// The chips, for the composer. Derived, so it cannot fall out of step
   /// with the files the way a second stored list could.
   List<ChatAttachment> get _attachmentChips => [
-    for (final s in _staged) s.chip,
+    for (final s in _staged) s.chip.withPhase(s.phase),
   ];
 
   bool _isThinking = false;
@@ -244,6 +259,19 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   // `_thinkingTimer` / `_loadingTimer` fields drove a fabricated progress
   // bar and were removed in the de-fabrication pass.
 
+  /// Why an existing chat could not be opened (offline, expired session, a
+  /// conversation that was deleted…), or null. Only meaningful when there is
+  /// no earlier snapshot to keep showing — a failed refresh of a chat that is
+  /// already on screen is the offline banner's job, not a full-screen error.
+  Object? get _openFailure {
+    if (_isNewChat) return null;
+    final data = context.watch<ChatCubit>().state.data;
+    return data is DataFailure<ConversationSnapshot> &&
+            data.dataOrPrevious == null
+        ? (data.error ?? data)
+        : null;
+  }
+
   bool get _isNewChat => widget.conversationId == UiStrings.newConversationId;
 
   // _isUnknownChat removed: the demo seed lookup was producing false
@@ -281,6 +309,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     // (EmptyChatSuggestions) renders until the create-then-route flow
     // hands off to a real cubit.
     _initControllers();
+    final draft = widget.initialDraft;
+    if (draft != null && draft.isNotEmpty) {
+      _composer.text = draft;
+      _composer.selection = TextSelection.collapsed(offset: draft.length);
+    }
 
     // Listen for app foreground / background transitions so the chat
     // poll timer pauses when the user minimises the app — without this,
@@ -388,6 +421,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   // so nothing they receive can go stale between builds.
   Widget? _cachedSidebarDrawer;
   Widget? _cachedRailDrawer;
+
+  /// One key per pending-approval row, by approval id (every id of a collapsed
+  /// group shares its row's key), so "View details" in the rail can scroll to
+  /// the card.
+  final Map<String, GlobalKey> _approvalKeys = {};
   String _railCompany = '';
   String _railEnvironment = '';
 
@@ -455,86 +493,94 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final drawerWidth = _drawerWidth(context);
 
     final chatEnv = _resolveEnv();
-    return Theme(
-      data: AppTheme.dark(Localizations.localeOf(context)),
-      child: Scaffold(
-        backgroundColor: AppColors.figWhite,
-        resizeToAvoidBottomInset: true,
-        body: Stack(
-          children: [
-            // ── Main chat content ─────────────────────────────────────
-            //
-            // `LayoutBuilder` so the bottom band can be capped against the
-            // height this body actually has, not the screen's. The two diverge
-            // exactly when it matters: opening the keyboard leaves the screen
-            // the same size and halves the body.
-            ChatFrame(
-              header: _chatHeader(
-                company: _railCompany = chatEnv?.projectName ?? '',
-                environment: _railEnvironment = chatEnv?.name ?? '',
-                isLive: chatEnv?.isLive ?? false,
-                readOnly: chatEnv?.readOnly ?? false,
-                pending: pendingForChat,
-              ),
-              taskPrep: taskPrep,
-              autoApprove: autoApprove,
-              onTaskPrep: _setTaskPrep,
-              onAutoApprove: _setAutoApprove,
-              child: LayoutBuilder(
-                builder: (context, bodyConstraints) => Column(
-                  children: [
-                    // Brief §4.1 — the project / environment dropdowns are
-                    // replaced on mobile by a compact env-badges strip. Tapping
-                    // it opens the env picker sheet so the user still has one
-                    // tap to switch context, but the chrome stays minimal.
-                    // Restored 2026-05-17 — env-badges strip replaced with the
-                    // two-dropdown row (Project + Environment) per request.
-                    // Picking a project clears the env so the user re-confirms
-                    // which env within the new project they want to talk to.
-                    // (Context/usage meter removed: the snapshot API exposes no token
-                    // accounting, so the figures it showed were fabricated. Re-add it
-                    // wired to a real usage field when the backend surfaces one.)
-                    const OfflineBanner(),
-                    // Long-running report progress — Excel / PDF / Word generation.
-                    // Rendered above the message list (not inside the typing row)
-                    // because the user's eye needs to find the percentage fast,
-                    // and the typing row sits at the message tail where new
-                    // messages can push it off-screen. Fed by the REAL
-                    // `conversation.run_progress` snapshot field via
-                    // [_liveRunProgress]; hidden whenever the backend isn't
-                    // mid-report.
-                    if (_liveRunProgress case final progress?)
-                      ChatRunProgressCard(progress: progress),
-                    Expanded(child: _transcriptArea(context, pendingForChat)),
-                    // PendingApprovalsBanner above the composer was retired
-                    // on 2026-05-17 — pending approvals now render inline as
-                    // ChatApprovalCard inside the message list (see
-                    // _buildMessageList), scrolling with the rest of the chat
-                    // so they no longer hog the composer space.
-                    //
-                    // Everything between the transcript and the composer, height-
-                    // capped. All three are conditional, and when several fire at
-                    // once on a small screen at large text they used to push the
-                    // composer clean off the bottom — see [ChatBottomChrome].
-                    _bottomChrome(
-                      context,
-                      bodyConstraints: bodyConstraints,
-                      online: online,
-                      quotaWindow: quotaWindow,
-                      snapshotConv: snapshotConv,
-                      taskPrep: taskPrep,
-                      autoApprove: autoApprove,
-                      chatFeatures: chatFeatures,
-                    ),
-                  ],
+    return FigDarkSurface(
+      child: Theme(
+        data: AppTheme.dark(Localizations.localeOf(context)),
+        child: Scaffold(
+          backgroundColor: AppColors.figWhite,
+          resizeToAvoidBottomInset: true,
+          body: Stack(
+            children: [
+              // ── Main chat content ─────────────────────────────────────
+              //
+              // `LayoutBuilder` so the bottom band can be capped against the
+              // height this body actually has, not the screen's. The two diverge
+              // exactly when it matters: opening the keyboard leaves the screen
+              // the same size and halves the body.
+              ChatFrame(
+                header: _chatHeader(
+                  company: _railCompany = chatEnv?.projectName ?? '',
+                  environment: _railEnvironment = chatEnv?.name ?? '',
+                  isLive: chatEnv?.isLive ?? false,
+                  readOnly: chatEnv?.readOnly ?? false,
+                  pending: pendingForChat,
+                ),
+                // The ⋮ pill is the Saqqar menu (modes, connections, commands),
+                // the same one every tab opens. The composer's own tools
+                // button keeps the upload/scan sheet.
+                onMore: () => showSaqqarTools(
+                  context,
+                  taskPrep: taskPrep,
+                  autoApprove: autoApprove,
+                  onTaskPrep: _setTaskPrep,
+                  onAutoApprove: _setAutoApprove,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, bodyConstraints) => Column(
+                    children: [
+                      // Brief §4.1 — the project / environment dropdowns are
+                      // replaced on mobile by a compact env-badges strip. Tapping
+                      // it opens the env picker sheet so the user still has one
+                      // tap to switch context, but the chrome stays minimal.
+                      // Restored 2026-05-17 — env-badges strip replaced with the
+                      // two-dropdown row (Project + Environment) per request.
+                      // Picking a project clears the env so the user re-confirms
+                      // which env within the new project they want to talk to.
+                      // (Context/usage meter removed: the snapshot API exposes no token
+                      // accounting, so the figures it showed were fabricated. Re-add it
+                      // wired to a real usage field when the backend surfaces one.)
+                      const OfflineBanner(),
+                      // Long-running report progress — Excel / PDF / Word generation.
+                      // Rendered above the message list (not inside the typing row)
+                      // because the user's eye needs to find the percentage fast,
+                      // and the typing row sits at the message tail where new
+                      // messages can push it off-screen. Fed by the REAL
+                      // `conversation.run_progress` snapshot field via
+                      // [_liveRunProgress]; hidden whenever the backend isn't
+                      // mid-report.
+                      if (_liveRunProgress case final progress?)
+                        ChatRunProgressCard(progress: progress),
+                      Expanded(child: _transcriptArea(context, pendingForChat)),
+                      // PendingApprovalsBanner above the composer was retired
+                      // on 2026-05-17 — pending approvals now render inline as
+                      // ChatApprovalCard inside the message list (see
+                      // _buildMessageList), scrolling with the rest of the chat
+                      // so they no longer hog the composer space.
+                      //
+                      // Everything between the transcript and the composer, height-
+                      // capped. All three are conditional, and when several fire at
+                      // once on a small screen at large text they used to push the
+                      // composer clean off the bottom — see [ChatBottomChrome].
+                      _bottomChrome(
+                        context,
+                        bodyConstraints: bodyConstraints,
+                        online: online,
+                        quotaWindow: quotaWindow,
+                        snapshotConv: snapshotConv,
+                        taskPrep: taskPrep,
+                        autoApprove: autoApprove,
+                        chatFeatures: chatFeatures,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            ..._drawerLayers(
-              drawerWidth: drawerWidth,
-              anyDrawerOpen: anyDrawerOpen,
-            ),
-          ],
+              ..._drawerLayers(
+                drawerWidth: drawerWidth,
+                anyDrawerOpen: anyDrawerOpen,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,10 +1,8 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
     show Clipboard, ClipboardData, HapticFeedback;
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/i18n/app_localizations.dart';
@@ -15,10 +13,10 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/fig/fig.dart';
 import '../data/chat_view_models.dart';
 import 'message_token_chip.dart';
-import '../../inbox/data/artifact_downloader.dart';
-import '../view/attachment_viewer_screen.dart';
 import 'artifact_pill.dart';
 import 'attachment_chip.dart';
+import 'attachment_image_grid.dart';
+import 'attachment_open.dart';
 import 'chat_markdown.dart';
 import '../../../shared/widgets/sheet_action_row.dart';
 import '../../../core/constants/asset_paths.dart';
@@ -346,8 +344,8 @@ Future<void> _showMessageActions(
   ChatMessage message,
 ) async {
   unawaited(HapticFeedback.mediumImpact());
-  final action = await showModalBottomSheet<_MessageAction>(
-    context: context,
+  final action = await showLightSheet<_MessageAction>(
+    context,
     isScrollControlled: false,
     builder: (_) => const _MessageActionsSheet(),
   );
@@ -459,6 +457,20 @@ class _MessageAttachments extends StatelessWidget {
       (a.isAgentGenerated ? artifacts : plain).add(a);
     }
 
+    // Two or more pictures become one grid; a lone picture keeps its wide
+    // preview, and everything else stays a chip or a sideways strip.
+    final pictures = [
+      for (final a in plain)
+        if (ChatImageGrid.accepts(a)) a,
+    ];
+    final grid = pictures.length > 1;
+    final others = grid
+        ? [
+            for (final a in plain)
+              if (!pictures.contains(a)) a,
+          ]
+        : plain;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -469,20 +481,23 @@ class _MessageAttachments extends StatelessWidget {
             attachment: a,
             onOpen: a.downloadUrl == null
                 ? () {}
-                : () => _openAttachment(context, a),
+                : () => openChatAttachment(context, a),
           ),
         ],
-        if (plain.length == 1) ...[
+        if (grid) ...[
           SizedBox(height: spacing),
-          AttachmentChip(
-            attachment: plain.first,
-            onTap: plain.first.downloadUrl == null
-                ? null
-                : () => _openAttachment(context, plain.first),
+          ChatImageGrid(attachments: pictures),
+        ],
+        if (others.length == 1) ...[
+          SizedBox(height: spacing),
+          AttachmentOpenTarget(
+            attachment: others.first,
+            inlineCard: !others.first.isImage,
+            child: AttachmentChip(attachment: others.first),
           ),
-        ] else if (plain.length > 1) ...[
+        ] else if (others.length > 1) ...[
           SizedBox(height: spacing),
-          _AttachmentStrip(attachments: plain),
+          _AttachmentStrip(attachments: others),
         ],
       ],
     );
@@ -508,65 +523,12 @@ class _AttachmentStrip extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.s8),
         itemBuilder: (context, i) {
           final a = attachments[i];
-          return AttachmentChip(
+          return AttachmentOpenTarget(
             attachment: a,
-            gallery: true,
-            onTap: a.downloadUrl == null
-                ? null
-                : () => _openAttachment(context, a),
+            child: AttachmentChip(attachment: a, gallery: true),
           );
         },
       ),
     );
-  }
-}
-
-/// Downloads the attachment (or reuses the cached copy under the app's
-/// documents directory) and opens it in Saqqar's own viewer.
-///
-/// This used to end in `OpenFilex.open`, which threw the user into
-/// Acrobat / the gallery / Files and lost their place in the chat.
-/// [AttachmentViewerScreen] renders images, PDFs and text files inline;
-/// the kinds it can't render still reach another app, but only behind an
-/// explicit button there instead of automatically.
-///
-/// Caller must guard with `attachment.downloadUrl != null`; this
-/// function asserts both [downloadUrl] and [serverId] are set.
-Future<void> _openAttachment(
-  BuildContext context,
-  ChatAttachment attachment,
-) async {
-  final url = attachment.downloadUrl;
-  final cacheKey = attachment.serverId;
-  if (url == null || cacheKey == null) return;
-  final tr = context.tr;
-  AppToast.show(
-    context,
-    message: tr.downloadingArtifact,
-    variant: ToastVariant.info,
-  );
-  final downloader = ArtifactDownloader(context.read<Dio>());
-  final result = await downloader.fetch(
-    url: url,
-    cacheKey: cacheKey,
-    originalName: attachment.name,
-    kindHint: attachment.kind,
-  );
-  if (!context.mounted) return;
-  switch (result) {
-    case ArtifactFetchSuccess(:final file):
-      await AttachmentViewerScreen.open(
-        context,
-        file: file,
-        name: attachment.name,
-        kindLabel: attachment.kind,
-        sizeLabel: attachment.size,
-      );
-    case ArtifactFetchFailed(:final statusCode):
-      AppToast.show(
-        context,
-        message: tr.artifactDownloadMessage(statusCode),
-        variant: ToastVariant.error,
-      );
   }
 }

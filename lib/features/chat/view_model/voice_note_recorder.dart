@@ -132,6 +132,9 @@ class VoiceNoteRecorder extends ChangeNotifier {
 
   bool _isRecording = false;
   bool _isTranscribing = false;
+  double _sendProgress = 0;
+  String? _previewPath;
+  Duration _previewLength = Duration.zero;
   Duration _elapsed = Duration.zero;
 
   /// True from a successful [start] until [stop] or [discard].
@@ -142,8 +145,30 @@ class VoiceNoteRecorder extends ChangeNotifier {
   /// already in flight.
   bool get isTranscribing => _isTranscribing;
 
+  /// How much of the previewed take has reached the server (0..1) while it
+  /// is being sent; the "Sending…" card draws it.
+  double get sendProgress => _sendProgress;
+
+  /// Reported by the upload as bytes go out.
+  void reportSendProgress(double fraction) {
+    if (!_isTranscribing || fraction == _sendProgress) return;
+    _sendProgress = fraction;
+    notifyListeners();
+  }
+
   /// How long the current recording has been running.
   Duration get elapsed => _elapsed;
+
+  /// True from [finish] until the take is sent ([sendPreview]) or dropped
+  /// ([discard]): the recording has ended and is waiting for the user to
+  /// listen and decide.
+  bool get isPreviewing => _previewPath != null;
+
+  /// The finished take, for the player. Null unless [isPreviewing].
+  File? get previewFile => _previewPath == null ? null : File(_previewPath!);
+
+  /// Length of the finished take (what [elapsed] read when it stopped).
+  Duration get previewLength => _previewLength;
 
   /// Begins recording. Returns `null` on success, or the reason it could not.
   ///
@@ -226,12 +251,73 @@ class VoiceNoteRecorder extends ChangeNotifier {
     }
   }
 
+  /// Ends the recording but keeps the file so it can be listened to before
+  /// anything leaves the device. Returns false when the recorder produced no
+  /// audio at all.
+  ///
+  /// The take then waits for [sendPreview] (upload + transcribe) or
+  /// [discard]; either one deletes the file, so a take the user abandons does
+  /// not linger in the temp directory.
+  Future<bool> finish() async {
+    if (!_isRecording) return false;
+    _cancelTimers();
+    final stopped = await _recorder.stop();
+    _isRecording = false;
+    final localPath = stopped ?? _path;
+    if (localPath == null) {
+      _reset();
+      return false;
+    }
+    _previewPath = localPath;
+    _previewLength = _elapsed;
+    _path = null;
+    notifyListeners();
+    return true;
+  }
+
+  /// Uploads the previewed take to [transcribe], exactly as [stop] does for a
+  /// live recording, and deletes it whichever way that goes.
+  Future<VoiceNoteOutcome> sendPreview(
+    Future<String> Function(File audio) transcribe,
+  ) async {
+    final path = _previewPath;
+    if (path == null) return const VoiceNoteNoAudio();
+    _isTranscribing = true;
+    _sendProgress = 0;
+    notifyListeners();
+    final file = File(path);
+    try {
+      final transcript = await transcribe(file);
+      return transcript.isEmpty
+          ? const VoiceNoteEmpty()
+          : VoiceNoteTranscribed(transcript);
+    } catch (e, st) {
+      AppLogger.warn(_tag, 'transcribe failed', error: e, stackTrace: st);
+      return VoiceNoteFailed(e);
+    } finally {
+      await _deleteQuietly(file);
+      _isTranscribing = false;
+      _sendProgress = 0;
+      _previewPath = null;
+      _previewLength = Duration.zero;
+      _reset();
+    }
+  }
+
   /// Drops the recording without uploading it, and deletes the file.
   ///
   /// [_path] is read into a local BEFORE [_reset] clears it. That ordering is
   /// the whole fix: the version this replaced cleared the field first and
   /// then read it back, so the delete it looked like it was doing never ran.
   Future<void> discard() async {
+    final previewing = _previewPath;
+    if (previewing != null && !_isTranscribing) {
+      _previewPath = null;
+      _previewLength = Duration.zero;
+      _reset();
+      await _deleteQuietly(File(previewing));
+      return;
+    }
     if (!_isRecording) return;
     _cancelTimers();
     final path = _path;

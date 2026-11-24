@@ -9,13 +9,12 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
-import '../../../shared/widgets/page_scaffold.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/fig/fig_page.dart';
 import '../data/voice_support_api.dart';
 import '../data/voice_support_models.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../shared/fig/fig.dart';
 
 /// §8 — the support workspace, mirroring the web's `/voice-support/` page.
 ///
@@ -174,45 +173,54 @@ class _VoiceSupportScreenState extends State<VoiceSupportScreen> {
     final s = context.saqqar;
     final draft = _draft;
 
-    return PageScaffold(
+    return FigPage(
       title: tr.voiceSupportTitle,
-      children: [
-        Text(
-          tr.voiceSupportIntro,
-          style: context.text.bodyMedium?.copyWith(
-            color: s.muted,
-            height: AppLineHeights.body,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s16,
+          AppSpacing.s16,
+          AppSpacing.s16,
+          AppSpacing.s32,
+        ),
+        children: [
+          Text(
+            tr.voiceSupportIntro,
+            style: context.text.bodyMedium?.copyWith(
+              color: s.muted,
+              height: AppLineHeights.body,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.s14),
-        AppTextField(
-          controller: _controller,
-          hint: tr.voiceSupportHint,
-          maxLines: 5,
-        ),
-        const SizedBox(height: AppSpacing.s12),
-        PrimaryButton(
-          label: tr.voiceSupportSubmit,
-          icon: AppIcons.shieldAlert,
-          // Disabled until there is something to send — a request built from
-          // an empty box can only come back empty.
-          onPressed: _canSubmit ? _requestDraft : null,
-          loading: _drafting,
-        ),
-        if (draft != null && draft.hasContent) ...[
-          const SizedBox(height: AppSpacing.s20),
-          _DraftCard(draft: draft),
+          const SizedBox(height: AppSpacing.s14),
+          AppTextField(
+            controller: _controller,
+            hint: tr.voiceSupportHint,
+            maxLines: 5,
+          ),
           const SizedBox(height: AppSpacing.s12),
-          GhostButton(
-            label: tr.voiceSupportFileTicket,
-            icon: AppIcons.check,
-            // Nothing to file without a title, and never twice for one draft.
-            onPressed: draft.title.isEmpty || _ticketFiled || _filing
-                ? null
-                : _fileTicket,
+          FigButton.compact(
+            label: tr.voiceSupportSubmit,
+            icon: AppIcons.shieldAlert,
+            // Disabled until there is something to send — a request built from
+            // an empty box can only come back empty.
+            onPressed: _canSubmit ? _requestDraft : null,
+            loading: _drafting,
           ),
+          if (draft != null && draft.hasContent) ...[
+            const SizedBox(height: AppSpacing.s20),
+            _DraftCard(draft: draft),
+            const SizedBox(height: AppSpacing.s12),
+            FigButton.compact(
+              secondary: true,
+              label: tr.voiceSupportFileTicket,
+              icon: AppIcons.check,
+              // Nothing to file without a title, and never twice for one draft.
+              onPressed: draft.title.isEmpty || _ticketFiled || _filing
+                  ? null
+                  : _fileTicket,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

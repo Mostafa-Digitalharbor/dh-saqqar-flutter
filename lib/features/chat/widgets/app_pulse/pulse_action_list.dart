@@ -5,10 +5,9 @@ import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_sizes.dart';
 import '../../../../shared/extensions/context_extensions.dart';
-import '../../../../shared/widgets/ghost_button.dart';
-import '../../../../shared/widgets/primary_button.dart';
 import '../../data/interactive_card_kind.dart';
 import '../../data/pulse_actions.dart';
+import '../../../../shared/fig/fig.dart';
 
 /// The action rows under an app-pulse card's numbers — "Customer collection ·
 /// 13 invoices · [Start collection]".
@@ -144,16 +143,17 @@ class _ActionRow extends StatelessWidget {
                 children: [
                   for (final button in action.buttons)
                     button.primary
-                        ? PrimaryButton(
+                        ? FigButton.compact(
                             label: button.label,
                             icon: AppIcons.sparkles,
-                            minHeight: AppControlSizes.buttonMin,
+                            height: AppControlSizes.buttonMin,
                             onPressed: () => send(button.prompt),
                           )
-                        : GhostButton(
+                        : FigButton.compact(
+                            secondary: true,
                             label: button.label,
                             icon: AppIcons.sparkles,
-                            minHeight: AppControlSizes.buttonMin,
+                            height: AppControlSizes.buttonMin,
                             onPressed: () => send(button.prompt),
                           ),
                 ],
@@ -194,14 +194,15 @@ class PulseDeepActionChips extends StatelessWidget {
           // shipments" the obvious first tap on the inventory card.
           for (final action in actions)
             action.primary
-                ? PrimaryButton(
+                ? FigButton.compact(
                     label: action.label,
-                    minHeight: AppControlSizes.buttonMin,
+                    height: AppControlSizes.buttonMin,
                     onPressed: () => send(action.prompt),
                   )
-                : GhostButton(
+                : FigButton.compact(
+                    secondary: true,
                     label: action.label,
-                    minHeight: AppControlSizes.buttonMin,
+                    height: AppControlSizes.buttonMin,
                     onPressed: () => send(action.prompt),
                   ),
         ],
@@ -302,9 +303,9 @@ class _PulseFreeTextActionState extends State<PulseFreeTextAction> {
           const SizedBox(width: AppSpacing.s8),
           // Filled, as on the web (`fc-btn--primary ac-explain-btn`): it is
           // the only thing to press once something has been typed.
-          PrimaryButton(
+          FigButton.compact(
             label: tr.lookup(spec.label),
-            minHeight: AppControlSizes.buttonMin,
+            height: AppControlSizes.buttonMin,
             onPressed: () => _submit(spec.promptKey, spec.emptyPromptKey),
           ),
         ],

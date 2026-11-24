@@ -4,9 +4,9 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/accent_banner.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../billing/data/billing_visibility.dart';
 import '../../billing/data/plan_models.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Chat banner for plan/quota state (Gap A near-limit + Gap B exceeded):
 ///
@@ -55,7 +55,8 @@ class ChatPlanBanner extends StatelessWidget {
                   ? tr.quotaExceededBody(word)
                   : tr.quotaExceededBodyPlain(word)),
         action: showPaidUpsell
-            ? GhostButton(
+            ? FigButton.compact(
+                secondary: true,
                 label: tr.quotaUpgradeCta,
                 icon: AppIcons.sparkles,
                 onPressed: onUpgrade,

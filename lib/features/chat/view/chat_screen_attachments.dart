@@ -26,14 +26,33 @@ extension _ChatAttachments on _ChatScreenState {
     }
   }
 
+  /// Retry on a failed or interrupted row: the same file, uploaded again on
+  /// its own so the rest of the batch is left alone.
+  Future<void> _retryAttachmentAt(int index) async {
+    if (index < 0 || index >= _staged.length || _isNewChat) return;
+    final row = _staged[index];
+    if (row.phase != UploadPhase.failed &&
+        row.phase != UploadPhase.interrupted) {
+      return;
+    }
+    _update(() => _staged[index] = row.withPhase(UploadPhase.uploading));
+    await _uploadStaged([row.file]);
+  }
+
+  /// True while any staged file is still uploading or failed to: sending then
+  /// would silently leave it out, because only uploaded files carry an id.
+  bool get _stagedBlocksSend => _staged.any(
+    (s) =>
+        s.phase == UploadPhase.uploading ||
+        s.phase == UploadPhase.failed ||
+        s.phase == UploadPhase.interrupted,
+  );
+
   void _removeAttachmentAt(int index) {
     if (index < 0 || index >= _staged.length) return;
-    if (!_isNewChat) {
-      final cubit = context.read<ChatCubit>();
-      final staged = cubit.state.stagedAttachments;
-      if (index < staged.length) {
-        cubit.removeStagedAttachment(staged[index].id);
-      }
+    final uploadId = _staged[index].uploadId;
+    if (!_isNewChat && uploadId != null) {
+      context.read<ChatCubit>().removeStagedAttachment(uploadId);
     }
     // One removal, because there is one list. This used to be two, with a
     // `if (index < other.length)` guard on the second — a guard that only
@@ -123,9 +142,19 @@ extension _ChatAttachments on _ChatScreenState {
 
     // UI metadata for the composer chips — keeps the visual confirmation
     // instant even if the upload below is still in flight.
+    //
+    // An existing chat uploads right away, so its rows start as uploading; a
+    // new chat has nothing to upload to yet, so its rows are simply ready for
+    // the first send to carry.
     _update(() {
       for (var i = 0; i < newFiles.length; i++) {
-        _staged.add(StagedFile(chip: staged.chips[i], file: newFiles[i]));
+        _staged.add(
+          StagedFile(
+            chip: staged.chips[i],
+            file: newFiles[i],
+            phase: _isNewChat ? UploadPhase.done : UploadPhase.uploading,
+          ),
+        );
       }
     });
 
@@ -135,14 +164,41 @@ extension _ChatAttachments on _ChatScreenState {
     // `_sendAsNewConversation` does the deferred upload after it creates the
     // conversation.
     if (_isNewChat) return;
+    await _uploadStaged(newFiles);
+  }
+
+  /// Uploads [files] (already in [_staged] as uploading) and records, per
+  /// file, what happened: the server id on success, otherwise a failed or
+  /// interrupted row that stays in the composer with a Retry.
+  Future<void> _uploadStaged(List<File> files) async {
     final cubit = context.read<ChatCubit>();
-    final ok = await cubit.uploadAttachments(newFiles);
-    if (!mounted || ok) return;
-    // Upload failed — drop just the chips we added this round so any
-    // previously-staged batch the user might still want stays put.
+    final before = cubit.state.stagedAttachments.length;
+    final ok = await cubit.uploadAttachments(files);
+    if (!mounted) return;
+    if (ok) {
+      // The server answers in the order the files were sent, and the cubit
+      // appends them after what it already held.
+      final uploaded = cubit.state.stagedAttachments.skip(before).toList();
+      _update(() {
+        for (var i = 0; i < files.length; i++) {
+          final at = _staged.indexWhere((s) => s.file.path == files[i].path);
+          if (at < 0 || i >= uploaded.length) continue;
+          _staged[at] = _staged[at].withUploadId(uploaded[i].id);
+        }
+      });
+      return;
+    }
+    final failure = cubit.state.actionFailure?.failure;
+    final phase = failure is NetworkFailure || failure is TimeoutFailure
+        ? UploadPhase.interrupted
+        : UploadPhase.failed;
     _update(() {
-      final dropped = {for (final f in newFiles) f.path};
-      _staged.removeWhere((s) => dropped.contains(s.file.path));
+      final failed = {for (final f in files) f.path};
+      for (var i = 0; i < _staged.length; i++) {
+        if (failed.contains(_staged[i].file.path)) {
+          _staged[i] = _staged[i].withPhase(phase);
+        }
+      }
     });
     _surfaceActionFailure();
   }

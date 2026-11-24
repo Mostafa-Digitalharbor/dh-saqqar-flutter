@@ -10,9 +10,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/auto_direction_text.dart';
 import '../../../shared/widgets/capped_scroll_list.dart';
 import '../../../shared/widgets/danger_callout.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../data/chat_view_models.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../inbox/data/approval_models.dart'
@@ -20,6 +18,7 @@ import '../../inbox/data/approval_models.dart'
 import 'accent_card_chrome.dart';
 import 'email_approval_preview.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Approval card shown inside the chat "Pending approvals" sheet.
 /// Neutral surface + 4 px amber start-side stripe + Reject / Approve actions.
@@ -193,7 +192,8 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
           Row(
             children: [
               Expanded(
-                child: GhostButton(
+                child: FigButton.compact(
+                  secondary: true,
                   label: context.tr.reject,
                   icon: AppIcons.close,
                   onPressed: () {
@@ -215,15 +215,16 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
                 // known from the decision RESPONSE, so "Approve all 6" here
                 // would be a number the client invented.
                 child: _isDestructiveDelete
-                    ? GhostButton(
+                    ? FigButton.compact(
+                        secondary: true,
                         label: context.tr.deleteApprovalAction(
                           approval.recordCount ?? 1,
                         ),
                         icon: AppIcons.trash,
-                        tone: GhostButtonTone.danger,
+                        dangerOutline: true,
                         onPressed: _approve,
                       )
-                    : PrimaryButton(
+                    : FigButton.compact(
                         label: context.tr.approve,
                         icon: AppIcons.check,
                         onPressed: _approve,
@@ -241,7 +242,8 @@ class _ChatApprovalCardState extends State<ChatApprovalCard> {
             const SizedBox(height: AppSpacing.s8),
             SizedBox(
               width: double.infinity,
-              child: GhostButton(
+              child: FigButton.compact(
+                secondary: true,
                 label: context.tr.approveAllSimilar,
                 icon: AppIcons.check,
                 onPressed: () {

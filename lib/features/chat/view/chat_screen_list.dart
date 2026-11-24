@@ -206,7 +206,14 @@ extension _ChatTranscript on _ChatScreenState {
   Widget _approvalRow(List<ApprovalGroup> approvalGroups, int approvalIdx) {
     final group = approvalGroups[approvalIdx];
     final approval = group.first;
+    // Stable across rebuilds: a GlobalKey minted per build would remount the
+    // card every frame.
+    final rowKey = _approvalKeys.putIfAbsent(approval.id, GlobalKey.new);
+    for (final a in group.approvals) {
+      _approvalKeys[a.id] = rowKey;
+    }
     return ResponsiveContent(
+      key: rowKey,
       maxWidth: AppLayoutWidths.chatColumn,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.s14,

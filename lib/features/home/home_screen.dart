@@ -219,6 +219,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: AppDateFormat.relative(context, c.at),
                       onTap: () => context.push(RouteNames.chatPath(c.id)),
                     ),
+                if (!chatsPending && chats.isNotEmpty)
+                  _ChatTile(
+                    title: context.tr.homeViewAllChats,
+                    icon: LucideIcons.messagesSquare,
+                    onTap: () => context.go(RouteNames.chatsPath),
+                  ),
               ],
             ),
           ),
@@ -249,9 +255,15 @@ class Orb extends StatelessWidget {
 }
 
 class _ChatTile extends StatelessWidget {
-  const _ChatTile({required this.title, this.subtitle, required this.onTap});
+  const _ChatTile({
+    required this.title,
+    this.subtitle,
+    this.icon,
+    required this.onTap,
+  });
 
   final String title;
+  final IconData? icon;
   final String? subtitle;
   final VoidCallback onTap;
 
@@ -278,6 +290,10 @@ class _ChatTile extends StatelessWidget {
           ),
           child: Row(
             children: [
+              if (icon != null) ...[
+                Icon(icon, size: AppIconSizes.action, color: Fig.navy),
+                const SizedBox(width: AppSpacing.s12),
+              ],
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

@@ -253,15 +253,16 @@ class _EnvRowState extends State<_EnvRow> {
                   spacing: AppSpacing.s8,
                   runSpacing: AppSpacing.s8,
                   children: [
-                    PrimaryButton(
+                    FigButton.compact(
                       label: context.tr.openEnvironment,
-                      minHeight: AppControlSizes.rowMin,
+                      height: AppControlSizes.rowMin,
                       onPressed: widget.onOpen,
                     ),
-                    GhostButton(
+                    FigButton.compact(
+                      secondary: true,
                       label: context.tr.delete,
-                      minHeight: AppControlSizes.rowMin,
-                      tone: GhostButtonTone.danger,
+                      height: AppControlSizes.rowMin,
+                      dangerOutline: true,
                       onPressed: widget.onDelete,
                     ),
                   ],

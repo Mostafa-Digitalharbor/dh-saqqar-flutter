@@ -1,3 +1,4 @@
+import '../../../shared/fig/fig.dart' show showLightSheet;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -21,10 +22,8 @@ Future<void> showArtifactDetailsSheet(
   required String name,
 }) {
   final api = context.read<ArtifactsApi>();
-  final s = context.saqqar;
-  return showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: s.surface,
+  return showLightSheet<void>(
+    context,
     isScrollControlled: true,
     // No `shape:` override on purpose. `AppTheme.bottomSheetTheme` already
     // rounds every modal sheet to `AppRadius.sheetTopR` (24), and this was the

@@ -59,7 +59,9 @@ extension _ChatVoice on _ChatScreenState {
   /// the ticker, the 120 s cap and the temp file all live in
   /// [VoiceNoteRecorder].
   Future<void> _startRecording() async {
-    if (_voice.isRecording || _voice.isTranscribing) return;
+    if (_voice.isRecording || _voice.isTranscribing || _voice.isPreviewing) {
+      return;
+    }
     // Permission gate first. Ordering matters for App Store review (guideline
     // 5.1.1(iv)): the native OS prompt must be the FIRST permission-related
     // thing the user ever sees — we never route them to Settings before it.
@@ -69,13 +71,30 @@ extension _ChatVoice on _ChatScreenState {
     _toast(context.tr.micUnavailable);
   }
 
-  /// Tapped on the stop pill (or fired by the recorder's 120 s cap). Uploads
-  /// the audio and appends the transcript to whatever is already typed.
+  /// Tapped on the stop pill (or fired by the recorder's 120 s cap). Ends the
+  /// take and opens the preview — nothing is uploaded until the user has had
+  /// the chance to listen and chooses Send.
   Future<void> _stopRecording() async {
-    final api = context.read<TranscribeApi>();
-    final outcome = await _voice.stop((audio) => api.transcribe(audio: audio));
+    final kept = await _voice.finish();
     if (!mounted) return;
+    if (!kept) _toast(context.tr.transcribeFailed);
+  }
 
+  /// Send on the preview card: uploads the take and appends the transcript to
+  /// whatever is already typed.
+  Future<void> _sendVoicePreview() async {
+    final api = context.read<TranscribeApi>();
+    final outcome = await _voice.sendPreview(
+      (audio) => api.transcribe(
+        audio: audio,
+        onProgress: _voice.reportSendProgress,
+      ),
+    );
+    if (!mounted) return;
+    _handleVoiceOutcome(outcome);
+  }
+
+  void _handleVoiceOutcome(VoiceNoteOutcome outcome) {
     switch (outcome) {
       case VoiceNoteTranscribed(text: final transcript):
         // Append rather than replace — preserves whatever the user typed

@@ -27,6 +27,11 @@ extension _ChatLayout on _ChatScreenState {
         // Whether a given turn produced a visible row depends on
         // the task, not the device — which is what makes this look
         // like it works on one phone and not another.
+        else if (_openFailure case final failure?)
+          AppErrorState(
+            message: ApiErrorMapper.message(context, failure),
+            onRetry: () => context.read<ChatCubit>().load(),
+          )
         else if (_effectiveMessages.isEmpty && pendingForChat == 0)
           EmptyChatSuggestions(
             onSuggestionTap: _seedSuggestion,
@@ -116,6 +121,7 @@ extension _ChatLayout on _ChatScreenState {
           visible:
               !_voice.isRecording &&
               !_voice.isTranscribing &&
+              !_voice.isPreviewing &&
               _effectiveMessages.isNotEmpty,
           onSelect: _seedSuggestion,
         ),
@@ -151,6 +157,7 @@ extension _ChatLayout on _ChatScreenState {
           onRemoveAttachment: _removeAttachmentAt,
           onClearAttachments: _clearAttachments,
           onPreviewAttachment: _previewAttachmentAt,
+          onRetryAttachment: _retryAttachmentAt,
           // Block send when offline OR over a usage cap (Gap B). The
           // quota banner above explains why send is disabled. The
           // *empty-composer* gate (disable Send until there's text or an
@@ -169,6 +176,10 @@ extension _ChatLayout on _ChatScreenState {
           recording: _voice.isRecording,
           transcribing: _voice.isTranscribing,
           recordingElapsed: _voice.elapsed,
+          previewFile: _voice.previewFile,
+          previewLength: _voice.previewLength,
+          sendProgress: _voice.sendProgress,
+          onSendPreview: _sendVoicePreview,
           onStartRecording: _startRecording,
           onStopRecording: _stopRecording,
           onDiscardRecording: _discardRecording,

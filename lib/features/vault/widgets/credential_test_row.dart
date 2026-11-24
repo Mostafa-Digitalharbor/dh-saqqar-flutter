@@ -26,7 +26,8 @@ class _TestConnectionRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GhostButton(
+        FigButton.compact(
+          secondary: true,
           label: status == _TestStatus.running
               ? tr.testingConnection
               : tr.testConnection,

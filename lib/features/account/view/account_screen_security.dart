@@ -94,7 +94,12 @@ class _ChangePasswordState extends State<_ChangePassword> {
           context.tr.figUseAtLeast8CharactersYou,
           style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.muted, height: AppLineHeights.label),
         ),
-        _f(context.tr.figCurrentPassword, '••••••••', _current, _curErr),
+        _f(
+          context.tr.figCurrentPassword,
+          context.tr.figEnterYourPassword,
+          _current,
+          _curErr,
+        ),
         _f(
           context.tr.figNewPassword,
           context.tr.figAtLeast8Characters,

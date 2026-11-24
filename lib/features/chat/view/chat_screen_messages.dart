@@ -87,7 +87,11 @@ extension _ChatMessages on _ChatScreenState {
     if (_toolRunning) return true;
     if (_localStopOverride) return false;
     if (_isNewChat) return _isThinking;
-    final snapshot = context.watch<ChatCubit>().state.data.dataOrNull;
-    return snapshot?.conversation.isRunning ?? false;
+    // Not just the server's flag: the send response usually still says
+    // "not running", so also count the request in flight and the short wait
+    // for the run to start — otherwise Stop only appeared a second or two
+    // late, or never for a fast task.
+    final chat = context.watch<ChatCubit>().state;
+    return chat.isRunning || chat.isSending || chat.awaitingReply;
   }
 }

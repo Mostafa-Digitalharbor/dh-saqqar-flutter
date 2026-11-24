@@ -8,7 +8,6 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/routing/route_names.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/title_trailing_row.dart';
 import '../../billing/data/billing_visibility.dart';
@@ -18,6 +17,7 @@ import '../../billing/view_model/plan_cubit.dart';
 import 'plan_badge.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Account "Plan & usage" card (Gap A) — mirrors the web `/usage/` view:
 /// the plan name as a badge plus three usage bars (day / week / month)
@@ -99,10 +99,11 @@ class PlanUsageCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.s14),
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: GhostButton(
+              child: FigButton.compact(
+                secondary: true,
                 label: context.tr.quotaUpgradeCta,
                 icon: AppIcons.sparkles,
-                minHeight: AppControlSizes.buttonMin,
+                height: AppControlSizes.buttonMin,
                 onPressed: () => context.pushNamed(RouteNames.pricing),
               ),
             ),

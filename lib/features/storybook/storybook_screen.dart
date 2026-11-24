@@ -12,13 +12,12 @@ import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/app_toast.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/eyebrow_label.dart';
-import '../../shared/widgets/ghost_button.dart';
 import '../../shared/widgets/glass_card.dart';
 import '../../shared/widgets/mini_chip.dart';
-import '../../shared/widgets/primary_button.dart';
 import '../../shared/widgets/status_pill.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../core/theme/app_icons.dart';
+import '../../shared/fig/fig.dart';
 
 /// Showcase screen — every shared widget rendered with both themes
 /// reachable via the Account screen. Used by the developer to verify
@@ -97,7 +96,7 @@ class StorybookScreen extends StatelessWidget {
             ]),
 
             _section(context, context.tr.storybookButtons, [
-              PrimaryButton(
+              FigButton.compact(
                 label: context.tr.signIn,
                 icon: AppIcons.signIn,
                 expand: true,
@@ -108,7 +107,8 @@ class StorybookScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.s8),
-              GhostButton(
+              FigButton.compact(
+                secondary: true,
                 label: context.tr.cancel,
                 expand: true,
                 onPressed: () => AppToast.show(
@@ -118,10 +118,11 @@ class StorybookScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.s8),
-              GhostButton(
+              FigButton.compact(
+                secondary: true,
                 label: context.tr.delete,
                 icon: AppIcons.trash,
-                tone: GhostButtonTone.danger,
+                dangerOutline: true,
                 expand: true,
                 onPressed: () => AppToast.show(
                   context,
@@ -238,7 +239,7 @@ class StorybookScreen extends StatelessWidget {
                 title: context.tr.noConversations,
                 body: context.tr.noConversationsHint,
                 icon: AppIcons.message,
-                action: PrimaryButton(
+                action: FigButton.compact(
                   label: context.tr.newConversation,
                   icon: AppIcons.plus,
                   onPressed: () {},

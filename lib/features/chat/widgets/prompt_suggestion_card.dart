@@ -4,11 +4,10 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../data/interactive_cards.dart';
 import 'interactive_card_shell.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../shared/fig/fig.dart';
 
 /// §4c — the cleaner-prompt card
 /// (`tool_payload.kind == prompt_suggestion`).
@@ -82,7 +81,8 @@ class _PromptSuggestionCardState extends State<PromptSuggestionCard> {
         Row(
           children: [
             Expanded(
-              child: GhostButton(
+              child: FigButton.compact(
+                secondary: true,
                 label: tr.suggestionKeepMine,
                 icon: AppIcons.close,
                 onPressed: () => setState(() => _dismissed = true),
@@ -90,7 +90,7 @@ class _PromptSuggestionCardState extends State<PromptSuggestionCard> {
             ),
             const SizedBox(width: AppSpacing.s10),
             Expanded(
-              child: PrimaryButton(
+              child: FigButton.compact(
                 label: tr.suggestionApprove,
                 icon: AppIcons.check,
                 onPressed: _controller.text.trim().isEmpty

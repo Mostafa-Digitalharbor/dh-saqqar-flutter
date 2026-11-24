@@ -65,12 +65,12 @@ import 'package:saqqar_app/features/vault/data/credential_models.dart';
 import 'package:saqqar_app/features/vault/data/project_models.dart';
 import 'package:saqqar_app/features/vault/data/projects_api.dart';
 import 'package:saqqar_app/features/vault/data/vault_repository.dart';
-import 'package:saqqar_app/shared/widgets/primary_button.dart';
 import 'package:saqqar_app/features/vault/view_model/vault_cubit.dart';
 import 'package:saqqar_app/core/state/data_state.dart';
 
 import 'design/shot_harness.dart' show loadFonts, shotDir;
 import 'support/responsive_harness.dart';
+import 'package:saqqar_app/shared/fig/fig.dart';
 
 // ── Seeded content ───────────────────────────────────────────────────────
 //
@@ -416,9 +416,10 @@ Future<void> _requestVoiceSupportDraft(WidgetTester tester) async {
   );
   await tester.pump();
 
-  final submit = find.byType(PrimaryButton);
+  final submit = find.byType(FigButton);
   for (var i = 0; i < 4 && submit.evaluate().isEmpty; i++) {
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -160));
+    // The page body, not the header band above it (which also scrolls).
+    await tester.drag(find.byType(ListView).first, const Offset(0, -160));
     await tester.pump();
   }
   await tester.ensureVisible(submit.first);

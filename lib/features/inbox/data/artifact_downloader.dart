@@ -44,6 +44,8 @@ class ArtifactDownloader {
     required String cacheKey,
     required String originalName,
     String kindHint = '',
+    void Function(int received, int total)? onProgress,
+    CancelToken? cancelToken,
   }) async {
     try {
       final file = await _ensureDownloaded(
@@ -51,6 +53,8 @@ class ArtifactDownloader {
         cacheKey: cacheKey,
         originalName: originalName,
         kindHint: kindHint,
+        onProgress: onProgress,
+        cancelToken: cancelToken,
       );
       return ArtifactFetchResult.success(file);
     } on DioException catch (e) {
@@ -107,6 +111,8 @@ class ArtifactDownloader {
     required String cacheKey,
     required String originalName,
     String kindHint = '',
+    void Function(int received, int total)? onProgress,
+    CancelToken? cancelToken,
   }) async {
     final dir = await getApplicationDocumentsDirectory();
     final saqqarDir = Directory('${dir.path}/saqqar_artifacts');
@@ -134,7 +140,12 @@ class ArtifactDownloader {
     // A `.part` that never gets renamed is simply re-attempted next time.
     final partial = File('${target.path}.part');
     try {
-      await _dio.download(url, partial.path);
+      await _dio.download(
+        url,
+        partial.path,
+        onReceiveProgress: onProgress,
+        cancelToken: cancelToken,
+      );
       // `rename` is atomic within the same directory on both Android and
       // iOS sandboxes, so `target` only ever exists as a complete file.
       await partial.rename(target.path);

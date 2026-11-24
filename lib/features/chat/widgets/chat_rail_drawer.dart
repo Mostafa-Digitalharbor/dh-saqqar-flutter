@@ -48,6 +48,7 @@ class ChatRailDrawer extends StatefulWidget {
     required this.onClose,
     this.company = '',
     this.environment = '',
+    this.onViewApproval,
   });
 
   final String conversationId;
@@ -61,6 +62,11 @@ class ChatRailDrawer extends StatefulWidget {
   /// a route, so closing means flipping the chat screen's local
   /// `_railOpen` flag (which triggers the slide-out animation).
   final VoidCallback onClose;
+
+  /// "View details" on an approval: the chat closes this drawer and takes the
+  /// user to that request's card in the transcript. Null hides nothing — the
+  /// link simply does nothing where no chat is behind the drawer.
+  final ValueChanged<inbox_api.Approval>? onViewApproval;
 
   @override
   State<ChatRailDrawer> createState() => _ChatRailDrawerState();
@@ -311,6 +317,7 @@ class _ChatRailDrawerState extends State<ChatRailDrawer>
                           _decideApproval(approval: a, approved: true),
                       onReject: (a) =>
                           _decideApproval(approval: a, approved: false),
+                      onView: (a) => widget.onViewApproval?.call(a),
                     ),
                     _FilesTab(
                       artifacts: artifacts,

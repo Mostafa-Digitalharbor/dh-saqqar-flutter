@@ -8,13 +8,12 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
-import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../data/credential_field_visibility.dart';
 import '../data/credential_models.dart';
 import '../data/credentials_api.dart';
 import '../view_model/vault_cubit.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../shared/fig/fig.dart';
 part 'credential_schema_field.dart';
 part 'credential_test_row.dart';
 
@@ -489,7 +488,7 @@ class _CredentialFormState extends State<CredentialForm> {
                           (f) =>
                               _fieldControllers[f.name]!.text.trim().isNotEmpty,
                         );
-                    return PrimaryButton(
+                    return FigButton.compact(
                       label: context.tr.saveCredentialButton,
                       icon: AppIcons.save,
                       onPressed: (state.actionInFlight || !requiredFilled)
@@ -501,10 +500,11 @@ class _CredentialFormState extends State<CredentialForm> {
               ),
               if (hasCredential) ...[
                 const SizedBox(width: AppSpacing.s8),
-                GhostButton(
+                FigButton.compact(
+                  secondary: true,
                   label: context.tr.deleteCredentialButton,
                   icon: AppIcons.trash,
-                  tone: GhostButtonTone.danger,
+                  dangerOutline: true,
                   onPressed: state.actionInFlight ? null : _delete,
                 ),
               ],

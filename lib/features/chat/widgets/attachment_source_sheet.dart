@@ -1,3 +1,4 @@
+import '../../../shared/fig/fig.dart' show showLightSheet;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -24,8 +25,8 @@ class AttachmentPickerSourceSheet extends StatelessWidget {
 
   static Future<AttachmentPickerSource?> show(BuildContext context) {
     HapticFeedback.selectionClick();
-    return showModalBottomSheet<AttachmentPickerSource>(
-      context: context,
+    return showLightSheet<AttachmentPickerSource>(
+      context,
       isScrollControlled: true,
       builder: (_) => const AttachmentPickerSourceSheet(),
     );

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../features/chat/view_model/task_prep_cubit.dart';
-import '../widgets/app_toast.dart';
+import '../../core/constants/ui_strings.dart';
 import 'fig.dart';
 import '../extensions/context_extensions.dart';
 import '../../core/i18n/app_localizations.dart';
+import '../../core/routing/route_names.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/theme/fig_metrics.dart';
@@ -25,6 +27,9 @@ Future<void> showSaqqarTools(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
+    // The sheet content is its own rounded surface; the theme's handle
+    // would float above it on the transparent route.
+    showDragHandle: false,
     barrierColor: AppColors.figBlack.withValues(alpha: AppAlphas.a50),
     builder: (_) => _ToolsSheet(
       taskPrep: taskPrep,
@@ -235,6 +240,7 @@ class _ToolsSheetState extends State<_ToolsSheet> {
           padding: const EdgeInsets.fromLTRB(AppSpacing.s10, 0, AppSpacing.s10, AppSpacing.s6),
           child: Wrap(
             spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
             children: [
               for (var i = 0; i < contexts.length; i++)
                 GestureDetector(
@@ -280,11 +286,28 @@ class _ToolsSheetState extends State<_ToolsSheet> {
           LucideIcons.unplug,
           context.tr.figConnections,
           context.tr.figConnectionsSub,
-          () => AppToast.show(
-            context,
-            message: context.tr.figManageConnectionsFromYourProfileWorks,
-            variant: ToastVariant.info,
-          ),
+          () {
+            // The sheet sits on the root navigator; close it, then open the
+            // vault above the tab the user is on so Back returns there.
+            final router = GoRouter.of(context);
+            // The current *location* of a pushed route is its base page's, so
+            // ask for the top match to know whether a chat is open.
+            final matches = router.routerDelegate.currentConfiguration.matches;
+            final inChat =
+                matches.isNotEmpty &&
+                matches.last.matchedLocation.startsWith(
+                  '${RouteNames.chatsPath}/',
+                );
+            Navigator.pop(context);
+            if (!inChat) {
+              router.push(RouteNames.vaultPath);
+            } else {
+              // A chat sits above the tab shell, not in it: pushing the
+              // shell's /vault over it mounts the shell twice (same page key,
+              // the screen stays blank). Replace the stack with the vault.
+              router.go(RouteNames.vaultPath);
+            }
+          },
         ),
         const SizedBox(height: AppSpacing.s14),
       ],
@@ -340,11 +363,19 @@ class _ToolsSheetState extends State<_ToolsSheet> {
         for (final c in cmds)
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => AppToast.show(
-              context,
-              message: context.tr.figAskSaqqarInChat(c.$2),
-              variant: ToastVariant.info,
-            ),
+            // The toast this used to show sat under the sheet, so a tap
+            // looked dead. Now it closes the sheet and opens a new chat with
+            // the command typed in, ready to finish and send.
+            onTap: () {
+              final router = GoRouter.of(context);
+              Navigator.pop(context);
+              router.push(
+                Uri(
+                  path: RouteNames.chatPath(UiStrings.newConversationId),
+                  queryParameters: {RouteNames.chatDraftQuery: '/${c.$2} '},
+                ).toString(),
+              );
+            },
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.s4),
               child: _modeRow(c.$1, c.$2, c.$3, const SizedBox.shrink()),

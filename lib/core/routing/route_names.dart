@@ -40,6 +40,9 @@ class RouteNames {
   static const chat = 'chat';
   static String chatPath(String id) => '/chats/$id';
 
+  /// Query key carrying text to leave in the composer of a new chat.
+  static const chatDraftQuery = 'draft';
+
   static const credentialAdd = 'credential_add';
   static const credentialAddPath = '/vault/add';
 

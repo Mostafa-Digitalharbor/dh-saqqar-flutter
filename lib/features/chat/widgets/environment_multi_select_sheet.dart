@@ -1,3 +1,4 @@
+import '../../../shared/fig/fig.dart' show FigButton, showLightSheet;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -7,7 +8,6 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/mini_chip.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../vault/data/project_models.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import 'chat_sheet.dart';
@@ -44,8 +44,8 @@ class EnvironmentMultiSelectSheet extends StatefulWidget {
     required String? projectId,
     required List<String> selectedEnvironmentIds,
   }) {
-    return showModalBottomSheet<List<String>>(
-      context: context,
+    return showLightSheet<List<String>>(
+      context,
       isScrollControlled: true,
       builder: (_) => EnvironmentMultiSelectSheet(
         projectId: projectId,
@@ -131,7 +131,7 @@ class _EnvironmentMultiSelectSheetState
         // Apply commits the whole set at once (a single PATCH), matching the
         // web's "select many then it saves" affordance rather than firing a
         // request per toggle.
-        PrimaryButton(
+        FigButton.compact(
           label: _selected.isEmpty
               ? context.tr.envMultiApply
               : '${context.tr.envMultiApply} · '

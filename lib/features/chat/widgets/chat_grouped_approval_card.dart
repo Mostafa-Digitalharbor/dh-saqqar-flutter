@@ -10,12 +10,11 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/auto_direction_text.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/mini_chip.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../inbox/data/approval_models.dart' show Approval;
 import '../data/approval_grouping.dart';
 import 'accent_card_chrome.dart';
+import '../../../shared/fig/fig.dart';
 
 /// One card standing in for several identical approvals.
 ///
@@ -230,8 +229,12 @@ class _DecisionButtons extends StatelessWidget {
             _needed(context, approveLabel) <= half &&
             _needed(context, rejectLabel) <= half;
 
-        final reject = GhostButton(label: rejectLabel, onPressed: onReject);
-        final approve = PrimaryButton(
+        final reject = FigButton.compact(
+          secondary: true,
+          label: rejectLabel,
+          onPressed: onReject,
+        );
+        final approve = FigButton.compact(
           label: approveLabel,
           onPressed: onApprove,
           expand: !fits,
@@ -299,7 +302,8 @@ class _IndividualRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: GhostButton(
+                child: FigButton.compact(
+                  secondary: true,
                   label: context.tr.reject,
                   icon: AppIcons.close,
                   onPressed: onReject,
@@ -307,7 +311,8 @@ class _IndividualRow extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.s8),
               Expanded(
-                child: GhostButton(
+                child: FigButton.compact(
+                  secondary: true,
                   label: context.tr.approve,
                   icon: AppIcons.check,
                   onPressed: onApprove,

@@ -209,79 +209,107 @@ class _PricingScreenState extends State<PricingScreen>
                           .map((p) => p.sort)
                           .firstOrNull;
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.s12, 0, AppSpacing.s12, AppSpacing.s32),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s32),
                   children: [
                     header,
                     const SizedBox(height: AppSpacing.s14),
-                    if (showPaidUpsell) ...[
-                      Center(
-                        child: _CycleSwitch(
-                          annual: _annual,
-                          onChanged: (v) => setState(() => _annual = v),
-                        ),
-                      ),
-                      if (data.vat.addedAtCheckout)
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.s8),
-                          child: Text(
-                            tr.pricingVatNote(data.vat.rateLabel),
-                            textAlign: TextAlign.center,
-                            style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.muted),
-                          ),
-                        ),
-                      const SizedBox(height: AppSpacing.s14),
-                    ] else
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(AppSpacing.s12, 0, AppSpacing.s12, AppSpacing.s14),
-                        child: Text(
-                          tr.pricingSubtitle,
-                          style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.muted),
-                        ),
-                      ),
-                    for (final tier in data.plans) ...[
-                      _PlanTierCard(
-                        tier: tier,
-                        annual: _annual,
-                        vat: data.vat,
-                        isCurrent: tier.slug == current,
-                        sellable:
-                            currentSort == null || tier.sort > currentSort,
-                        opening: _opening == tier.slug,
-                        onSubscribe: () => _openWeb(tier.slug),
-                      ),
-                      const SizedBox(height: AppSpacing.s14),
-                    ],
-                    if (showPaidUpsell) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s12,
-                        ),
-                        child: FigButton(
-                          label: tr.pricingManageCta,
-                          secondary: true,
-                          height: 48,
-                          fontSize: AppFontSizes.dense,
-                          loading: _opening == '',
-                          onPressed: () => _openWeb(''),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.s14),
-                    ],
+                    // The header keeps its own 24 gutter; only the cards sit
+                    // in the tighter 12 one.
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s16,
+                        horizontal: AppSpacing.s12,
                       ),
-                      child: Text(
-                        showPaidUpsell
-                            ? tr.pricingWebNote
-                            : tr.pricingManagedOnWeb,
-                        textAlign: TextAlign.center,
-                        style: Fig.t(
-                          context,
-                          size: FigMetrics.fontFig11,
-                          color: Fig.muted,
-                          height: AppLineHeights.compact,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (showPaidUpsell) ...[
+                            Center(
+                              child: _CycleSwitch(
+                                annual: _annual,
+                                onChanged: (v) => setState(() => _annual = v),
+                              ),
+                            ),
+                            if (data.vat.addedAtCheckout)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: AppSpacing.s8,
+                                ),
+                                child: Text(
+                                  tr.pricingVatNote(data.vat.rateLabel),
+                                  textAlign: TextAlign.center,
+                                  style: Fig.t(
+                                    context,
+                                    size: FigMetrics.fontFig11,
+                                    color: Fig.muted,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: AppSpacing.s14),
+                          ] else
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.s12,
+                                0,
+                                AppSpacing.s12,
+                                AppSpacing.s14,
+                              ),
+                              child: Text(
+                                tr.pricingSubtitle,
+                                style: Fig.t(
+                                  context,
+                                  size: AppFontSizes.microCaps,
+                                  color: Fig.muted,
+                                ),
+                              ),
+                            ),
+                          for (final tier in data.plans) ...[
+                            _PlanTierCard(
+                              tier: tier,
+                              annual: _annual,
+                              vat: data.vat,
+                              isCurrent: tier.slug == current,
+                              sellable:
+                                  currentSort == null ||
+                                  tier.sort > currentSort,
+                              opening: _opening == tier.slug,
+                              onSubscribe: () => _openWeb(tier.slug),
+                            ),
+                            const SizedBox(height: AppSpacing.s14),
+                          ],
+                          if (showPaidUpsell) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.s12,
+                              ),
+                              child: FigButton(
+                                label: tr.pricingManageCta,
+                                secondary: true,
+                                height: 48,
+                                fontSize: AppFontSizes.dense,
+                                loading: _opening == '',
+                                onPressed: () => _openWeb(''),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.s14),
+                          ],
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.s16,
+                            ),
+                            child: Text(
+                              showPaidUpsell
+                                  ? tr.pricingWebNote
+                                  : tr.pricingManagedOnWeb,
+                              textAlign: TextAlign.center,
+                              style: Fig.t(
+                                context,
+                                size: FigMetrics.fontFig11,
+                                color: Fig.muted,
+                                height: AppLineHeights.compact,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -389,7 +417,9 @@ class _PlanTierCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.figWhite,
         borderRadius: BorderRadius.circular(AppRadius.navBar),
-        border: isCurrent ? Border.all(color: Fig.blue, width: AppBorderWidths.medium) : null,
+        border: isCurrent
+            ? Border.all(color: Fig.blue, width: AppBorderWidths.medium)
+            : null,
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -399,7 +429,8 @@ class _PlanTierCard extends StatelessWidget {
               top: AppSpacing.sn60,
               right: AppSpacing.sn40,
               child: Container(
-                width: FigMetrics.size220, height: FigMetrics.size220,
+                width: FigMetrics.size220,
+                height: FigMetrics.size220,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -412,7 +443,12 @@ class _PlanTierCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.s20, AppSpacing.s20, AppSpacing.s20, AppSpacing.s18),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s20,
+                  AppSpacing.s20,
+                  AppSpacing.s20,
+                  AppSpacing.s18,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -439,11 +475,17 @@ class _PlanTierCard extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.figCFFE7EEFF,
-                              borderRadius: BorderRadius.circular(AppRadius.small),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.small,
+                              ),
                             ),
                             child: Text(
                               tr.pricingMostPopular,
-                              style: Fig.t(context, size: FigMetrics.fontFig10, color: Fig.blue),
+                              style: Fig.t(
+                                context,
+                                size: FigMetrics.fontFig10,
+                                color: Fig.blue,
+                              ),
                             ),
                           ),
                         ],
@@ -451,7 +493,11 @@ class _PlanTierCard extends StatelessWidget {
                           const SizedBox(width: AppSpacing.s8),
                           Text(
                             tr.pricingCurrent,
-                            style: Fig.t(context, size: FigMetrics.fontFig11, color: Fig.blue),
+                            style: Fig.t(
+                              context,
+                              size: FigMetrics.fontFig11,
+                              color: Fig.blue,
+                            ),
                           ),
                         ],
                       ],
@@ -460,7 +506,11 @@ class _PlanTierCard extends StatelessWidget {
                       const SizedBox(height: AppSpacing.s2),
                       Text(
                         tagline,
-                        style: Fig.t(context, size: AppFontSizes.microCaps, color: Fig.mutedLight),
+                        style: Fig.t(
+                          context,
+                          size: AppFontSizes.microCaps,
+                          color: Fig.mutedLight,
+                        ),
                       ),
                     ],
                     if (showPaidUpsell) ...[
@@ -537,11 +587,14 @@ class _PlanTierCard extends StatelessWidget {
                             gradient: tier.mostPopular
                                 ? Fig.primaryGradient
                                 : null,
-                            borderRadius: BorderRadius.circular(FigMetrics.radFig23),
+                            borderRadius: BorderRadius.circular(
+                              FigMetrics.radFig23,
+                            ),
                           ),
                           child: opening
                               ? const SizedBox(
-                                  width: FigMetrics.size18, height: FigMetrics.size18,
+                                  width: FigMetrics.size18,
+                                  height: FigMetrics.size18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: AppStrokeWidths.spinnerThin,
                                   ),
@@ -563,9 +616,17 @@ class _PlanTierCard extends StatelessWidget {
                 ),
               ),
               if (tier.featuresText.isNotEmpty) ...[
-                const Divider(height: AppBorderWidths.hairline, color: AppColors.figCFFEDEEF3),
+                const Divider(
+                  height: AppBorderWidths.hairline,
+                  color: AppColors.figCFFEDEEF3,
+                ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.s20, AppSpacing.s16, AppSpacing.s20, AppSpacing.s18),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s20,
+                    AppSpacing.s16,
+                    AppSpacing.s20,
+                    AppSpacing.s18,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

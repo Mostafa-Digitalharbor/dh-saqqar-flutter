@@ -32,6 +32,7 @@ class AppTextField extends StatelessWidget {
     this.obscureText = false,
     this.autofillHints,
     this.focusNode,
+    this.textDirection,
   });
 
   final String? label;
@@ -58,6 +59,10 @@ class AppTextField extends StatelessWidget {
   /// detail dialog).
   final FocusNode? focusNode;
 
+  /// Forces the text direction of the typed value — used for code-like input
+  /// (JSON, URLs) that must read left-to-right inside an RTL screen.
+  final TextDirection? textDirection;
+
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
@@ -71,6 +76,7 @@ class AppTextField extends StatelessWidget {
         TextFormField(
           controller: controller,
           focusNode: focusNode,
+          textDirection: textDirection,
           initialValue: controller == null ? initialValue : null,
           keyboardType: keyboardType,
           textInputAction: textInputAction,

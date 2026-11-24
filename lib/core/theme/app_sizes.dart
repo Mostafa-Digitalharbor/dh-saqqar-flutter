@@ -1716,8 +1716,17 @@ class AppFractions {
   /// The company-picker sheet's maximum share of the screen height.
   static const double companiesSheetMax = 0.85;
 
-  /// The environment sheet's maximum share of the screen height.
-  static const double environmentSheetMax = 0.92;
+  /// Where a row lands when something scrolls it into view: a little above
+  /// the middle, so it is not hidden under the composer.
+  static const double revealedRowAlignment = 0.35;
+
+  /// The environment sheet's maximum share of the screen height. About two
+  /// thirds, as in the design: it reads as a sheet over the page, not as a
+  /// page, and the rest of the form scrolls inside it.
+  static const double environmentSheetMax = 0.68;
+
+  /// The most of the screen a page header may take before it scrolls.
+  static const double pageHeaderMax = 0.45;
 
   /// The project detail sheet's share, likewise clamped.
   static const double projectDetailSheet = 0.7;

@@ -28,7 +28,12 @@ import '../data/chat_view_models.dart';
 /// [StagedFile.uploadId], which is where it will land.
 @immutable
 class StagedFile {
-  const StagedFile({required this.chip, required this.file, this.uploadId});
+  const StagedFile({
+    required this.chip,
+    required this.file,
+    this.uploadId,
+    this.phase = UploadPhase.done,
+  });
 
   /// Display metadata the composer chip renders — name, size, kind.
   final ChatAttachment chip;
@@ -40,13 +45,24 @@ class StagedFile {
   /// Server-side id once the upload settles, or `null` while it is in
   /// flight or after it failed.
   ///
-  /// Unused today — the remove path still finds the id by position in the
-  /// cubit's list. Declared so the fix has an obvious home, and so nobody
-  /// adds a fourth parallel list to hold it.
+  /// The remove path finds the server row by this id rather than by position,
+  /// so a file that failed (and therefore has no id) in the middle of a batch
+  /// cannot shift every later removal onto the wrong row.
   final String? uploadId;
 
-  StagedFile withUploadId(String id) =>
-      StagedFile(chip: chip, file: file, uploadId: id);
+  /// Where this file is in its upload. Drives the state shown on its chip and
+  /// whether Send is allowed.
+  final UploadPhase phase;
+
+  StagedFile withUploadId(String id) => StagedFile(
+    chip: chip,
+    file: file,
+    uploadId: id,
+    phase: UploadPhase.done,
+  );
+
+  StagedFile withPhase(UploadPhase next) =>
+      StagedFile(chip: chip, file: file, uploadId: uploadId, phase: next);
 
   /// Identity is the **path**, not the chip.
   ///

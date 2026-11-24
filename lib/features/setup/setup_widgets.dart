@@ -33,78 +33,106 @@ class EnvTypePicker extends StatelessWidget {
         context.tr.figTrustedActions,
       ),
     ];
-    return SizedBox(
-      height: MediaQuery.textScalerOf(context).scale(78),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        children: [
-          for (final it in items)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: AppSpacing.s6),
-              child: GestureDetector(
-                onTap: () => onChanged(it.$1),
-                child: Container(
-                  width: 114,
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.s12, AppSpacing.s10, AppSpacing.s10, AppSpacing.s10),
-                  decoration: BoxDecoration(
-                    color: dark
-                        ? AppColors.figWhite.withValues(alpha: AppAlphas.a04)
-                        : AppColors.figWhite.withValues(alpha: AppAlphas.a40),
-                    borderRadius: BorderRadius.circular(AppRadius.bubble),
-                    border: Border.all(
-                      color: value == it.$1
-                          ? (dark ? Fig.blueSoft : AppColors.figCFF5878E8)
-                          : (dark
-                                ? AppColors.figWhite.withValues(alpha: AppAlphas.a12)
-                                : AppColors.figCFFD6DCF3),
-                      width: value == it.$1 ? 1.4 : 1,
-                    ),
+    final lastIndex = items.length - items.length.sign;
+    // The height follows the content (two 1.5-line-height text lines and the
+    // gap): a fixed `scale(78)` was 0.1px short at 1.25x text and overflowed.
+    // 78 scaled stays as the floor so the three cards still match each other.
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.textScalerOf(context).scale(78),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (i, it) in items.indexed)
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    end: i == lastIndex ? AppSpacing.zero : AppSpacing.s6,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
+                  child: GestureDetector(
+                    onTap: () => onChanged(it.$1),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.s10,
+                        AppSpacing.s10,
+                        AppSpacing.s6,
+                        AppSpacing.s10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: dark
+                            ? AppColors.figWhite.withValues(
+                                alpha: AppAlphas.a04,
+                              )
+                            : AppColors.figWhite.withValues(
+                                alpha: AppAlphas.a40,
+                              ),
+                        borderRadius: BorderRadius.circular(AppRadius.bubble),
+                        border: Border.all(
+                          color: value == it.$1
+                              ? (dark ? Fig.blueSoft : AppColors.figCFF5878E8)
+                              : (dark
+                                    ? AppColors.figWhite.withValues(
+                                        alpha: AppAlphas.a12,
+                                      )
+                                    : AppColors.figCFFD6DCF3),
+                          width: value == it.$1 ? 1.4 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Expanded(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: AlignmentDirectional.centerStart,
-                              child: Text(
-                                it.$2,
-                                maxLines: 1,
-                                style: Fig.t(
-                                  context,
-                                  size: AppFontSizes.microCaps,
-                                  color: dark
-                                      ? AppColors.figWhite.withValues(alpha: AppAlphas.a80)
-                                      : Fig.muted,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Text(
+                                    it.$2,
+                                    maxLines: 1,
+                                    style: Fig.t(
+                                      context,
+                                      size: AppFontSizes.microCaps,
+                                      color: dark
+                                          ? AppColors.figWhite.withValues(
+                                              alpha: AppAlphas.a80,
+                                            )
+                                          : Fig.muted,
+                                    ),
+                                  ),
                                 ),
+                              ),
+                              const SizedBox(width: AppSpacing.s2),
+                              _Radio(selected: value == it.$1, dark: dark),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.s6),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(
+                              it.$3,
+                              maxLines: 1,
+                              style: Fig.t(
+                                context,
+                                size: FigMetrics.fontFig11,
+                                color: dark
+                                    ? AppColors.figWhite
+                                    : Fig.mutedSoft,
                               ),
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.s4),
-                          _Radio(selected: value == it.$1, dark: dark),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.s6),
-                      Text(
-                        it.$3,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Fig.t(
-                          context,
-                          size: FigMetrics.fontFig11,
-                          color: dark ? AppColors.figWhite : Fig.mutedSoft,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -119,7 +147,8 @@ class _Radio extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: FigMetrics.size16, height: FigMetrics.size16,
+      width: FigMetrics.size16,
+      height: FigMetrics.size16,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
@@ -130,7 +159,8 @@ class _Radio extends StatelessWidget {
       child: selected
           ? Center(
               child: Container(
-                width: FigMetrics.size8, height: FigMetrics.size8,
+                width: FigMetrics.size8,
+                height: FigMetrics.size8,
                 decoration: const BoxDecoration(
                   color: Fig.blueFocus,
                   shape: BoxShape.circle,
@@ -165,7 +195,12 @@ class ConnectionTabs extends StatelessWidget {
         onTap: tap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.s8, AppSpacing.s4, AppSpacing.s12, AppSpacing.s8),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s8,
+            AppSpacing.s4,
+            AppSpacing.s12,
+            AppSpacing.s8,
+          ),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(

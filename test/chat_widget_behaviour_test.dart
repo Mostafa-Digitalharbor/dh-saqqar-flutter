@@ -14,9 +14,9 @@ import 'package:saqqar_app/features/chat/widgets/chat_suggestion_strip.dart';
 import 'package:saqqar_app/features/chat/widgets/empty_chat_suggestions.dart';
 import 'package:saqqar_app/features/chat/widgets/prompt_clarify_card.dart';
 import 'package:saqqar_app/features/chat/widgets/report_builder_card.dart';
-import 'package:saqqar_app/shared/widgets/primary_button.dart';
 
 import 'support/widget_conformance.dart';
+import 'package:saqqar_app/shared/fig/fig.dart';
 
 /// Do the chat's interactive widgets actually DO anything when tapped?
 ///
@@ -110,7 +110,7 @@ void main() {
       await tester.pumpWidget(
         host(ChatEnvHintBanner(onUseMyDatabase: () => taps++)),
       );
-      await tester.tap(find.byType(PrimaryButton));
+      await tester.tap(find.byType(FigButton));
       await tester.pump();
       expect(taps, 1);
     });
@@ -123,7 +123,7 @@ void main() {
       await tester.pumpWidget(
         host(ChatEnvHintBanner(busy: true, onUseMyDatabase: () => taps++)),
       );
-      await tester.tap(find.byType(PrimaryButton), warnIfMissed: false);
+      await tester.tap(find.byType(FigButton), warnIfMissed: false);
       await tester.pump();
       expect(taps, 0, reason: 'The banner fired its action while busy.');
     });
@@ -133,7 +133,7 @@ void main() {
     testWidgets('invokes its action once when idle', (tester) async {
       var taps = 0;
       await tester.pumpWidget(host(ChatResumeBanner(onResume: () => taps++)));
-      await tester.tap(find.byType(PrimaryButton));
+      await tester.tap(find.byType(FigButton));
       await tester.pump();
       expect(taps, 1);
     });
@@ -146,7 +146,7 @@ void main() {
       await tester.pumpWidget(
         host(ChatResumeBanner(busy: true, onResume: () => taps++)),
       );
-      await tester.tap(find.byType(PrimaryButton), warnIfMissed: false);
+      await tester.tap(find.byType(FigButton), warnIfMissed: false);
       await tester.pump();
       expect(taps, 0, reason: 'The banner fired its action while busy.');
     });

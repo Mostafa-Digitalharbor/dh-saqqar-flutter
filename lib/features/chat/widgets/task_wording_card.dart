@@ -5,8 +5,8 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/fig/fig.dart';
 
 /// The structured task prompt, docked above the composer for review.
 ///
@@ -167,15 +167,15 @@ class _TaskWordingCardState extends State<TaskWordingCard> {
             spacing: AppSpacing.s8,
             runSpacing: AppSpacing.s8,
             children: [
-              PrimaryButton(
+              FigButton.compact(
                 label: tr.promptUseDraft,
-                minHeight: AppControlSizes.buttonMin,
+                height: AppControlSizes.buttonMin,
                 onPressed: busy ? null : () => widget.onUse(_text),
               ),
-              PrimaryButton(
+              FigButton.compact(
                 label: tr.promptRunNow,
                 icon: AppIcons.send,
-                minHeight: AppControlSizes.buttonMin,
+                height: AppControlSizes.buttonMin,
                 onPressed: busy ? null : () => widget.onRun(_text),
               ),
             ],

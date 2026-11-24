@@ -165,7 +165,6 @@ Future<void> main() async {
     // payload to Sentry stays strictly to stack traces + breadcrumbs.
     options.sendDefaultPii = false;
     options.attachScreenshot = false;
-    options.attachViewHierarchy = false;
     // Final filter before any event leaves the device. Catches the
     // small percentage of errors that bypass our AppLogger crash
     // reporter — e.g. uncaught DioException from a future Flutter
@@ -276,6 +275,11 @@ Future<void> _bootApp() async {
   // both pipelines.
   final sentryFlutterError = FlutterError.onError;
   FlutterError.onError = (details) {
+    // `exceptionAsString` is only the headline ("A RenderFlex overflowed by
+    // 0.1 pixels"): it leaves out which widget and where it was built, which
+    // is the only part that says what to fix. In a debug build print the full
+    // report as well.
+    if (kDebugMode) FlutterError.dumpErrorToConsole(details, forceReport: true);
     AppLogger.error(
       'FlutterError',
       details.exceptionAsString(),

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../fig/fig.dart';
 
-import 'ghost_button.dart';
-import 'primary_button.dart';
 
-/// A [PrimaryButton] / [GhostButton] that auto-binds to a Cubit's
+/// A [FigButton] / [FigButton] that auto-binds to a Cubit's
 /// "action in flight" flag — flips to a spinner + disables itself while
 /// the cubit is mid-mutation, then re-enables on completion.
 ///
@@ -21,7 +20,7 @@ import 'primary_button.dart';
 /// )
 /// ```
 ///
-/// Use [AsyncSubmitButton.ghost] for the [GhostButton] variant (cancels,
+/// Use [AsyncSubmitButton.ghost] for the [FigButton] variant (cancels,
 /// secondary actions).
 class AsyncSubmitButton<C extends StateStreamable<S>, S>
     extends StatelessWidget {
@@ -32,10 +31,9 @@ class AsyncSubmitButton<C extends StateStreamable<S>, S>
     required this.onPressed,
     this.icon,
     this.expand = true,
-  }) : _ghost = false,
-       _ghostTone = GhostButtonTone.neutral;
+  }) : _ghost = false;
 
-  /// [GhostButton]-styled variant. Use for cancel buttons, secondary
+  /// [FigButton]-styled variant. Use for cancel buttons, secondary
   /// actions, and destructive-tone confirms.
   const AsyncSubmitButton.ghost({
     super.key,
@@ -44,9 +42,7 @@ class AsyncSubmitButton<C extends StateStreamable<S>, S>
     required this.onPressed,
     this.icon,
     this.expand = true,
-    GhostButtonTone tone = GhostButtonTone.neutral,
-  }) : _ghost = true,
-       _ghostTone = tone;
+  }) : _ghost = true;
 
   final String label;
   final IconData? icon;
@@ -64,7 +60,6 @@ class AsyncSubmitButton<C extends StateStreamable<S>, S>
   // variants share the loading / disabled behavior; only the visual
   // chrome differs.
   final bool _ghost;
-  final GhostButtonTone _ghostTone;
 
   @override
   Widget build(BuildContext context) {
@@ -72,16 +67,16 @@ class AsyncSubmitButton<C extends StateStreamable<S>, S>
       selector: loadingSelector,
       builder: (context, busy) {
         if (_ghost) {
-          return GhostButton(
+          return FigButton.compact(
+            secondary: true,
             label: label,
             icon: icon,
             loading: busy,
             expand: expand,
-            tone: _ghostTone,
             onPressed: busy ? null : onPressed,
           );
         }
-        return PrimaryButton(
+        return FigButton.compact(
           label: label,
           icon: icon,
           loading: busy,

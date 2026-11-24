@@ -67,11 +67,15 @@ extension _ChatEnvironment on _ChatScreenState {
   /// local picker selection wins until the first send creates the
   /// conversation and binds the env server-side.
   ///
-  /// Uses `context.watch` so the screen rebuilds when the snapshot
-  /// emits a new env (e.g. another device PATCHed the conversation).
+  /// Uses `context.read`: this is called from event handlers (the companies
+  /// pill's onTap), outside `build`, where `context.watch` throws "Tried to
+  /// listen to a value exposed with provider, from outside of the widget
+  /// tree". It is a point-in-time lookup; the build already watches the
+  /// ChatCubit, so the header still rebuilds when the snapshot emits a new env
+  /// (e.g. another device PATCHed the conversation).
   String? get _activeEnvironmentId {
     if (!_isNewChat) {
-      final snapshot = context.watch<ChatCubit>().state.data.dataOrNull;
+      final snapshot = context.read<ChatCubit>().state.data.dataOrNull;
       final fromSnap = snapshot?.conversation.environment?.id;
       if (fromSnap != null) return fromSnap;
     }

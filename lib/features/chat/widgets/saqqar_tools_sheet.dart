@@ -1,3 +1,4 @@
+import '../../../shared/fig/fig.dart' show showLightSheet;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -83,8 +84,8 @@ class SaqqarToolsSheet extends StatefulWidget {
     required ValueChanged<bool> onAutoApproveChanged,
   }) {
     HapticFeedback.selectionClick();
-    return showModalBottomSheet<SaqqarTool>(
-      context: context,
+    return showLightSheet<SaqqarTool>(
+      context,
       isScrollControlled: true,
       builder: (_) => SaqqarToolsSheet(
         features: features,

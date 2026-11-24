@@ -16,6 +16,7 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/fig/fig.dart';
+import '../../../shared/fig/fig_page.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../core/theme/fig_metrics.dart';
 
@@ -25,6 +26,22 @@ part 'attachment_image_viewer.dart';
 /// What the viewer can render natively. Anything outside this set is a
 /// hand-off, not a failure — see [_UnsupportedBody].
 enum AttachmentViewerKind { image, pdf, text, unsupported }
+
+/// One picture in the image viewer's gallery: either already on disk
+/// ([file]) or still to be streamed from [url].
+class ViewerImage {
+  const ViewerImage({
+    required this.name,
+    this.subtitle = '',
+    this.file,
+    this.url,
+  }) : assert(file != null || url != null);
+
+  final String name;
+  final String subtitle;
+  final File? file;
+  final String? url;
+}
 
 /// Fullscreen in-app viewer for a downloaded attachment or artifact.
 ///
@@ -44,9 +61,16 @@ class AttachmentViewerScreen extends StatefulWidget {
     required this.name,
     this.kindLabel,
     this.sizeLabel,
+    this.gallery,
+    this.galleryIndex = 0,
   });
 
   final File file;
+
+  /// Sibling pictures to swipe between when this one was opened from a group.
+  /// [file] stands in for the entry at [galleryIndex]. Ignored for non-images.
+  final List<ViewerImage>? gallery;
+  final int galleryIndex;
 
   /// Original filename — the app bar title, and what decides the render
   /// mode via its extension.
@@ -67,6 +91,8 @@ class AttachmentViewerScreen extends StatefulWidget {
     required String name,
     String? kindLabel,
     String? sizeLabel,
+    List<ViewerImage>? gallery,
+    int galleryIndex = 0,
   }) {
     return Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute<void>(
@@ -75,6 +101,8 @@ class AttachmentViewerScreen extends StatefulWidget {
           name: name,
           kindLabel: kindLabel,
           sizeLabel: sizeLabel,
+          gallery: gallery,
+          galleryIndex: galleryIndex,
         ),
       ),
     );
@@ -146,7 +174,6 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
     final tr = context.tr;
     // Images read best on a neutral dark field regardless of theme; the
     // document modes stay on the app surface so text keeps its contrast.
@@ -159,59 +186,44 @@ class _AttachmentViewerScreenState extends State<AttachmentViewerScreen> {
     ].join(' · ');
 
     if (isImage) {
+      final gallery = widget.gallery;
+      final index = gallery == null
+          ? 0
+          : widget.galleryIndex.clamp(0, gallery.length - 1);
       return _ImageViewer(
-        file: widget.file,
-        name: widget.name,
-        subtitle: subtitle,
+        items: gallery == null || gallery.isEmpty
+            ? [
+                ViewerImage(
+                  name: widget.name,
+                  subtitle: subtitle,
+                  file: widget.file,
+                ),
+              ]
+            : [
+                for (final (i, g) in gallery.indexed)
+                  i == index
+                      ? ViewerImage(
+                          name: g.name,
+                          subtitle: g.subtitle,
+                          file: widget.file,
+                        )
+                      : g,
+              ],
+        initialIndex: index,
         onOpenExternally: _openExternally,
       );
     }
 
-    return Scaffold(
-      backgroundColor: isImage ? AppColors.imageBackdrop : s.bg,
-      appBar: AppBar(
-        backgroundColor: isImage ? AppColors.imageBackdrop : s.bg,
-        foregroundColor: isImage ? AppColors.onImageBackdrop : s.text,
-        elevation: AppElevations.none,
-        titleSpacing: AppSpacing.zero,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: isImage ? AppColors.onImageBackdrop : s.text,
-              ),
-            ),
-            if (subtitle.isNotEmpty)
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.labelSmall?.copyWith(
-                  color: isImage
-                      ? AppColors.onImageBackdrop.withValues(
-                          alpha: AppAlphas.deemphasis,
-                        )
-                      : s.muted,
-                  fontSize: AppFontSizes.caption,
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: _openExternally,
-            icon: const Icon(AppIcons.open, size: AppIconSizes.action),
-            tooltip: tr.viewerOpenExternally,
-          ),
-        ],
+    return FigPage(
+      title: widget.name,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      action: IconButton(
+        onPressed: _openExternally,
+        icon: const Icon(AppIcons.open, size: AppIconSizes.action),
+        color: AppColors.figWhite,
+        tooltip: tr.viewerOpenExternally,
       ),
-      body: _body(),
+      child: _body(),
     );
   }
 

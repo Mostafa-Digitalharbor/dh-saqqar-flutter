@@ -114,11 +114,16 @@ class _Stat extends StatelessWidget {
                 color: Fig.inkDeep,
               ),
             ),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Fig.t(context, size: FigMetrics.fontFig9U5, color: AppColors.figCFF5E6478),
+            // Scale the label down instead of cutting it ("Convers…"): the
+            // four tiles share one row, so a long word cannot get more room.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: Fig.t(context, size: FigMetrics.fontFig9U5, color: AppColors.figCFF5E6478),
+              ),
             ),
           ],
         ),

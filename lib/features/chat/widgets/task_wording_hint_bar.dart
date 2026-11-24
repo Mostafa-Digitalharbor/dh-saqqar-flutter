@@ -5,7 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/accent_banner.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/fig/fig.dart';
 
 /// "This looks like a long task. Want me to structure it before sending?"
 ///
@@ -37,9 +37,9 @@ class TaskWordingHintBar extends StatelessWidget {
         spacing: AppSpacing.s8,
         runSpacing: AppSpacing.s8,
         children: [
-          PrimaryButton(
+          FigButton.compact(
             label: tr.promptHintOpen,
-            minHeight: AppControlSizes.buttonMin,
+            height: AppControlSizes.buttonMin,
             onPressed: onOpen,
           ),
           // Secondary on purpose: continuing unchanged is the safe default,

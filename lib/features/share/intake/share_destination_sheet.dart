@@ -7,7 +7,7 @@ import '../../../core/state/data_state.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
+import '../../../shared/fig/fig_page.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../conversations/data/conversation_models.dart';
 import '../../conversations/view_model/conversations_cubit.dart';
@@ -102,143 +102,115 @@ class _ShareDestinationOverlayContentState
     final tr = context.tr;
     final subtitle = tr.shareCountFiles(widget.fileCount);
 
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(
-        backgroundColor: s.bg,
-        elevation: AppElevations.none,
-        leading: IconButton(
-          icon: Icon(AppIcons.close, color: s.text),
-          tooltip: tr.cancel,
-          onPressed: widget.onCancel,
-        ),
-        title: Text(
-          tr.shareSheetTitle,
-          style: context.text.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
+    // An overlay, not a route, so Back is the caller's cancel rather than a
+    // pop.
+    return FigPage(
+      title: tr.shareSheetTitle,
+      subtitle: subtitle,
+      onBack: widget.onCancel,
+      child: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            AppSpacing.s16,
+            AppSpacing.s16,
+            AppSpacing.s24,
           ),
-        ),
-      ),
-      body: AmbientBackground(
-        child: SafeArea(
-          top: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.s16,
-              AppSpacing.s4,
-              AppSpacing.s16,
-              AppSpacing.s24,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.s6),
+              child: Text(
+                tr.shareSheetSubtitle,
+                style: context.text.bodyMedium?.copyWith(
+                  color: s.muted,
+                  height: AppLineHeights.reading,
+                ),
+              ),
             ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.s6),
-                child: Text(
-                  tr.shareSheetSubtitle,
-                  style: context.text.bodyMedium?.copyWith(
-                    color: s.muted,
-                    height: AppLineHeights.reading,
-                  ),
+            _NewChatRow(
+              onTap: () => widget.onPick(const ShareDestination.newChat()),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s4,
+                AppSpacing.s18,
+                AppSpacing.s4,
+                AppSpacing.s8,
+              ),
+              child: Text(
+                tr.shareExistingChats.toUpperCase(),
+                style: context.text.labelSmall?.copyWith(
+                  color: s.muted,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: AppLetterSpacing.microCaps,
+                  fontSize: AppFontSizes.chipLabel,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.s16),
-                child: Text(
-                  subtitle,
-                  style: context.text.labelSmall?.copyWith(
-                    color: s.brandCyan,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: AppLetterSpacing.snug,
-                  ),
-                ),
-              ),
-              _NewChatRow(
-                onTap: () => widget.onPick(const ShareDestination.newChat()),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s4,
-                  AppSpacing.s18,
-                  AppSpacing.s4,
-                  AppSpacing.s8,
-                ),
-                child: Text(
-                  tr.shareExistingChats.toUpperCase(),
-                  style: context.text.labelSmall?.copyWith(
-                    color: s.muted,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: AppLetterSpacing.microCaps,
-                    fontSize: AppFontSizes.chipLabel,
-                  ),
-                ),
-              ),
-              BlocBuilder<ConversationsCubit, ConversationsState>(
-                builder: (context, state) {
-                  final data = state.data.dataOrNull;
-                  if (data == null) {
-                    if (state.data.isLoading) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.s24,
-                        ),
-                        child: Center(
-                          child: SizedBox(
-                            width: AppControlSizes.spinnerMedium,
-                            height: AppControlSizes.spinnerMedium,
-                            child: CircularProgressIndicator(
-                              strokeWidth: AppStrokeWidths.spinnerRegular,
-                              color: s.brandCyan,
-                            ),
+            ),
+            BlocBuilder<ConversationsCubit, ConversationsState>(
+              builder: (context, state) {
+                final data = state.data.dataOrNull;
+                if (data == null) {
+                  if (state.data.isLoading) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.s24,
+                      ),
+                      child: Center(
+                        child: SizedBox(
+                          width: AppControlSizes.spinnerMedium,
+                          height: AppControlSizes.spinnerMedium,
+                          child: CircularProgressIndicator(
+                            strokeWidth: AppStrokeWidths.spinnerRegular,
+                            color: s.brandCyan,
                           ),
                         ),
-                      );
-                    }
-                    // A FAILED load must not render "no conversations".
-                    // That states as fact something we never found out,
-                    // and it hides the retry — the user assumes an empty
-                    // account and gives up on sharing.
-                    final failure = state.data;
-                    if (failure is DataFailure<ConversationsData>) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.s12,
-                        ),
-                        child: AppErrorState(
-                          message: ApiErrorMapper.message(
-                            context,
-                            failure.error,
-                          ),
-                          onRetry: () =>
-                              context.read<ConversationsCubit>().load(),
-                        ),
-                      );
-                    }
-                    return _EmptyHint(text: tr.shareNoConversations);
+                      ),
+                    );
                   }
-                  final active =
-                      data.conversations.where((c) => !c.isArchived).toList()
-                        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-                  if (active.isEmpty) {
-                    return _EmptyHint(text: tr.shareNoConversations);
+                  // A FAILED load must not render "no conversations".
+                  // That states as fact something we never found out,
+                  // and it hides the retry — the user assumes an empty
+                  // account and gives up on sharing.
+                  final failure = state.data;
+                  if (failure is DataFailure<ConversationsData>) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.s12,
+                      ),
+                      child: AppErrorState(
+                        message: ApiErrorMapper.message(context, failure.error),
+                        onRetry: () =>
+                            context.read<ConversationsCubit>().load(),
+                      ),
+                    );
                   }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (final conv in active)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.s8),
-                          child: _ConversationRow(
-                            conversation: conv,
-                            onTap: () => widget.onPick(
-                              ShareDestination.existing(conv.id),
-                            ),
-                          ),
+                  return _EmptyHint(text: tr.shareNoConversations);
+                }
+                final active =
+                    data.conversations.where((c) => !c.isArchived).toList()
+                      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                if (active.isEmpty) {
+                  return _EmptyHint(text: tr.shareNoConversations);
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final conv in active)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.s8),
+                        child: _ConversationRow(
+                          conversation: conv,
+                          onTap: () =>
+                              widget.onPick(ShareDestination.existing(conv.id)),
                         ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
     );

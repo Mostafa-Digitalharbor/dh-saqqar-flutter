@@ -59,6 +59,7 @@ class ChatState extends Equatable {
     this.data = const DataIdle<ConversationSnapshot>(),
     this.stagedAttachments = const [],
     this.isSending = false,
+    this.awaitingReply = false,
     this.isStopping = false,
     this.isResuming = false,
     this.isUploading = false,
@@ -79,6 +80,14 @@ class ChatState extends Equatable {
   final List<Attachment> stagedAttachments;
 
   final bool isSending;
+
+  /// A message was just sent and the server has not yet said it is running.
+  /// The send response usually still reads `is_running: false`, so without
+  /// this the composer showed Send for the first second or two of every run
+  /// and the user could not stop it. Cleared as soon as the snapshot reports
+  /// a run (or a reply lands), when the user stops, or when the post-send
+  /// grace runs out.
+  final bool awaitingReply;
   final bool isStopping;
   final bool isResuming;
   final bool isUploading;
@@ -113,6 +122,7 @@ class ChatState extends Equatable {
     DataState<ConversationSnapshot>? data,
     List<Attachment>? stagedAttachments,
     bool? isSending,
+    bool? awaitingReply,
     bool? isStopping,
     bool? isResuming,
     bool? isUploading,
@@ -132,6 +142,7 @@ class ChatState extends Equatable {
           ? const []
           : (stagedAttachments ?? this.stagedAttachments),
       isSending: isSending ?? this.isSending,
+      awaitingReply: awaitingReply ?? this.awaitingReply,
       isStopping: isStopping ?? this.isStopping,
       isResuming: isResuming ?? this.isResuming,
       isUploading: isUploading ?? this.isUploading,
@@ -150,6 +161,7 @@ class ChatState extends Equatable {
     data,
     stagedAttachments,
     isSending,
+    awaitingReply,
     isStopping,
     isResuming,
     isUploading,

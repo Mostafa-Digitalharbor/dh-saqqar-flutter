@@ -13,6 +13,10 @@ class _SignInPageState extends State<_SignInPage> {
   String? _emailError;
   String? _passwordError;
   bool _agreed = false;
+
+  /// Email-code mode: no password, the server mails a one-time code and the
+  /// OTP page signs the user in (the flow the previous design opened with).
+  bool _useCode = false;
   String? _agreeError;
 
   @override
@@ -41,17 +45,26 @@ class _SignInPageState extends State<_SignInPage> {
     } else if (!_looksLikeEmail(email) && email != 'test') {
       eErr = tr.emailInvalid;
     }
-    if (pwd.isEmpty) pErr = tr.passwordTooShort;
+    if (!_useCode && pwd.isEmpty) pErr = tr.passwordTooShort;
     setState(() {
       _emailError = eErr;
       _passwordError = pErr;
     });
     if (eErr != null || pErr != null) return;
+    if (_useCode) {
+      context.read<AuthFlowCubit>().submitSignInEmail(email);
+      return;
+    }
     context.read<AuthFlowCubit>().submitPasswordLogin(
       email: email,
       password: pwd,
     );
   }
+
+  void _toggleMode() => setState(() {
+    _useCode = !_useCode;
+    _passwordError = null;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,20 +85,23 @@ class _SignInPageState extends State<_SignInPage> {
           error: _emailError,
           height: 56,
           keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
+          textInputAction: _useCode ? TextInputAction.go : TextInputAction.next,
           autofillHints: const [AutofillHints.email],
+          onSubmitted: _useCode ? (_) => _submit() : null,
         ),
-        const SizedBox(height: AppSpacing.s22),
-        FigField(
-          label: context.tr.figPassword2,
-          hint: context.tr.figEnterYourPassword,
-          controller: _password,
-          error: _passwordError,
-          height: 56,
-          obscure: true,
-          textInputAction: TextInputAction.go,
-          onSubmitted: (_) => _submit(),
-        ),
+        if (!_useCode) ...[
+          const SizedBox(height: AppSpacing.s22),
+          FigField(
+            label: context.tr.figPassword2,
+            hint: context.tr.figEnterYourPassword,
+            controller: _password,
+            error: _passwordError,
+            height: 56,
+            obscure: true,
+            textInputAction: TextInputAction.go,
+            onSubmitted: (_) => _submit(),
+          ),
+        ],
         const SizedBox(height: AppSpacing.s10),
         Row(
           children: [
@@ -126,25 +142,27 @@ class _SignInPageState extends State<_SignInPage> {
                 ),
               ),
             ),
-            const SizedBox(width: AppSpacing.s8),
-            Flexible(
-              child: GestureDetector(
-                onTap: () {
-                  cubit.rememberEmail(_email.text.trim());
-                  cubit.goTo(AuthFlowStep.resetEmail);
-                },
-                child: Text(
-                  context.tr.figForgotPassword,
-                  textAlign: TextAlign.end,
-                  style: Fig.t(
-                    context,
-                    size: AppFontSizes.microCaps,
-                    color: AppColors.figCFF2B3A8F,
-                    weight: FontWeight.w500,
+            if (!_useCode) ...[
+              const SizedBox(width: AppSpacing.s8),
+              Flexible(
+                child: GestureDetector(
+                  onTap: () {
+                    cubit.rememberEmail(_email.text.trim());
+                    cubit.goTo(AuthFlowStep.resetEmail);
+                  },
+                  child: Text(
+                    context.tr.figForgotPassword,
+                    textAlign: TextAlign.end,
+                    style: Fig.t(
+                      context,
+                      size: AppFontSizes.microCaps,
+                      color: AppColors.figCFF2B3A8F,
+                      weight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
         if (_agreeError != null)
@@ -157,10 +175,28 @@ class _SignInPageState extends State<_SignInPage> {
           ),
         const SizedBox(height: AppSpacing.s40),
         FigButton(
-          label: context.tr.figSignIn,
+          label: _useCode ? context.tr.authSendCode : context.tr.figSignIn,
           loading: loading,
           onPressed: _submit,
           height: 54,
+        ),
+        const SizedBox(height: AppSpacing.s14),
+        Center(
+          child: TextButton(
+            onPressed: loading ? null : _toggleMode,
+            child: Text(
+              _useCode
+                  ? context.tr.authUsePassword
+                  : context.tr.authUseEmailCode,
+              textAlign: TextAlign.center,
+              style: Fig.t(
+                context,
+                size: AppFontSizes.dense,
+                color: Fig.blue,
+                weight: FontWeight.w500,
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: AppSpacing.s25),
         const _OrDivider(),

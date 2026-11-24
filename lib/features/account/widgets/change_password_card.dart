@@ -12,8 +12,8 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/glass_card.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../auth/view_model/auth_cubit.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Spec §9.3 — change password card placed inside the Account screen.
 ///
@@ -275,7 +275,7 @@ class _ChangePasswordCardState extends State<ChangePasswordCard> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.s16),
-                    PrimaryButton(
+                    FigButton.compact(
                       label: context.tr.updatePassword,
                       icon: AppIcons.lock,
                       loading: _loading,

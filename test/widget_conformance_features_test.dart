@@ -26,6 +26,8 @@ import 'package:saqqar_app/core/theme/app_icons.dart';
 import 'package:saqqar_app/core/theme/view_model/theme_cubit.dart';
 import 'package:saqqar_app/features/auth/view/auth_flow_screen.dart'
     show AuthFrame;
+import 'package:saqqar_app/features/chat/widgets/attachment_image_grid.dart';
+import 'package:saqqar_app/features/chat/widgets/attachment_open.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_context.dart';
 import 'package:saqqar_app/shared/fig/fig.dart' show FigTopFade;
 import 'package:saqqar_app/features/chat/widgets/chat_load_earlier_header.dart';
@@ -184,7 +186,52 @@ void main() {
     child: child,
   );
 
+  ChatAttachment pic(int i) => ChatAttachment(
+    name: 'photo$i.png',
+    kind: 'IMAGE',
+    size: '1 MB',
+    imageUrl: 'https://example.invalid/$i.png',
+    downloadUrl: 'https://example.invalid/$i.png',
+    serverId: 'id$i',
+  );
+
   final cases = <String, Widget Function()>{
+    'DownloadingFileCard known': () => DownloadingFileCard(
+      attachment: const ChatAttachment(
+        name: kLongArabic,
+        kind: 'PDF',
+        size: '214 KB',
+      ),
+      progress: 0.42,
+      onCancel: () {},
+    ),
+    'DownloadingFileCard unknown': () => DownloadingFileCard(
+      attachment: const ChatAttachment(
+        name: 'Review notes.pdf',
+        kind: 'PDF',
+        size: '214 KB',
+      ),
+      progress: indeterminateProgress,
+      onCancel: () {},
+    ),
+    'ChatImageGrid two': () =>
+        ChatImageGrid(attachments: [pic(1), pic(2)]),
+    'ChatImageGrid three': () =>
+        ChatImageGrid(attachments: [pic(1), pic(2), pic(3)]),
+    'ChatImageGrid six shows +2': () =>
+        ChatImageGrid(attachments: [for (var i = 0; i < 6; i++) pic(i)]),
+    'AttachmentOpenTarget': () => AttachmentOpenTarget(
+      attachment: pic(1),
+      child: const Text(kLongArabic),
+    ),
+    'DownloadProgressOverlay known': () => const SizedBox(
+      height: 80,
+      child: DownloadProgressOverlay(progress: 0.4),
+    ),
+    'DownloadProgressOverlay unknown': () => const SizedBox(
+      height: 80,
+      child: DownloadProgressOverlay(progress: indeterminateProgress),
+    ),
     'AccentCardChrome': () => const AccentCardChrome(
       accent: AppColors.brandCyan,
       child: Text(kLongArabic),

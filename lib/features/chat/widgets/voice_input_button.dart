@@ -115,7 +115,12 @@ class _RecordingOverlayState extends State<RecordingOverlay>
     const red = AppColors.figCFFFF6B6B;
     final busy = widget.transcribing;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.s20, AppSpacing.s18, AppSpacing.s20, AppSpacing.s18),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s20,
+        AppSpacing.s18,
+        AppSpacing.s20,
+        AppSpacing.s18,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -125,7 +130,8 @@ class _RecordingOverlayState extends State<RecordingOverlay>
               AnimatedBuilder(
                 animation: _pulse,
                 builder: (context, _) => Container(
-                  width: FigMetrics.size8, height: FigMetrics.size8,
+                  width: FigMetrics.size8,
+                  height: FigMetrics.size8,
                   decoration: BoxDecoration(
                     color: red.withValues(
                       alpha: busy ? 0.4 : 0.6 + 0.4 * (1 - _pulse.value),
@@ -176,7 +182,8 @@ class _RecordingOverlayState extends State<RecordingOverlay>
             child: busy
                 ? const Center(
                     child: SizedBox(
-                      width: FigMetrics.size22, height: FigMetrics.size22,
+                      width: FigMetrics.size22,
+                      height: FigMetrics.size22,
                       child: CircularProgressIndicator(
                         strokeWidth: AppStrokeWidths.spinnerRegular,
                         color: Fig.blueBright,
@@ -188,29 +195,31 @@ class _RecordingOverlayState extends State<RecordingOverlay>
           const SizedBox(height: AppSpacing.s18),
           Row(
             children: [
-              Flexible(
-                child: Tooltip(
-                  message: tr.discardRecording,
-                  child: GestureDetector(
-                    onTap: busy ? null : widget.onDiscard,
-                    behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.s8,
-                      ),
-                      child: Text(
-                        context.tr.figCancel,
-                        style: Fig.t(
-                          context,
-                          size: AppFontSizes.body,
-                          color: busy ? Colors.white38 : red,
+              Expanded(
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Tooltip(
+                    message: tr.discardRecording,
+                    child: GestureDetector(
+                      onTap: busy ? null : widget.onDiscard,
+                      behavior: HitTestBehavior.opaque,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.s8,
+                        ),
+                        child: Text(
+                          context.tr.figCancel,
+                          style: Fig.t(
+                            context,
+                            size: AppFontSizes.body,
+                            color: busy ? Colors.white38 : red,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-              const Spacer(),
               Tooltip(
                 message: tr.stopRecording,
                 child: GestureDetector(
@@ -282,7 +291,9 @@ class _LiveWaveform extends StatelessWidget {
                                                 0.5 * math.sin(t + i * 0.45)))),
                     decoration: BoxDecoration(
                       color: Fig.blueBright,
-                      borderRadius: BorderRadius.circular(AppRadius.waveformBar),
+                      borderRadius: BorderRadius.circular(
+                        AppRadius.waveformBar,
+                      ),
                     ),
                   ),
               ],

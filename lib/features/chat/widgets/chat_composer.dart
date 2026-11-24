@@ -12,6 +12,7 @@ import '../../../shared/widgets/responsive_content.dart';
 import '../data/chat_view_models.dart';
 import 'attachment_chip.dart';
 import 'voice_input_button.dart';
+import 'voice_preview_card.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/fig_metrics.dart';
 import '../../../core/theme/app_colors.dart';
@@ -48,6 +49,7 @@ class ChatComposer extends StatelessWidget {
     required this.onAttach,
     required this.onRemoveAttachment,
     required this.onPreviewAttachment,
+    this.onRetryAttachment,
     required this.onSend,
     this.onTools,
     required this.taskPrep,
@@ -61,6 +63,10 @@ class ChatComposer extends StatelessWidget {
     this.recording = false,
     this.transcribing = false,
     this.recordingElapsed = Duration.zero,
+    this.previewFile,
+    this.previewLength = Duration.zero,
+    this.sendProgress = 0,
+    this.onSendPreview,
     this.onStop,
     this.stopping = false,
     this.focusNode,
@@ -95,6 +101,9 @@ class ChatComposer extends StatelessWidget {
   /// viewer so the user can verify they staged the right file before
   /// sending, without being ejected into another app.
   final ValueChanged<int> onPreviewAttachment;
+
+  /// Retry on a staged file that failed or was interrupted. Null hides it.
+  final ValueChanged<int>? onRetryAttachment;
 
   final VoidCallback? onSend;
 
@@ -147,6 +156,16 @@ class ChatComposer extends StatelessWidget {
   /// monospace mm:ss readout inside the overlay.
   final Duration recordingElapsed;
 
+  /// The finished voice take, once recording has stopped and before it is sent.
+  /// Non-null swaps the composer for the [VoicePreviewCard] — listen first,
+  /// then send (which transcribes into the field) or cancel.
+  final File? previewFile;
+  final Duration previewLength;
+
+  /// Upload progress (0..1) of the previewed take while it is being sent.
+  final double sendProgress;
+  final VoidCallback? onSendPreview;
+
   /// Mic-tap handler. The screen owns the recorder lifecycle so the
   /// 120 s hard cap, permission flow, and transcribe upload can all
   /// share the same place; the composer just renders the trigger.
@@ -178,7 +197,12 @@ class ChatComposer extends StatelessWidget {
         decoration: const BoxDecoration(),
         child: ResponsiveContent(
           maxWidth: AppLayoutWidths.chatShell,
-          padding: const EdgeInsets.fromLTRB(AppSpacing.s18, AppSpacing.s8, AppSpacing.s18, AppSpacing.s14),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s18,
+            AppSpacing.s8,
+            AppSpacing.s18,
+            AppSpacing.s14,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -191,7 +215,12 @@ class ChatComposer extends StatelessWidget {
               // growth.
               if (attachments.isNotEmpty) ...[
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s12),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s4,
+                    0,
+                    AppSpacing.s4,
+                    AppSpacing.s12,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -200,7 +229,9 @@ class ChatComposer extends StatelessWidget {
                           style: Fig.t(
                             context,
                             size: AppFontSizes.dense,
-                            color: AppColors.figWhite.withValues(alpha: AppAlphas.a85),
+                            color: AppColors.figWhite.withValues(
+                              alpha: AppAlphas.a85,
+                            ),
                           ),
                         ),
                       ),
@@ -212,7 +243,9 @@ class ChatComposer extends StatelessWidget {
                             style: Fig.t(
                               context,
                               size: AppFontSizes.dense,
-                              color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
+                              color: AppColors.figWhite.withValues(
+                                alpha: AppAlphas.a80,
+                              ),
                             ),
                           ),
                         ),
@@ -226,7 +259,9 @@ class ChatComposer extends StatelessWidget {
                               Icon(
                                 LucideIcons.plus,
                                 size: AppIconSizes.inline,
-                                color: AppColors.figWhite.withValues(alpha: AppAlphas.a50),
+                                color: AppColors.figWhite.withValues(
+                                  alpha: AppAlphas.a50,
+                                ),
                               ),
                               const SizedBox(width: AppSpacing.s4),
                               Flexible(
@@ -235,7 +270,9 @@ class ChatComposer extends StatelessWidget {
                                   style: Fig.t(
                                     context,
                                     size: AppFontSizes.dense,
-                                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
+                                    color: AppColors.figWhite.withValues(
+                                      alpha: AppAlphas.a80,
+                                    ),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -266,6 +303,30 @@ class ChatComposer extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (attachments.any((a) => a.phase == UploadPhase.interrupted))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.s12),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          LucideIcons.wifiOff,
+                          size: AppIconSizes.compact,
+                          color: Fig.fileAmber,
+                        ),
+                        const SizedBox(width: AppSpacing.s6),
+                        Flexible(
+                          child: Text(
+                            context.tr.attachmentConnectionInterrupted,
+                            style: Fig.t(
+                              context,
+                              size: FigMetrics.fontFig11,
+                              color: Fig.fileAmber,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
               // Addon authoring hint (Gap M) — when an addon `.zip` is staged,
               // tell the user Saqqar can read/edit/rebuild it. Driven purely
@@ -305,7 +366,16 @@ class ChatComposer extends StatelessWidget {
                     color: AppColors.figWhite.withValues(alpha: AppAlphas.a32),
                   ),
                 ),
-                child: recording || transcribing
+                child: previewFile != null
+                    ? VoicePreviewCard(
+                        file: previewFile!,
+                        length: previewLength,
+                        sending: transcribing,
+                        progress: sendProgress,
+                        onSend: onSendPreview ?? onStopRecording,
+                        onCancel: onDiscardRecording,
+                      )
+                    : recording || transcribing
                     ? RecordingOverlay(
                         elapsed: recordingElapsed,
                         transcribing: transcribing,
@@ -317,43 +387,66 @@ class ChatComposer extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(AppSpacing.s22, AppSpacing.s20, AppSpacing.s22, 0),
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.s22,
+                              AppSpacing.s20,
+                              AppSpacing.s22,
+                              0,
+                            ),
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(minHeight: FigMetrics.boxMInHU56),
-                              child: TextField(
-                                controller: controller,
-                                focusNode: focusNode,
-                                minLines: 1,
-                                maxLines: 6,
-                                textInputAction: TextInputAction.newline,
-                                cursorColor: AppColors.figWhite,
-                                style: Fig.t(
-                                  context,
-                                  size: AppFontSizes.body,
-                                  color: AppColors.figWhite,
-                                  height: AppLineHeights.label,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: onStop != null
-                                      ? context.tr.composerBusy
-                                      : context.tr.figAskMeAnything,
-                                  hintStyle: Fig.t(
+                              constraints: const BoxConstraints(
+                                minHeight: FigMetrics.boxMInHU56,
+                              ),
+                              child: ListenableBuilder(
+                                listenable: controller,
+                                builder: (context, _) => TextField(
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  // A command ("/report") is Latin text: in an
+                                  // Arabic field its slash would land on the
+                                  // wrong side ("report/").
+                                  textDirection: controller.text.startsWith('/')
+                                      ? TextDirection.ltr
+                                      : null,
+                                  minLines: 1,
+                                  maxLines: 6,
+                                  textInputAction: TextInputAction.newline,
+                                  cursorColor: AppColors.figWhite,
+                                  style: Fig.t(
                                     context,
                                     size: AppFontSizes.body,
-                                    color: AppColors.figWhite.withValues(alpha: AppAlphas.a80),
+                                    color: AppColors.figWhite,
+                                    height: AppLineHeights.label,
                                   ),
-                                  hintMaxLines: 2,
-                                  isCollapsed: true,
-                                  filled: false,
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
+                                  decoration: InputDecoration(
+                                    hintText: onStop != null
+                                        ? context.tr.composerBusy
+                                        : context.tr.figAskMeAnything,
+                                    hintStyle: Fig.t(
+                                      context,
+                                      size: AppFontSizes.body,
+                                      color: AppColors.figWhite.withValues(
+                                        alpha: AppAlphas.a80,
+                                      ),
+                                    ),
+                                    hintMaxLines: 2,
+                                    isCollapsed: true,
+                                    filled: false,
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(AppSpacing.s12, AppSpacing.s10, AppSpacing.s12, AppSpacing.s12),
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.s12,
+                              AppSpacing.s10,
+                              AppSpacing.s12,
+                              AppSpacing.s12,
+                            ),
                             child: Row(
                               children: [
                                 _RoundAction(
@@ -393,7 +486,8 @@ class ChatComposer extends StatelessWidget {
                                       child: Opacity(
                                         opacity: enabled ? 1 : 0.55,
                                         child: Container(
-                                          width: FigMetrics.size46, height: FigMetrics.size46,
+                                          width: FigMetrics.size46,
+                                          height: FigMetrics.size46,
                                           decoration: const BoxDecoration(
                                             shape: BoxShape.circle,
                                             gradient: LinearGradient(
@@ -445,10 +539,13 @@ class _RoundAction extends StatelessWidget {
       child: Opacity(
         opacity: onTap == null ? 0.4 : 1,
         child: Container(
-          width: FigMetrics.size46, height: FigMetrics.size46,
+          width: FigMetrics.size46,
+          height: FigMetrics.size46,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.figWhite.withValues(alpha: AppAlphas.a28)),
+            border: Border.all(
+              color: AppColors.figWhite.withValues(alpha: AppAlphas.a28),
+            ),
           ),
           child: Icon(
             icon,

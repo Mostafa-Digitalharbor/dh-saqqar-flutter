@@ -129,6 +129,19 @@ extension AppStringsScreens on AppStrings {
   // the same vocabulary when reporting issues.
   String get recordVoice => _t('record_voice');
   String get stopRecording => _t('stop_recording');
+  String get voiceMessageLabel => _t('voice_message_label');
+  String get attachmentWaitOrRetry => _t('attachment_wait_or_retry');
+  String get attachmentRetry => _t('attachment_retry');
+  String get attachmentUploading => _t('attachment_uploading');
+  String get attachmentFailed => _t('attachment_failed');
+  String get attachmentInterrupted => _t('attachment_interrupted');
+  String get attachmentDownloading => _t('attachment_downloading');
+  String get attachmentConnectionInterrupted =>
+      _t('attachment_connection_interrupted');
+  String get voicePreviewLabel => _t('voice_preview_label');
+  String get voiceSending => _t('voice_sending');
+  String get voicePlay => _t('voice_play');
+  String get voicePause => _t('voice_pause');
   String get transcribing => _t('transcribing');
   String get transcribeFailed => _t('transcribe_failed');
   String get transcribeEmpty => _t('transcribe_empty');
@@ -505,6 +518,9 @@ extension AppStringsScreens on AppStrings {
   String tokensOutput(String n) => _f('tokens_output', {'n': n});
   String tokensTotal(String n) => _f('tokens_total', {'n': n});
   String tokensChipLabel(String n) => _f('tokens_chip', {'n': n});
+  String get authUseEmailCode => _t('auth_use_email_code');
+  String get authUsePassword => _t('auth_use_password');
+  String get authSendCode => _t('auth_send_code');
   String get continueRun => _t('continue_run');
   String get continueRunMessage => _t('continue_run_message');
   String get chatResumeBannerText => _t('chat_resume_banner_text');

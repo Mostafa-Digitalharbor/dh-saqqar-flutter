@@ -4,12 +4,11 @@ import '../../core/theme/app_colors.dart';
 import '../../core/i18n/app_localizations.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
-import '../extensions/context_extensions.dart';
+import '../fig/fig.dart';
+import '../../core/theme/fig_metrics.dart';
 import 'app_dialog_shell.dart';
 import 'colored_icon_box.dart';
 import 'dialog_actions.dart';
-import 'ghost_button.dart';
-import 'primary_button.dart';
 
 /// Cardified confirmation dialog that matches the rest of Saqqar's UI
 /// instead of falling back to Material's generic `AlertDialog`.
@@ -66,11 +65,8 @@ class ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-
+    final dark = FigDarkSurface.of(context);
     return AppDialogShell(
-      elevated: true,
-      accent: destructive ? AppDialogShell.dangerAccent(context) : null,
       // Scrolls rather than overflows when the content can't fit the
       // height the inset leaves us — `body` carries user-supplied names
       // (project / environment) and Arabic at 1.4× is materially taller
@@ -104,7 +100,7 @@ class ConfirmDialog extends StatelessWidget {
                 alignment: AlignmentDirectional.centerStart,
                 child: ColoredIconBox(
                   icon: iconData,
-                  color: destructive ? s.danger : s.brandCyan,
+                  color: destructive ? Fig.danger : Fig.blue,
                   size: AppIconSizes.dialogHero,
                   radius: AppRadius.input,
                   iconSize: AppIconSizes.boxGlyphLarge,
@@ -116,35 +112,42 @@ class ConfirmDialog extends StatelessWidget {
             ],
             Text(
               title,
-              style: context.text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: AppLetterSpacing.heading,
+              style: Fig.t(
+                context,
+                size: FigMetrics.fontFig23,
+                weight: FontWeight.w600,
+                color: dark ? AppColors.figWhite : Fig.navy,
               ),
             ),
             const SizedBox(height: AppSpacing.s8),
             Text(
               body,
-              style: context.text.bodyMedium?.copyWith(
-                color: s.muted,
-                height: AppLineHeights.body,
+              style: Fig.t(
+                context,
+                size: AppFontSizes.caption,
+                color: dark
+                    ? AppColors.figWhite.withValues(alpha: AppAlphas.a80)
+                    : Fig.mutedBlue,
+                height: AppLineHeights.compact,
               ),
             ),
-            const SizedBox(height: AppSpacing.s20),
+            const SizedBox(height: AppSpacing.s22),
             DialogActions(
-              cancel: GhostButton(
+              cancel: FigButton(
                 label: cancelLabel ?? context.tr.cancel,
+                secondary: true,
+                height: FigMetrics.size46,
+                fontSize: AppFontSizes.dense,
                 onPressed: () => Navigator.of(context).pop(false),
               ),
-              confirm: destructive
-                  ? GhostButton(
-                      label: confirmLabel,
-                      tone: GhostButtonTone.danger,
-                      onPressed: () => Navigator.of(context).pop(true),
-                    )
-                  : PrimaryButton(
-                      label: confirmLabel,
-                      onPressed: () => Navigator.of(context).pop(true),
-                    ),
+              confirm: FigButton(
+                label: confirmLabel,
+                danger: destructive,
+                height: FigMetrics.size46,
+                fontSize: AppFontSizes.dense,
+                weight: FontWeight.w600,
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
             ),
           ],
         ),

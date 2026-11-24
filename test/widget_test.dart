@@ -36,7 +36,7 @@ import 'package:saqqar_app/features/vault/data/credentials_api.dart';
 import 'package:saqqar_app/features/vault/data/projects_api.dart';
 import 'package:saqqar_app/features/vault/data/vault_repository.dart';
 import 'package:saqqar_app/features/vault/view_model/vault_cubit.dart';
-import 'package:saqqar_app/shared/widgets/primary_button.dart';
+import 'package:saqqar_app/shared/fig/fig.dart';
 
 /// In-memory fake for tests — the real FlutterSecureStorage backs onto a
 /// platform channel that doesn't exist in the test harness, which would
@@ -310,7 +310,7 @@ void main() {
     expect(cubit.state.pendingCount, 1);
   });
 
-  testWidgets('PrimaryButton survives tight RTL + scaled-text layouts', (
+  testWidgets('FigButton survives tight RTL + scaled-text layouts', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -322,7 +322,7 @@ void main() {
             child: Center(
               child: SizedBox(
                 width: 159,
-                child: PrimaryButton(
+                child: FigButton.compact(
                   label: 'Save credential',
                   icon: Icons.save_outlined,
                   onPressed: () {},

@@ -17,10 +17,9 @@ extension _ChatSlash on _ChatScreenState {
       (AppIcons.database, '/backup', tr.slashBackupDesc),
     ];
     final s = context.saqqar;
-    final picked = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
+    final picked = await showFigSheet<String>(
+      context,
+      builder: (BuildContext sheetContext) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../extensions/responsive_breakpoints.dart';
 import 'app_text_field.dart';
-import 'primary_button.dart';
 import '../../core/theme/app_sizes.dart';
+import '../fig/fig.dart';
 
 /// A one-field "add another" form: a text field and the button that submits
 /// it, laid out side by side — and stacked when they no longer fit.
@@ -12,7 +12,7 @@ import '../../core/theme/app_sizes.dart';
 /// identical down to the 10 px gap and the `ValueListenableBuilder` that
 /// disables the button until something is typed. Both copies were also
 /// wrong in the same way, which is what two copies buys you: the row was
-/// `Expanded(field) + PrimaryButton`, and `PrimaryButton` sizes to its
+/// `Expanded(field) + FigButton`, and `FigButton` sizes to its
 /// label, so on a 320 px screen "Add environment" left the field less than
 /// its minimum width and the row overflowed by 12 px. Neither sheet was in
 /// the responsive sweep, so neither overflow had ever been rendered by a
@@ -64,7 +64,7 @@ class InlineAddForm extends StatelessWidget {
     Widget button({required bool expand}) =>
         ValueListenableBuilder<TextEditingValue>(
           valueListenable: controller,
-          builder: (context, value, _) => PrimaryButton(
+          builder: (context, value, _) => FigButton.compact(
             label: buttonLabel,
             expand: expand,
             onPressed: enabled && value.text.trim().isNotEmpty

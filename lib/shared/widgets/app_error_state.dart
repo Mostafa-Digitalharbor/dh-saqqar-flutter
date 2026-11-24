@@ -6,7 +6,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_sizes.dart';
 import '../extensions/context_extensions.dart';
 import 'colored_icon_box.dart';
-import 'ghost_button.dart';
+import '../fig/fig.dart';
 
 /// Standard "something went wrong" surface with an optional retry button.
 ///
@@ -108,7 +108,8 @@ class AppErrorState extends StatelessWidget {
           ],
           if (onRetry != null) ...[
             const SizedBox(height: AppSpacing.s18),
-            GhostButton(
+            FigButton.compact(
+              secondary: true,
               label: retryLabel ?? context.tr.retry,
               icon: AppIcons.refresh,
               onPressed: onRetry,

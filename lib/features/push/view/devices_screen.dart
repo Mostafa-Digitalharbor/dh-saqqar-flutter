@@ -9,13 +9,13 @@ import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../data/devices_api.dart';
+import '../../../shared/fig/fig_page.dart';
 
 /// Lists the devices registered to receive this account's push notifications
 /// (`GET /devices/`) and lets the user sign any of them out
@@ -93,78 +93,76 @@ class _DevicesScreenState extends State<DevicesScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(title: Text(context.tr.devicesTitle)),
-      body: AmbientBackground(
-        child: RefreshIndicator(
-          color: s.brandCyan,
-          backgroundColor: s.surface,
-          onRefresh: _reload,
-          child: FutureBuilder<List<DeviceRow>>(
-            future: _future,
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: AppStrokeWidths.spinnerRegular,
-                    color: s.muted,
-                  ),
-                );
-              }
-              // Errors MUST be caught before the empty check. `snap.data` is
-              // null on failure, so falling straight through to `?? []` would
-              // render the "No devices yet" empty state — telling the user, as
-              // a statement of fact, that they have no registered devices when
-              // the truth is we couldn't ask. A false success is worse than an
-              // error: it's confidently wrong, and it hides the retry.
-              if (snap.hasError) {
-                return ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    const SizedBox(height: AppSpacing.s80),
-                    AppErrorState(
-                      message: ApiErrorMapper.message(context, snap.error),
-                      onRetry: _reload,
-                    ),
-                  ],
-                );
-              }
-              final devices = snap.data ?? const <DeviceRow>[];
-              if (devices.isEmpty) {
-                return ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    const SizedBox(height: AppSpacing.s80),
-                    Center(
-                      child: EmptyState(
-                        icon: AppIcons.bell,
-                        title: context.tr.devicesEmptyTitle,
-                        body: context.tr.devicesEmptyBody,
-                      ),
-                    ),
-                  ],
-                );
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s14,
-                  AppSpacing.s14,
-                  AppSpacing.s14,
-                  AppSpacing.s24,
-                ),
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: devices.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(height: AppSpacing.s8),
-                itemBuilder: (context, i) => _DeviceRowTile(
-                  device: devices[i],
-                  revoking: _revoking.contains(devices[i].id),
-                  onRevoke: () => _revoke(devices[i]),
+    return FigPage(
+      title: context.tr.devicesTitle,
+      eyebrow: context.tr.figWorkspace,
+      child: RefreshIndicator(
+        color: s.brandCyan,
+        backgroundColor: s.surface,
+        onRefresh: _reload,
+        child: FutureBuilder<List<DeviceRow>>(
+          future: _future,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: AppStrokeWidths.spinnerRegular,
+                  color: s.muted,
                 ),
               );
-            },
-          ),
+            }
+            // Errors MUST be caught before the empty check. `snap.data` is
+            // null on failure, so falling straight through to `?? []` would
+            // render the "No devices yet" empty state — telling the user, as
+            // a statement of fact, that they have no registered devices when
+            // the truth is we couldn't ask. A false success is worse than an
+            // error: it's confidently wrong, and it hides the retry.
+            if (snap.hasError) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  const SizedBox(height: AppSpacing.s80),
+                  AppErrorState(
+                    message: ApiErrorMapper.message(context, snap.error),
+                    onRetry: _reload,
+                  ),
+                ],
+              );
+            }
+            final devices = snap.data ?? const <DeviceRow>[];
+            if (devices.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  const SizedBox(height: AppSpacing.s80),
+                  Center(
+                    child: EmptyState(
+                      icon: AppIcons.bell,
+                      title: context.tr.devicesEmptyTitle,
+                      body: context.tr.devicesEmptyBody,
+                    ),
+                  ),
+                ],
+              );
+            }
+            return ListView.separated(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s14,
+                AppSpacing.s14,
+                AppSpacing.s14,
+                AppSpacing.s24,
+              ),
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: devices.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.s8),
+              itemBuilder: (context, i) => _DeviceRowTile(
+                device: devices[i],
+                revoking: _revoking.contains(devices[i].id),
+                onRevoke: () => _revoke(devices[i]),
+              ),
+            );
+          },
         ),
       ),
     );

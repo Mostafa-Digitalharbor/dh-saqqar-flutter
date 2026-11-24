@@ -1,54 +1,30 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_gradients.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
-import '../extensions/context_extensions.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/app_theme.dart';
+import '../fig/fig.dart';
 
-/// The app's standard modal dialog chrome: surface card, hairline border,
-/// rounded clip, and a 3 px accent bar along the top edge.
+/// The app's standard modal dialog chrome, in the Figma look: a white card with
+/// the large sheet radius and a soft lift, no hairline border or accent bar.
 ///
-/// [ConfirmDialog] and the live-environment warning were byte-identical
-/// down to the comment explaining the inset — including the part that is
-/// easy to get wrong (see [insetPadding] below). Any dialog that wants the
-/// house style should build on this rather than a fourth copy.
+/// The content is pinned to the light theme (as [FigPage] does) so the regular
+/// `context.saqqar` widgets inside — text fields, ghost buttons — stay legible
+/// on the white card whatever the device theme is.
 ///
-/// Supplies chrome only. Content, buttons and padding stay with the caller,
-/// because that is where the two existing dialogs genuinely differ.
+/// Supplies chrome only. Content, buttons and padding stay with the caller.
 class AppDialogShell extends StatelessWidget {
   const AppDialogShell({
     super.key,
     required this.child,
-    this.accent,
-    this.elevated = false,
     this.maxWidth = 380,
   });
 
   /// Dialog body — usually a `Column(mainAxisSize: .min)` or a
-  /// `SingleChildScrollView`. Wrapped in a [Flexible] so the accent bar
-  /// stays pinned while long content scrolls instead of overflowing.
+  /// `SingleChildScrollView`. Wrapped in a [Flexible] so long content scrolls
+  /// instead of overflowing.
   final Widget child;
-
-  /// Gradient for the 3 px top bar. Defaults to the brand CTA gradient;
-  /// pass a danger gradient for destructive prompts. A gradient rather
-  /// than a flat colour because both existing dialogs use one.
-  final Gradient? accent;
-
-  /// Danger-tinted bar for destructive prompts — the shape both callers
-  /// were hand-rolling identically.
-  static Gradient dangerAccent(BuildContext context) {
-    final danger = context.saqqar.danger;
-    return LinearGradient(
-      colors: [
-        danger,
-        danger.withValues(alpha: AppAlphas.a70),
-      ],
-    );
-  }
-
-  /// Adds the heavy drop shadow [ConfirmDialog] uses. Off by default —
-  /// dialogs stacked over an already-dim barrier don't need it.
-  final bool elevated;
 
   /// Cap so the card doesn't stretch edge-to-edge on tablets/foldables.
   final double maxWidth;
@@ -59,7 +35,7 @@ class AppDialogShell extends StatelessWidget {
   /// `horizontal` sets the vertical inset to 0, which lets the dialog claim
   /// the FULL viewport height. An unscrollable column then has nothing to
   /// push back against and overflows — in landscape (~320 px tall), or with
-  /// a long user-supplied name at 1.4× Arabic. Keep both axes.
+  /// a long user-supplied name at 1.4x Arabic. Keep both axes.
   static const insetPadding = EdgeInsets.symmetric(
     horizontal: AppSpacing.s32,
     vertical: AppSpacing.s24,
@@ -67,40 +43,41 @@ class AppDialogShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-
+    final dark = FigDarkSurface.of(context);
+    final locale = Localizations.localeOf(context);
     return Dialog(
       backgroundColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       insetPadding: insetPadding,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: ClipRRect(
-          borderRadius: AppRadius.cardR,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: s.surface,
-              borderRadius: AppRadius.cardR,
-              border: Border.all(color: s.cardBorder),
-              // `modalShadow` carries the same 36/16 lift this had, and adds
-              // the light-theme half it was missing: the hardcoded colour was
-              // 55%-opaque near-black in *both* themes, so a dialog on a white
-              // page cast a shadow darker than any other surface in the app.
-              boxShadow: elevated ? s.modalShadow : null,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 3 px gradient hairline along the top — same accent used
-                // on the chat bottom sheets so the visual family stays
-                // tight.
-                Container(
-                  height: AppBorderWidths.accentBar,
-                  decoration: BoxDecoration(
-                    gradient: accent ?? AppGradients.primaryCta,
-                  ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: dark ? AppColors.figCFF17181B : AppColors.figWhite,
+            borderRadius: BorderRadius.circular(AppRadius.sheetTop),
+            boxShadow: const [
+              BoxShadow(
+                color: Fig.drawerShadow,
+                blurRadius: AppSpacing.s36,
+                offset: Offset(0, AppSpacing.s12),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.sheetTop),
+            child: Theme(
+              data: dark ? AppTheme.dark(locale) : AppTheme.light(locale),
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: dark ? FigDarkSurface(child: child) : child,
+                    ),
+                  ],
                 ),
-                Flexible(child: child),
-              ],
+              ),
             ),
           ),
         ),

@@ -5,7 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/accent_banner.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Shown above the composer when `conversation.needs_resume == true &&
 /// !is_running` — a run that ended without finishing and without anything
@@ -43,10 +43,10 @@ class ChatResumeBanner extends StatelessWidget {
       icon: AppIcons.warning,
       title: tr.chatResumeBannerText,
       body: failureMessage,
-      action: PrimaryButton(
+      action: FigButton.compact(
         label: busy ? tr.chatResumeButtonWorking : tr.chatResumeButton,
         icon: AppIcons.refresh,
-        minHeight: AppControlSizes.buttonMin,
+        height: AppControlSizes.buttonMin,
         loading: busy,
         onPressed: busy ? null : onResume,
       ),

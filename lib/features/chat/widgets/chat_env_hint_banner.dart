@@ -5,7 +5,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/accent_banner.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Env-hint banner (Gap H) — shown above the composer when the conversation
 /// has no environment bound (`conversation.needs_environment == true`). The
@@ -34,10 +34,10 @@ class ChatEnvHintBanner extends StatelessWidget {
       icon: AppIcons.database,
       title: tr.envHintTitle,
       body: tr.envHintBody,
-      action: PrimaryButton(
+      action: FigButton.compact(
         label: tr.envHintUseMyDatabase,
         icon: AppIcons.database,
-        minHeight: AppControlSizes.buttonMin,
+        height: AppControlSizes.buttonMin,
         loading: busy,
         onPressed: busy ? null : onUseMyDatabase,
       ),

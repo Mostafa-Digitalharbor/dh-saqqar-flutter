@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/widgets/blocking_wall.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/fig/fig.dart';
 import 'update_action.dart';
 
 /// The wall shown when this build is below the backend's supported floor.
@@ -42,10 +42,8 @@ class UpdateRequiredScreen extends StatelessWidget {
           ? null
           : tr.updateNewVersion(latestVersion),
       actions: [
-        PrimaryButton(
+        FigButton(
           label: tr.updateAction,
-          icon: AppIcons.download,
-          expand: true,
           onPressed: () => runUpdateAction(context, storeUrl: storeUrl),
         ),
       ],

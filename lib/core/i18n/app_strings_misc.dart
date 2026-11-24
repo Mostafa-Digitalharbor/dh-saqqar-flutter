@@ -432,6 +432,7 @@ extension AppStringsMisc on AppStrings {
       _t('fig_ready_made_saqqar_agents_for_common');
   String get figRecentConversations => _t('fig_recent_conversations');
   String get figRecentlyChats => _t('fig_recently_chats');
+  String get homeViewAllChats => _t('home_view_all_chats');
   String get figRecording => _t('fig_recording');
   String get figRecurringAgentWorkflowsThatKeepYour =>
       _t('fig_recurring_agent_workflows_that_keep_your');

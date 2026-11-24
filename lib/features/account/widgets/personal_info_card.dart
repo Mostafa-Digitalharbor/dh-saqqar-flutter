@@ -10,7 +10,7 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/glass_card.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/fig/fig.dart';
 import '../../../shared/widgets/save_status_hint.dart';
 import '../../auth/view_model/auth_cubit.dart';
 import '../../../core/theme/app_sizes.dart';
@@ -197,7 +197,7 @@ class _PersonalInfoCardState extends State<PersonalInfoCard> {
             ),
             const SizedBox(height: AppSpacing.s8),
           ],
-          PrimaryButton(
+          FigButton.compact(
             label: tr.saveChanges,
             icon: AppIcons.save,
             loading: _loading,

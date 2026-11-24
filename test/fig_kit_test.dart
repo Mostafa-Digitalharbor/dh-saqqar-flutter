@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:saqqar_app/core/theme/app_theme.dart';
 import 'package:saqqar_app/shared/fig/fig.dart';
+import 'package:saqqar_app/shared/fig/fig_page.dart';
 
 Widget _host(Widget child) => MaterialApp(
       theme: AppTheme.light(const Locale('en')),
@@ -66,6 +67,26 @@ void main() {
     expect(find.text('Billing'), findsOneWidget);
     expect(find.text('Plans & pricing'), findsOneWidget);
     expect(find.text('Pick one'), findsOneWidget);
+  });
+
+  testWidgets('FigPage frames its child under a title and a working back',
+      (tester) async {
+    var back = 0;
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(const Locale('en')),
+      home: FigPage(
+        eyebrow: 'Billing',
+        title: 'Payment history',
+        onBack: () => back++,
+        child: const Text('Body'),
+      ),
+    ));
+    expect(find.text('Billing'), findsOneWidget);
+    expect(find.text('Payment history'), findsOneWidget);
+    expect(find.text('Body'), findsOneWidget);
+
+    await tester.tap(find.byIcon(LucideIcons.chevronLeft));
+    expect(back, 1);
   });
 
   testWidgets('FigNotchSheet shows its child and a close button',

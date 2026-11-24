@@ -8,9 +8,8 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/colored_icon_box.dart';
 import '../../../shared/widgets/dialog_actions.dart';
-import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/app_dialog_shell.dart';
+import '../../../shared/fig/fig.dart';
 
 /// One-shot confirmation that fires the first time the user sends a message
 /// to a `is_live: true` environment in a conversation. Wording matches the
@@ -65,7 +64,6 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
     // the first to overflow in landscape — the shell's vertical inset and
     // this scroll view are both load-bearing here.
     return AppDialogShell(
-      accent: AppDialogShell.dangerAccent(context),
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.s22,
@@ -140,12 +138,13 @@ class _LiveEnvWarningDialogState extends State<LiveEnvWarningDialog> {
             ),
             const SizedBox(height: AppSpacing.s14),
             DialogActions(
-              cancel: GhostButton(
+              cancel: FigButton.compact(
+                secondary: true,
                 label: context.tr.cancel,
                 onPressed: () =>
                     Navigator.of(context).pop(LiveAckResult.cancel),
               ),
-              confirm: PrimaryButton(
+              confirm: FigButton.compact(
                 label: context.tr.sendToLive,
                 icon: AppIcons.send,
                 onPressed: () => Navigator.of(context).pop(

@@ -5,19 +5,19 @@ import '../../../core/error/app_failure.dart';
 import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/data_state_view.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/fade_slide_in.dart';
-import '../../../shared/widgets/page_scaffold.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/fig/fig.dart';
+import '../../../shared/fig/fig_page.dart';
 import '../../../shared/widgets/search_and_filters_bar.dart';
-import '../../conversations/widgets/gradient_fab.dart';
+import '../../chat/widgets/chat_context.dart' show showAddEnvironmentSheet;
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
 import '../view_model/vault_state.dart';
+import '../../conversations/widgets/rename_conversation_dialog.dart';
 import '../widgets/widgets.dart';
 import '../../../core/theme/app_sizes.dart';
 
@@ -41,6 +41,9 @@ class _VaultScreenState extends State<VaultScreen> {
   final _searchController = TextEditingController();
   String _query = '';
 
+  /// The company whose environments are showing (one open at a time).
+  String? _openId;
+
   @override
   void initState() {
     super.initState();
@@ -62,10 +65,20 @@ class _VaultScreenState extends State<VaultScreen> {
 
   // ── Actions ─────────────────────────────────────────────────────────
 
-  void _openProjectsList() => ProjectsListSheet.show(context);
+  /// "Add company" opens the Figma "Add company environment" sheet — the
+  /// same one the chat's company picker uses — rather than the old list sheet.
+  void _openProjectsList() => showAddEnvironmentSheet(context);
 
-  void _openProjectDetail(String projectId) =>
-      ProjectDetailSheet.show(context, existingProjectId: projectId);
+  Future<void> _renameProject(Project project) async {
+    final name = await RenameConversationDialog.show(
+      context,
+      initial: project.name,
+      title: context.tr.figRenameCompany,
+      hint: context.tr.figCompanyName,
+    );
+    if (name == null || name.isEmpty || !mounted) return;
+    await context.read<VaultCubit>().renameProject(id: project.id, name: name);
+  }
 
   void _openEnvironmentDetail(Environment env) =>
       EnvironmentDetailSheet.show(context, environmentId: env.id);
@@ -82,44 +95,6 @@ class _VaultScreenState extends State<VaultScreen> {
     if (!ok || !mounted) return;
     await context.read<VaultCubit>().deleteProject(project.id);
     // Success toast is fired centrally via the BlocListener below.
-  }
-
-  /// Long-press on a project card → touch-friendly rename / delete sheet.
-  void _showQuickActions(Project project) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(AppIcons.edit),
-              title: Text(sheetContext.tr.rename),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _openProjectDetail(project.id);
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                AppIcons.trash,
-                color: Theme.of(sheetContext).colorScheme.error,
-              ),
-              title: Text(
-                sheetContext.tr.delete,
-                style: TextStyle(
-                  color: Theme.of(sheetContext).colorScheme.error,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                _confirmDeleteProject(project);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   // ── Filtering ───────────────────────────────────────────────────────
@@ -153,59 +128,63 @@ class _VaultScreenState extends State<VaultScreen> {
             : '$projectCount ${context.tr.projectsTitle.toLowerCase()} · '
                   '${context.tr.environmentCount(envCount)}';
 
-        return PageScaffold(
+        return FigPage(
+          dark: true,
           title: context.tr.tabVault,
           subtitle: subtitleText,
-          floatingActionButton: GradientFab(
-            onPressed: _openProjectsList,
-            label: context.tr.addProject,
+          child: RefreshIndicator(
+            onRefresh: () => context.read<VaultCubit>().refresh(),
+            child: ListView(
+              // Bottom room for the floating tab bar, which would otherwise
+              // sit over the last card.
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s16,
+                AppSpacing.s16,
+                AppSpacing.s140,
+              ),
+              children: [
+                DataStateView<VaultData>(
+                  state: state.data,
+                  loadingLabel: context.tr.loading,
+                  onRetry: () => context.read<VaultCubit>().load(),
+                  // Skeleton-during-refresh: previous projects hide while
+                  // the fetch is in flight, card-shaped shimmers paint in
+                  // their place until the new snapshot lands. Reads more
+                  // legibly than a stale list + spinner overlay.
+                  keepPreviousOnLoading: false,
+                  onLoading: (context, _) => const Column(
+                    key: ValueKey('vault-skeleton'),
+                    children: [
+                      ProjectCardSkeleton(),
+                      SizedBox(height: AppSpacing.s12),
+                      ProjectCardSkeleton(envRows: 1),
+                      SizedBox(height: AppSpacing.s12),
+                      ProjectCardSkeleton(),
+                      SizedBox(height: AppSpacing.s12),
+                      ProjectCardSkeleton(envRows: 2),
+                    ],
+                  ),
+                  onData: (context, data) => _ProjectsBody(
+                    data: data,
+                    query: _query,
+                    searchController: _searchController,
+                    onSearchChanged: (q) => setState(() => _query = q),
+                    matchesQuery: _matchesQuery,
+                    openId: _openId,
+                    onToggle: (id) =>
+                        setState(() => _openId = _openId == id ? null : id),
+                    onOpenEnv: _openEnvironmentDetail,
+                    onRename: _renameProject,
+                    onDeleteProject: _confirmDeleteProject,
+                    onAddEnvironment: (p) =>
+                        showAddEnvironmentSheet(context, project: p),
+                    onAddCompany: _openProjectsList,
+                  ),
+                ),
+              ],
+            ),
           ),
-          onRefresh: () => context.read<VaultCubit>().refresh(),
-          actions: [
-            AppIconButton(
-              icon: AppIcons.refresh,
-              tooltip: context.tr.refreshCredentials,
-              bordered: false,
-              onPressed: () => context.read<VaultCubit>().refresh(),
-            ),
-            const SizedBox(width: AppSpacing.s6),
-          ],
-          children: [
-            DataStateView<VaultData>(
-              state: state.data,
-              loadingLabel: context.tr.loading,
-              onRetry: () => context.read<VaultCubit>().load(),
-              // Skeleton-during-refresh: previous projects hide while
-              // the fetch is in flight, card-shaped shimmers paint in
-              // their place until the new snapshot lands. Reads more
-              // legibly than a stale list + spinner overlay.
-              keepPreviousOnLoading: false,
-              onLoading: (context, _) => const Column(
-                key: ValueKey('vault-skeleton'),
-                children: [
-                  ProjectCardSkeleton(),
-                  SizedBox(height: AppSpacing.s12),
-                  ProjectCardSkeleton(envRows: 1),
-                  SizedBox(height: AppSpacing.s12),
-                  ProjectCardSkeleton(),
-                  SizedBox(height: AppSpacing.s12),
-                  ProjectCardSkeleton(envRows: 2),
-                ],
-              ),
-              onData: (context, data) => _ProjectsBody(
-                data: data,
-                query: _query,
-                searchController: _searchController,
-                onSearchChanged: (q) => setState(() => _query = q),
-                matchesQuery: _matchesQuery,
-                onOpenProject: _openProjectDetail,
-                onOpenEnv: _openEnvironmentDetail,
-                onDeleteProject: _confirmDeleteProject,
-                onLongPressProject: _showQuickActions,
-                onCreateFirst: _openProjectsList,
-              ),
-            ),
-          ],
         );
       },
     );
@@ -325,11 +304,13 @@ class _ProjectsBody extends StatelessWidget {
     required this.searchController,
     required this.onSearchChanged,
     required this.matchesQuery,
-    required this.onOpenProject,
+    required this.openId,
+    required this.onToggle,
     required this.onOpenEnv,
+    required this.onRename,
     required this.onDeleteProject,
-    required this.onLongPressProject,
-    required this.onCreateFirst,
+    required this.onAddEnvironment,
+    required this.onAddCompany,
   });
 
   final VaultData data;
@@ -337,11 +318,13 @@ class _ProjectsBody extends StatelessWidget {
   final TextEditingController searchController;
   final ValueChanged<String> onSearchChanged;
   final bool Function(Project) matchesQuery;
-  final ValueChanged<String> onOpenProject;
+  final String? openId;
+  final ValueChanged<String> onToggle;
   final ValueChanged<Environment> onOpenEnv;
+  final ValueChanged<Project> onRename;
   final ValueChanged<Project> onDeleteProject;
-  final ValueChanged<Project> onLongPressProject;
-  final VoidCallback onCreateFirst;
+  final ValueChanged<Project> onAddEnvironment;
+  final VoidCallback onAddCompany;
 
   @override
   Widget build(BuildContext context) {
@@ -355,10 +338,10 @@ class _ProjectsBody extends StatelessWidget {
         icon: AppIcons.projects,
         title: context.tr.noStoredCredentialsTitle,
         body: context.tr.noStoredCredentialsBody,
-        action: PrimaryButton(
+        action: FigButton.compact(
           label: context.tr.addProject,
           icon: AppIcons.plus,
-          onPressed: onCreateFirst,
+          onPressed: onAddCompany,
         ),
       );
     }
@@ -386,18 +369,18 @@ class _ProjectsBody extends StatelessWidget {
             FadeSlideIn(
               key: ValueKey('project-${entry.value.id}'),
               index: entry.key,
-              child: ProjectCard(
+              child: FigCompanyCard(
                 project: entry.value,
-                environments: entry.value.environments,
-                onTap: () => onOpenProject(entry.value.id),
-                onEdit: () => onOpenProject(entry.value.id),
+                open: openId == entry.value.id,
+                onToggle: () => onToggle(entry.value.id),
+                onRename: () => onRename(entry.value),
                 onDelete: () => onDeleteProject(entry.value),
-                onLongPress: () => onLongPressProject(entry.value),
                 onEnvTap: onOpenEnv,
+                onAddEnvironment: () => onAddEnvironment(entry.value),
               ),
             ),
-            const SizedBox(height: AppSpacing.s12),
           ],
+        FigAddCompanyButton(onTap: onAddCompany),
       ],
     );
   }

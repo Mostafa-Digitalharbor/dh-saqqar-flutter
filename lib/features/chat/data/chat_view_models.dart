@@ -93,6 +93,23 @@ class ChatMessage {
 /// `renderMessageAttachments()` path).
 enum AttachmentSource { userUpload, generatedOutput }
 
+/// Where one file in the composer is on its way to the server.
+enum UploadPhase {
+  /// The request is in flight.
+  uploading,
+
+  /// On the server (or, in a brand-new chat, waiting for the first send to
+  /// carry it) — nothing more to do.
+  done,
+
+  /// The server or the file refused it; retrying is the user's call.
+  failed,
+
+  /// The connection dropped mid-way; the same retry applies, but the cause is
+  /// the network rather than the file.
+  interrupted,
+}
+
 class ChatAttachment {
   const ChatAttachment({
     required this.name,
@@ -103,6 +120,7 @@ class ChatAttachment {
     this.downloadUrl,
     this.serverId,
     this.source = AttachmentSource.userUpload,
+    this.phase = UploadPhase.done,
   });
 
   final String name;
@@ -133,6 +151,22 @@ class ChatAttachment {
   final String? serverId;
 
   final AttachmentSource source;
+
+  /// Upload state of a file still in the composer; [UploadPhase.done] for
+  /// everything that is already part of the conversation.
+  final UploadPhase phase;
+
+  ChatAttachment withPhase(UploadPhase next) => ChatAttachment(
+    name: name,
+    kind: kind,
+    size: size,
+    imageUrl: imageUrl,
+    localPath: localPath,
+    downloadUrl: downloadUrl,
+    serverId: serverId,
+    source: source,
+    phase: next,
+  );
 
   /// Whether this attachment should render as a picture rather than a file
   /// chip.

@@ -881,7 +881,7 @@ void main() {
     test('no prose literal is passed to a copy-bearing named parameter', () {
       // `Text()` is the obvious door, not the only one. Every parameter below
       // ends up rendered verbatim, and none of them were being checked — a
-      // `GhostButton(label: 'Try again')` or an `AppErrorState(message: …)`
+      // `FigButton(label: 'Try again')` or an `AppErrorState(message: …)`
       // would have shipped English onto an Arabic screen with the Text() rule
       // still green.
       //
@@ -917,7 +917,7 @@ void main() {
     test('no single-word literal is rendered either', () {
       // Both rules above key on an interior space, which is what makes them
       // safe against identifiers and slugs — and blind to the shortest copy
-      // in any UI. `Text('Save')`, `GhostButton(label: 'Retry')` and
+      // in any UI. `Text('Save')`, `FigButton(label: 'Retry')` and
       // `AppErrorState(title: 'Offline')` are the labels most likely to be
       // typed inline precisely *because* they are one word, and every one of
       // them would have shipped English onto an Arabic screen with both rules
@@ -1041,7 +1041,7 @@ void main() {
         );
         if (file.path.isEmpty) continue; // not ours to police
         final src = file.readAsStringSync();
-        if (!RegExp(r'AppBar\(|PageScaffold\(').hasMatch(src)) {
+        if (!RegExp(r'AppBar\(|PageScaffold\(|FigPage\(').hasMatch(src)) {
           trapped.add('$screen (${file.path.replaceAll(r'\', '/')})');
         }
       }

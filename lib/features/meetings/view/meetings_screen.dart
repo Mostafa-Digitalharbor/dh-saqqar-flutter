@@ -7,16 +7,16 @@ import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/preview_banner.dart';
 import '../../../shared/widgets/status_pill.dart';
 import '../view_model/meetings_cubit.dart';
 import '../view_model/meetings_state.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../../../shared/fig/fig_page.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Meetings transcription (API_MOBILE_NEW_ENDPOINTS.md §4.1, Vexa) — start
 /// transcribing an online meeting, watch the live transcript, then stop /
@@ -56,41 +56,38 @@ class _MeetingsScreenState extends State<MeetingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(title: Text(context.tr.meetingsTitle)),
-      body: AmbientBackground(
-        child: BlocConsumer<MeetingsCubit, MeetingsState>(
-          listenWhen: (p, n) => p.error != n.error && n.error != null,
-          listener: (context, state) {
-            AppToast.show(
-              context,
-              message: ApiErrorMapper.message(context, state.error),
-              variant: ToastVariant.error,
-            );
-          },
-          builder: (context, state) => ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.s16,
-              AppSpacing.s16,
-              AppSpacing.s16,
-              AppSpacing.s28,
-            ),
-            children: [
-              PreviewBanner(text: context.tr.meetingsPreviewNote),
-              const SizedBox(height: AppSpacing.s14),
-              if (state.session == null || !state.session!.isValid)
-                _StartForm(
-                  controller: _url,
-                  error: _urlError,
-                  busy: state.busy,
-                  onStart: _start,
-                )
-              else
-                _SessionView(state: state, askController: _ask),
-            ],
+    return FigPage(
+      title: context.tr.meetingsTitle,
+      eyebrow: context.tr.figWorkspace,
+      child: BlocConsumer<MeetingsCubit, MeetingsState>(
+        listenWhen: (p, n) => p.error != n.error && n.error != null,
+        listener: (context, state) {
+          AppToast.show(
+            context,
+            message: ApiErrorMapper.message(context, state.error),
+            variant: ToastVariant.error,
+          );
+        },
+        builder: (context, state) => ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.s16,
+            AppSpacing.s16,
+            AppSpacing.s16,
+            AppSpacing.s28,
           ),
+          children: [
+            PreviewBanner(text: context.tr.meetingsPreviewNote),
+            const SizedBox(height: AppSpacing.s14),
+            if (state.session == null || !state.session!.isValid)
+              _StartForm(
+                controller: _url,
+                error: _urlError,
+                busy: state.busy,
+                onStart: _start,
+              )
+            else
+              _SessionView(state: state, askController: _ask),
+          ],
         ),
       ),
     );
@@ -131,7 +128,8 @@ class _StartForm extends StatelessWidget {
           onSubmitted: (_) => onStart(),
         ),
         const SizedBox(height: AppSpacing.s18),
-        GhostButton(
+        FigButton.compact(
+          secondary: true,
           label: context.tr.meetingsStart,
           icon: AppIcons.recordDot,
           expand: true,
@@ -177,10 +175,11 @@ class _SessionView extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: GhostButton(
+              child: FigButton.compact(
+                secondary: true,
                 label: context.tr.meetingsStop,
                 icon: AppIcons.stopCircle,
-                tone: GhostButtonTone.danger,
+                dangerOutline: true,
                 expand: true,
                 onPressed: (state.busy || !session.isActive)
                     ? null
@@ -189,7 +188,8 @@ class _SessionView extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.s10),
             Expanded(
-              child: GhostButton(
+              child: FigButton.compact(
+                secondary: true,
                 label: context.tr.meetingsSummarize,
                 icon: AppIcons.fileText,
                 expand: true,
@@ -219,7 +219,8 @@ class _SessionView extends StatelessWidget {
           onSubmitted: cubit.ask,
         ),
         const SizedBox(height: AppSpacing.s10),
-        GhostButton(
+        FigButton.compact(
+          secondary: true,
           label: context.tr.meetingsAsk,
           icon: AppIcons.qa,
           expand: true,

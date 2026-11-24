@@ -30,7 +30,11 @@ class TranscribeApi {
   ///
   /// Throws [DioException] on transport / non-200 responses; the chat
   /// screen funnels those through [ApiErrorMapper] for the toast text.
-  Future<String> transcribe({required File audio, String? language}) async {
+  Future<String> transcribe({
+    required File audio,
+    String? language,
+    void Function(double fraction)? onProgress,
+  }) async {
     final filename = audio.uri.pathSegments.isNotEmpty
         ? audio.uri.pathSegments.last
         : 'voice.m4a';
@@ -55,6 +59,11 @@ class TranscribeApi {
       ApiEndpoints.transcribe,
       data: form,
       options: Options(contentType: 'multipart/form-data'),
+      onSendProgress: onProgress == null
+          ? null
+          : (sent, total) {
+              if (total > 0) onProgress((sent / total).clamp(0.0, 1.0));
+            },
     );
     // `?? ''` handed back an empty transcript, which the composer treats as
     // "the user said nothing" — the recording is discarded, no error is

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
-import '../extensions/context_extensions.dart';
-import 'ambient_background.dart';
-import 'saqqar_logo.dart';
+import '../../core/theme/fig_metrics.dart';
+import '../fig/fig.dart';
 
 /// A full-screen wall: "the app is not usable right now, and here is the one
 /// thing to do about it."
@@ -54,84 +54,108 @@ class BlockingWall extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
     return Material(
-      color: s.bg,
-      child: AmbientBackground(
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s28),
-              child: ConstrainedBox(
-                // Floor the column at the viewport height so `center` behaves
-                // — but only when there IS a viewport height. Under an
-                // unbounded parent (a measuring pass, a scrollable that hands
-                // down infinity) `minHeight: infinity` is not a tall column,
-                // it is a layout assertion. Falling back to zero gives the
-                // natural height, which is the right answer in that context
-                // and the only one that does not crash.
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight.isFinite
-                      ? constraints.maxHeight
-                      : 0,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SaqqarLogo(height: AppLogoSizes.screen),
-                    const SizedBox(height: AppSpacing.s36),
-                    Container(
-                      width: AppBoxSizes.hero,
-                      height: AppBoxSizes.hero,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: s.brandCyan.withValues(alpha: AppAlphas.a12),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: s.brandCyan.withValues(alpha: AppAlphas.a30),
+      color: Fig.pageGrey,
+      child: LayoutBuilder(
+        builder: (context, outer) {
+          final wall = SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
+                child: ConstrainedBox(
+                  // Floor the column at the viewport height so the actions sit at
+                  // the bottom — but only when there IS a viewport height. Under
+                  // an unbounded parent (a measuring pass, a scrollable that
+                  // hands down infinity) `minHeight: infinity` is not a tall
+                  // column, it is a layout assertion. Falling back to zero gives
+                  // the natural height, which is the one answer that cannot
+                  // crash.
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight.isFinite
+                        ? constraints.maxHeight
+                        : 0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: AppSpacing.s64),
+                      Container(
+                        width: AppBoxSizes.hero,
+                        height: AppBoxSizes.hero,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.figWhite.withValues(
+                            alpha: AppAlphas.a12,
+                          ),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.figWhite.withValues(
+                              alpha: AppAlphas.a30,
+                            ),
+                          ),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: AppIconSizes.emptyState,
+                          color: AppColors.figWhite,
                         ),
                       ),
-                      child: Icon(
-                        icon,
-                        size: AppIconSizes.emptyState,
-                        color: s.brandCyan,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s24),
-                    Text(
-                      title,
-                      style: context.text.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.s8),
-                    Text(
-                      body,
-                      style: context.text.bodyMedium?.copyWith(color: s.muted),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (footnote != null && footnote!.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.s6),
+                      const SizedBox(height: AppSpacing.s24),
                       Text(
-                        footnote!,
-                        style: context.text.labelSmall?.copyWith(
-                          color: s.muted,
+                        title,
+                        style: Fig.t(
+                          context,
+                          size: FigMetrics.fontFig32,
+                          color: AppColors.figWhite,
+                          height: FigMetrics.lhFig117,
+                          letterSpacing: AppLetterSpacing.heading,
                         ),
-                        textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: AppSpacing.s10),
+                      Text(
+                        body,
+                        style:
+                            Fig.t(
+                              context,
+                              size: AppFontSizes.dense,
+                              color: AppColors.figWhite,
+                              height: AppLineHeights.snug,
+                            ).copyWith(
+                              shadows: const [
+                                Shadow(
+                                  color: Fig.shadowInk,
+                                  blurRadius: FigMetrics.blur6,
+                                ),
+                              ],
+                            ),
+                      ),
+                      if (footnote != null && footnote!.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.s6),
+                        Text(
+                          footnote!,
+                          style: Fig.t(
+                            context,
+                            size: AppFontSizes.caption,
+                            color: AppColors.figWhite,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.s64),
+                      for (var i = 0; i < actions.length; i++) ...[
+                        if (i > 0) const SizedBox(height: AppSpacing.s10),
+                        actions[i],
+                      ],
+                      const SizedBox(height: AppSpacing.s24),
                     ],
-                    const SizedBox(height: AppSpacing.s32),
-                    for (var i = 0; i < actions.length; i++) ...[
-                      if (i > 0) const SizedBox(height: AppSpacing.s10),
-                      actions[i],
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+          // The backdrop needs a bounded height; under an unbounded parent
+          // (a measuring pass) the wall still lays out, just without it.
+          return outer.hasBoundedHeight ? FigBackdrop(child: wall) : wall;
+        },
       ),
     );
   }

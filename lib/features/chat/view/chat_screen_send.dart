@@ -57,6 +57,10 @@ extension _ChatSend on _ChatScreenState {
   Future<void> _sendInternal() async {
     final text = _composer.text.trim();
     if (text.isEmpty && _staged.isEmpty) return;
+    if (_stagedBlocksSend) {
+      _toast(context.tr.attachmentWaitOrRetry);
+      return;
+    }
 
     // Block sends until the user picks an environment — the agent has no
     // credentials to work against otherwise. Resolves real env first

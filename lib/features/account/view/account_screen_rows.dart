@@ -60,7 +60,7 @@ class _Accordion extends StatelessWidget {
                         const SizedBox(height: AppSpacing.s1),
                         Text(
                           subtitle,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: Fig.t(context, size: FigMetrics.fontFig8U5, color: Fig.muted),
                         ),

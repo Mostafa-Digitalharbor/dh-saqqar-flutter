@@ -3,12 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../shared/fig/fig.dart';
+import '../../../shared/widgets/confirm_dialog.dart';
+import '../../conversations/widgets/rename_conversation_dialog.dart';
+import '../../../core/theme/app_icons.dart';
 import '../../setup/setup_screens.dart'
     show ConnectionTabs, EnvMode, EnvTypePicker, FigDropdown;
 import '../../vault/data/credential_models.dart';
 import '../../vault/data/credentials_api.dart';
 import '../../vault/data/project_models.dart';
 import '../../vault/data/vault_repository.dart';
+import '../../vault/widgets/fig_company_card.dart';
 import '../../vault/view_model/vault_cubit.dart';
 import '../../vault/view_model/vault_state.dart';
 import '../../../core/i18n/app_localizations.dart';

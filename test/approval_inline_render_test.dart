@@ -6,7 +6,8 @@
 // through the list-index arithmetic to the card was never covered.
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
+import 'package:flutter/foundation.dart'
+    show debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,14 +40,13 @@ import 'package:saqqar_app/features/inbox/data/approval_models.dart';
 import 'package:saqqar_app/features/inbox/data/approvals_api.dart';
 import 'package:saqqar_app/features/inbox/data/artifacts_api.dart';
 import 'package:saqqar_app/features/share/intake/share_intake_service.dart';
-import 'package:saqqar_app/shared/widgets/ghost_button.dart';
-import 'package:saqqar_app/shared/widgets/primary_button.dart';
 import 'package:saqqar_app/features/support/data/voice_support_api.dart';
 import 'package:saqqar_app/features/vault/data/projects_api.dart';
 import 'package:saqqar_app/features/vault/data/vault_repository.dart';
 import 'package:saqqar_app/features/vault/view_model/vault_cubit.dart';
 
 import 'support/responsive_harness.dart';
+import 'package:saqqar_app/shared/fig/fig.dart';
 
 /// Drains the decision tap: the POST's future, the snapshot re-read that
 /// follows it, and the toast that reports the outcome.
@@ -71,8 +71,7 @@ class _FakeRepo implements ConversationsRepository {
   Future<List<Attachment>> uploadAttachments({
     required String conversationId,
     required List<Object> files,
-  }) async =>
-      const [];
+  }) async => const [];
   @override
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
@@ -91,7 +90,8 @@ class _FakeVault implements VaultRepository {
 /// answer `null`, which an `await` turns into a type error inside the
 /// screen's own try/catch — the tap would look handled and assert nothing.
 class _FakeApprovals implements ApprovalsApi {
-  final decisions = <({String id, bool approved, bool batch, String? phrase})>[];
+  final decisions =
+      <({String id, bool approved, bool batch, String? phrase})>[];
 
   @override
   Future<ApprovalDecisionResult> decide({
@@ -154,7 +154,7 @@ class _FakeUsage implements UsageApi {
 
 class _SeededChatCubit extends ChatCubit {
   _SeededChatCubit(ConversationSnapshot snapshot)
-      : super(conversationId: 'c1', repository: _FakeRepo()) {
+    : super(conversationId: 'c1', repository: _FakeRepo()) {
     emit(ChatState(data: DataSuccess(snapshot)));
   }
 
@@ -172,9 +172,9 @@ class _SeededChatCubit extends ChatCubit {
     refreshes++;
     final current = state.data.dataOrNull;
     if (current == null) return;
-    emit(state.copyWith(
-      data: DataSuccess(current.copyWith(approvals: const [])),
-    ));
+    emit(
+      state.copyWith(data: DataSuccess(current.copyWith(approvals: const []))),
+    );
   }
 }
 
@@ -188,12 +188,14 @@ class _SeededFeaturesCubit extends SaqqarFeaturesCubit {
 
 class _SeededPlanCubit extends PlanCubit {
   _SeededPlanCubit() {
-    update(PlanSnapshot.fromJson(const {
-      'plan': 'max-20x',
-      'plan_name': 'Business',
-      'exempt': true,
-      'features': {'voice': true},
-    }));
+    update(
+      PlanSnapshot.fromJson(const {
+        'plan': 'max-20x',
+        'plan_name': 'Business',
+        'exempt': true,
+        'features': {'voice': true},
+      }),
+    );
   }
 }
 
@@ -208,40 +210,39 @@ ConversationSnapshot _snapshotWithApproval({
   // of writes is the SAME model repeated. Callers that want N separate cards
   // rather than one grouped card pass `distinctShapes: true`.
   bool distinctShapes = false,
-}) =>
-    ConversationSnapshot.fromJson(<String, dynamic>{
-      'conversation': <String, dynamic>{
-        'id': 'c1',
-        'title': 'T',
-        'auto_approve': false,
-        'is_running': isRunning,
-        'stop_requested': false,
+}) => ConversationSnapshot.fromJson(<String, dynamic>{
+  'conversation': <String, dynamic>{
+    'id': 'c1',
+    'title': 'T',
+    'auto_approve': false,
+    'is_running': isRunning,
+    'stop_requested': false,
+  },
+  'messages': <Map<String, dynamic>>[
+    for (var i = 0; i < messages; i++)
+      {
+        'id': 'm$i',
+        'role': i.isEven ? 'user' : 'assistant',
+        'content': 'message $i',
+        'created_at': '2026-08-30T10:00:00Z',
       },
-      'messages': <Map<String, dynamic>>[
-        for (var i = 0; i < messages; i++)
-          {
-            'id': 'm$i',
-            'role': i.isEven ? 'user' : 'assistant',
-            'content': 'message $i',
-            'created_at': '2026-08-30T10:00:00Z',
-          },
-      ],
-      'approvals': <Map<String, dynamic>>[
-        for (var i = 0; i < approvals; i++)
-          {
-            'id': 'ap$i',
-            'action_type': 'odoo_write',
-            'status': 'pending',
-            'prompt': 'Saqqar wants to modify 1 record.',
-            'record_count': 1,
-            'model_label': const {'en': 'Sales Order', 'ar': 'Sales Order AR'},
-            'payload': {
-              'operation': operation,
-              'model': distinctShapes ? 'model.$i' : 'sale.order',
-            },
-          },
-      ],
-    });
+  ],
+  'approvals': <Map<String, dynamic>>[
+    for (var i = 0; i < approvals; i++)
+      {
+        'id': 'ap$i',
+        'action_type': 'odoo_write',
+        'status': 'pending',
+        'prompt': 'Saqqar wants to modify 1 record.',
+        'record_count': 1,
+        'model_label': const {'en': 'Sales Order', 'ar': 'Sales Order AR'},
+        'payload': {
+          'operation': operation,
+          'model': distinctShapes ? 'model.$i' : 'sale.order',
+        },
+      },
+  ],
+});
 
 void main() {
   Future<({_FakeApprovals api, _SeededChatCubit cubit})> pumpChat(
@@ -274,41 +275,43 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     Widget chatProviders(Widget child) => MultiRepositoryProvider(
-          providers: [
-            RepositoryProvider<ConversationsRepository>(
-                create: (_) => _FakeRepo()),
-            RepositoryProvider<ProjectsApi>(create: (_) => _FakeProjects()),
-            RepositoryProvider<VaultRepository>(create: (_) => _FakeVault()),
-            RepositoryProvider<ApprovalsApi>(create: (_) => approvalsApi),
-            RepositoryProvider<ArtifactsApi>(create: (_) => _FakeArtifacts()),
-            RepositoryProvider<OdooDataApi>(create: (_) => _FakeOdoo()),
-            RepositoryProvider<TranscribeApi>(create: (_) => _FakeTranscribe()),
-            RepositoryProvider<SaqqarToolsApi>(create: (_) => _FakeTools()),
-            RepositoryProvider<VoiceSupportApi>(
-                create: (_) => _FakeVoiceSupport()),
-            RepositoryProvider<UsageApi>(create: (_) => _FakeUsage()),
-            RepositoryProvider<LiveEnvAckService>(
-                create: (_) => LiveEnvAckService(prefs)),
-            RepositoryProvider<Dio>(create: (_) => Dio()),
-          ],
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider<ChatCubit>(create: (_) => cubit),
-              BlocProvider<PlanCubit>(create: (_) => _SeededPlanCubit()),
-              BlocProvider<SaqqarFeaturesCubit>(
-                  create: (_) => _SeededFeaturesCubit()),
-              BlocProvider<TaskPrepCubit>(create: (_) => TaskPrepCubit(prefs)),
-              BlocProvider<ConversationsCubit>(
-                  create: (_) => ConversationsCubit(repository: _FakeRepo())),
-              BlocProvider<VaultCubit>(
-                  create: (_) => VaultCubit(repository: _FakeVault())),
-            ],
-            child: ChangeNotifierProvider<ShareIntakeService>(
-              create: (_) => ShareIntakeService(),
-              child: child,
-            ),
+      providers: [
+        RepositoryProvider<ConversationsRepository>(create: (_) => _FakeRepo()),
+        RepositoryProvider<ProjectsApi>(create: (_) => _FakeProjects()),
+        RepositoryProvider<VaultRepository>(create: (_) => _FakeVault()),
+        RepositoryProvider<ApprovalsApi>(create: (_) => approvalsApi),
+        RepositoryProvider<ArtifactsApi>(create: (_) => _FakeArtifacts()),
+        RepositoryProvider<OdooDataApi>(create: (_) => _FakeOdoo()),
+        RepositoryProvider<TranscribeApi>(create: (_) => _FakeTranscribe()),
+        RepositoryProvider<SaqqarToolsApi>(create: (_) => _FakeTools()),
+        RepositoryProvider<VoiceSupportApi>(create: (_) => _FakeVoiceSupport()),
+        RepositoryProvider<UsageApi>(create: (_) => _FakeUsage()),
+        RepositoryProvider<LiveEnvAckService>(
+          create: (_) => LiveEnvAckService(prefs),
+        ),
+        RepositoryProvider<Dio>(create: (_) => Dio()),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<ChatCubit>(create: (_) => cubit),
+          BlocProvider<PlanCubit>(create: (_) => _SeededPlanCubit()),
+          BlocProvider<SaqqarFeaturesCubit>(
+            create: (_) => _SeededFeaturesCubit(),
           ),
-        );
+          BlocProvider<TaskPrepCubit>(create: (_) => TaskPrepCubit(prefs)),
+          BlocProvider<ConversationsCubit>(
+            create: (_) => ConversationsCubit(repository: _FakeRepo()),
+          ),
+          BlocProvider<VaultCubit>(
+            create: (_) => VaultCubit(repository: _FakeVault()),
+          ),
+        ],
+        child: ChangeNotifierProvider<ShareIntakeService>(
+          create: (_) => ShareIntakeService(),
+          child: child,
+        ),
+      ),
+    );
 
     await tester.pumpWidget(
       buildHarness(
@@ -341,20 +344,23 @@ void main() {
     return (api: approvalsApi, cubit: cubit);
   }
 
-  testWidgets('a pending odoo_write approval renders inline in the chat',
-      (tester) async {
+  testWidgets('a pending odoo_write approval renders inline in the chat', (
+    tester,
+  ) async {
     await pumpChat(tester, _snapshotWithApproval());
 
     expect(
       find.byType(ChatApprovalCard),
       findsOneWidget,
-      reason: 'the snapshot carries one pending approval — the user has no '
+      reason:
+          'the snapshot carries one pending approval — the user has no '
           'other way to unblock the run.',
     );
   });
 
-  testWidgets('it renders while the agent is still marked running',
-      (tester) async {
+  testWidgets('it renders while the agent is still marked running', (
+    tester,
+  ) async {
     await pumpChat(tester, _snapshotWithApproval(isRunning: true));
 
     expect(find.byType(ChatApprovalCard), findsOneWidget);
@@ -415,7 +421,8 @@ void main() {
       expect(
         opacity.opacity,
         1.0,
-        reason: 'Reduce Motion skips the entrance animation — it must land on '
+        reason:
+            'Reduce Motion skips the entrance animation — it must land on '
             'fully visible, not on the 0 the animation starts from.',
       );
     });
@@ -449,7 +456,8 @@ void main() {
       expect(
         find.byType(ChatApprovalCard),
         findsOneWidget,
-        reason: 'an approval is the one thing on this screen the user MUST '
+        reason:
+            'an approval is the one thing on this screen the user MUST '
             'be able to act on — an empty transcript is no reason to hide it.',
       );
     });
@@ -465,8 +473,9 @@ void main() {
       expect(find.byType(ChatApprovalCard), findsOneWidget);
     });
 
-    testWidgets('with the agent still running, beside the typing row',
-        (tester) async {
+    testWidgets('with the agent still running, beside the typing row', (
+      tester,
+    ) async {
       // Empty transcript AND a thinking row AND approvals — all three index
       // ranges in the list builder are live at once, with no messages to
       // separate them. The arithmetic has no room to be off by one here.
@@ -480,8 +489,9 @@ void main() {
       expect(find.byType(ChatTypingRow), findsOneWidget);
     });
 
-    testWidgets('three approvals of three shapes render all three',
-        (tester) async {
+    testWidgets('three approvals of three shapes render all three', (
+      tester,
+    ) async {
       await pumpChat(
         tester,
         _snapshotWithApproval(messages: 0, approvals: 3, distinctShapes: true),
@@ -495,8 +505,9 @@ void main() {
       expect(find.byType(ChatApprovalCard), findsNWidgets(3));
     });
 
-    testWidgets('three approvals of ONE shape render one grouped card',
-        (tester) async {
+    testWidgets('three approvals of ONE shape render one grouped card', (
+      tester,
+    ) async {
       // The wire shape of a burst: the agent writing three sales orders
       // raises three approvals that differ only in their record ids. The web
       // collapses that to a single "3 similar requests" card, and so does
@@ -516,8 +527,9 @@ void main() {
       );
     });
 
-    testWidgets('a grouped Approve all posts one batch decision',
-        (tester) async {
+    testWidgets('a grouped Approve all posts one batch decision', (
+      tester,
+    ) async {
       // One POST with `scope: "batch"`, not three bare approves — the server
       // resolves the siblings, which is the only thing that makes the count
       // on the button true.
@@ -538,8 +550,9 @@ void main() {
       expect(ctx.api.decisions.single.batch, isTrue);
     });
 
-    testWidgets('a grouped Reject all posts one batch rejection',
-        (tester) async {
+    testWidgets('a grouped Reject all posts one batch rejection', (
+      tester,
+    ) async {
       // The app had no way to do this at all before — the API has accepted a
       // batch-scoped reject the whole time.
       final ctx = await pumpChat(
@@ -549,9 +562,7 @@ void main() {
         size: const Size(430, 1600),
       );
 
-      await tester.tap(
-        find.text(AppStrings(const Locale('en')).rejectAllN(3)),
-      );
+      await tester.tap(find.text(AppStrings(const Locale('en')).rejectAllN(3)));
       await _settleDecision(tester);
 
       expect(ctx.api.decisions, hasLength(1));
@@ -578,18 +589,23 @@ void main() {
   // screen, so the wiring from card → `_decideApprovalInline` → the decision
   // POST is covered end to end rather than at the widget's own callback.
   group('deciding from the chat', () {
-    testWidgets('Approve posts the decision and clears the card',
-        (tester) async {
+    testWidgets('Approve posts the decision and clears the card', (
+      tester,
+    ) async {
       final h = await pumpChat(
         tester,
         _snapshotWithApproval(),
         platform: TargetPlatform.iOS,
       );
 
-      await tester.tap(find.descendant(
-        of: find.byType(ChatApprovalCard),
-        matching: find.byType(PrimaryButton),
-      ));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ChatApprovalCard),
+          matching: find.byWidgetPredicate(
+            (w) => w is FigButton && !w.secondary,
+          ),
+        ),
+      );
       await _settleDecision(tester);
 
       expect(h.api.decisions, hasLength(1));
@@ -599,7 +615,8 @@ void main() {
       expect(
         h.cubit.refreshes,
         1,
-        reason: 'the screen re-reads the snapshot so the resolved row leaves '
+        reason:
+            'the screen re-reads the snapshot so the resolved row leaves '
             'immediately instead of lingering until the next poll tick.',
       );
       expect(find.byType(ChatApprovalCard), findsNothing);
@@ -612,18 +629,21 @@ void main() {
         platform: TargetPlatform.iOS,
       );
 
-      await tester.tap(find.descendant(
-        of: find.byType(ChatApprovalCard),
-        matching: find.widgetWithText(GhostButton, 'Reject'),
-      ));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ChatApprovalCard),
+          matching: find.widgetWithText(FigButton, 'Reject'),
+        ),
+      );
       await _settleDecision(tester);
 
       expect(h.api.decisions.single.approved, isFalse);
       expect(find.byType(ChatApprovalCard), findsNothing);
     });
 
-    testWidgets('the tap works from the empty-transcript state too',
-        (tester) async {
+    testWidgets('the tap works from the empty-transcript state too', (
+      tester,
+    ) async {
       // The state this session fixed. A card that renders but whose buttons
       // sit outside the hit-testable area would pass every finder above and
       // still leave the run blocked.
@@ -634,10 +654,14 @@ void main() {
         viewPadding: const EdgeInsets.only(top: 47, bottom: 34),
       );
 
-      await tester.tap(find.descendant(
-        of: find.byType(ChatApprovalCard),
-        matching: find.byType(PrimaryButton),
-      ));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ChatApprovalCard),
+          matching: find.byWidgetPredicate(
+            (w) => w is FigButton && !w.secondary,
+          ),
+        ),
+      );
       await _settleDecision(tester);
 
       expect(h.api.decisions.single.id, 'ap0');

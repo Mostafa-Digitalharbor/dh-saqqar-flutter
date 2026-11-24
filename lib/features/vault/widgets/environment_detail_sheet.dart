@@ -1,3 +1,4 @@
+import '../../../shared/fig/fig.dart' show showLightSheet;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -45,8 +46,8 @@ class EnvironmentDetailSheet extends StatefulWidget {
     BuildContext context, {
     required String environmentId,
   }) {
-    return showModalBottomSheet<void>(
-      context: context,
+    return showLightSheet<void>(
+      context,
       isScrollControlled: true,
       builder: (_) => EnvironmentDetailSheet(environmentId: environmentId),
     );

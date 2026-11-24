@@ -9,6 +9,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/constants/asset_paths.dart';
 import '../extensions/context_extensions.dart';
 import '../../core/theme/app_sizes.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/theme/fig_metrics.dart';
 
 /// Design tokens + primitives for the 2026-11 Figma redesign
@@ -442,6 +443,7 @@ class _FigFieldState extends State<FigField> {
                       focusNode: widget.focusNode,
                       enabled: widget.enabled,
                       obscureText: _hidden,
+                      textAlignVertical: TextAlignVertical.center,
                       keyboardType: widget.keyboardType,
                       textInputAction: widget.textInputAction,
                       autofillHints: widget.autofillHints,
@@ -457,6 +459,9 @@ class _FigFieldState extends State<FigField> {
                       ),
                       decoration: InputDecoration(
                         isCollapsed: true,
+                        // The app theme pads inputs by 14; left in, that sat
+                        // the text 14 further in than the mock's pill.
+                        contentPadding: EdgeInsets.zero,
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -514,6 +519,10 @@ class _FigFieldState extends State<FigField> {
 
 /// Primary pill CTA (blue vertical gradient). [loading] swaps the label for
 /// a spinner and blocks taps.
+///
+/// One button for the whole app: [secondary] is the light outlined pill,
+/// [danger] the solid red one and [dangerOutline] the red-tinted outline for
+/// destructive but not final actions. [FigButton.compact] is the in-card size.
 class FigButton extends StatelessWidget {
   const FigButton({
     super.key,
@@ -522,75 +531,152 @@ class FigButton extends StatelessWidget {
     this.loading = false,
     this.height = 54,
     this.danger = false,
+    this.dangerOutline = false,
     this.secondary = false,
     this.textColor,
     this.weight = FontWeight.w400,
     this.fontSize = FigMetrics.font16,
-  });
+    this.icon,
+    this.expand = true,
+  }) : keepLabelWhileLoading = false;
+
+  /// The size used inside cards, rows and dialogs: shorter, semi-bold and
+  /// only as wide as its content unless [expand] says otherwise.
+  const FigButton.compact({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.loading = false,
+    this.height = FigMetrics.size46,
+    this.danger = false,
+    this.dangerOutline = false,
+    this.secondary = false,
+    this.textColor,
+    this.icon,
+    this.expand = false,
+  }) : weight = FontWeight.w600,
+       fontSize = AppFontSizes.dense,
+       keepLabelWhileLoading = true;
 
   final String label;
   final VoidCallback? onPressed;
   final bool loading;
+
+  /// Minimum height; a label that wraps to two lines grows the button.
   final double height;
   final bool danger;
+  final bool dangerOutline;
   final bool secondary;
   final Color? textColor;
   final FontWeight weight;
   final double fontSize;
+  final IconData? icon;
+
+  /// Fill the available width (true) or hug the content (false).
+  final bool expand;
+
+  /// Whether the label stays next to the spinner while [loading] — in cards
+  /// the label often changes to say what is happening ("Resuming…").
+  final bool keepLabelWhileLoading;
 
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null && !loading;
+    final radius = BorderRadius.circular(height / 2);
     BoxDecoration deco;
     Color fg;
-    if (secondary) {
+    if (dangerOutline) {
       deco = BoxDecoration(
-        color: AppColors.figCFFEFF2FC,
-        borderRadius: BorderRadius.circular(height / 2),
-        border: Border.all(color: Fig.borderBlue),
+        color: Fig.danger.withValues(alpha: AppAlphas.a10),
+        borderRadius: radius,
+        border: Border.all(color: Fig.danger.withValues(alpha: AppAlphas.a40)),
       );
-      fg = textColor ?? Fig.navy;
+      fg = Fig.danger;
+    } else if (secondary) {
+      final onDark = FigDarkSurface.of(context);
+      deco = BoxDecoration(
+        color: onDark
+            ? AppColors.figWhite.withValues(alpha: AppAlphas.a08)
+            : AppColors.figCFFEFF2FC,
+        borderRadius: radius,
+        border: Border.all(
+          color: onDark
+              ? AppColors.figWhite.withValues(alpha: AppAlphas.a18)
+              : Fig.borderBlue,
+        ),
+      );
+      fg = textColor ?? (onDark ? AppColors.figWhite : Fig.navy);
     } else if (danger) {
-      deco = BoxDecoration(
-        color: Fig.danger,
-        borderRadius: BorderRadius.circular(height / 2),
-      );
+      deco = BoxDecoration(color: Fig.danger, borderRadius: radius);
       fg = AppColors.figWhite;
     } else {
       deco = BoxDecoration(
         gradient: Fig.primaryGradient,
-        borderRadius: BorderRadius.circular(height / 2),
+        borderRadius: radius,
       );
       fg = AppColors.figWhite;
     }
-    return Opacity(
-      opacity: onPressed == null ? 0.6 : 1,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: enabled ? onPressed : null,
-          borderRadius: BorderRadius.circular(height / 2),
-          child: Ink(
-            height: height,
-            decoration: deco,
-            child: Center(
-              child: loading
-                  ? SizedBox(
-                      width: FigMetrics.size22, height: FigMetrics.size22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: AppStrokeWidths.spinnerSnug,
-                        color: fg,
-                      ),
-                    )
-                  : Text(
-                      label,
-                      style: Fig.t(
-                        context,
-                        size: fontSize,
-                        color: fg,
-                        weight: secondary ? FontWeight.w600 : weight,
-                      ),
+    final text = Text(
+      label,
+      // Two lines, not one: in a half-width dialog button a longer label was
+      // cut to "Send to li…", hiding the word that says what the button does.
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+      style: Fig.t(
+        context,
+        size: fontSize,
+        color: fg,
+        weight: secondary || dangerOutline ? FontWeight.w600 : weight,
+      ),
+    );
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: Opacity(
+        opacity: onPressed == null ? 0.6 : 1,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled ? onPressed : null,
+            borderRadius: radius,
+            child: Ink(
+              decoration: deco,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: height),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s18,
+                    vertical: AppSpacing.s8,
+                  ),
+                  child: ExcludeSemantics(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+                      children: [
+                        if (loading) ...[
+                          SizedBox(
+                            width: FigMetrics.size22,
+                            height: FigMetrics.size22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: AppStrokeWidths.spinnerSnug,
+                              color: fg,
+                            ),
+                          ),
+                          if (keepLabelWhileLoading)
+                            const SizedBox(width: AppSpacing.s10),
+                        ] else if (icon != null) ...[
+                          Icon(icon, size: AppIconSizes.regular, color: fg),
+                          const SizedBox(width: AppSpacing.s10),
+                        ],
+                        if (!loading || keepLabelWhileLoading)
+                          Flexible(child: text),
+                      ],
                     ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -737,12 +823,17 @@ class FigNavBar extends StatelessWidget {
     required this.index,
     required this.onSelect,
     this.showMore = true,
+    this.moreSelected = false,
     this.onMore,
   });
 
   final int index;
   final ValueChanged<int> onSelect;
   final bool showMore;
+
+  /// True while a screen opened from the ⋮ menu is showing, so the ⋮ pill
+  /// (not a tab) carries the "you are here" highlight.
+  final bool moreSelected;
   final VoidCallback? onMore;
 
   static const _icons = [
@@ -860,10 +951,26 @@ class FigNavBar extends StatelessWidget {
                         color: AppColors.figBlack,
                         borderRadius: BorderRadius.circular(FigMetrics.radFig31),
                       ),
-                      child: const Icon(
-                        LucideIcons.ellipsisVertical,
-                        size: AppIconSizes.regular,
-                        color: AppColors.figWhite,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: AppDurations.expand,
+                          width: FigMetrics.boxMInWU40,
+                          height: FigMetrics.size46,
+                          decoration: BoxDecoration(
+                            color: moreSelected
+                                ? AppColors.figWhite
+                                : Colors.transparent,
+                            borderRadius:
+                                BorderRadius.circular(FigMetrics.radFig23),
+                          ),
+                          child: Icon(
+                            LucideIcons.ellipsisVertical,
+                            size: AppIconSizes.regular,
+                            color: moreSelected
+                                ? AppColors.figBlack
+                                : AppColors.figWhite,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -974,12 +1081,73 @@ Future<T?> showFigSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
     backgroundColor: Colors.transparent,
+    // The sheet content is its own rounded surface; the theme's handle
+    // would float above it on the transparent route.
+    showDragHandle: false,
     barrierColor: AppColors.figBlack.withValues(alpha: AppAlphas.a45),
     useSafeArea: true,
     // Root navigator: the sheet must cover the floating tab bar, which lives
     // in the shell above the inner navigator (it hid the primary button).
     useRootNavigator: true,
     builder: builder,
+  );
+}
+
+/// Marks a subtree as drawn on a dark Figma surface (the Connections page and
+/// everything it opens). Sheets and dialogs shown from inside it come up dark
+/// too, so one flow never mixes a dark page with white popups.
+///
+/// An [InheritedTheme] so `showDialog` / `showModalBottomSheet` carry it into
+/// the route they build (they capture themes, not arbitrary inherited widgets).
+class FigDarkSurface extends InheritedTheme {
+  const FigDarkSurface({super.key, required super.child});
+
+  /// A popup built from the page's own context reads `Theme.of` above the
+  /// shell's pinned theme, so the dark theme travels with the marker.
+  @override
+  Widget wrap(BuildContext context, Widget child) => FigDarkSurface(
+    child: Theme(
+      data: AppTheme.dark(Localizations.localeOf(context)),
+      child: child,
+    ),
+  );
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<FigDarkSurface>() != null;
+
+  @override
+  bool updateShouldNotify(FigDarkSurface oldWidget) => false;
+}
+
+/// Shows [builder] in a standard modal sheet in the Figma look — white surface,
+/// large top radius, drag handle — pinned to the light theme so the regular
+/// `context.saqqar` widgets inside stay legible whatever the device theme is.
+/// For sheets the Figma set did not draw; drawn ones use [showFigSheet].
+Future<T?> showLightSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool isScrollControlled = true,
+}) {
+  final dark = FigDarkSurface.of(context);
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: isScrollControlled,
+    backgroundColor: dark ? AppColors.figCFF17181B : AppColors.figWhite,
+    shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheetTopR),
+    showDragHandle: true,
+    barrierColor: AppColors.figBlack.withValues(alpha: AppAlphas.a45),
+    useSafeArea: true,
+    useRootNavigator: true,
+    builder: (sheetContext) {
+      final locale = Localizations.localeOf(sheetContext);
+      final base = dark ? AppTheme.dark(locale) : AppTheme.light(locale);
+      return Theme(
+        data: base.copyWith(platform: Theme.of(sheetContext).platform),
+        child: dark
+            ? FigDarkSurface(child: Builder(builder: builder))
+            : Builder(builder: builder),
+      );
+    },
   );
 }
 

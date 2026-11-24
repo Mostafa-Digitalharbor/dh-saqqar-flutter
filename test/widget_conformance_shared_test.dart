@@ -16,14 +16,12 @@
 // this app receives, and each is what a component is not given by the one
 // screen its author had open.
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:saqqar_app/core/theme/app_colors.dart';
 import 'package:saqqar_app/core/network/view_model/connectivity_cubit.dart';
-import 'package:saqqar_app/core/theme/app_gradients.dart';
 import 'package:saqqar_app/core/theme/app_icons.dart';
 import 'package:saqqar_app/core/theme/app_sizes.dart';
 import 'package:saqqar_app/shared/widgets/accent_banner.dart';
@@ -46,14 +44,12 @@ import 'package:saqqar_app/shared/widgets/empty_state.dart';
 import 'package:saqqar_app/shared/widgets/eyebrow_label.dart';
 import 'package:saqqar_app/shared/widgets/fade_slide_in.dart';
 import 'package:saqqar_app/shared/widgets/filter_pill.dart';
-import 'package:saqqar_app/shared/widgets/ghost_button.dart';
 import 'package:saqqar_app/shared/widgets/glass_card.dart';
 import 'package:saqqar_app/shared/widgets/inline_add_form.dart';
 import 'package:saqqar_app/shared/widgets/labeled_divider.dart';
 import 'package:saqqar_app/shared/widgets/mini_chip.dart';
 import 'package:saqqar_app/shared/widgets/offline_banner.dart';
 import 'package:saqqar_app/shared/widgets/preview_banner.dart';
-import 'package:saqqar_app/shared/widgets/primary_button.dart';
 import 'package:saqqar_app/shared/widgets/responsive_content.dart';
 import 'package:saqqar_app/shared/widgets/saqqar_logo.dart';
 import 'package:saqqar_app/shared/widgets/sheet_action_row.dart';
@@ -70,6 +66,7 @@ import 'package:saqqar_app/shared/animations/typing_dots.dart';
 import 'support/dart_source.dart';
 import 'support/widget_conformance.dart';
 import 'support/responsive_harness.dart' show FakeConnectivity;
+import 'package:saqqar_app/shared/fig/fig.dart';
 
 void main() {
   // ── The layout matrix, one entry per widget ───────────────────────────
@@ -79,100 +76,102 @@ void main() {
   // can be half-covered.
   final cases = <String, Widget Function()>{
     'AccentBanner': () => const AccentBanner(
-          color: AppColors.brandCyan,
-          icon: AppIcons.info,
-          title: kLongEnglish,
-          body: kLongArabic,
-        ),
+      color: AppColors.brandCyan,
+      icon: AppIcons.info,
+      title: kLongEnglish,
+      body: kLongArabic,
+    ),
     'AccentBanner + action': () => AccentBanner(
-          color: AppColors.warning,
-          icon: AppIcons.warning,
-          title: kLongArabic,
-          body: kLongEnglish,
-          action: GhostButton(label: kLongEnglish, onPressed: () {}),
-        ),
+      color: AppColors.warning,
+      icon: AppIcons.warning,
+      title: kLongArabic,
+      body: kLongEnglish,
+      action: FigButton.compact(
+        secondary: true,
+        label: kLongEnglish,
+        onPressed: () {},
+      ),
+    ),
     // The compact in-sheet search box. Seeded with text so the clear button
     // — the affordance one of the two copies it replaced was missing — is
     // actually in the tree being measured.
     'CompactSearchField': () => CompactSearchField(
-          controller: TextEditingController(text: kLongArabic),
-          hintText: kLongEnglish,
-          onChanged: (_) {},
-        ),
+      controller: TextEditingController(text: kLongArabic),
+      hintText: kLongEnglish,
+      onChanged: (_) {},
+    ),
     'CompactSearchField empty': () => CompactSearchField(
-          controller: TextEditingController(),
-          hintText: kLongArabic,
-          onChanged: (_) {},
-        ),
+      controller: TextEditingController(),
+      hintText: kLongArabic,
+      onChanged: (_) {},
+    ),
     'AmbientBackground': () => const AmbientBackground(
-          withBlobs: true,
-          child: SizedBox(height: 200, width: double.infinity),
-        ),
+      withBlobs: true,
+      child: SizedBox(height: 200, width: double.infinity),
+    ),
     // The wall the app lock and the forced-update screen both are. Fed the
     // long strings on purpose: this layout exists because the short version
     // overflowed a landscape phone at 1.4x text, and two actions is the
     // taller of the two real uses.
     'BlockingWall': () => BlockingWall(
-          icon: AppIcons.lock,
-          title: kLongArabic,
-          body: kLongEnglish,
-          footnote: kUnbreakable,
-          actions: [
-            PrimaryButton(label: kLongArabic, expand: true, onPressed: () {}),
-            GhostButton(label: kLongEnglish, expand: true, onPressed: () {}),
-          ],
+      icon: AppIcons.lock,
+      title: kLongArabic,
+      body: kLongEnglish,
+      footnote: kUnbreakable,
+      actions: [
+        FigButton.compact(label: kLongArabic, expand: true, onPressed: () {}),
+        FigButton.compact(
+          secondary: true,
+          label: kLongEnglish,
+          expand: true,
+          onPressed: () {},
         ),
-    'AppDialogShell': () => const AppDialogShell(
-          accent: AppGradients.primaryCta,
-          elevated: true,
-          child: Text(kLongArabic),
-        ),
+      ],
+    ),
+    'AppDialogShell': () => const AppDialogShell(child: Text(kLongArabic)),
     'AppIconButton': () => AppIconButton(
-          icon: AppIcons.refresh,
-          onPressed: () {},
-          tooltip: kLongEnglish,
-        ),
-    'AppIconButton borderless': () => AppIconButton(
-          icon: AppIcons.close,
-          onPressed: () {},
-          bordered: false,
-        ),
+      icon: AppIcons.refresh,
+      onPressed: () {},
+      tooltip: kLongEnglish,
+    ),
+    'AppIconButton borderless': () =>
+        AppIconButton(icon: AppIcons.close, onPressed: () {}, bordered: false),
     'AppLoadingState': () => const AppLoadingState(label: kLongArabic),
     'AppLoadingState.inline': () => const AppLoadingState.inline(),
     'AppPasswordField': () => const AppPasswordField(
-          label: kLongEnglish,
-          hint: kLongArabic,
-          helper: kLongEnglish,
-        ),
-    'AppPasswordField errored': () => const AppPasswordField(
-          label: kLongArabic,
-          errorText: kLongEnglish,
-        ),
-    'CodePlate': () => const CodePlate(
-          text: kUnbreakable,
-          accent: AppColors.brandCyan,
-        ),
+      label: kLongEnglish,
+      hint: kLongArabic,
+      helper: kLongEnglish,
+    ),
+    'AppPasswordField errored': () =>
+        const AppPasswordField(label: kLongArabic, errorText: kLongEnglish),
+    'CodePlate': () =>
+        const CodePlate(text: kUnbreakable, accent: AppColors.brandCyan),
     'CodePlate clamped': () => const CodePlate(
-          text: '$kUnbreakable\n$kLongArabic\n$kLongEnglish',
-          accent: AppColors.warning,
-          maxLines: 2,
-        ),
+      text: '$kUnbreakable\n$kLongArabic\n$kLongEnglish',
+      accent: AppColors.warning,
+      maxLines: 2,
+    ),
     'CappedScrollList': () => CappedScrollList(
-          maxHeight: 80,
-          itemCount: 8,
-          itemBuilder: (context, i) => Text('$i · $kLongArabic'),
-        ),
+      maxHeight: 80,
+      itemCount: 8,
+      itemBuilder: (context, i) => Text('$i · $kLongArabic'),
+    ),
     'CappedScrollList separated': () => CappedScrollList(
-          maxHeight: 80,
-          itemCount: 8,
-          separatorBuilder: (context, _) => const Divider(height: 1),
-          itemBuilder: (context, i) => Text('$i · $kUnbreakable'),
-        ),
+      maxHeight: 80,
+      itemCount: 8,
+      separatorBuilder: (context, _) => const Divider(height: 1),
+      itemBuilder: (context, i) => Text('$i · $kUnbreakable'),
+    ),
     'DangerCallout': () => const DangerCallout(child: Text(kLongArabic)),
     'DialogActions': () => DialogActions(
-          cancel: GhostButton(label: kLongArabic, onPressed: () {}),
-          confirm: PrimaryButton(label: kLongEnglish, onPressed: () {}),
-        ),
+      cancel: FigButton.compact(
+        secondary: true,
+        label: kLongArabic,
+        onPressed: () {},
+      ),
+      confirm: FigButton.compact(label: kLongEnglish, onPressed: () {}),
+    ),
     'FadeSlideIn': () => const FadeSlideIn(child: Text(kLongArabic)),
     'FilterPill selected': () =>
         FilterPill(label: kLongEnglish, selected: true, onTap: () {}),
@@ -193,16 +192,16 @@ void main() {
         const ResponsiveContent(child: Text(kLongArabic)),
     'SaqqarLogo': () => const SaqqarLogo(),
     'ScanlineOverlay': () => const ScanlineOverlay(
-          color: AppColors.brandCyan,
-          child: SizedBox(height: 80, width: double.infinity),
-        ),
+      color: AppColors.brandCyan,
+      child: SizedBox(height: 80, width: double.infinity),
+    ),
     'StatTile': () => const StatTile(value: '24,515', label: kLongArabic),
     'StatusPill': () => const StatusPill(label: kLongEnglish),
     'StatusPill pulsing': () => const StatusPill(
-          label: kLongArabic,
-          variant: StatusPillVariant.success,
-          pulsing: true,
-        ),
+      label: kLongArabic,
+      variant: StatusPillVariant.success,
+      pulsing: true,
+    ),
     'TextScaleLock': () => const TextScaleLock(child: Text(kLongArabic)),
     'TypingDots': () => const TypingDots(color: AppColors.brandCyan),
     'UserAvatar': () => const UserAvatar(username: kLongArabic),
@@ -217,25 +216,23 @@ void main() {
     // 1.4x on a 320 px phone. `every shared widget is pumped somewhere`
     // below is what stops the list growing back.
     'AppTextField': () => const AppTextField(
-          label: kLongArabic,
-          hint: kLongEnglish,
-          helper: kUnbreakable,
-        ),
-    'ColoredIconBox': () => const ColoredIconBox(
-          icon: AppIcons.warning,
-          color: AppColors.warning,
-        ),
+      label: kLongArabic,
+      hint: kLongEnglish,
+      helper: kUnbreakable,
+    ),
+    'ColoredIconBox': () =>
+        const ColoredIconBox(icon: AppIcons.warning, color: AppColors.warning),
     'EmptyState': () => const EmptyState(
-          title: kLongArabic,
-          body: kLongEnglish,
-          icon: AppIcons.chats,
-        ),
+      title: kLongArabic,
+      body: kLongEnglish,
+      icon: AppIcons.chats,
+    ),
     'EmptyState with action': () => EmptyState(
-          title: kLongEnglish,
-          body: kLongArabic,
-          icon: AppIcons.chats,
-          action: PrimaryButton(label: kLongArabic, onPressed: () {}),
-        ),
+      title: kLongEnglish,
+      body: kLongArabic,
+      icon: AppIcons.chats,
+      action: FigButton.compact(label: kLongArabic, onPressed: () {}),
+    ),
     // Reads its state from a cubit rather than a parameter, so it needs
     // the provider its real ancestors give it. `FakeConnectivity` is
     // shared with the screen sweeps — a second fake here is how the two
@@ -244,52 +241,52 @@ void main() {
     // enough to compete with its own actions, because the app bar is
     // where a long Arabic screen name meets a row of icon buttons.
     'OfflineBanner': () => BlocProvider<ConnectivityCubit>(
-          create: (_) => ConnectivityCubit(connectivity: FakeConnectivity()),
-          child: const OfflineBanner(),
-        ),
+      create: (_) => ConnectivityCubit(connectivity: FakeConnectivity()),
+      child: const OfflineBanner(),
+    ),
     'SheetActionRow': () => SheetActionRow(
-          icon: AppIcons.share,
-          label: kLongArabic,
-          subtitle: kLongEnglish,
-          onTap: () {},
-        ),
+      icon: AppIcons.share,
+      label: kLongArabic,
+      subtitle: kLongEnglish,
+      onTap: () {},
+    ),
     'SheetActionRow with chevron': () => SheetActionRow(
-          icon: AppIcons.sparkles,
-          label: kUnbreakable,
-          tint: AppColors.brandCyan,
-          glyphColor: AppColors.brandCyan,
-          showChevron: true,
-          onTap: () {},
-        ),
+      icon: AppIcons.sparkles,
+      label: kUnbreakable,
+      tint: AppColors.brandCyan,
+      glyphColor: AppColors.brandCyan,
+      showChevron: true,
+      onTap: () {},
+    ),
     'SheetActionRow destructive': () => SheetActionRow(
-          icon: AppIcons.trash,
-          label: kLongEnglish,
-          tint: AppColors.danger,
-          glyphColor: AppColors.danger,
-          labelColor: AppColors.danger,
-          onTap: () {},
-        ),
+      icon: AppIcons.trash,
+      label: kLongEnglish,
+      tint: AppColors.danger,
+      glyphColor: AppColors.danger,
+      labelColor: AppColors.danger,
+      onTap: () {},
+    ),
     'SkeletonBlock': () => const SkeletonBlock(),
     'SkeletonBlock circle': () =>
         const SkeletonBlock.circle(size: AppSkeletonSizes.avatar),
     // The one input a Row cannot wrap its way out of, in the widget whose
     // whole job is to keep a title and its trailing actions on one line.
     'TitleTrailingRow': () => const TitleTrailingRow(
-          title: Text(kLongArabic),
-          trailing: Text(kLongEnglish),
-        ),
+      title: Text(kLongArabic),
+      trailing: Text(kLongEnglish),
+    ),
     'TitleTrailingRow unbreakable': () => const TitleTrailingRow(
-          title: Text(kUnbreakable),
-          trailing: Icon(AppIcons.chevronRight),
-        ),
+      title: Text(kUnbreakable),
+      trailing: Icon(AppIcons.chevronRight),
+    ),
     'AppErrorState': () => const AppErrorState(message: kLongArabic),
     'AppErrorState + retry': () => AppErrorState(
-          title: kLongEnglish,
-          message: kLongArabic,
-          icon: AppIcons.warning,
-          retryLabel: kLongEnglish,
-          onRetry: () {},
-        ),
+      title: kLongEnglish,
+      message: kLongArabic,
+      icon: AppIcons.warning,
+      retryLabel: kLongEnglish,
+      onRetry: () {},
+    ),
     'EyebrowLabel': () => const EyebrowLabel(kLongEnglish),
     'EyebrowLabel coloured': () =>
         const EyebrowLabel(kLongArabic, color: AppColors.warning),
@@ -318,8 +315,9 @@ void main() {
   // renders perfectly.
 
   group('StatusPill', () {
-    testWidgets('renders every variant without falling back to one colour',
-        (tester) async {
+    testWidgets('renders every variant without falling back to one colour', (
+      tester,
+    ) async {
       // A `switch` on the variant that is missing an arm compiles fine when it
       // has a default, and then paints two different states identically —
       // which is invisible unless the colours are compared.
@@ -345,15 +343,17 @@ void main() {
       expect(
         painted.values.toSet().length,
         StatusPillVariant.values.length,
-        reason: 'Two StatusPill variants paint the same colour, so a user '
+        reason:
+            'Two StatusPill variants paint the same colour, so a user '
             'cannot tell success from danger: $painted',
       );
     });
   });
 
   group('FilterPill', () {
-    testWidgets('selected and unselected are visually distinct',
-        (tester) async {
+    testWidgets('selected and unselected are visually distinct', (
+      tester,
+    ) async {
       final colours = <bool, Color?>{};
       for (final selected in [true, false]) {
         await tester.pumpWidget(
@@ -468,8 +468,9 @@ void main() {
   });
 
   group('InlineAddForm', () {
-    testWidgets('submits what was typed, and honours `enabled`',
-        (tester) async {
+    testWidgets('submits what was typed, and honours `enabled`', (
+      tester,
+    ) async {
       final controller = TextEditingController();
       addTearDown(controller.dispose);
       var submits = 0;
@@ -538,8 +539,9 @@ void main() {
   });
 
   group('UserAvatar', () {
-    testWidgets('falls back to a glyph rather than crashing on empty input',
-        (tester) async {
+    testWidgets('falls back to a glyph rather than crashing on empty input', (
+      tester,
+    ) async {
       // The username comes off the wire and the backend does not promise it is
       // non-empty. `String[0]` on an empty string throws, and it would throw
       // inside `build` — taking the whole screen down, not just the avatar.
@@ -629,8 +631,9 @@ void main() {
       }
     });
 
-    testWidgets('shows a retry only when there is something to retry',
-        (tester) async {
+    testWidgets('shows a retry only when there is something to retry', (
+      tester,
+    ) async {
       // Omitting `onRetry` is how a terminal error (a 404 deep link) is
       // expressed. A button that looks live and does nothing is worse than
       // no button, because the user taps it repeatedly.
@@ -641,7 +644,7 @@ void main() {
           scale: 1.0,
         ),
       );
-      expect(find.byType(GhostButton), findsNothing);
+      expect(find.byType(FigButton), findsNothing);
 
       var retries = 0;
       await tester.pumpWidget(
@@ -656,7 +659,7 @@ void main() {
         ),
       );
       expect(find.text('Reload'), findsOneWidget);
-      await tester.tap(find.byType(GhostButton));
+      await tester.tap(find.byType(FigButton));
       await tester.pump();
       expect(retries, 1);
     });
@@ -737,7 +740,12 @@ void main() {
       // (English, LTR) is further up the tree and must not be what this
       // reads, or the test would pass even if the widget did nothing at all.
       final dir = tester.widget<Directionality>(
-        find.ancestor(of: find.text(arabic), matching: find.byType(Directionality)).first,
+        find
+            .ancestor(
+              of: find.text(arabic),
+              matching: find.byType(Directionality),
+            )
+            .first,
       );
       expect(dir.textDirection, TextDirection.rtl);
     });
@@ -753,12 +761,19 @@ void main() {
         ),
       );
       final dir = tester.widget<Directionality>(
-        find.ancestor(of: find.text(english), matching: find.byType(Directionality)).first,
+        find
+            .ancestor(
+              of: find.text(english),
+              matching: find.byType(Directionality),
+            )
+            .first,
       );
       expect(dir.textDirection, TextDirection.ltr);
     });
 
-    testWidgets('forwards style, maxLines and overflow to Text', (tester) async {
+    testWidgets('forwards style, maxLines and overflow to Text', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         conformanceHarness(
           const AutoDirectionText(
@@ -779,8 +794,9 @@ void main() {
   });
 
   group('CodePlate', () {
-    testWidgets('clamps to maxLines instead of growing without bound',
-        (tester) async {
+    testWidgets('clamps to maxLines instead of growing without bound', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         conformanceHarness(
           const CodePlate(
@@ -807,8 +823,9 @@ void main() {
   });
 
   group('TextScaleLock', () {
-    testWidgets('pins the scale for its subtree regardless of the OS setting',
-        (tester) async {
+    testWidgets('pins the scale for its subtree regardless of the OS setting', (
+      tester,
+    ) async {
       // Its whole job. A version that read the ambient scaler and passed it
       // through would look correct at 1.0 and do nothing at 1.4 — which is the
       // only setting anyone uses it for.
@@ -869,8 +886,9 @@ void main() {
       return tester.getSize(find.byKey(childKey)).height;
     }
 
-    testWidgets('caps its content at maxHeight on a tall screen',
-        (tester) async {
+    testWidgets('caps its content at maxHeight on a tall screen', (
+      tester,
+    ) async {
       // 0.9 × 1000 = 900, well past the 400 cap.
       expect(
         await contentHeight(
@@ -882,8 +900,9 @@ void main() {
       );
     });
 
-    testWidgets('lifts its content to minHeight on a short screen',
-        (tester) async {
+    testWidgets('lifts its content to minHeight on a short screen', (
+      tester,
+    ) async {
       // The other end of the clamp: 0.3 × 500 = 150, below the 200 floor. A
       // clamp wired only to `maxHeight` passes the test above and still lets
       // a dialog collapse to nothing here.
@@ -922,35 +941,37 @@ void main() {
     const exempt = <String, String>{
       'AppErrorScreen':
           'a screen, not a component — swept across the full device matrix '
-              'by screen_responsive_sweep_extra_test.dart, which is the '
-              'stricter test of the two.',
+          'by screen_responsive_sweep_extra_test.dart, which is the '
+          'stricter test of the two.',
       'PageScaffold':
           'screen chrome, not a component. It owns an app bar, a brand '
-              'header that watches RunningAgentsCubit, a notifications '
-              'bell that reads NotificationsStore and a connectivity '
-              'strip, so it only builds under the full provider stack, '
-              'and it demands a bounded viewport this harness does not '
-              'give. All four screens that use it (Account, '
-              'Conversations, Vault, VoiceSupport) go through the whole '
-              'device matrix in the screen sweeps, which is the '
-              'stricter test.',
+          'header that watches RunningAgentsCubit, a notifications '
+          'bell that reads NotificationsStore and a connectivity '
+          'strip, so it only builds under the full provider stack, '
+          'and it demands a bounded viewport this harness does not '
+          'give. All four screens that use it (Account, '
+          'Conversations, Vault, VoiceSupport) go through the whole '
+          'device matrix in the screen sweeps, which is the '
+          'stricter test.',
       'SaqqarScreen':
           'the scroll container PageScaffold wraps every screen in; its '
-              'laziness contract is pinned by saqqar_screen_lazy_test.dart '
-              'and its layout by all sixteen screen sweeps.',
+          'laziness contract is pinned by saqqar_screen_lazy_test.dart '
+          'and its layout by all sixteen screen sweeps.',
     };
 
-    final missing = declared
-        .where((w) => !exempt.containsKey(w))
-        // Constructed, not merely imported: an import proves nothing rendered.
-        .where((w) => !isConstructedByATest(w))
-        .toList()
-      ..sort();
+    final missing =
+        declared
+            .where((w) => !exempt.containsKey(w))
+            // Constructed, not merely imported: an import proves nothing rendered.
+            .where((w) => !isConstructedByATest(w))
+            .toList()
+          ..sort();
 
     expect(
       missing,
       isEmpty,
-      reason: 'These shared widgets are never constructed by any test:\n'
+      reason:
+          'These shared widgets are never constructed by any test:\n'
           '${missing.map((w) => '  • $w').join('\n')}\n\n'
           'Fix: add a case to `cases` above — that puts it through 3 '
           'viewports x 2 locales x 2 text scales plus the dark theme for one '
@@ -964,7 +985,8 @@ void main() {
       expect(
         declared,
         contains(name),
-        reason: '`$name` is exempted here but no longer exists in '
+        reason:
+            '`$name` is exempted here but no longer exists in '
             'lib/shared/widgets. Drop the entry.',
       );
     }

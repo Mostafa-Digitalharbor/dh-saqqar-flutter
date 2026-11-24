@@ -44,6 +44,7 @@ import '../../features/tasks/tasks_screen.dart';
 import '../../features/onboarding/onboarding_flag.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/vault/view/vault_screen.dart';
+import '../../shared/fig/fig.dart' show FigDarkSurface;
 import '../constants/ui_strings.dart';
 import '../../navigation/home_shell.dart';
 import '../i18n/app_localizations.dart';
@@ -359,6 +360,8 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
                 pageBuilder: (_, state) {
                   final id = state.pathParameters['id']!;
                   final isNewChat = id == UiStrings.newConversationId;
+                  final draft =
+                      state.uri.queryParameters[RouteNames.chatDraftQuery];
                   return _transitionPage(
                     state: state,
                     // Per-conversation page key — without it, switching from
@@ -376,17 +379,23 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
                     // above the screen's own context, so the bottom sheets it
                     // opens inherit it too instead of coming up white.
                     child: Builder(
-                      builder: (ctx) => Theme(
-                        data: AppTheme.dark(Localizations.localeOf(ctx)),
-                        child: isNewChat
-                            ? ChatScreen(conversationId: id)
-                            : BlocProvider<ChatCubit>(
-                                create: (ctx) => ChatCubit(
+                      builder: (ctx) => FigDarkSurface(
+                        child: Theme(
+                          data: AppTheme.dark(Localizations.localeOf(ctx)),
+                          child: isNewChat
+                              ? ChatScreen(
                                   conversationId: id,
-                                  repository: ctx.read<ConversationsRepository>(),
-                                )..load(),
-                                child: ChatScreen(conversationId: id),
-                              ),
+                                  initialDraft: draft,
+                                )
+                              : BlocProvider<ChatCubit>(
+                                  create: (ctx) => ChatCubit(
+                                    conversationId: id,
+                                    repository: ctx
+                                        .read<ConversationsRepository>(),
+                                  )..load(),
+                                  child: ChatScreen(conversationId: id),
+                                ),
+                        ),
                       ),
                     ),
                     kind: _RouteTransitionKind.detail,
@@ -421,8 +430,12 @@ GoRouter buildAppRouter(AuthCubit authCubit) {
           GoRoute(
             path: RouteNames.vaultPath,
             name: RouteNames.vault,
-            pageBuilder: (_, state) =>
-                _transitionPage(state: state, child: const VaultScreen()),
+            pageBuilder: (_, state) => _transitionPage(
+              state: state,
+              // Dark page: its popups (opened from the screen's own context,
+              // above FigPage) must see the marker too.
+              child: const FigDarkSurface(child: VaultScreen()),
+            ),
           ),
         ],
       ),

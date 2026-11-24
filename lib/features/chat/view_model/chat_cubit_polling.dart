@@ -2,9 +2,24 @@ part of 'chat_cubit.dart';
 
 /// Polling: scheduling, one poll round and merging a snapshot into state.
 extension _ChatPolling on ChatCubit {
+  /// Drops [ChatState.awaitingReply] once something else tells the truth: the
+  /// server reports a run, the reply is already in, or the grace has run out.
+  void _settleAwaitingReply() {
+    if (!state.awaitingReply) return;
+    final last = state.data.dataOrNull?.messages.lastOrNull;
+    final replied =
+        last != null &&
+        last.id != _idAtSend &&
+        last.role == MessageRole.assistant;
+    if (state.isRunning || replied || _replyGraceLeft <= 0) {
+      _emit(state.copyWith(awaitingReply: false));
+    }
+  }
+
   void _schedulePoll() {
     _pollTimer?.cancel();
     if (_paused || _disposed) return;
+    _settleAwaitingReply();
     // Once the server admits it's running, that flag is the better signal and
     // the post-send grace has done its job.
     if (state.isRunning) _replyGraceLeft = 0;

@@ -186,6 +186,7 @@ dependencies:
   # Pinned to 4.x: 5.0.0 exists but does not resolve against this dependency
   # set. See docs/RELEASE.md §4.
   in_app_update: ^4.2.5
+  audioplayers: ^6.8.1
 
 # Pub's resolver picks `record_linux 0.7.2` to satisfy `record ^5.1.2`'s
 # constraint, but 0.7.2 predates the `startStream` + `hasPermission(...,

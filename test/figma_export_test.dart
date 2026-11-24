@@ -492,7 +492,7 @@ void main() {
       'Account',
       const AccountScreen(),
       wrap: _withPlan,
-      minLayers: 60,
+      minLayers: 50,
     );
     await grab(
       'Usage',
@@ -510,7 +510,9 @@ void main() {
       'Vault',
       const VaultScreen(),
       wrap: _withVault,
-      minLayers: 35,
+      // Collapsed Figma company cards carry fewer layers than the old
+      // always-open environment lists did.
+      minLayers: 18,
     );
     await grab(
       'Devices',

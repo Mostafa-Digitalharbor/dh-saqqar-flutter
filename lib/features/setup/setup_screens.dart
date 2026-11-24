@@ -56,7 +56,6 @@ class _CompanyNameScreenState extends State<CompanyNameScreen> {
         backgroundColor: Fig.pageGrey,
         body: FigBackdrop(
           child: AuthFrame(
-            hPad: 20,
             onBack: () => context.canPop()
                 ? context.pop()
                 : context.go(RouteNames.homePath),
@@ -239,7 +238,6 @@ class _ConnectEnvironmentScreenState extends State<ConnectEnvironmentScreen> {
         backgroundColor: Fig.pageGrey,
         body: FigBackdrop(
           child: AuthFrame(
-            hPad: 20,
             onBack: () => context.pop(),
             progress: 0.5,
             titleGap: 52,

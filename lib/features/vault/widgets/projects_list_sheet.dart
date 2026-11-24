@@ -9,13 +9,13 @@ import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/app_card_dialog.dart';
 import '../../../shared/widgets/inline_add_form.dart';
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
 import 'project_detail_sheet.dart';
 import '../../../shared/widgets/tappable_surface.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Web-parity "Projects" popup. Replaces the old single-purpose new-project
 /// form with the same shape the desktop site uses:
@@ -150,9 +150,10 @@ class _ProjectsListSheetState extends State<ProjectsListSheet> {
                     ],
                   ),
                 ),
-                GhostButton(
+                FigButton.compact(
+                  secondary: true,
                   label: context.tr.close,
-                  minHeight: AppControlSizes.rowMin,
+                  height: AppControlSizes.rowMin,
                   onPressed: () => Navigator.of(context).maybePop(),
                 ),
               ],
@@ -286,10 +287,11 @@ class _ProjectRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.s10),
-            GhostButton(
+            FigButton.compact(
+              secondary: true,
               label: context.tr.delete,
-              minHeight: AppControlSizes.rowMin,
-              tone: GhostButtonTone.danger,
+              height: AppControlSizes.rowMin,
+              dangerOutline: true,
               onPressed: onDelete,
             ),
           ],

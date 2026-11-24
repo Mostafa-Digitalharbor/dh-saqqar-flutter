@@ -3,8 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/i18n/app_localizations.dart';
 import '../../../shared/widgets/blocking_wall.dart';
-import '../../../shared/widgets/ghost_button.dart';
-import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/fig/fig.dart';
 import '../../../shared/widgets/sign_out_helper.dart';
 import '../view_model/app_lock_cubit.dart';
 import '../../../core/theme/app_icons.dart';
@@ -44,20 +43,17 @@ class _AppLockScreenState extends State<AppLockScreen> {
       actions: [
         BlocBuilder<AppLockCubit, AppLockState>(
           buildWhen: (a, b) => a.authenticating != b.authenticating,
-          builder: (context, state) => PrimaryButton(
+          builder: (context, state) => FigButton(
             label: tr.appLockUnlock,
-            icon: AppIcons.biometric,
-            expand: true,
             loading: state.authenticating,
             onPressed: state.authenticating ? null : _unlock,
           ),
         ),
         // Escape hatch — never strand a user who cannot authenticate.
-        GhostButton(
+        FigButton(
           label: tr.signOut,
-          icon: AppIcons.signOut,
-          tone: GhostButtonTone.danger,
-          expand: true,
+          secondary: true,
+          danger: true,
           onPressed: () => showSignOutFlow(context),
         ),
       ],

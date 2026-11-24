@@ -11,14 +11,13 @@ import '../../../shared/extensions/context_extensions.dart';
 import '../../../shared/widgets/compact_search_field.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/inline_add_form.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/app_card_dialog.dart';
 import '../data/project_models.dart';
 import '../view_model/vault_cubit.dart';
 import 'environment_detail_sheet.dart';
 import 'projects_list_sheet.dart';
+import '../../../shared/fig/fig.dart';
 
 part 'project_detail_env_row.dart';
 part 'project_detail_parts.dart';
@@ -224,9 +223,10 @@ class _ProjectDetailSheetState extends State<ProjectDetailSheet> {
                     ],
                   ),
                 ),
-                GhostButton(
+                FigButton.compact(
+                  secondary: true,
                   label: context.tr.close,
-                  minHeight: AppControlSizes.rowMin,
+                  height: AppControlSizes.rowMin,
                   onPressed: () => Navigator.of(context).maybePop(),
                 ),
               ],

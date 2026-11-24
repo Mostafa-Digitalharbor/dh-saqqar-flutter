@@ -12,14 +12,14 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../data/trial_models.dart';
 import '../view_model/trial_cubit.dart';
 import '../view_model/trial_state.dart';
+import '../../../shared/fig/fig_page.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Managed Odoo trial (API_MOBILE_NEW_ENDPOINTS.md §2) — request a hosted
 /// trial, watch it provision, then read the credentials once it's ready.
@@ -74,23 +74,20 @@ class _TrialScreenState extends State<TrialScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(title: Text(context.tr.trialTitle)),
-      body: AmbientBackground(
-        child: BlocConsumer<TrialCubit, TrialScreenState>(
-          listenWhen: (prev, next) =>
-              prev.submitError != next.submitError && next.submitError != null,
-          listener: (context, state) {
-            AppToast.show(
-              context,
-              message: ApiErrorMapper.message(context, state.submitError),
-              variant: ToastVariant.error,
-            );
-          },
-          builder: _buildBody,
-        ),
+    return FigPage(
+      title: context.tr.trialTitle,
+      eyebrow: context.tr.figWorkspace,
+      child: BlocConsumer<TrialCubit, TrialScreenState>(
+        listenWhen: (prev, next) =>
+            prev.submitError != next.submitError && next.submitError != null,
+        listener: (context, state) {
+          AppToast.show(
+            context,
+            message: ApiErrorMapper.message(context, state.submitError),
+            variant: ToastVariant.error,
+          );
+        },
+        builder: _buildBody,
       ),
     );
   }
@@ -204,7 +201,8 @@ class _RequestForm extends StatelessWidget {
           onSubmitted: (_) => onSubmit(),
         ),
         const SizedBox(height: AppSpacing.s20),
-        GhostButton(
+        FigButton.compact(
+          secondary: true,
           label: context.tr.trialRequestButton,
           icon: AppIcons.rocket,
           expand: true,
@@ -376,7 +374,8 @@ class _ReadyCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.s16),
-        GhostButton(
+        FigButton.compact(
+          secondary: true,
           label: context.tr.trialOpen,
           icon: AppIcons.open,
           expand: true,

@@ -1,3 +1,4 @@
+import '../../../shared/fig/fig.dart' show showLightSheet;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -36,8 +37,8 @@ class ConversationActionsSheet extends StatelessWidget {
     // the sheet starts to animate in — matches the iOS / WhatsApp feel
     // where long-press has a clear "you triggered something" cue.
     HapticFeedback.mediumImpact();
-    return showModalBottomSheet<ConversationAction>(
-      context: context,
+    return showLightSheet<ConversationAction>(
+      context,
       isScrollControlled: true,
       builder: (_) => ConversationActionsSheet(
         conversation: conversation,

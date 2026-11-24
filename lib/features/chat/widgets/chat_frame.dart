@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../navigation/home_shell.dart';
 import '../../../shared/fig/fig.dart';
-import '../../../shared/fig/tools_sheet.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../core/theme/fig_metrics.dart';
 import '../../../core/theme/app_colors.dart';
@@ -14,18 +13,15 @@ class ChatFrame extends StatelessWidget {
     super.key,
     required this.header,
     required this.child,
-    required this.taskPrep,
-    required this.autoApprove,
-    required this.onTaskPrep,
-    required this.onAutoApprove,
+    required this.onMore,
   });
 
   final Widget header;
   final Widget child;
-  final bool taskPrep;
-  final bool autoApprove;
-  final ValueChanged<bool> onTaskPrep;
-  final ValueChanged<bool> onAutoApprove;
+
+  /// Opens the chat's own tools sheet — the same one the composer's tools
+  /// button opens, so the ⋮ pill and that button never disagree.
+  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -70,13 +66,7 @@ class ChatFrame extends StatelessWidget {
                 onSelect: (i) {
                   if (i != 1) HomeShell.go(context, i);
                 },
-                onMore: () => showSaqqarTools(
-                  context,
-                  taskPrep: taskPrep,
-                  autoApprove: autoApprove,
-                  onTaskPrep: onTaskPrep,
-                  onAutoApprove: onAutoApprove,
-                ),
+                onMore: onMore,
               ),
             ),
           ),

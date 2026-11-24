@@ -183,6 +183,10 @@ class ChatCubit extends Cubit<ChatState>
   /// over from there). See [_schedulePoll].
   int _replyGraceLeft = 0;
 
+  /// The last message id when the latest send returned — a newer assistant
+  /// row after it means the reply already landed, so Stop is no longer due.
+  String? _idAtSend;
+
   // Per-attachment status pollers — keyed by attachment id so multiple
   // uploads run independently.
   final _attachmentTimers = <String, Timer>{};
@@ -443,9 +447,11 @@ class ChatCubit extends Cubit<ChatState>
           stagedAttachments: const [],
           clearStagedAttachments: true,
           isSending: false,
+          awaitingReply: true,
           actionToast: ChatToast.messageSent,
         ),
       );
+      _idAtSend = snapshot.messages.lastOrNull?.id;
       _repo.cacheSnapshot(conversationId, snapshot);
       // Immediately bump the polling cadence to "running" speed since
       // the agent is now processing the message we just sent — even though
@@ -472,7 +478,13 @@ class ChatCubit extends Cubit<ChatState>
   /// the agent worker exits between tool rounds. Idempotent.
   Future<bool> stopGeneration() async {
     if (state.isStopping) return false;
-    emit(state.copyWith(isStopping: true, clearActionFailure: true));
+    emit(
+      state.copyWith(
+        isStopping: true,
+        awaitingReply: false,
+        clearActionFailure: true,
+      ),
+    );
     try {
       await _repo.stop(conversationId);
       // The user has cancelled the turn they were waiting on, so the

@@ -7,8 +7,8 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/animations/floating_bob.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/primary_button.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Friendly empty state for the Conversations list — vivid Saqqar mark,
 /// inviting headline, supporting copy, and a primary "Start a conversation"
@@ -77,7 +77,7 @@ class ConversationsEmptyState extends StatelessWidget {
             // it reads as "available", not "urgent / error".
             child: _BreathingGlow(
               color: s.brandCyan,
-              child: PrimaryButton(
+              child: FigButton.compact(
                 label: context.tr.newConversation,
                 icon: AppIcons.plus,
                 expand: true,

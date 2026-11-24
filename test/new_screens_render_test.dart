@@ -195,7 +195,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('Token balance'), findsOneWidget);
-    expect(find.text('Pro — monthly'), findsOneWidget);
+    expect(find.text('Pro — Monthly'), findsOneWidget);
   });
 
   // The CheckoutScreen test that lived here is gone with the screen: the app

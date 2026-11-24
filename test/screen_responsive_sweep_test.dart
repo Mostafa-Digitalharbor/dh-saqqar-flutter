@@ -488,6 +488,38 @@ void main() {
     expect(find.text('Email is required.'), findsOneWidget);
   });
 
+  testWidgets('sign-in can switch to an email code and back', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpOnce(
+      tester,
+      const AuthFlowScreen(initial: AuthFlowStep.signInEmail),
+      prefs: prefs,
+    );
+
+    // Password mode: email + password fields.
+    expect(find.byType(EditableText), findsNWidgets(2));
+    expect(find.text('Forgot Password?'), findsOneWidget);
+
+    await tester.tap(find.text('Sign in with an email code instead'));
+    await tester.pump();
+    // Code mode: only the email field, a "Send code" button, no reset link.
+    expect(find.byType(EditableText), findsOneWidget);
+    expect(find.text('Send code'), findsOneWidget);
+    expect(find.text('Forgot Password?'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    // An empty email is refused before any request goes out.
+    await tester.tap(find.text('Send code'));
+    await tester.pump();
+    expect(find.text('Email is required.'), findsOneWidget);
+
+    await tester.tap(find.text('Sign in with a password instead'));
+    await tester.pump();
+    expect(find.byType(EditableText), findsNWidgets(2));
+  });
+
   testWidgets('AuthFlowScreen shows no build/version string', (tester) async {
     // The version badge that used to sit above the header was removed by
     // request. `AppBuildInfo` still carries the label — push registration

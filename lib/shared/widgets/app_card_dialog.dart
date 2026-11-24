@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_radius.dart';
-import '../extensions/context_extensions.dart';
-import '../../core/theme/app_sizes.dart';
+import 'app_dialog_shell.dart';
 
 /// A floating card dialog sized against the viewport rather than its content.
 ///
@@ -52,27 +50,17 @@ class AppCardDialog extends StatelessWidget {
   /// Width past which the card's content stops being scannable.
   static const double maxContentWidth = 520;
 
-  static const EdgeInsets _inset = EdgeInsets.symmetric(
-    horizontal: AppSpacing.s20,
-    vertical: AppSpacing.s24,
-  );
-
   @override
   Widget build(BuildContext context) {
-    final s = context.saqqar;
     final resolvedHeight = (MediaQuery.sizeOf(context).height * heightFactor)
         .clamp(minHeight, maxHeight);
 
-    return Dialog(
-      insetPadding: _inset,
-      backgroundColor: s.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(borderRadius: AppRadius.cardDialogR),
+    // The same white Figma card as every other dialog, so the vault's lists
+    // don't read as a different app.
+    return AppDialogShell(
+      maxWidth: maxContentWidth,
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: resolvedHeight,
-          maxWidth: maxContentWidth,
-        ),
+        constraints: BoxConstraints(maxHeight: resolvedHeight),
         child: child,
       ),
     );

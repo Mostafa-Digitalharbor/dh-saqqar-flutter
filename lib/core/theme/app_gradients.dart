@@ -6,11 +6,13 @@ import 'app_sizes.dart';
 class AppGradients {
   AppGradients._();
 
-  /// Primary CTA — buttons, FABs.
+  /// Primary CTA — buttons, FABs. The Figma redesign's blue, the same one
+  /// `FigButton` draws, so a button on a screen that has not been redrawn
+  /// matches one on a screen that has.
   static const LinearGradient primaryCta = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [AppColors.brandNavy, AppColors.brandCyan],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [AppColors.figBlueTop, AppColors.figBlueBottom],
   );
 
   /// Vivid accent — avatars, gradient text only (never large surfaces).

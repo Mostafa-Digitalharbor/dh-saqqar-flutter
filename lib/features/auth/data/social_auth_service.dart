@@ -93,7 +93,9 @@ class SocialAuthService {
   Future<void> signOutGoogle() async {
     try {
       await _googleSignIn.signOut();
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.warn('GoogleSignIn', 'local sign-out failed', error: e);
+    }
   }
 
   /// Runs native Sign in with Apple (iOS). Returns null if the user cancels;

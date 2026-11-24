@@ -9,7 +9,6 @@ import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_sizes.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -18,8 +17,10 @@ import '../../../shared/widgets/stat_tile.dart';
 import '../../../shared/widgets/status_pill.dart';
 import '../../inbox/data/artifact_downloader.dart';
 import '../data/billing_history_api.dart';
+import '../data/plan_copy.dart';
 import '../data/billing_history_models.dart';
 import '../../../core/theme/app_icons.dart';
+import '../../../shared/fig/fig_page.dart';
 
 /// Read-only billing history + PDF receipts (API_MOBILE_NEW_ENDPOINTS.md §3).
 ///
@@ -126,16 +127,14 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
   Widget build(BuildContext context) {
     final s = context.saqqar;
     final history = _history;
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(title: Text(context.tr.billingHistoryTitle)),
-      body: AmbientBackground(
-        child: RefreshIndicator(
-          color: s.brandCyan,
-          backgroundColor: s.surface,
-          onRefresh: _fetch,
-          child: _buildBody(context, history),
-        ),
+    return FigPage(
+      title: context.tr.billingHistoryTitle,
+      eyebrow: context.tr.figBilling,
+      child: RefreshIndicator(
+        color: s.brandCyan,
+        backgroundColor: s.surface,
+        onRefresh: _fetch,
+        child: _buildBody(context, history),
       ),
     );
   }
@@ -284,7 +283,7 @@ class _PaymentRowCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      row.what,
+                      _localizedWhat(context, row.what),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: context.text.titleSmall?.copyWith(
@@ -400,4 +399,19 @@ class _StatusChip extends StatelessWidget {
     if (label.isEmpty) return const SizedBox.shrink();
     return StatusPill(label: label, variant: variant);
   }
+}
+
+/// The server composes `what` in English ("Solo — monthly"). Plan names and
+/// the billing cycle are known vocabulary, so each part is translated and any
+/// part that is not (a "Token recharge", a future label) is shown as sent.
+String _localizedWhat(BuildContext context, String what) {
+  final tr = context.tr;
+  final parts = what.split(' — ').map((part) {
+    return switch (part.trim().toLowerCase()) {
+      'monthly' => tr.pricingCycleMonthly,
+      'annual' => tr.pricingCycleAnnual,
+      _ => PlanCopy.translate(tr, part),
+    };
+  });
+  return parts.join(' — ');
 }

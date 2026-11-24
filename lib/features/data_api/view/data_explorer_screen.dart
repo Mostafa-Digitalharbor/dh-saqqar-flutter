@@ -5,18 +5,18 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/network/api_error_mapper.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../shared/extensions/context_extensions.dart';
-import '../../../shared/widgets/ambient_background.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/code_plate.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/ghost_button.dart';
 import '../../../shared/widgets/preview_banner.dart';
 import '../view_model/data_explorer_cubit.dart';
 import '../view_model/data_explorer_state.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/app_sizes.dart';
+import '../../../shared/fig/fig_page.dart';
+import '../../../shared/fig/fig.dart';
 
 /// Read-only Odoo data explorer (API_MOBILE_NEW_ENDPOINTS.md §4.2) — pick a
 /// bound environment + an operation, edit the JSON request body, and run it.
@@ -49,68 +49,66 @@ class _DataExplorerScreenState extends State<DataExplorerScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.saqqar;
-    return Scaffold(
-      backgroundColor: s.bg,
-      appBar: AppBar(title: Text(context.tr.dataExplorerTitle)),
-      body: AmbientBackground(
-        child: BlocConsumer<DataExplorerCubit, DataExplorerState>(
-          listenWhen: (p, n) =>
-              p.operation != n.operation ||
-              (p.queryError != n.queryError && n.queryError != null),
-          listener: (context, state) {
-            // When the operation changes, reset the body to its template.
-            if (state.operation.needsBody) {
-              _body.text = state.operation.template;
-            } else {
-              _body.clear();
-            }
-            if (state.queryError != null) {
-              final msg = state.queryError is FormatException
-                  ? context.tr.dataExplorerInvalidJson
-                  : ApiErrorMapper.message(context, state.queryError);
-              AppToast.show(context, message: msg, variant: ToastVariant.error);
-            }
-          },
-          builder: (context, state) {
-            if (state.loadingEnvs) {
-              return Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: AppStrokeWidths.spinnerRegular,
-                  color: s.muted,
+    return FigPage(
+      title: context.tr.dataExplorerTitle,
+      eyebrow: context.tr.figWorkspace,
+      child: BlocConsumer<DataExplorerCubit, DataExplorerState>(
+        listenWhen: (p, n) =>
+            p.operation != n.operation ||
+            (p.queryError != n.queryError && n.queryError != null),
+        listener: (context, state) {
+          // When the operation changes, reset the body to its template.
+          if (state.operation.needsBody) {
+            _body.text = state.operation.template;
+          } else {
+            _body.clear();
+          }
+          if (state.queryError != null) {
+            final msg = state.queryError is FormatException
+                ? context.tr.dataExplorerInvalidJson
+                : ApiErrorMapper.message(context, state.queryError);
+            AppToast.show(context, message: msg, variant: ToastVariant.error);
+          }
+        },
+        builder: (context, state) {
+          if (state.loadingEnvs) {
+            return Center(
+              child: CircularProgressIndicator(
+                strokeWidth: AppStrokeWidths.spinnerRegular,
+                color: s.muted,
+              ),
+            );
+          }
+          if (state.envError != null) {
+            return ListView(
+              padding: const EdgeInsets.only(top: AppSpacing.s64),
+              children: [
+                AppErrorState(
+                  message: ApiErrorMapper.message(context, state.envError),
+                  onRetry: () =>
+                      context.read<DataExplorerCubit>().loadEnvironments(),
                 ),
-              );
-            }
-            if (state.envError != null) {
-              return ListView(
-                padding: const EdgeInsets.only(top: AppSpacing.s64),
-                children: [
-                  AppErrorState(
-                    message: ApiErrorMapper.message(context, state.envError),
-                    onRetry: () =>
-                        context.read<DataExplorerCubit>().loadEnvironments(),
-                  ),
-                ],
-              );
-            }
-            if (state.environments.isEmpty) {
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s16,
-                  AppSpacing.s48,
-                  AppSpacing.s16,
-                  AppSpacing.s28,
+              ],
+            );
+          }
+          if (state.environments.isEmpty) {
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s16,
+                AppSpacing.s48,
+                AppSpacing.s16,
+                AppSpacing.s28,
+              ),
+              children: [
+                EmptyState(
+                  icon: AppIcons.server,
+                  title: context.tr.dataExplorerNoEnvs,
                 ),
-                children: [
-                  EmptyState(
-                    icon: AppIcons.server,
-                    title: context.tr.dataExplorerNoEnvs,
-                  ),
-                ],
-              );
-            }
-            return _Body(state: state, body: _body);
-          },
-        ),
+              ],
+            );
+          }
+          return _Body(state: state, body: _body);
+        },
       ),
     );
   }
@@ -163,11 +161,13 @@ class _Body extends StatelessWidget {
           AppTextField(
             label: context.tr.dataExplorerBody,
             controller: body,
+            textDirection: TextDirection.ltr,
             maxLines: 8,
             minLines: 4,
           ),
         const SizedBox(height: AppSpacing.s16),
-        GhostButton(
+        FigButton.compact(
+          secondary: true,
           label: context.tr.dataExplorerRun,
           icon: AppIcons.play,
           expand: true,

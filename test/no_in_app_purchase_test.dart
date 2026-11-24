@@ -31,7 +31,7 @@ import 'package:saqqar_app/features/billing/data/billing_visibility.dart';
 import 'package:saqqar_app/features/billing/data/plan_models.dart';
 import 'package:saqqar_app/features/billing/data/web_checkout.dart';
 import 'package:saqqar_app/features/chat/widgets/chat_plan_banner.dart';
-import 'package:saqqar_app/shared/widgets/ghost_button.dart';
+import 'package:saqqar_app/shared/fig/fig.dart';
 
 /// Answers every request with a fixed status + body, and records what was
 /// sent. Nothing leaves the process.
@@ -385,7 +385,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('See plans'), findsNothing);
-      expect(find.byType(GhostButton), findsNothing);
+      expect(find.byType(FigButton), findsNothing);
     });
 
     testWidgets('on: the same banner offers the route to the catalogue',
@@ -420,7 +420,7 @@ void main() {
       // 'أو رقِّ خطتك' is the upsell clause, 'عرض الباقات' the CTA label.
       expect(find.textContaining('رقِّ خطتك'), findsNothing);
       expect(find.text('عرض الباقات'), findsNothing);
-      expect(find.byType(GhostButton), findsNothing);
+      expect(find.byType(FigButton), findsNothing);
     });
   });
 }

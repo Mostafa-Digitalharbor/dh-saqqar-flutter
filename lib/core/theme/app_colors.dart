@@ -34,8 +34,11 @@ class AppColors {
   static const lightHoverBg = Color(0x14E2E8F0);
 
   // Brand (theme-agnostic)
-  static const brandCyan = Color(0xFF06B6D4);
-  static const brandCyanStrong = Color(0xFF22D3EE); // saqqaar.com app.css
+  // The accent. Still called "cyan" in code, but it carries the Figma redesign's
+  // action blue so every screen that has not been redrawn shares the accent of
+  // the ones that have (it was teal 06B6D4 / 22D3EE).
+  static const brandCyan = Color(0xFF2F6BF0);
+  static const brandCyanStrong = Color(0xFF4C8DFF);
   static const brandPurple = Color(0xFF8B5CF6);
   static const brandNavy = Color(0xFF1F3C88);
 

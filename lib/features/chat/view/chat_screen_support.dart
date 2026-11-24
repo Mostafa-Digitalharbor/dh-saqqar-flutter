@@ -90,7 +90,49 @@ extension _ChatSupport on _ChatScreenState {
       company: _railCompany,
       environment: _railEnvironment,
       onClose: () => _update(() => _railOpen = false),
+      onViewApproval: _showApprovalInChat,
     );
+  }
+
+  /// "View details" in the rail: close the drawer and bring the request that
+  /// needs a decision into view. A request that belongs to another chat opens
+  /// that chat instead — its card is not in this transcript.
+  void _showApprovalInChat(api.Approval approval) {
+    _update(() => _railOpen = false);
+    final other = approval.conversation?.id;
+    if (other != null && other != widget.conversationId) {
+      context.go(RouteNames.chatPath(other));
+      return;
+    }
+    _revealApproval(approval.id);
+  }
+
+  /// Scrolls the transcript to the approval's row. The pending cards live at
+  /// the tail of the list, so when the row is not built yet the list is first
+  /// brought to the tail, then the row is looked up again.
+  Future<void> _revealApproval(String id, {int attempt = 0}) async {
+    await Future<void>.delayed(AppDurations.sheetIn);
+    if (!mounted) return;
+    final rowContext = _approvalKeys[id]?.currentContext;
+    if (rowContext != null && rowContext.mounted) {
+      await Scrollable.ensureVisible(
+        rowContext,
+        duration: AppDurations.listFadeIn,
+        curve: Curves.easeOutCubic,
+        alignment: AppFractions.revealedRowAlignment,
+      );
+      return;
+    }
+    if (attempt >= 3) return;
+    final controller = _lane.controller;
+    if (controller.hasClients) {
+      await controller.animateTo(
+        0,
+        duration: AppDurations.listFadeIn,
+        curve: Curves.easeOutCubic,
+      );
+    }
+    unawaited(_revealApproval(id, attempt: attempt + 1));
   }
 
   /// Pushes what this chat's snapshot knows out to the two app-wide cubits
