@@ -38,7 +38,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 62
+      "layers": 56
     },
     {
       "name": "Usage",
@@ -48,7 +48,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 21
+      "layers": 23
     },
     {
       "name": "Conversations",
@@ -58,7 +58,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 75
+      "layers": 73
     },
     {
       "name": "Vault",
@@ -68,7 +68,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 45
+      "layers": 18
     },
     {
       "name": "Devices",
@@ -78,7 +78,7 @@
       "height": 932.0,
       "locale": "en",
       "brightness": "light",
-      "layers": 20
+      "layers": 23
     },
     {
       "name": "Notifications",
